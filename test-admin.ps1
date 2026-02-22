@@ -124,7 +124,8 @@ try {
 Write-Host "`nTest 8: List All Firearms"
 try {
     $result = Invoke-RestMethod -Uri "$baseUrl/api/firearms" -Method Get
-    Write-Host "PASSED - Total firearms: $($result.total)"
+    $firearms = @($result)
+    Write-Host "PASSED - Total firearms: $($firearms.Count)"
 } catch {
     Write-Host "FAILED: $_"
 }
@@ -152,10 +153,11 @@ try {
 } catch {}
 
 $payload = @{
-    guardId = $global:newUserId
+    guardId   = $global:newUserId
     firearmId = $global:firearmId
-    shiftId = $global:shiftId
-    issuedBy = $global:adminId
+    shiftId   = $global:shiftId
+    issuedBy  = $global:adminId
+    force     = $true
 } | ConvertTo-Json
 
 try {
@@ -188,7 +190,8 @@ try {
 Write-Host "`nTest 12: List All Armored Cars"
 try {
     $result = Invoke-RestMethod -Uri "$baseUrl/api/armored-cars" -Method Get
-    Write-Host "PASSED - Total cars: $($result.total)"
+    $cars = @($result)
+    Write-Host "PASSED - Total cars: $($cars.Count)"
 } catch {
     Write-Host "FAILED: $_"
 }
@@ -196,8 +199,8 @@ try {
 # Dashboard Analytics
 Write-Host "`nTest 13: Fetch Dashboard Analytics"
 try {
-    $result = Invoke-RestMethod -Uri "$baseUrl/api/analytics/dashboard" -Method Get
-    Write-Host "PASSED - Users: $($result.totalUsers), Shifts: $($result.activeShifts)"
+    $result = Invoke-RestMethod -Uri "$baseUrl/api/analytics" -Method Get
+    Write-Host "PASSED - Guards: $($result.overview.total_guards), Attendance Rate: $($result.performance_metrics.guard_attendance_rate)%"
 } catch {
     Write-Host "FAILED: $_"
 }

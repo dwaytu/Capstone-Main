@@ -57,7 +57,7 @@ try {
 
 # Update Profile Photo
 Write-Host "`nTest 4: Update Profile Photo"
-$payload = '{"profilePhoto": "test_data"}'
+$payload = '{"profilePhoto": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="}'
 try {
     Invoke-RestMethod -Uri "$baseUrl/api/users/$global:userId/profile-photo" -Method Put -Body $payload -ContentType "application/json" | Out-Null
     Write-Host "PASSED"
@@ -138,7 +138,8 @@ try {
 Write-Host "`nTest 10: View Firearms"
 try {
     $result =  Invoke-RestMethod -Uri "$baseUrl/api/firearms" -Method Get
-    Write-Host "PASSED - Total firearms: $($result.total)"
+    $firearms = @($result)
+    Write-Host "PASSED - Total firearms: $($firearms.Count)"
 } catch {
     Write-Host "FAILED: $_"
 }
