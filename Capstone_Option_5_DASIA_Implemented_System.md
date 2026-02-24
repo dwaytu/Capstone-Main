@@ -4,7 +4,9 @@
 
 ### 1.1 Project Context
 
-Private security agencies in the Philippines operate within a formal regulatory environment. Republic Act No. 5487, the Private Security Agency Law, governs the organization and operation of private detective, watchman, or security guard agencies, including licensing requirements, guard qualifications, and the issuance of firearms under prescribed conditions (Republic Act No. 5487, 1969). The Philippine National Police (PNP) Supervisory Office for Security and Investigation Agencies (SOSIA) issues memoranda and advisories that guide private security operations and oversight (PNP SOSIA, 2025). This regulatory framework makes compliance, training records, firearms accountability, and operational reporting core obligations of private security agencies.
+**National Context.** Private security agencies in the Philippines operate within a formal regulatory environment. Republic Act No. 5487, the Private Security Agency Law, governs the organization and operation of private detective, watchman, or security guard agencies, including licensing requirements, guard qualifications, and the issuance of firearms under prescribed conditions (Republic Act No. 5487, 1969). The Philippine National Police (PNP) Supervisory Office for Security and Investigation Agencies (SOSIA) issues memoranda and advisories that guide private security operations and oversight (PNP SOSIA, 2025). This regulatory framework makes compliance, training records, firearms accountability, and operational reporting core obligations of private security agencies.
+
+**Local Context.** In Davao City, the Public Safety and Security Command Center (PSSCC) serves as a command, control, and coordinating office for the safety, law and order, security, and intelligence clusters, supporting everyday activities and crisis situations (City Government of Davao City, n.d.). The City Government has also emphasized a “culture of security” and announced the deployment of security personnel during Araw ng Dabaw celebrations, underscoring the need for coordinated security operations (City Government of Davao City, 2026). In Tagum City, the local government maintains emergency hotlines as part of its official services, reflecting the importance of accessible emergency response at the city level (City Government of Tagum, n.d.).
 
 Security operations rely on risk assessment to identify threats, vulnerabilities, and potential impacts, and to select appropriate controls. NIST SP 800-30 provides guidance for conducting risk assessments as part of organizational risk management (NIST, 2012). The NIST Cybersecurity Framework is a voluntary framework intended to help organizations manage cybersecurity risk (NIST, 2024). In practice, a security agency must coordinate personnel, equipment, vehicles, and incident response while ensuring auditability and adherence to policy. This coordination becomes more difficult when information is fragmented across paper files, spreadsheets, or separate systems.
 
@@ -79,6 +81,8 @@ The DASIA system is a web-based platform intended to strengthen operational cont
 
 Private security agencies in the Philippines operate under Republic Act No. 5487, which regulates agency organization, licensing, guard qualifications, and firearm issuance under the supervision of the state (Republic Act No. 5487, 1969). The PNP SOSIA provides oversight and publishes advisories that guide private security operations (PNP SOSIA, 2025). This legal and regulatory context requires agencies to maintain accurate records of personnel, training, licensing, and equipment custody.
 
+National data governance also shapes how private security agencies handle personnel and incident data. The Data Privacy Act of 2012 mandates protection of personal information in both government and private-sector information systems, requiring reasonable organizational, physical, and technical safeguards (Republic Act No. 10173, 2012). At the local level, Davao City Central 911 operates as a centralized emergency response center that coordinates with law enforcement and other agencies, illustrating the need for reliable dispatch, coordination, and incident documentation workflows (City Government of Davao City, n.d.). Tagum City maintains emergency hotlines as part of its official services, reinforcing the importance of accessible response channels at the city level (City Government of Tagum, n.d.).
+
 Security operations depend on risk assessment to identify threats, vulnerabilities, and potential impacts, then apply controls to reduce risk exposure. NIST SP 800-30 provides guidance for conducting risk assessments as part of organizational risk management (NIST, 2012). The NIST Cybersecurity Framework provides a voluntary framework for managing cybersecurity risk (NIST, 2024). Security agencies operate in environments where personnel, equipment, and assets must be coordinated while maintaining auditability and compliance.
 
 Workforce management systems aim to align staffing levels with operational demand through structured timekeeping, scheduling, and labor management. The Workforce Asset Management Book of Knowledge positions timekeeping, scheduling, and labor management as core capabilities for workforce-intensive organizations, emphasizing structured scheduling practices, compliance reporting, and workforce analytics (Disselkamp, 2013). These capabilities are essential for security agencies that must maintain continuous coverage and rapid replacement workflows.
@@ -91,7 +95,13 @@ Access control and auditability are foundational to secure operations management
 
 **Related Studies and/or Systems**
 
-The broader research on digital transformation and enterprise systems highlights how integrated platforms improve coordination and accountability when organizations adopt shared data models and standardized workflows (Vial, 2019; TechTarget, 2024). ERP implementation research emphasizes critical success factors and alignment across the full ERP life cycle, reinforcing the need for structured implementation and change management in integrated systems (Shaul & Tauber, 2013). Workforce management references emphasize scheduling, time and attendance, and analytics as key foundations for workforce-intensive operations (Disselkamp, 2013). Security governance literature emphasizes risk assessment and security controls as core objectives of security operations (NIST, 2012; NIST, 2024). Together, these studies support the design of a unified security operations platform that aligns regulatory compliance, workforce coordination, and asset accountability under a single system.
+Incident response guidance provides structured practices for handling security incidents and integrating response activities into broader risk management. NIST SP 800-61 Rev. 3 presents incident response recommendations aligned to CSF 2.0, emphasizing preparation, coordination, and documentation across the incident lifecycle (NIST, 2025). These principles support incident logging, escalation, and post-incident reporting workflows in integrated security platforms.
+
+Access control and accountability mechanisms are consistently identified as essential components of secure operational systems. NIST SP 800-53 outlines access control and audit and accountability control families that enforce least privilege and traceable actions (NIST, 2020). The NIST RBAC model reinforces role-based privilege assignment to simplify administration while aligning access with organizational responsibilities (NIST, 2026). These controls map directly to system modules that separate guard, supervisor, and administrator capabilities while retaining audit trails.
+
+Enterprise and workforce management research highlights how integrated systems improve coordination across resource-intensive operations. ERP literature emphasizes cross-functional integration and critical success factors over the system life cycle, supporting unified oversight of personnel, assets, and logistics (Shaul & Tauber, 2013; TechTarget, 2024). Workforce management references highlight scheduling, time and attendance, and analytics as core capabilities for organizations that require continuous coverage and rapid replacement workflows (Disselkamp, 2013). These studies align with security operations that must track guard deployment, equipment custody, and vehicle utilization in real time.
+
+Digital transformation studies frame integrated platforms as organizational change that improves decision-making by consolidating data and standardizing workflows (Vial, 2019). In the context of security agencies, this supports the shift from fragmented records to unified systems that enable operational visibility, compliance reporting, and responsive incident management.
 
 ---
 
@@ -101,6 +111,12 @@ Republic Act No. 5487 (1969). The Private Security Agency Law. Lawphil. https://
 
 PNP Supervisory Office for Security and Investigation Agencies (PNP SOSIA). (2025). Official site and advisories. https://sosia.pnp.gov.ph/
 
+City Government of Davao City. (n.d.). Public Safety Security Command Center. https://davaocity.gov.ph/departments/social-services/public-safety-security-command-center/
+
+City Government of Davao City. (2026). Dabawenyos, tourists urged to uphold “culture of security.” https://davaocity.gov.ph/peace-and-order/dabawenyos-tourists-urged-to-uphold-culture-of-security/
+
+City Government of Tagum. (n.d.). Official website (Emergency Hotlines section). https://tagumcity.gov.ph/
+
 National Institute of Standards and Technology. (2026). Role Based Access Control (RBAC) project overview. https://csrc.nist.gov/projects/role-based-access-control
 
 National Institute of Standards and Technology. (2020). Security and Privacy Controls for Information Systems and Organizations (SP 800-53 Rev. 5). https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
@@ -108,6 +124,12 @@ National Institute of Standards and Technology. (2020). Security and Privacy Con
 National Institute of Standards and Technology. (2012). Guide for Conducting Risk Assessments (SP 800-30 Rev. 1). https://csrc.nist.gov/pubs/sp/800/30/r1/final
 
 National Institute of Standards and Technology. (2024). Cybersecurity Framework (CSF 2.0). https://www.nist.gov/cyberframework
+
+National Institute of Standards and Technology. (2025). Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile (SP 800-61 Rev. 3). https://csrc.nist.gov/pubs/sp/800/61/r3/final
+
+Republic Act No. 10173 (2012). Data Privacy Act of 2012. Official Gazette. https://www.officialgazette.gov.ph/2012/08/15/republic-act-no-10173/
+
+City Government of Davao City. (n.d.). Davao City Central 911 Emergency Response Center. https://davaocity.gov.ph/departments/social-services/central-911/
 
 Vial, G. (2019). Understanding digital transformation: A review and a research agenda. The Journal of Strategic Information Systems, 28(2), 118-144. https://doi.org/10.1016/j.jsis.2019.01.003
 
