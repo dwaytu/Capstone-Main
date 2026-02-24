@@ -1,4 +1,4 @@
-# DASIA: AN INTEGRATED SECURITY OPERATIONS MANAGEMENT PLATFORM FOR DAVAO SECURITY & INVESTIGATION AGENCY, INC.
+# SENTINEL: AN INTEGRATED SECURITY OPERATIONS MANAGEMENT PLATFORM FOR DAVAO SECURITY & INVESTIGATION AGENCY, INC.
 
 ## CHAPTER 1: INTRODUCTION
 
@@ -20,7 +20,7 @@ Digital transformation research frames transformation as a process that improves
 
 The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into a unified system for Davao Security & Investigation Agency, Inc.
 
-DASIA is a web-based system that integrates operational data and workflows using a Rust/Axum backend API, a PostgreSQL relational database, and a React/TypeScript frontend deployed through Docker. The system is designed as an integrated operations platform that aligns with ERP and WFM principles by centralizing data, enforcing consistent workflows, and providing real-time operational visibility (TechTarget, 2024; Disselkamp, 2013).
+SENTINEL is a web-based system that integrates operational data and workflows using a Rust/Axum backend API, a PostgreSQL relational database, and a React/TypeScript frontend deployed through Docker. The system is designed as an integrated operations platform that aligns with ERP and WFM principles by centralizing data, enforcing consistent workflows, and providing real-time operational visibility (TechTarget, 2024; Disselkamp, 2013).
 
 The platform implements four core modules. Guard Management covers personnel profiles, scheduling, attendance tracking, performance analytics, and replacement coordination to ensure uninterrupted site coverage. Equipment Management maintains firearm inventory, allocation workflows, permit records, and maintenance history to support regulatory compliance and accountability. Vehicle Operations manages armored vehicle assets, driver assignments, and trip tracking to improve deployment oversight. Access Control enforces role-based permissions, authentication, and audit logging to ensure that only authorized roles can access sensitive operations and data (NIST, 2026; NIST, 2020). The system has been validated through a 24-day operational simulation covering 24 distinct business scenarios and resolving 15 or more production issues.
 
@@ -45,7 +45,7 @@ To deliver a fully implemented, tested, and production-ready Integrated Security
 ### 1.4 Scope and Limitations
 
 **Scope**
-The DASIA system is a web-based platform intended to strengthen operational control and compliance for a private security agency. The system is scoped to security agency operations and the regulatory environment set by the Private Security Agency Law and PNP oversight (Republic Act No. 5487, 1969; PNP SOSIA, 2025).
+The SENTINEL system is a web-based platform intended to strengthen operational control and compliance for a private security agency. The system is scoped to security agency operations and the regulatory environment set by the Private Security Agency Law and PNP oversight (Republic Act No. 5487, 1969; PNP SOSIA, 2025).
 
 **Data**
 - Personnel profiles, licensing data, schedules, attendance records, and performance metrics
@@ -105,7 +105,7 @@ Digital transformation studies frame integrated platforms as organizational chan
 
 Command and control systems in law enforcement and security operations provide reference models for integrated dispatch, coordination, and asset management. Davao City Central 911, established in 2002, evolved from a street lighting project to a centralized emergency response center that coordinates across multiple agencies (police, fire, rescue, search and rescue) and integrates geographic information systems for response optimization (City Government of Davao City, n.d.). This real-world model illustrates how integrated systems can link requesters to responders and improve response times through unified data and coordination mechanisms. At the national policy level, disaster risk reduction and mitigation programs, highlighted in Davao City's 12-Point Priority Agenda and supported by city-level DRRM offices, emphasize the importance of proactive emergency coordination and response readiness (City Government of Davao City, n.d.). These local and national frameworks reinforce the need for security operations platforms that support rapid incident response, inter-agency coordination, and accountability in high-stakes security environments.
 
-Operational technology (OT) security guidance also informs the design of mission-critical systems. NIST SP 800-82 Rev. 3 provides comprehensive guidance on securing operational technology systems that manage physical processes and require both security and reliability (NIST, 2023). While DASIA manages personnel and equipment rather than industrial control systems, the emphasis on reliable, auditable systems with consistent monitoring aligns with OT security principles that prioritize system availability and integrity.
+Operational technology (OT) security guidance also informs the design of mission-critical systems. NIST SP 800-82 Rev. 3 provides comprehensive guidance on securing operational technology systems that manage physical processes and require both security and reliability (NIST, 2023). While SENTINEL manages personnel and equipment rather than industrial control systems, the emphasis on reliable, auditable systems with consistent monitoring aligns with OT security principles that prioritize system availability and integrity.
 
 ---
 
