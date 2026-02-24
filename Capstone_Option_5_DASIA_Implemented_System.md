@@ -95,13 +95,17 @@ Access control and auditability are foundational to secure operations management
 
 **Related Studies and/or Systems**
 
-Incident response guidance provides structured practices for handling security incidents and integrating response activities into broader risk management. NIST SP 800-61 Rev. 3 presents incident response recommendations aligned to CSF 2.0, emphasizing preparation, coordination, and documentation across the incident lifecycle (NIST, 2025). These principles support incident logging, escalation, and post-incident reporting workflows in integrated security platforms.
+Incident response guidance provides structured practices for handling security incidents and integrating response activities into broader risk management. NIST SP 800-61 Rev. 3 presents incident response recommendations aligned to CSF 2.0, emphasizing preparation, coordination, and documentation across the incident lifecycle (NIST, 2025). These principles support incident logging, escalation, and post-incident reporting workflows in integrated security platforms. Contingency planning for information systems further supports operational resilience by providing recovery guidance and business continuity strategies; NIST SP 800-34 Rev. 1 outlines such practices for ensuring critical system availability (NIST, 2010).
 
 Access control and accountability mechanisms are consistently identified as essential components of secure operational systems. NIST SP 800-53 outlines access control and audit and accountability control families that enforce least privilege and traceable actions (NIST, 2020). The NIST RBAC model reinforces role-based privilege assignment to simplify administration while aligning access with organizational responsibilities (NIST, 2026). These controls map directly to system modules that separate guard, supervisor, and administrator capabilities while retaining audit trails.
 
 Enterprise and workforce management research highlights how integrated systems improve coordination across resource-intensive operations. ERP literature emphasizes cross-functional integration and critical success factors over the system life cycle, supporting unified oversight of personnel, assets, and logistics (Shaul & Tauber, 2013; TechTarget, 2024). Workforce management references highlight scheduling, time and attendance, and analytics as core capabilities for organizations that require continuous coverage and rapid replacement workflows (Disselkamp, 2013). These studies align with security operations that must track guard deployment, equipment custody, and vehicle utilization in real time.
 
 Digital transformation studies frame integrated platforms as organizational change that improves decision-making by consolidating data and standardizing workflows (Vial, 2019). In the context of security agencies, this supports the shift from fragmented records to unified systems that enable operational visibility, compliance reporting, and responsive incident management.
+
+Command and control systems in law enforcement and security operations provide reference models for integrated dispatch, coordination, and asset management. Davao City Central 911, established in 2002, evolved from a street lighting project to a centralized emergency response center that coordinates across multiple agencies (police, fire, rescue, search and rescue) and integrates geographic information systems for response optimization (City Government of Davao City, n.d.). This real-world model illustrates how integrated systems can link requesters to responders and improve response times through unified data and coordination mechanisms. At the national policy level, disaster risk reduction and mitigation programs, highlighted in Davao City's 12-Point Priority Agenda and supported by city-level DRRM offices, emphasize the importance of proactive emergency coordination and response readiness (City Government of Davao City, n.d.). These local and national frameworks reinforce the need for security operations platforms that support rapid incident response, inter-agency coordination, and accountability in high-stakes security environments.
+
+Operational technology (OT) security guidance also informs the design of mission-critical systems. NIST SP 800-82 Rev. 3 provides comprehensive guidance on securing operational technology systems that manage physical processes and require both security and reliability (NIST, 2023). While DASIA manages personnel and equipment rather than industrial control systems, the emphasis on reliable, auditable systems with consistent monitoring aligns with OT security principles that prioritize system availability and integrity.
 
 ---
 
@@ -127,9 +131,15 @@ National Institute of Standards and Technology. (2024). Cybersecurity Framework 
 
 National Institute of Standards and Technology. (2025). Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile (SP 800-61 Rev. 3). https://csrc.nist.gov/pubs/sp/800/61/r3/final
 
+National Institute of Standards and Technology. (2010). Contingency Planning Guide for Federal Information Systems (SP 800-34 Rev. 1 Update). https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final
+
+National Institute of Standards and Technology. (2023). Guide to Operational Technology (OT) Security (SP 800-82 Rev. 3). https://csrc.nist.gov/pubs/sp/800/82/r3/final
+
 Republic Act No. 10173 (2012). Data Privacy Act of 2012. Official Gazette. https://www.officialgazette.gov.ph/2012/08/15/republic-act-no-10173/
 
 City Government of Davao City. (n.d.). Davao City Central 911 Emergency Response Center. https://davaocity.gov.ph/departments/social-services/central-911/
+
+City Government of Davao City. (n.d.). 12-Point Priority Agenda: Disaster Risk Reduction and Mitigation. https://davaocity.gov.ph/know-davao-city/12-point-agenda/
 
 Vial, G. (2019). Understanding digital transformation: A review and a research agenda. The Journal of Strategic Information Systems, 28(2), 118-144. https://doi.org/10.1016/j.jsis.2019.01.003
 
