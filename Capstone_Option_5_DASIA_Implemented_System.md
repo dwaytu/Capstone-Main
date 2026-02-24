@@ -1,483 +1,90 @@
-# CAPSTONE OPTION 5
-
-# DASIA All-In-One: Fully Integrated Security Operations Management Platform
-## (Implemented and Production-Ready System)
+# DASIA: AN INTEGRATED SECURITY OPERATIONS MANAGEMENT PLATFORM FOR DAVAO SECURITY & INVESTIGATION AGENCY, INC.
 
 ## CHAPTER 1: INTRODUCTION
 
 ### 1.1 Project Context
 
-Security services represent a critical operational function supporting corporate assets, government institutions, and public infrastructure across the Philippines and broader Southeast Asia. Modern security agencies operate through complex coordination of multiple resources: personnel deployment across geographically distributed sites, equipment (firearms, protective gear) allocation and maintenance, vehicle fleet operations, and real-time incident response. Traditional approaches to security operations management have historically relied on fragmented systems—dedicated platforms for each operational domain or manual coordination through spreadsheets and paper records. This fragmentation creates operational inefficiencies that manifest as scheduling conflicts, equipment accountability gaps, inability to rapidly coordinate emergency personnel replacements, and incomplete audit trails for regulatory compliance.
+Armed security agencies in the Philippines operate under Philippine National Police (PNP) regulatory oversight managing complex operational functions including personnel deployment, equipment allocation, vehicle logistics, and incident response. Traditional security operations management relies on fragmented systems—separate platforms for personnel scheduling, equipment tracking, and vehicle management, or manual coordination through spreadsheets. This fragmentation creates operational inefficiencies including scheduling conflicts, equipment accountability gaps, inability to coordinate rapid personnel replacements, and incomplete audit trails.
 
-Enterprise resource planning (ERP) systems have demonstrated value across government and public sector organizations by consolidating business processes and enabling real-time information access (Chang, Gable, Smythe, & Timbrell, 2000). Within security operations specifically, modern successful agencies require capabilities beyond traditional security management frameworks: comprehensive workforce management including intelligent scheduling, predictive analytics for resource allocation, integrated equipment lifecycle tracking, and audit logging for compliance verification (Wamba & Queiroz, 2022).
-
-Digital transformation represents a strategic imperative for security service providers seeking competitive advantage through operational efficiency and improved service delivery. According to recent survey data, 71% of organizations in the United States and 69% across European Union organizations have adopted advanced digital technologies (European Investment Bank, 2022). For security operations, digital transformation extends beyond basic system implementation to fundamental operational redesign: eliminating manual coordination processes, ensuring data consistency across all operational domains, and providing real-time visibility for decision-makers.
-
-The DASIA (Dynamic Adaptive Security Integration Architecture) All-In-One Platform addresses these operational requirements through comprehensive, integrated system design. Unlike isolated tool implementations, DASIA unifies personnel management, equipment tracking, vehicle logistics, and access control within a single integrated data model with real-time synchronization. The platform has been developed to production-ready status through extensive validation including 24-day operational simulation (covering 24 distinct business scenarios), comprehensive edge-case testing, and iterative bug fixing addressing 15+ production issues.
+Enterprise Resource Planning (ERP) systems address similar integration challenges by consolidating business processes and enabling real-time information access (O'Brien, 2011). Applied to security operations, an integrated platform provides comprehensive workforce management, integrated equipment lifecycle tracking with audit logging, and unified operational visibility. This aligns with broader organizational digital transformation trends, where 71% of organizations in the United States have adopted advanced digital technologies to improve operational efficiency (European Investment Bank, 2022).
 
 ### 1.2 Purpose and Description
 
-The primary purpose of this project is to provide a fully functional, production-ready Integrated Security Operations Management Platform that unifies all critical security agency functions into a single, robust, and user-friendly system tested through comprehensive operational scenarios.
+The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into a unified system.
 
-The DASIA All-In-One Platform is a comprehensive web-based application consisting of a Rust/Axum backend API with PostgreSQL database and a React/TypeScript frontend with responsive design, deployed via Docker containerization. The system serves as the operational nerve center for armed security agencies, providing:
-
-#### 1.2.1 Comprehensive Personnel Management
-1. **Complete Guard Records Management**: Centralized personnel database with detailed guard profiles including contact information, certifications, license tracking (PNP Security License), experience levels, and operational qualifications.
-
-2. **Dynamic Shift Scheduling**: Advanced scheduling system supporting multiple shift types, client site assignments, and guard availability tracking. Integrated calendar dashboard provides visual overview of all scheduled operations.
-
-3. **Automated Attendance Tracking**: Real-time check-in/check-out system with mobile-responsive interface. System automatically validates attendance against scheduled shifts and identifies discrepancies.
-
-4. **Intelligent No-Show Detection**: Automated detection of absent guards within configurable grace periods with real-time supervisor notifications and automatic replacement workflow initiation.
-
-5. **Guard Replacement Management**: Streamlined replacement request system that identifies available qualified guards, facilitates communication, and tracks replacement acceptance/rejection with complete audit trail.
-
-6. **Availability Management**: Guards can manage their availability status, indicating when they are available or unavailable for assignments, enabling intelligent scheduling decisions.
-
-7. **Performance Analytics**: Comprehensive performance dashboards tracking attendance rates, replacement response times, reliability scores, merit evaluations, and behavioral metrics.
-
-#### 1.2.2 Advanced Equipment Management
-1. **Firearm Inventory System**: Complete firearm database with unique serial number tracking, model specifications, caliber information, status management (Available/Issued/Maintenance), and maintenance history.
-
-2. **Firearm Allocation Workflows**: Intelligent allocation engine matching guards with appropriate firearms based on certifications, shift requirements, and equipment availability. Prevents unauthorized weapon access.
-
-3. **Permit and License Tracking**: Comprehensive tracking of firearm permits including PNP licenses, expiration dates, renewal reminders, and compliance verification.
-
-4. **Maintenance Scheduling**: Automated maintenance scheduling for firearms with service completion tracking, cost documentation, and performance monitoring.
-
-5. **Check-In/Check-Out System**: Streamlined weapon custody transfer system with automatic inventory reconciliation and audit trail generation.
-
-6. **Allocation History and Auditing**: Complete historical records of which guard was assigned which firearm, when assignments occurred, and return documentation for regulatory compliance.
-
-#### 1.2.3 Comprehensive Vehicle Operations
-1. **Armored Car Fleet Management**: Detailed inventory of armored vehicles including license plates, VIN numbers, manufacturer specifications, capacity ratings, and operational status tracking.
-
-2. **Vehicle Allocation System**: Dynamic vehicle assignment to clients, missions, or guard teams with expected return date tracking and deployment history.
-
-3. **Driver Assignment and Certification**: Verification of driver licenses, specialized vehicle endorsements, and training certifications. System prevents unauthorized drivers from being assigned to vehicles.
-
-4. **Trip Management System**: Comprehensive trip creation and tracking including origin/destination locations, distance traveled, estimated duration, mission details, and actual completion times.
-
-5. **Maintenance Management**: Preventive and corrective maintenance scheduling with service type categorization, scheduled dates, completion tracking, cost documentation, and maintenance history archival.
-
-6. **Vehicle Status Monitoring**: Real-time visibility into vehicle operational status (Available/Deployed/Maintenance) enabling rapid deployment decisions and preventing double-booking.
-
-#### 1.2.4 Integrated Access Control and Security
-1. **Role-Based Access Control (RBAC)**: Comprehensive four-tier permission model with distinct roles:
-   - **Superadmin**: Full system access, user management, system configuration
-   - **Administrator**: Personnel management, equipment allocation, reporting
-   - **Supervisor**: Shift oversight, replacement coordination, performance monitoring
-   - **Guard**: Self-service check-in/check-out, profile viewing, availability management
-
-2. **Secure Authentication**: Email and password-based authentication with bcrypt password hashing, salting, and strength requirements. Session management with secure token handling.
-
-3. **Email Verification System**: New user email verification with verification code generation and validation ensuring account authenticity.
-
-4. **Password Reset Functionality**: Secure password reset workflow with email-based verification code delivery and temporary credential generation.
-
-5. **Permission Hierarchy Enforcement**: Strict access control ensuring guards cannot access administrative functions, supervisors cannot modify system configuration, and all actions are properly authorized.
-
-6. **Comprehensive Audit Logging**: Complete tracking of authentication events, data access, system modifications, and critical operations for compliance and security investigations.
-
-#### 1.2.5 Operational Coordination and Analytics
-1. **Unified Operational Dashboard**: Real-time command center displaying active deployments, personnel status, equipment allocation, vehicle locations, and critical alerts. Role-specific dashboards tailored to user responsibilities.
-
-2. **Calendar Operations View**: Visual calendar interface showing all scheduled shifts, vehicle deployments, maintenance activities, and upcoming events for intuitive planning.
-
-3. **Performance Analytics Dashboard**: Comprehensive analytics including attendance trends, replacement success rates, equipment utilization, vehicle usage patterns, and cost analysis.
-
-4. **Guard Evaluation System**: Merit-based performance evaluation system tracking individual guard performance through objective metrics and supervisor evaluations.
-
-5. **Support Ticket System**: Integrated incident and support request management with ticket categorization, priority assignment, status tracking, and resolution workflow.
-
-6. **Notification System**: Real-time notification panel for critical alerts, upcoming deadlines, equipment maintenance reminders, and operational updates.
-
-7. **Compliance Reporting**: Automated generation of regulatory compliance reports including attendance audits, firearm handling logs, vehicle maintenance records, and personnel certification status.
-
-8. **Business Intelligence**: Advanced analytics providing insights into operational efficiency, resource utilization, cost optimization opportunities, and performance trends.
+DASIA is a comprehensive web-based application with a Rust/Axum backend API, PostgreSQL database, and React/TypeScript frontend with responsive design, deployed via Docker containerization. The platform provides core modules for: (1) Guard Management—shift scheduling, attendance tracking, performance monitoring, and replacement coordination ensuring continuous personnel coverage; (2) Equipment Management—firearm inventory, allocation workflows, permit tracking, and maintenance scheduling complying with PNP licensing requirements; (3) Vehicle Operations—armored car fleet management, vehicle allocation, driver assignment with certification verification, and trip tracking; and (4) Access Control—role-based permissions, authentication, and comprehensive audit logging. The system has been validated through 24-day operational simulation covering 24 distinct business scenarios and resolving 15+ production issues.
 
 ### 1.3 Objectives
 
 **General Objective:**
-To deliver a fully implemented, tested, and production-ready Integrated Security Operations Management Platform that unifies all critical security agency functions—personnel management, equipment allocation, vehicle logistics, and access control—into a single robust system with proven reliability through comprehensive operational simulation and real-world scenario testing.
+To deliver a fully implemented, tested, and production-ready Integrated Security Operations Management Platform that unifies personnel management, equipment allocation, vehicle operations, and access control into a single robust system with proven reliability through comprehensive operational simulation.
 
 **Specific Objectives:**
 
-1. To integrate and unify guard personnel management, firearm/equipment tracking, and armored vehicle operations into a seamlessly connected platform with real-time data synchronization across all modules.
-
-2. To implement intelligent automated workflows for personnel scheduling, equipment allocation, vehicle assignment, and replacement coordination that reduce manual coordination time by 70-80% compared to traditional methods.
-
-3. To establish comprehensive role-based access control with four distinct permission levels ensuring personnel access only functions and data appropriate to their authorization level.
-
-4. To create real-time operational monitoring capabilities providing unified situational awareness through role-specific dashboards displaying personnel deployments, equipment status, and vehicle operations.
-
-5. To implement complete audit logging and compliance tracking for all critical operations supporting regulatory requirements, internal audits, and security incident investigations.
-
-6. To develop performance analytics and reporting systems providing data-driven insights for resource optimization, cost management, and strategic planning.
-
-7. To ensure production reliability through comprehensive testing including 24-hour operational cycle simulation covering normal operations, edge cases, error conditions, and recovery scenarios.
-
-8. To provide mobile-responsive interfaces enabling secure operation from any device including smartphones, tablets, and desktop computers for field personnel and administrators.
-
-9. To implement robust error handling, input validation, and data consistency mechanisms ensuring system stability and preventing data corruption in production environments.
-
-10. To deliver comprehensive documentation of system architecture, API endpoints, database schema, and operational procedures supporting future maintenance and enhancement.
-
-### 1.4 Project Scope
-
-#### Fully Implemented Features:
-
-**Personnel Management Module:**
-- ✅ Complete guard profile creation and management
-- ✅ Shift scheduling with client site assignment
-- ✅ Automated attendance check-in/check-out
-- ✅ No-show detection and supervisor alerting
-- ✅ Guard replacement request generation and fulfillment
-- ✅ Availability status management
-- ✅ Performance metrics calculation and display
-- ✅ Merit evaluation system
-- ✅ License and certification tracking
-
-**Equipment Management Module:**
-- ✅ Comprehensive firearm inventory management
-- ✅ Firearm allocation and return workflows
-- ✅ Serial number tracking and validation
-- ✅ Caliber and model specification tracking
-- ✅ Equipment status management (Available/Issued/Maintenance)
-- ✅ Firearm permit and license tracking
-- ✅ Maintenance scheduling and completion tracking
-- ✅ Allocation history and audit trail
-
-**Vehicle Management Module:**
-- ✅ Armored car fleet inventory
-- ✅ Vehicle allocation to clients/missions
-- ✅ Driver assignment with certification verification
-- ✅ Trip creation, tracking, and completion
-- ✅ Maintenance scheduling and history tracking
-- ✅ Vehicle status monitoring
-- ✅ Distance and usage tracking
-- ✅ Expected return date management
-
-**Access Control and Authentication:**
-- ✅ User registration and onboarding
-- ✅ Secure email/password authentication
-- ✅ Email verification with code generation
-- ✅ Password reset functionality
-- ✅ Four-tier role-based access control
-- ✅ Session management
-- ✅ Permission enforcement
-- ✅ Audit logging of authentication events
-
-**Operational Dashboards:**
-- ✅ Superadmin dashboard with system overview
-- ✅ Administrator dashboard with operational metrics
-- ✅ Supervisor dashboard focused on personnel coordination
-- ✅ Guard self-service dashboard
-- ✅ Performance analytics dashboard
-- ✅ Calendar operations view
-- ✅ Real-time notification panel
-
-**Support and Communication:**
-- ✅ Support ticket creation and management
-- ✅ Ticket categorization and priority assignment
-- ✅ Status tracking (Open/In Progress/Resolved)
-- ✅ Response and resolution workflow
-- ✅ Notification system for critical alerts
-
-**Technical Infrastructure:**
-- ✅ RESTful API with 50+ endpoints
-- ✅ PostgreSQL database with complete schema
-- ✅ Docker containerization with docker-compose orchestration
-- ✅ Responsive React/TypeScript frontend
-- ✅ Rust/Axum backend with robust error handling
-- ✅ Comprehensive input validation
-- ✅ API response format consistency
-- ✅ Cross-origin resource sharing (CORS) configuration
-
-#### Tested and Verified Through Simulation:
-
-**Daily Operations Simulation (24/24 Scenarios Completed):**
-- ✅ Day 1: Morning shift guard check-in at Mall X
-- ✅ Day 2: Afternoon shift guard check-in at Bank Y
-- ✅ Day 3: Evening shift guard check-in at Warehouse Z
-- ✅ Day 4: Guard no-show detection and supervisor alert
-- ✅ Day 5: Replacement guard acceptance workflow
-- ✅ Day 6: Firearm allocation to guard on duty
-- ✅ Day 7: Firearm maintenance scheduling and completion
-- ✅ Day 8: Armored car deployment for bank transport
-- ✅ Day 9: Vehicle trip creation and tracking
-- ✅ Day 10: Driver assignment with certification check
-- ✅ Day 11: Vehicle maintenance scheduling
-- ✅ Day 12: Multi-site guard coordination
-- ✅ Day 13: Performance evaluation and merit recording
-- ✅ Day 14: Support ticket creation and resolution
-- ✅ Day 15: Guard availability status updates
-- ✅ Day 16: Weekend shift coverage coordination
-- ✅ Day 17: Equipment status monitoring
-- ✅ Day 18: License expiration tracking
-- ✅ Day 19: Compliance report generation
-- ✅ Day 20: Emergency replacement coordination
-- ✅ Day 21: Multi-vehicle deployment scenario
-- ✅ Day 22: Performance analytics review
-- ✅ Day 23: System audit and data verification
-- ✅ Day 24: Month-end operations summary
-
-**Bug Fixes and Enhancements Implemented:**
-- ✅ Fixed ArmoredCarDashboard maintenance records disappearing (race condition in useEffect)
-- ✅ Added "Add Firearm" UI with complete form validation
-- ✅ Added "Allocate Firearm" UI with guard/firearm dropdown selection
-- ✅ Fixed firearm allocation endpoint from `/allocate` to `/issue`
-- ✅ Fixed 3 hardcoded localhost URLs replaced with API_BASE_URL
-- ✅ Fixed merit test field names (comments → comment)
-- ✅ Enhanced error handling across 7+ components
-- ✅ Fixed API response format handling (array vs object responses)
-- ✅ Fixed firearm form field from 'type' to 'caliber'
-- ✅ Implemented comprehensive null checks across all data operations
-- ✅ Added loading states and user feedback throughout UI
-
-#### Out of Scope:
-
-**Not Implemented (Future Enhancements):**
-- GPS real-time location tracking of vehicles during deployment
-- Integration with external payroll or HR management systems
-- Native mobile application development (web-responsive only)
-- Advanced machine learning predictive analytics
-- Integration with government firearms licensing databases
-- Biometric authentication (fingerprint/facial recognition)
-- Voice or SMS communication systems
-- Third-party security equipment integration (cameras, sensors)
-- Blockchain-based audit trail immutability
-- Multi-timezone support for international operations
-
-### 1.5 Significance and Strategic Impact
+1. To integrate guard management, firearm tracking, and vehicle operations into a seamlessly connected platform with real-time data synchronization.
 
-#### Operational Benefits
+2. To implement automated workflows for scheduling, equipment allocation, and replacement coordination reducing manual coordination overhead.
 
-**For Security Agencies:**
-The platform delivers quantifiable operational improvements:
-- **Administration time reduction:** 70-80% decrease in manual coordination overhead through workflow automation
-- **Real-time visibility:** Unified operational dashboard eliminating information silos across personnel, equipment, and vehicle domains
-- **Compliance assurance:** Complete audit trails supporting regulatory requirements and incident investigations
-- **Data-driven decision-making:** Performance analytics enabling evidence-based resource allocation and strategic planning
-- **Scalability:** Modular architecture supporting organizational growth without system redesign
+3. To establish role-based access control with distinct permission levels ensuring appropriate data access and operational boundaries.
 
-**For Security Personnel:**
-- **Autonomous operations:** Self-service capabilities for availability management and profile updates
-- **Field accessibility:** Mobile-responsive interface enabling secure operation from smartphones and tablets
-- **Objective transparency:** Performance metrics based on verifiable data rather than subjective assessment
-- **Reduced administrative burden:** Streamlined workflows eliminating manual paperwork and processing delays
+4. To provide real-time operational monitoring through role-specific dashboards offering unified situational awareness.
 
-**For Client Organizations:**
-- **Service reliability:** Automated replacement coordination ensuring continuous security coverage
-- **Asset security:** Proper equipment allocation and tracking reducing liability exposure
-- **Operational transparency:** Documented personnel assignments with accessible certification records
-- **Professional service delivery:** Modern technology infrastructure demonstrating operational maturity
+5. To implement comprehensive audit logging for all critical operations supporting regulatory compliance and incident investigations.
 
-#### Industry and Academic Significance
+6. To develop performance analytics and reporting systems enabling data-driven operational decisions.
 
-**For the Security Industry:**
-- Demonstration of best practices in security operations digitization
-- Reference architecture for integrated security management platform development
-- Evidence of feasibility for comprehensive operations management through single unified system
-- Framework for evaluating security technology solutions
+7. To ensure production reliability through comprehensive testing including 24-day operational simulation covering 24 distinct business scenarios.
 
-**As a Capstone Project:**
-- Comprehensive system integration across multiple operational domains
-- Production-ready implementation based on real-world validation (24-day simulation with 15+ bug fixes)
-- Demonstration of full-stack engineering competencies (backend systems, frontend applications, database design, infrastructure deployment)
-- Professional-grade software development practices including version control, documentation, and deployment automation
+8. To provide mobile-responsive interfaces enabling secure operation from any device for field personnel and administrators.
 
-### 1.6 Review of Related Literature
+9. To implement robust error handling, input validation, and data consistency mechanisms preventing data corruption and system instability.
 
-#### 1.6.1 Enterprise Resource Planning and Integrated Systems
+10. To deliver comprehensive documentation supporting future system maintenance and enhancement.
 
-Enterprise Resource Planning (ERP) systems have emerged as critical infrastructure for organizational information management. Widely adopted across manufacturing, finance, and service sectors, ERP systems integrate multiple business functions—finance, human resources, supply chain management, and operations—into unified systems sharing common databases (O'Brien, 2011). The foundational concept of ERP integration applies directly to security operations, where separate systems for personnel, equipment, and vehicles prevent holistic management and decision-making.
+### 1.4 Scope and Limitations
 
-Research on ERP implementation in government and public sector organizations reveals specific success factors applicable to security agencies. Chang, Gable, Smythe, and Timbrell (2000) examined ERP implementation in public sector institutions, identifying cultural factors as primary determinants of implementation success. In public sector environments, organizational resistance to change, worker skill gaps, and collaboration challenges create implementation complexity exceeding private sector implementations. This research informs DASIA's design emphasis on user-friendly interfaces, comprehensive role-based access control, and change management through gradual feature rollout.
+**Implemented and Fully Functional:**
+- Guard personnel management (profiles, shift scheduling, attendance, performance tracking)
+- Firearm inventory and allocation workflows
+- Armored vehicle fleet management and trip tracking
+- Role-based access control (four permission levels)
+- Attendance and compliance reporting
+- Real-time operational dashboards
+- Support ticket system
+- Email-based authentication with verification
 
-ERP systems in the public sector serve government agencies, educational institutions, and security organizations. Government Resource Planning (GRP), the public sector equivalent of ERP, must accommodate unique constraints: complex authorization hierarchies, multiple stakeholder requirements, restrictive budget cycles, and regulatory compliance mandates (Yunliang et al., 2010). DASIA incorporates these principles through multi-level role-based access control (four distinct permission levels) and comprehensive audit logging supporting regulatory compliance verification.
+**Validated Through Comprehensive Testing:**
+- 24-day operational simulation covering 24 distinct business scenarios
+- Automated no-show detection and replacement workflow
+- Real-time performance analytics and reporting
+- 15+ production issues identified and resolved
+- Edge case and error condition handling
 
-#### 1.6.2 Workforce Management and Personnel Scheduling
+**Limitations and Future Enhancements:**
+- GPS real-time vehicle location tracking not implemented  
+- No integration with external payroll or HR systems
+- Web-responsive design only (no native mobile application)
+- Advanced machine learning predictive analytics not included
+- Biometric authentication not implemented
+- Multi-timezone support not provided
+- Third-party security equipment integration (cameras, sensors) not included
 
-Workforce Management (WFM) systems optimize personnel productivity, competency, and engagement through automated scheduling, forecasting, and performance management (Wikipedia, 2025). Modern WFM encompasses shift scheduling, demand forecasting, employee scheduling, performance tracking, and time and attendance management. According to Chartered Institute of Procurement & Supply research, 90% of surveyed businesses adopted at least one new information technology form, with 90% stating digitalization strategies aimed for decreased operational costs and increased efficiency (Vial, 2019).
+### 1.5 Review of Related Literature
 
-The effectiveness of WFM systems depends on data quality, forecasting accuracy, and organizational capability to modify processes for system requirements. Workforce management has evolved from traditional staff scheduling focused on cost minimization to integrated, demand-oriented approaches considering employee engagement and work-life balance (Wikipedia, 2025). DASIA implements this evolution through availability management capabilities, enabling guards to indicate availability window while supervisors make Schedule optimization decisions based on client requirements and operational constraints.
+**Enterprise Resource Planning Systems**
+Enterprise Resource Planning (ERP) systems integrate multiple business functions—finance, human resources, supply chain management, and operations—into unified systems sharing common databases (O'Brien, 2011). ERP principles apply directly to security operations, where separate systems for personnel, equipment, and vehicles prevent holistic management. Research on public sector implementations identifies cultural factors and organizational change management as critical success elements applicable to security agencies (Chang, Gable, Smythe, & Timbrell, 2000).
 
-Field service management, a specialized WFM variant for field operations, applies directly to security personnel dispersed across multiple client sites. Field service WFM includes demand management, workforce scheduling with predefined optimization rules, automated dispatcher assignment, and mobile applications enabling real-time field communication (Wikipedia, 2025). DASIA incorporates field service principles through mobile-responsive interface design, real-time notification system, and replacement coordination workflows optimizing available guard allocation to emergency requirements.
-
-The integration of artificial intelligence with workforce management systems represents an emerging capability area. AI-enhanced WFM enables demand forecasting using predictive analytics, schedule optimization based on skill sets and experience levels, and intelligent task assignment (Wikipedia, 2025). Future DASIA enhancements will incorporate machine learning models for predicting personnel availability patterns and optimizing schedule recommendations.
-
-#### 1.6.3 Digital Transformation in Operations Management
-
-Digital transformation extends beyond isolated system implementations to fundamental organizational redesign using digital technologies. Vial (2019) defines digital transformation as "a process that aims to improve an entity by triggering significant changes to its properties through combinations of information, computing, communication, and connectivity technologies." The distinction between digitization (converting analog processes to digital form) and digital transformation (redesigning processes for digital capability) proves critical. Many organizations implement computerized systems (digitization) without achieving operational transformation.
-
-For security operations, digital transformation encompasses:
-- **Process redesign:** Eliminating manual coordination procedures through automated workflows
-- **Data integration:** Consolidating information across previously separate systems
-- **Real-time visibility:** Providing decision-makers immediate access to operational information
-- **Compliance automation:** Generating required records and reports through system processing rather than manual documentation
-
-Digital transformation research identifies key success factors. According to Wamba and Queiroz (2022), the TOP framework (Technology, Organization, People) addresses transformation barriers:
-- **Technology:** Deploying appropriate systems with adequate infrastructure and capabilities
-- **Organization:** Embedding digital capabilities within organizational culture and governance structures
-- **People:** Developing worker skills, leadership capabilities, and strategic competencies
-
-DASIA addresses each TOP framework component through: modern technology stack (Rust, React, PostgreSQL), organizational change management through role-appropriate interfaces, and user training documentation.
-
-#### 1.6.4 Security Structure and Operations Management
-
-Security, broadly defined, encompasses protection from potential harm affecting persons, organizations, or institutions (Schneier, 2008). Within organizational contexts, security operations require protection of physical assets (personnel, equipment, facilities), information (credentials, incident records), and operations (coordinated personnel deployment, incident response procedures). Research in security management identifies key principles:
-
-- **Access control:** Restricting access to assets and information to authorized personnel based on role and operational requirements (NIST, 2013)
-- **Audit logging:** Maintaining comprehensive records of security-relevant events supporting incident investigation and compliance verification (Kaminski, 2001)
-- **Defense in depth:** Implementing multiple security layers preventing single-point failure (Mead & Goel, 2012)
-
-Within armed security operations specifically, regulatory frameworks establish requirements for personnel qualification, equipment handling, and incident documentation. The Philippine National Police establishes armed security personnel qualification standards through licensing and certification programs. Armed security agencies must maintain documentation of personnel training, equipment accountability, and incident response procedures meeting regulatory requirements.
-
-DASIA incorporates security management principles through: comprehensive role-based access control enforcing principle of least privilege, complete audit logging for all sensitive operations, encryption of sensitive data, and secure authentication mechanisms (bcrypt password hashing, email verification).
-
-#### 1.6.5 Database Design and Information Architecture
-
-Relational database design principles guide DASIA's data architecture. Teorey, Lightstone, and Nadeau (2009) establish normalization theory preventing data anomalies and ensuring consistency. DASIA adopts third normal form (3NF) design eliminating redundant data and ensuring referential integrity across linked tables. The comprehensive entity-relationship model encompasses:
-
-- **Personnel entities:** Users (guards, supervisors, administrators) with profile attributes
-- **Equipment entities:** Firearms, permits, maintenance records with allocation history
-- **Vehicle entities:** Armored cars, maintenance records, trip records with deployment history  
-- **Transaction entities:** Attendance records, shift assignments, equipment allocations
-- **Audit entities:** Authentication logs, operation logs, permission changes
-
-PostgreSQL, chosen as the platform's relational database management system, provides ACID (Atomicity, Consistency, Isolation, Durability) compliance ensuring transaction reliability critical for security operations (Stonebraker & Rowe, 1986). ACID compliance prevents partial transaction execution that could leave equipment in indeterminate allocation status or attendance records inconsistently recorded.
-
-#### 1.6.6 REST API Architecture and Web Service Design
-
-Representational State Transfer (REST) architecture, established by Fielding (2000), provides principles for designing scalable web services. REST principles applied to DASIA's API design include:
+**Workforce Management**
+Workforce Management (WFM) systems optimize personnel productivity and engagement through automated scheduling, forecasting, and performance management (Wikipedia, 2025). Modern approaches emphasize not only cost reduction but also employee engagement and work-life balance. Field service management principles—applying WFM to geographically dispersed operations—directly apply to security personnel management across multiple client sites (Wikipedia, 2025).
 
-- **Resource-oriented design:** Each endpoint represents a resource (users, schedules, firearms, vehicles) with operations (GET, POST, PUT, DELETE) applied uniformly
-- **Statelessness:** Each request contains sufficient information for processing without server-side session storage
-- **Representation formats:** Standard content types (JSON) enabling interoperability with varied clients
-- **HTTP methods:** Semantic use of standard HTTP verbs (GET for retrieval, POST for creation, PUT for updates, DELETE for removal)
+**Digital Transformation and Operations Management**
+Digital transformation extends beyond isolated system implementations to fundamental organizational redesign using digital technologies (Vial, 2019). For security operations, transformation encompasses process automation, data integration, real-time visibility, and compliance automation. Research identifies the TOP framework addressing transformation success: Technology (appropriate systems and infrastructure), Organization (cultural and governance changes), and People (workforce skill development) (Wamba & Queiroz, 2022).
 
-DASIA implements REST principles through 50+ endpoints supporting all operational workflows, enabling future mobile application development and third-party integrations.
+**Security Operations and Access Control**
+Security management addresses protection of physical assets, information, and operations through systematic risk management (Schneier, 2008). Role-based access control represents a foundational principle, enabling appropriate operational boundaries and audit capability (Mead & Goel, 2012). Comprehensive logging and monitoring support regulatory compliance and incident investigations (NIST, 2013).
 
-#### 1.6.7 Web Technology Stacks and Modern Application Development
-
-The technology stack selection significantly affects system reliability, maintainability, and operational characteristics. DASIA's technology choices reflect modern best practices:
-
-**Backend (Rust/Axum):** Rust provides memory safety without garbage collection overhead, enabling concurrent handling of multiple operations without runtime penalties (Klabnik & Nichols, 2023). The Axum web framework provides async/await support aligning with modern API design paradigms requiring efficient handling of thousands of concurrent connections.
-
-**Frontend (React/TypeScript):** React's component-based architecture supports modular UI development with reusable components. TypeScript's static type system catches errors at development time rather than runtime, improving reliability (Microsoft, 2023). The combination enables development of complex user interfaces with reduced defect rates.
-
-**Database (PostgreSQL):** PostG
-reSQL's advanced features (JSON support, full-text search, array types) enable efficient modeling of security operations data. Version 15 provides performance improvements and security enhancements critical for production systems (PostgreSQL Global Development Group, 2024).
-
-**Deployment (Docker):** Container-based deployment enables reproducible environments across development, testing, and production. Docker images capture complete application state including operating system libraries, runtime environments, and application code (Docker Inc., 2023).
-
-### 1.7 Technical Architecture Overview
-
-#### API Endpoints (50+ Implemented)
-
-**Authentication & Users:**
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User authentication
-- `POST /api/auth/verify-email` - Email verification
-- `POST /api/auth/reset-password` - Password reset
-- `GET /api/users` - List all users
-- `GET /api/users/:id` - Get user details
-- `PUT /api/users/:id` - Update user profile
-- `DELETE /api/users/:id` - Delete user
-
-**Personnel Management:**
-- `GET /api/schedules` - List all schedules
-- `POST /api/schedules` - Create new schedule
-- `PUT /api/schedules/:id` - Update schedule
-- `DELETE /api/schedules/:id` - Delete schedule
-- `POST /api/attendance/check-in` - Guard check-in
-- `POST /api/attendance/check-out` - Guard check-out
-- `GET /api/attendance` - Attendance records
-- `GET /api/replacements` - Replacement requests
-- `POST /api/replacements` - Create replacement
-- `PUT /api/replacements/:id` - Update replacement status
-
-**Equipment Management:**
-- `GET /api/firearms` - List all firearms
-- `POST /api/firearms` - Add new firearm
-- `PUT /api/firearms/:id` - Update firearm
-- `DELETE /api/firearms/:id` - Delete firearm
-- `POST /api/firearm-allocation/issue` - Allocate firearm
-- `POST /api/firearm-allocation/return` - Return firearm
-- `GET /api/firearm-allocations` - Allocation history
-- `GET /api/firearm-permits` - Permit tracking
-- `POST /api/firearm-permits` - Add permit record
-
-**Vehicle Management:**
-- `GET /api/armored-cars` - List all vehicles
-- `POST /api/armored-cars` - Add new vehicle
-- `PUT /api/armored-cars/:id` - Update vehicle
-- `GET /api/armored-cars/:id/allocations` - Vehicle allocations
-- `POST /api/armored-cars/:id/allocate` - Allocate vehicle
-- `PUT /api/armored-cars/allocations/:id` - Update allocation
-- `GET /api/armored-cars/:id/maintenance` - Maintenance history
-- `POST /api/armored-cars/:id/maintenance` - Schedule maintenance
-- `PUT /api/armored-cars/maintenance/:id` - Complete maintenance
-- `POST /api/vehicle-trips` - Create trip
-- `GET /api/vehicle-trips` - List trips
-- `PUT /api/vehicle-trips/:id` - Update trip
-
-**Analytics & Reporting:**
-- `GET /api/analytics/performance` - Performance metrics
-- `GET /api/analytics/attendance-trends` - Attendance analysis
-- `GET /api/analytics/equipment-utilization` - Equipment usage
-- `GET /api/analytics/vehicle-metrics` - Vehicle statistics
-- `GET /api/notifications` - System notifications
-- `GET /api/support-tickets` - Support tickets
-- `POST /api/support-tickets` - Create ticket
-- `PUT /api/support-tickets/:id` - Update ticket status
-
-### 1.8 References
-
-Chang, S. I., Gable, G. G., Smythe, E., & Timbrell, G. (2000). A Delphi examination of public sector ERP implementation issues. In *Proceedings of the 35th Hawaii International Conference on System Sciences* (pp. 494–500). IEEE.
-
-Chartered Institute of Procurement & Supply (CIPS). (2020). *Digitalisation in procurement and supply 2019*. Retrieved from https://www.cips.org/
-
-Docker Inc. (2023). *Docker documentation and best practices*. Retrieved from https://docs.docker.com/
-
-European Investment Bank. (2022). *EIB investment report 2021/2022: Recovery as a springboard for change*. https://doi.org/10.2867/82061
-
-Fielding, R. T. (2000). *Architectural styles and the design of network-based software architectures* [Doctoral dissertation]. University of California, Irvine.
-
-Klabnik, S., & Nichols, C. (2023). *The Rust programming language* (2nd ed.). No Starch Press.
-
-Kaminski, M. E. (2001). The right to explanation, explained. In *2019 Proceedings of the IEEE Symposium on Security and Privacy Workshops (SPW)* (pp. 1–5). IEEE.
-
-Mead, N. R., & Goel, A. L. (2012). Defense in depth through layered security. In *Emerging Trends in Information Security* (pp. 156–178). Springer.
-
-Microsoft Corporation. (2023). *TypeScript documentation and language specification*. Retrieved from https://www.typescriptlang.org/
-
-Mozilla Foundation & Rust Contributors. (2023). *Rust programming language documentation*. Retrieved from https://www.rust-lang.org/
-
-National Institute of Standards and Technology (NIST). (2013). *NIST cybersecurity framework*. U.S. Department of Commerce.
-
-O'Brien, J. A. (2011). *Management information systems: Managing IT for business excellence* (10th ed.). McGraw-Hill Irwin.
-
-PostgreSQL Global Development Group. (2024). *PostgreSQL documentation version 15*. Retrieved from https://www.postgresql.org/docs/15/
-
-Schneier, B. (2008). *Beyond fear: Thinking about security in an uncertain world*. Copernicus Books.
-
-Stonebraker, M., & Rowe, L. A. (1986). The design of POSTGRES. In *Proceedings of the 1986 ACM SIGMOD International Conference on Management of Data* (pp. 340–355). ACM.
-
-Teorey, T. J., Lightstone, S. S., & Nadeau, T. (2009). *Database modeling and design: Logical design* (5th ed.). Morgan Kaufmann.
-
-Vial, G. (2019). Understanding digital transformation: A review and a research agenda. *The Journal of Strategic Information Systems*, 28(2), 118–144. https://doi.org/10.1016/j.jsis.2019.01.003
-
-Wamba, S. F., & Queiroz, M. M. (2022). *Managing the digital transformation: Aligning technologies, business models, and operations*. CRC Press. https://doi.org/10.1201/9781003226468
-
-Wikipedia Foundation. (2025). *Enterprise resource planning*. Retrieved from https://en.wikipedia.org/wiki/Enterprise_resource_planning
-
-Wikipedia Foundation. (2025). *Personnel scheduling*. Retrieved from https://en.wikipedia.org/wiki/Personnel_scheduling
-
-Wikipedia Foundation. (2025). *Workforce management*. Retrieved from https://en.wikipedia.org/wiki/Workforce_management
-
-Yunliang, J., Xiongtao, Z., Qing, S., Jing, F., & Ning, Z. (2010). Design of E-government information management platform based on SOA framework. In *2010 First International Conference on Networking and Distributed Computing* (pp. 165–169). IEEE. https://doi.org/10.1109/ICNDC.2010.42
+**Technology Stack Literature**
+Rust programming language emphasis on memory safety and thread safety reduces common security vulnerabilities in systems code (Klabnik & Nichols, 2023). React's component-based architecture enables maintainable, testable user interface development (Meta Platforms, Inc., 2024). PostgreSQL's advanced features enable efficient modeling of relational security operations data (PostgreSQL Global Development Group, 2024). Docker containerization facilitates reproducible deployment across environments (Docker Inc., 2023).
 
 ---
 
