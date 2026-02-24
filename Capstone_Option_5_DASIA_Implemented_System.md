@@ -4,15 +4,23 @@
 
 ### 1.1 Project Context
 
-Armed security agencies in the Philippines operate under Philippine National Police (PNP) regulatory oversight managing complex operational functions including personnel deployment, equipment allocation, vehicle logistics, and incident response. Traditional security operations management relies on fragmented systems—separate platforms for personnel scheduling, equipment tracking, and vehicle management, or manual coordination through spreadsheets. This fragmentation creates operational inefficiencies including scheduling conflicts, equipment accountability gaps, inability to coordinate rapid personnel replacements, and incomplete audit trails.
+Private security agencies in the Philippines operate within a formal regulatory environment. Republic Act No. 5487, the Private Security Agency Law, governs the organization and operation of private detective, watchman, or security guard agencies, including licensing requirements, guard qualifications, and the issuance of firearms under prescribed conditions (Republic Act No. 5487, 1969). The Philippine National Police (PNP) Supervisory Office for Security and Investigation Agencies (SOSIA) issues memoranda and advisories that guide private security operations and oversight (PNP SOSIA, 2025). This regulatory framework makes compliance, training records, firearms accountability, and operational reporting core obligations of private security agencies.
 
-Enterprise Resource Planning (ERP) systems address similar integration challenges by consolidating business processes and enabling real-time information access (O'Brien, 2011). Applied to security operations, an integrated platform provides comprehensive workforce management, integrated equipment lifecycle tracking with audit logging, and unified operational visibility. This aligns with broader organizational digital transformation trends, where 71% of organizations in the United States have adopted advanced digital technologies to improve operational efficiency (European Investment Bank, 2022).
+Security management emphasizes the identification of assets and the development of policies, procedures, and controls to protect people, facilities, and information. It uses threat assessment and risk assessment to prioritize controls and reduce loss exposure (Wikipedia, 2025a). In practice, a security agency must coordinate personnel, equipment, vehicles, and incident response while ensuring auditability and adherence to policy. This coordination becomes more difficult when information is fragmented across paper files, spreadsheets, or separate systems.
+
+Workforce management (WFM) provides a structured approach to workforce planning, scheduling, time and attendance, and performance management. WFM systems aim to optimize productivity and improve service quality by aligning staffing levels with operational demand and enforcing scheduling rules (Wikipedia, 2025b). Field service management concepts within WFM further emphasize dispatching staff and resources across multiple sites with real-time coordination (Wikipedia, 2025b). These capabilities are critical for security agencies that operate 24/7 and deploy personnel across multiple client locations.
+
+Enterprise Resource Planning (ERP) systems integrate core business processes through shared data and real-time information flows. ERP provides a unified view of operations by consolidating data in a common database and enabling cross-functional coordination (Wikipedia, 2026). For security agencies, an ERP-like approach can connect personnel records, licensing, equipment issuance, vehicle deployment, and incident reporting within a single operational platform.
+
+Digital transformation research frames transformation as a process that improves an entity by triggering significant changes to its properties through combinations of information, computing, communication, and connectivity technologies (Vial, 2019). For security operations, digital transformation means moving away from fragmented records toward integrated systems that enable traceability, role-based accountability, and real-time decision support. Role-based access control (RBAC) is widely adopted to reduce administrative complexity by assigning privileges to roles rather than managing permissions per individual (NIST, 2026). Security and privacy control catalogs such as NIST SP 800-53 also emphasize access control and audit and accountability as core security control families for protecting systems and data (NIST, 2020). These foundations support the need for a secure, integrated platform for security agency operations.
 
 ### 1.2 Purpose and Description
 
-The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into a unified system.
+The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into a unified system for Davao Security & Investigation Agency, Inc.
 
-DASIA is a comprehensive web-based application with a Rust/Axum backend API, PostgreSQL database, and React/TypeScript frontend with responsive design, deployed via Docker containerization. The platform provides core modules for: (1) Guard Management—shift scheduling, attendance tracking, performance monitoring, and replacement coordination ensuring continuous personnel coverage; (2) Equipment Management—firearm inventory, allocation workflows, permit tracking, and maintenance scheduling complying with PNP licensing requirements; (3) Vehicle Operations—armored car fleet management, vehicle allocation, driver assignment with certification verification, and trip tracking; and (4) Access Control—role-based permissions, authentication, and comprehensive audit logging. The system has been validated through 24-day operational simulation covering 24 distinct business scenarios and resolving 15+ production issues.
+DASIA is a web-based system that integrates operational data and workflows using a Rust/Axum backend API, a PostgreSQL relational database, and a React/TypeScript frontend deployed through Docker. The system is designed as an integrated operations platform that aligns with ERP and WFM principles by centralizing data, enforcing consistent workflows, and providing real-time operational visibility (Wikipedia, 2026; Wikipedia, 2025b).
+
+The platform implements four core modules. Guard Management covers personnel profiles, scheduling, attendance tracking, performance analytics, and replacement coordination to ensure uninterrupted site coverage. Equipment Management maintains firearm inventory, allocation workflows, permit records, and maintenance history to support regulatory compliance and accountability. Vehicle Operations manages armored vehicle assets, driver assignments, and trip tracking to improve deployment oversight. Access Control enforces role-based permissions, authentication, and audit logging to ensure that only authorized roles can access sensitive operations and data (NIST, 2026; NIST, 2020). The system has been validated through a 24-day operational simulation covering 24 distinct business scenarios and resolving 15 or more production issues.
 
 ### 1.3 Objectives
 
@@ -21,72 +29,93 @@ To deliver a fully implemented, tested, and production-ready Integrated Security
 
 **Specific Objectives:**
 
-1. To integrate guard management, firearm tracking, and vehicle operations into a seamlessly connected platform with real-time data synchronization.
-
-2. To implement automated workflows for scheduling, equipment allocation, and replacement coordination reducing manual coordination overhead.
-
-3. To establish role-based access control with distinct permission levels ensuring appropriate data access and operational boundaries.
-
-4. To provide real-time operational monitoring through role-specific dashboards offering unified situational awareness.
-
-5. To implement comprehensive audit logging for all critical operations supporting regulatory compliance and incident investigations.
-
-6. To develop performance analytics and reporting systems enabling data-driven operational decisions.
-
-7. To ensure production reliability through comprehensive testing including 24-day operational simulation covering 24 distinct business scenarios.
-
-8. To provide mobile-responsive interfaces enabling secure operation from any device for field personnel and administrators.
-
-9. To implement robust error handling, input validation, and data consistency mechanisms preventing data corruption and system instability.
-
-10. To deliver comprehensive documentation supporting future system maintenance and enhancement.
+1. To integrate guard management, firearm tracking, and vehicle operations into a single platform with shared data structures and real-time synchronization.
+2. To implement workforce scheduling and attendance workflows aligned with workforce management practices for multi-site operations (Wikipedia, 2025b).
+3. To establish role-based access control that assigns privileges by job role to reduce administrative overhead and improve security governance (NIST, 2026).
+4. To provide role-specific dashboards that present real-time operational status across personnel, equipment, and vehicle resources.
+5. To implement audit logging and accountability mechanisms consistent with access control and audit control families (NIST, 2020).
+6. To implement automated no-show detection and replacement workflows that reduce operational downtime and ensure coverage continuity.
+7. To develop performance analytics that support data-driven decisions on guard reliability, attendance, and operational efficiency.
+8. To ensure data integrity and consistency through robust input validation, transaction handling, and relational constraints.
+9. To provide mobile-responsive interfaces for field personnel and supervisors who need access outside the office environment.
+10. To document system architecture, workflows, and operational procedures for future maintenance and enhancements.
 
 ### 1.4 Scope and Limitations
 
-**Implemented and Fully Functional:**
-- Guard personnel management (profiles, shift scheduling, attendance, performance tracking)
-- Firearm inventory and allocation workflows
-- Armored vehicle fleet management and trip tracking
-- Role-based access control (four permission levels)
-- Attendance and compliance reporting
-- Real-time operational dashboards
-- Support ticket system
-- Email-based authentication with verification
+**Scope**
+The DASIA system is a web-based platform intended to strengthen operational control and compliance for a private security agency. The system is scoped to security agency operations and the regulatory environment set by the Private Security Agency Law and PNP oversight (Republic Act No. 5487, 1969; PNP SOSIA, 2025).
 
-**Validated Through Comprehensive Testing:**
-- 24-day operational simulation covering 24 distinct business scenarios
-- Automated no-show detection and replacement workflow
-- Real-time performance analytics and reporting
-- 15+ production issues identified and resolved
-- Edge case and error condition handling
+**Data**
+- Personnel profiles, licensing data, schedules, attendance records, and performance metrics
+- Equipment and firearm inventory, allocation history, and maintenance records
+- Armored vehicle assets, driver assignments, and trip documentation
+- Audit logs, access logs, and operational notifications
 
-**Limitations and Future Enhancements:**
-- GPS real-time vehicle location tracking not implemented  
-- No integration with external payroll or HR systems
-- Web-responsive design only (no native mobile application)
-- Advanced machine learning predictive analytics not included
-- Biometric authentication not implemented
-- Multi-timezone support not provided
-- Third-party security equipment integration (cameras, sensors) not included
+**Process**
+- Shift scheduling and attendance validation based on assigned schedules
+- Automated no-show detection and replacement coordination
+- Equipment issuance and return workflows with custody tracking
+- Vehicle allocation, trip tracking, and maintenance scheduling
+- Role-based access control and audit logging of critical operations (NIST, 2020; NIST, 2026)
 
-### 1.5 Review of Related Literature
+**People**
+- Superadmin, Administrator, Supervisor, and Guard roles with distinct permissions
 
-**Enterprise Resource Planning Systems**
-Enterprise Resource Planning (ERP) systems integrate multiple business functions—finance, human resources, supply chain management, and operations—into unified systems sharing common databases (O'Brien, 2011). ERP principles apply directly to security operations, where separate systems for personnel, equipment, and vehicles prevent holistic management. Research on public sector implementations identifies cultural factors and organizational change management as critical success elements applicable to security agencies (Chang, Gable, Smythe, & Timbrell, 2000).
+**Technology**
+- Web-based application accessible on desktop and mobile browsers
+- Centralized database with relational integrity and audit logging
 
-**Workforce Management**
-Workforce Management (WFM) systems optimize personnel productivity and engagement through automated scheduling, forecasting, and performance management (Wikipedia, 2025). Modern approaches emphasize not only cost reduction but also employee engagement and work-life balance. Field service management principles—applying WFM to geographically dispersed operations—directly apply to security personnel management across multiple client sites (Wikipedia, 2025).
+**Limitations of the Study**
+- The system does not integrate with external payroll, HR, or government licensing systems.
+- GPS-based real-time vehicle tracking is not implemented.
+- Native mobile applications are not provided; access is via responsive web interface only.
+- Advanced predictive analytics or machine learning scheduling are out of scope.
+- Multi-timezone operations are not addressed in the current implementation.
+- Third-party security equipment integrations (CCTV, sensors) are not included.
 
-**Digital Transformation and Operations Management**
-Digital transformation extends beyond isolated system implementations to fundamental organizational redesign using digital technologies (Vial, 2019). For security operations, transformation encompasses process automation, data integration, real-time visibility, and compliance automation. Research identifies the TOP framework addressing transformation success: Technology (appropriate systems and infrastructure), Organization (cultural and governance changes), and People (workforce skill development) (Wamba & Queiroz, 2022).
+### 1.5 Review of Related Literature/Studies/Systems
 
-**Security Operations and Access Control**
-Security management addresses protection of physical assets, information, and operations through systematic risk management (Schneier, 2008). Role-based access control represents a foundational principle, enabling appropriate operational boundaries and audit capability (Mead & Goel, 2012). Comprehensive logging and monitoring support regulatory compliance and incident investigations (NIST, 2013).
+**Related Literature**
 
-**Technology Stack Literature**
-Rust programming language emphasis on memory safety and thread safety reduces common security vulnerabilities in systems code (Klabnik & Nichols, 2023). React's component-based architecture enables maintainable, testable user interface development (Meta Platforms, Inc., 2024). PostgreSQL's advanced features enable efficient modeling of relational security operations data (PostgreSQL Global Development Group, 2024). Docker containerization facilitates reproducible deployment across environments (Docker Inc., 2023).
+Private security agencies in the Philippines operate under Republic Act No. 5487, which regulates agency organization, licensing, guard qualifications, and firearm issuance under the supervision of the state (Republic Act No. 5487, 1969). The PNP SOSIA provides oversight and publishes advisories that guide private security operations (PNP SOSIA, 2025). This legal and regulatory context requires agencies to maintain accurate records of personnel, training, licensing, and equipment custody.
+
+Security management is defined as the identification of organizational assets and the development and implementation of policies and procedures for their protection. It relies on threat assessment, risk assessment, and the application of controls to reduce risk exposure (Wikipedia, 2025a). Security agencies operate in environments where personnel, equipment, and assets must be coordinated while maintaining auditability and compliance.
+
+Workforce management systems aim to optimize productivity by aligning staffing levels with operational demand and by standardizing processes such as scheduling, time and attendance, and performance management (Wikipedia, 2025b). The Workforce Asset Management Book of Knowledge positions timekeeping, scheduling, and labor management as core capabilities for workforce-intensive organizations, emphasizing structured scheduling practices, compliance reporting, and workforce analytics (Disselkamp, 2013). These capabilities are essential for security agencies that must maintain continuous coverage and rapid replacement workflows.
+
+Enterprise Resource Planning systems provide integrated management of core business processes through shared data and real-time visibility. ERP systems use a common database to consolidate operations across departments and facilitate coordinated decision-making (Wikipedia, 2026). Research on ERP implementation highlights the importance of critical success factors across the ERP life cycle and provides a structured taxonomy of factors that influence adoption and operational outcomes (Shaul & Tauber, 2013). Applying ERP concepts to security operations supports unified oversight of personnel, equipment, and logistics in a single operational platform.
+
+Digital transformation research defines transformation as a process that triggers significant organizational changes through combinations of digital technologies. It emphasizes changes to processes, structures, and value creation activities rather than isolated technology adoption (Vial, 2019). For security agencies, this supports the shift from fragmented record-keeping to integrated, auditable systems.
+
+Access control and auditability are foundational to secure operations management. The NIST RBAC model assigns users to roles and assigns privileges to those roles, simplifying security administration and aligning access with organizational structure (NIST, 2026). NIST SP 800-53 provides a comprehensive catalog of security and privacy controls, including access control and audit and accountability families that support traceability and compliance (NIST, 2020).
+
+**Related Studies and/or Systems**
+
+The broader research on digital transformation and enterprise systems highlights how integrated platforms improve coordination and accountability when organizations adopt shared data models and standardized workflows (Vial, 2019; Wikipedia, 2026). ERP implementation research emphasizes critical success factors and alignment across the full ERP life cycle, reinforcing the need for structured implementation and change management in integrated systems (Shaul & Tauber, 2013). Workforce management references emphasize scheduling, time and attendance, and analytics as key foundations for workforce-intensive operations (Disselkamp, 2013; Wikipedia, 2025b). Security management literature emphasizes asset protection, policy enforcement, and risk management as core objectives of security operations (Wikipedia, 2025a). Together, these studies support the design of a unified security operations platform that aligns regulatory compliance, workforce coordination, and asset accountability under a single system.
 
 ---
+
+### 1.6 References
+
+Republic Act No. 5487 (1969). The Private Security Agency Law. Lawphil. https://lawphil.net/statutes/repacts/ra1969/ra_5487_1969.html
+
+PNP Supervisory Office for Security and Investigation Agencies (PNP SOSIA). (2025). Official site and advisories. https://sosia.pnp.gov.ph/
+
+National Institute of Standards and Technology. (2026). Role Based Access Control (RBAC) project overview. https://csrc.nist.gov/projects/role-based-access-control
+
+National Institute of Standards and Technology. (2020). Security and Privacy Controls for Information Systems and Organizations (SP 800-53 Rev. 5). https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+
+Vial, G. (2019). Understanding digital transformation: A review and a research agenda. The Journal of Strategic Information Systems, 28(2), 118-144. https://doi.org/10.1016/j.jsis.2019.01.003
+
+Shaul, L., & Tauber, D. (2013). Critical success factors in enterprise resource planning systems: Review of the last decade. ACM Computing Surveys, 45(4), Article 55. https://doi.org/10.1145/2501654.2501669
+
+Disselkamp, L. (Ed.). (2013). Workforce Asset Management Book of Knowledge. John Wiley & Sons. https://onlinelibrary.wiley.com/doi/book/10.1002/9781118636442
+
+Wikipedia. (2025a). Security management. https://en.wikipedia.org/wiki/Security_management
+
+Wikipedia. (2025b). Workforce management. https://en.wikipedia.org/wiki/Workforce_management
+
+Wikipedia. (2026). Enterprise resource planning. https://en.wikipedia.org/wiki/Enterprise_resource_planning
 
 ## CHAPTER 2: SYSTEM IMPLEMENTATION DETAILS
 
