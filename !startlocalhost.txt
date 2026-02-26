@@ -1,0 +1,7 @@
+!start up system
+
+cd "d:\Capstone Main\DasiaAIO-Backend"
+docker compose up -d
+
+cd "d:\Capstone Main\DasiaAIO-Frontend"
+npm run dev -- --host
