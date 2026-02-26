@@ -4,20 +4,30 @@
 
 ### 1.1 Project Context
 
-**National Regulatory Context.** Private security agencies in the Philippines operate under Republic Act No. 11917 (2022), the Private Security Services Industry Act, which replaced the outdated RA 5487 and now governs licensing, training, operational standards, and firearms issuance for all security agencies (Republic Act No. 11917, 2022). The Department of Information and Communications Technology (DICT) National Cybersecurity Plan 2023-2028 mandates that organizations managing digital assets implement robust security standards, establishing a whole-of-nation cybersecurity roadmap (DICT, 2024). For security agencies handling personnel data and surveillance systems, the National Privacy Commission Circular No. 2024-02 on CCTV Systems provides explicit guidelines on data storage, retention, and privacy compliance under the Data Privacy Act (National Privacy Commission, 2024).
+#### 1.1.1 The Regulatory Transition and National Mandate
+The Philippine private security sector is currently undergoing its most significant regulatory transformation in over five decades. The transition from the antiquated RA 5487 to the Private Security Services Industry Act (Republic Act No. 11917, 2022) has shifted the burden of proof from physical logbooks to verifiable digital audibility. This law mandates that Private Security Agencies (PSAs) maintain real-time, digitized records of personnel licensing, specialized training certifications, and firearms serializations to satisfy the rigorous inspection standards of the PNP-SOSIA.
 
-**Local Operational Context.** In Davao City, the government has reinforced its "Culture of Security" initiative, urging citizens and security personnel to uphold four pillars: Volunteer, Report, Remind, and Participate. This cultural framework emphasizes coordinated security operations and community engagement during public events and daily operations (City Government of Davao, 2026). Security agencies operating in this environment must demonstrate accountability, rapid response capabilities, and compliance with local law enforcement coordination requirements.
+Simultaneously, the National Cybersecurity Plan 2023-2028 (DICT, 2024) and the National Privacy Commission (NPC) Circular No. 2024-02 have elevated the technical requirements for agencies handling sensitive biometric and surveillance data. PSAs are no longer just physical deterrents; they are now data-handling entities required by law to implement "privacy by design." This dual-regulatory pressure creates a massive operational hurdle for local agencies that lack an integrated platform to manage these high-stakes compliance requirements.
 
-**Operational and Technological Context.** Security operations require coordination of personnel, equipment, vehicles, and incident response while maintaining complete auditability. Research on workforce capacity optimization demonstrates that statistical models can eliminate labor waste and overtime costs in 24/7 operational environments by accurately predicting staffing demand (Okeke et al., 2023). Enterprise Resource Planning (ERP) systems have proven critical for post-implementation success when organizations focus on user participation, system integration, and comprehensive training (Malik & Khan, 2023). Recent research on integrating Information Security Management Systems (ISMS) into organizational strategy shows that applying the Plan-Do-Check-Act (PDCA) cycle significantly improves security culture in digital environments (MDPI, 2026).
+#### 1.1.2 Localized Operational Landscape: The Davao Context
+In the Davao Region, security operations are uniquely shaped by the "Culture of Security" (2026) framework. This policy—built on the four pillars of Volunteer, Report, Remind, and Participate—requires a level of transparency and rapid information sharing that traditional manual systems cannot support. For a security agency in Davao City to be effective, it must act as a node in a wider safety network, necessitating a system that can generate standardized, law-enforcement-ready incident reports at a moment's notice. The operational context in Davao demands that security is not just a service provided to a client, but a coordinated effort with local government units (LGUs), requiring high-fidelity data and rapid response capabilities.
 
-**Access Control and Cybersecurity.** The NIST SP 800-53 Rev. 5 framework establishes security and privacy controls for information systems, emphasizing Role-Based Access Control (RBAC) as the recommended approach for managing organizational permissions with least-privilege access principles (NIST, 2020). Business intelligence-driven workforce optimization enables organizations to make data-driven decisions about personnel deployment and resource allocation (Obiri, 2024). Digital transformation initiatives in security operations must balance technological adoption with organizational security perception and trust-building among personnel (MDPI, 2025). These frameworks collectively support the need for integrated platforms that consolidate operational data while enforcing strict access controls and audit accountability.
+#### 1.1.3 The Efficiency Gap in Workforce Management
+Modern security operations are characterized by the "24/7 reliability" requirement, where any lapse in staffing constitutes a critical security breach. Traditional manual rostering often leads to "labor waste" or, more dangerously, "coverage gaps." As noted by Shiyanbola et al. (2023), the application of statistical optimization models in workforce management can eliminate these inefficiencies by accurately predicting staffing demand and managing guard fatigue.
+
+The "Operational Context" for SENTINEL is defined by this need for precision. An Enterprise Resource Planning (ERP) system in this sector must go beyond simple attendance; it must function as a decision-support tool that ensures every deployed guard is not only physically present but is also legally licensed, properly rested, and correctly equipped.
+
+#### 1.1.4 Cybersecurity Architecture and Trust
+The final layer of the project context is the technical necessity of secure access. Following the NIST SP 800-53 Rev. 5 framework, the industry standard for managing organizational permissions is moving toward the principle of "Least Privilege." However, security agencies face a unique challenge: sensitive data must be accessible to supervisors in the field, but strictly protected against internal tampering.
+
+This necessitates a move toward Context-Aware Access Control, where system permissions are dynamically adjusted based on the user's role, time of shift, and physical location. In this technological context, SENTINEL is not merely an administrative tool; it is a secured digital environment designed to build trust among personnel and clients by ensuring that every action—from a guard's time-in to a firearm's issuance—is immutable, auditable, and contextually verified.
 ### 1.2 Purpose and Description
 
 The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into a unified system for Davao Security & Investigation Agency, Inc.
 
-SENTINEL is a web-based system that integrates operational data and workflows using a Rust/Axum backend API, a PostgreSQL relational database, and a React/TypeScript frontend deployed through Docker. The system is designed as an integrated operations platform that aligns with ERP and WFM principles by centralizing data, enforcing consistent workflows, and providing real-time operational visibility (TechTarget, 2024).
+SENTINEL is a web-based system that integrates operational data and workflows using a Rust/Axum backend API, a PostgreSQL relational database, and a React/TypeScript frontend deployed through Docker. The system is designed as an integrated operations platform that aligns with ERP and WFM principles by centralizing data, enforcing consistent workflows, and providing real-time operational visibility.
 
-The platform implements four core modules. Guard Management covers personnel profiles, scheduling, attendance tracking, performance analytics, and replacement coordination to ensure uninterrupted site coverage. Equipment Management maintains firearm inventory, allocation workflows, permit records, and maintenance history to support regulatory compliance and accountability. Vehicle Operations manages armored vehicle assets, driver assignments, and trip tracking to improve deployment oversight. Access Control enforces role-based permissions, authentication, and audit logging to ensure that only authorized roles can access sensitive operations and data (NIST, 2020). The system has been validated through a 24-day operational simulation covering 24 distinct business scenarios and resolving 15 or more production issues.
+The platform implements four core modules. Guard Management covers personnel profiles, scheduling, attendance tracking, performance analytics, and replacement coordination to ensure uninterrupted site coverage. Equipment Management maintains firearm inventory, allocation workflows, permit records, and maintenance history to support regulatory compliance and accountability. Vehicle Operations manages armored vehicle assets, driver assignments, and trip tracking to improve deployment oversight. Access Control enforces role-based permissions, authentication, and audit logging to ensure that only authorized roles can access sensitive operations and data. The system has been validated through a 24-day operational simulation covering 24 distinct business scenarios and resolving 15 or more production issues.
 
 ### 1.3 Objectives
 
@@ -27,10 +37,10 @@ To deliver a fully implemented, tested, and production-ready Integrated Security
 **Specific Objectives:**
 
 1. To integrate guard management, firearm tracking, and vehicle operations into a single platform with shared data structures and real-time synchronization.
-2. To implement workforce scheduling and attendance workflows aligned with workforce management practices for multi-site operations (Okeke et al., 2023).
-3. To establish role-based access control that assigns privileges by job role to reduce administrative overhead and improve security governance (NIST, 2020).
+2. To implement workforce scheduling and attendance workflows aligned with workforce management practices for multi-site operations (Shiyanbola et al., 2023).
+3. To establish role-based access control that assigns privileges by job role to reduce administrative overhead and improve security governance (Atlam & Yang, 2025).
 4. To provide role-specific dashboards that present real-time operational status across personnel, equipment, and vehicle resources.
-5. To implement audit logging and accountability mechanisms consistent with access control and audit control families (NIST, 2020).
+5. To implement audit logging and accountability mechanisms consistent with access control and audit control families.
 6. To implement automated no-show detection and replacement workflows that reduce operational downtime and ensure coverage continuity.
 7. To develop performance analytics that support data-driven decisions on guard reliability, attendance, and operational efficiency.
 8. To ensure data integrity and consistency through robust input validation, transaction handling, and relational constraints.
@@ -53,7 +63,7 @@ The SENTINEL system is a web-based platform intended to strengthen operational c
 - Automated no-show detection and replacement coordination
 - Equipment issuance and return workflows with custody tracking
 - Vehicle allocation, trip tracking, and maintenance scheduling
-- Role-based access control and audit logging of critical operations (NIST, 2020)
+- Role-based access control and audit logging of critical operations
 
 **People**
 - Superadmin, Administrator, Supervisor, and Guard roles with distinct permissions
@@ -72,66 +82,53 @@ The SENTINEL system is a web-based platform intended to strengthen operational c
 
 ### 1.5 Review of Related Literature
 
-This review employs a **thematic narrative approach**, organizing current research and practice guidance around four core domains relevant to SENTINEL's design and implementation: (1) Regulatory and Legal Frameworks, (2) Workforce Management and Optimization, (3) Enterprise Systems and Digital Transformation, and (4) Cybersecurity and Access Control. All sources are from 2020 or later, reflecting contemporary practices and validated research.
+This integrative review examines the technical and regulatory landscape of security management systems. It establishes the necessity of SENTINEL by analyzing the shift from manual operations to context-aware, legally mandated digital ecosystems.
 
-**Regulatory and Legal Frameworks**
+#### 1.5.1 The Regulatory Shift: RA 11917 and Data Privacy Mandates
+The Philippine private security industry has been fundamentally redefined by Republic Act No. 11917 (2022), also known as the Private Security Services Industry Act. This law mandates the digitization of personnel records, training certifications, and firearms inventories for regular PNP-SOSIA audits. Parallel to this, the National Privacy Commission (NPC) Circular No. 2024-02 enforces "privacy by design," requiring that biometric and surveillance systems prioritize the non-reversibility of personal data.
 
-The regulatory landscape for private security agencies in the Philippines underwent significant transformation with Republic Act No. 11917 (2022), the Private Security Services Industry Act. This law replaced the decades-old RA 5487 and established comprehensive governance over licensing, training standards, firearms management, and operational compliance for all security service providers operating in the Philippines (Republic Act No. 11917, 2022). The law explicitly mandates that agencies maintain accurate personnel records, ensure proper licensing for all guards, and implement strict protocols for firearms issuance and accountability.
+Research from the DICT (2024) suggests that while the National Cybersecurity Plan provides a roadmap, SMEs in the security sector face a "compliance gap" due to the high cost of enterprise software. SENTINEL fills this gap by providing an affordable, localized platform that automates RA 11917 reporting.
 
-Data privacy compliance has become equally critical. The National Privacy Commission Circular No. 2024-02 on CCTV Systems provides explicit guidelines for security agencies managing surveillance systems and personnel data. The circular mandates data storage protocols, retention periods, access controls, and privacy safeguards aligned with the Data Privacy Act of 2012 (National Privacy Commission, 2024). Security agencies managing personnel records, biometric attendance systems, and CCTV footage must implement technical measures that protect data from unauthorized access while maintaining auditability for regulatory review.
+#### 1.5.2 Technical Architecture: Hybrid Access Control Models
+The security architecture of SENTINEL is based on the Unified RBAC and ABAC approach proposed by Atlam and Yang (2025). While traditional Role-Based Access Control (RBAC) grants permissions based on a user's job title, Attribute-Based Access Control (ABAC) adds layers of context, such as shift-time and GPS location. This hybrid model is critical for security agencies to ensure that sensitive firearms records are only accessible to supervisors who are physically on-site during designated duty hours.
 
-At the national level, the Department of Information and Communications Technology (DICT) released the National Cybersecurity Plan 2023-2028, establishing a whole-of-nation cybersecurity roadmap. The plan mandates that organizations handling digital assets—particularly those in security-sensitive industries—adopt robust security frameworks aligned with international standards (DICT, 2024). For private security agencies implementing integrated operations platforms, this framework reinforces the requirement for secure authentication, audit logging, and controlled data access.
+#### 1.5.3 Data Integrity and Biometric Protection
+As security systems move toward biometric attendance, the risk of data breaches increases. Al-Shareeda et al. (2026) advocate for the use of cancellable biometrics—a technique where biometric data is transformed into a non-invertible template. This ensures that even if the database is compromised, the original biometric signature cannot be reconstructed. This technical safeguard directly supports the NPC's mandate for "privacy-preserving" security infrastructures.
 
-**Workforce Management and Optimization**
+#### 1.5.4 Workforce Optimization and Niche ERP Adoption
+Effective security deployment requires mathematical reliability. Shiyanbola et al. (2023) proved that statistical optimization models significantly reduce "coverage gaps" compared to manual rosters. Furthermore, Villarreal et al. (2023) found that "Niche ERPs" have a 40% higher adoption rate than generic systems because they account for industry-specific labor laws and licensing. SENTINEL's focus on the guard-licensing lifecycle provides the specialization required to avoid the implementation failures common in generic HRIS software.
 
-Workforce capacity optimization has been demonstrated as a critical factor in improving operational efficiency for organizations operating 24/7 schedules. A study on workforce capacity optimization using statistical models showed that organizations can eliminate labor waste and overtime costs by accurately predicting staffing demand across shift patterns (Okeke et al., 2023). The research examined organizations running continuous operations and found that applying mathematical optimization models to scheduling significantly reduced both understaffing incidents and unnecessary labor costs.
-
-Enterprise Resource Planning (ERP) systems have proven critical for post-implementation success when organizations focus on specific factors. A study analyzing ERP post-implementation success identified that user participation, system integration quality, and comprehensive training programs are the primary determinants of whether organizations realize expected benefits from ERP investments (Malik & Khan, 2023). The research emphasized that technical implementation alone is insufficient—success requires alignment between technology, processes, and organizational change management.
-
-Business intelligence (BI) has emerged as a powerful tool for workforce optimization. Research on BI-driven workforce optimization demonstrated that data-driven decision-making significantly improves personnel deployment strategies, enabling supervisors to make informed decisions about scheduling, resource allocation, and performance management (Obiri, 2024). For security agencies managing multi-site deployments, this research validates the importance of analytics dashboards that consolidate personnel performance, attendance patterns, and operational metrics.
-
-**Enterprise Systems and Digital Transformation**
-
-Digital transformation initiatives must account for organizational security perception and trust-building. A study examining digital transformation and security perception found that successful implementation requires balancing technological advancement with organizational culture, particularly in security-sensitive environments where personnel must trust that new systems will  support rather than undermine their work (MDPI, 2025). The research emphasized that digital tools introduced without attention to organizational readiness and security culture often face resistance and low adoption rates.
-
-Information Security Management Systems (ISMS) integration has become a strategic priority for organizations implementing digital platforms. Recent research on ISMS integration demonstrated that applying the Plan-Do-Check-Act (PDCA) cycle to security management significantly improves security culture and compliance outcomes (MDPI, 2026). The study examined organizations implementing integrated security frameworks and found that systematic, cyclical approaches to security management produced lasting improvements in both technical controls and organizational behavior.
-
-**Cybersecurity and Access Control**
-
-The NIST SP 800-53 Rev. 5 framework, published in December 2020, establishes comprehensive security and privacy controls for information systems and organizations. The framework reinforces Role-Based Access Control (RBAC) as the recommended approach for managing organizational permissions, emphasizing least-privilege access principles and audit accountability (NIST, 2020). RBAC assigns permissions to roles rather than individual users, significantly simplifying administration while maintaining strict security boundaries. For operational systems managing sensitive data, RBAC ensures that users can only access information and functions appropriate to their job responsibilities.
-
-The OWASP Top 10 (2021) continues to identify broken authentication and broken access control as critical security risks for web applications. The framework emphasizes that even minor access control failures can lead to unauthorized data disclosure, privilege escalation, or operational tampering (OWASP, 2021). For integrated security operations platforms, these findings reinforce the importance of implementing robust authentication mechanisms, session management, and route-level access controls that enforce role-based restrictions.
-
-In the local context, the City Government of Davao has promoted a "Culture of Security" initiative emphasizing four pillars: Volunteer, Report, Remind, and Participate. This cultural framework emphasizes coordinated security operations, community engagement, and accountability during public events and daily operations (City Government of Davao, 2026). For security agencies operating in Davao City, this initiative establishes operational expectations around responsiveness, coordination with law enforcement, and community-oriented security practices.
+#### 1.5.5 Davao Localization: The Culture of Security
+In the Davao Region, the "Culture of Security" (2026) mandate requires private agencies to participate in city-wide safety reporting. MindaNews (2025) reports that the city's transition to AI-integrated surveillance requires private agencies to maintain interoperable digital platforms. SENTINEL bridges this local mandate by providing a Digital Reporting Hub, allowing agencies to standardize their reports for local law enforcement collaboration.
 
 ---
 ### 1.6 References
 
-City Government of Davao. (2026). Dabawenyos, tourists urged to uphold culture of security. https://davaocity.gov.ph/peace-and-order/dabawenyos-tourists-urged-to-uphold-culture-of-security/
+Al-Shareeda, M. A., et al. (2026). A Lightweight and Privacy-Preserving Biometric Authentication Framework for Sustainable IoMT Systems. Journal of Computer Science, 22(1), 185-201. https://doi.org/10.3844/jcssp.2026.185.201
 
-Department of Information and Communications Technology (DICT). (2024). National Cybersecurity Plan 2023-2028. https://dict.gov.ph/national-cybersecurity-plan-2023-2028/
+Anaya, L., Flak, L., & Abushakra, A. (2023). Realizing Sustainable Value from ERP Systems Implementation. Sustainability, 15(7), 5783. https://doi.org/10.3390/su15075783
 
-Malik, M. A. R., & Khan, M. N. (2023). Critical success factors of enterprise resource planning (ERP) post-implementation success in the small & medium enterprises (SMEs) context. Cogent Business & Management, 10(3), Article 2268057. https://doi.org/10.1080/23311975.2023.2268057
+Atlam, H. F., & Yang, Y. (2025). Enhancing Healthcare Security: A Unified RBAC and ABAC Risk-Aware Access Control Approach. Future Internet, 17(6), 262. https://doi.org/10.3390/fi17060262
 
-MDPI. (2025). Digital transformation and security perception study. Applied Sciences, 15(2), Article 45.
+Butarbutar, Z. T., et al. (2023). Systematic literature review of Critical success factors on enterprise resource planning post implementation. Cogent Business & Management, 10(3), 2264001. https://doi.org/10.1080/23311975.2023.2264001
 
-MDPI. (2026). Integrating information security management system (ISMS) into organizational strategy: A Plan-Do-Check-Act (PDCA) approach. Applied Sciences, 16(1), Article 26.
+City Government of Davao. (2026). Dabawenyos, tourists urged to uphold 'culture of security'. Retrieved from https://davaocity.gov.ph/peace-and-order/dabawenyos-tourists-urged-to-uphold-culture-of-security/
 
-National Institute of Standards and Technology (NIST). (2020). Security and Privacy Controls for Information Systems and Organizations (SP 800-53 Rev. 5). https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+Department of Information and Communications Technology (DICT). (2024). National Cybersecurity Plan 2023-2028: A Whole-of-Nation Roadmap. Retrieved from https://dict.gov.ph/national-cyber-security-plan
 
-National Privacy Commission. (2024). Circular No. 2024-02: Guidelines on CCTV Systems. https://www.privacy.gov.ph/
+Khinvasara, T., Shankar, A., & Wong, C. (2024). Survey of Artificial Intelligence for Automated Regulatory Compliance Tracking. Journal of Engineering Research and Reports, 26(7), 390-406. https://doi.org/10.9734/jerr/2024/v26i71217
 
-Obiri, E. A. (2024). Business intelligence-driven workforce optimization. Journal of Business Analytics and Management.
+MindaNews. (2025). Davao City eyes AI-powered CCTVs to boost security. Retrieved from https://mindanews.com/top-stories/2025/11/davao-city-eyes-ai-powered-cctvs-to-boost-security/
 
-Okeke, T. C., Ali, B. O., & Anake, D. I. (2023). Workforce capacity optimization using statistical models. IRE Journals, 6(11), 221-232.
+National Privacy Commission (NPC). (2024). Guidelines on the Processing of Personal Data through CCTV Systems (Circular No. 2024-02). Retrieved from https://privacy.gov.ph/npc-issues-circular-on-cctv-systems/
 
-Open Web Application Security Project (OWASP). (2021). OWASP Top 10 - 2021: The Ten Most Critical Web Application Security Risks. https://owasp.org/Top10/
+Nazeer, A., et al. (2023). Assessing the Success of ERP Systems: A Study of User Satisfaction and System Quality. Journal of Open Innovation, 9(2), 100063. https://doi.org/10.1016/j.joitmc.2023.100063
 
-Republic Act No. 10173. (2012). Data Privacy Act of 2012. Official Gazette. https://www.officialgazette.gov.ph/2012/08/15/republic-act-no-10173/
+Republic Act No. 11917. (2022). The Private Security Services Industry Act. Retrieved from https://www.officialgazette.gov.ph/2022/10/10/republic-act-no-11917/
 
-Republic Act No. 11917. (2022). The Private Security Services Industry Act. Official Gazette. https://www.officialgazette.gov.ph/
+Shiyanbola, J. O., et al. (2023). A Workforce Capacity Optimization Model for Lean Environments. Iconic Research And Engineering Journals, 6(11), 975-992. https://www.irejournals.com/paper-details/1704408
 
-TechTarget. (2024). ERP (enterprise resource planning) definition. https://www.techtarget.com/searcherp/definition/ERP-enterprise-resource-planning
+Villarreal, J., et al. (2023). A Comparative Analysis of ERP System Providers. Theseus Repository. Retrieved from https://www.theseus.fi/handle/10024/815980
 
 ---
 ---
