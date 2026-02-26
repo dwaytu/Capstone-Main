@@ -4,23 +4,15 @@
 
 ### 1.1 Project Context
 
-#### 1.1.1 The Regulatory Transition and National Mandate
-The Philippine private security sector is currently undergoing its most significant regulatory transformation in over five decades. The transition from the antiquated RA 5487 to the Private Security Services Industry Act (Republic Act No. 11917, 2022) has shifted the burden of proof from physical logbooks to verifiable digital audibility. This law mandates that Private Security Agencies (PSAs) maintain real-time, digitized records of personnel licensing, specialized training certifications, and firearms serializations to satisfy the rigorous inspection standards of the PNP-SOSIA.
+The Philippine private security industry is currently navigating its most volatile regulatory transition in over fifty years, driven by the full implementation of the Private Security Services Industry Act (Republic Act No. 11917). This legislation, which repealed the 1969-era RA 5487, has fundamentally redefined the "Professionalized Accountability" required of Private Security Agencies (PSAs). Under this new legal framework, agencies have shifted from a model of passive reporting to one of "strict liability," where administrative lapses are no longer treated as minor oversights but as significant regulatory breaches. The Philippine National Police - Supervisory Office for Security and Investigation Agencies (PNP-SOSIA) now mandates absolute transparency in personnel licensing and asset movements, creating a regime where digitized, verifiable compliance is the only protection against business-ending sanctions.
 
-Simultaneously, the National Cybersecurity Plan 2023-2028 (DICT, 2024) and the National Privacy Commission (NPC) Circular No. 2024-02 have elevated the technical requirements for agencies handling sensitive biometric and surveillance data. PSAs are no longer just physical deterrents; they are now data-handling entities required by law to implement "privacy by design." This dual-regulatory pressure creates a massive operational hurdle for local agencies that lack an integrated platform to manage these high-stakes compliance requirements.
+The financial stakes of this transition are historically high. Under the current IRR of RA 11917, failure to monitor the License to Exercise Security Profession (LESP) or the unauthorized deployment of firearms can result in administrative fines reaching ₱5,000,000 or the immediate revocation of an agency's License to Operate (LTO). Despite these risks, a critical "transparency gap" persists within regional agencies, particularly in Davao City. Many PSAs still rely on manual, paper-based logs and siloed systems that lack real-time synchronization. This fragmentation prevents the immediate detection of compliance failures—such as a guard with an expired neuro-psychiatric clearance being issued a firearm—leaving the agency in a state of constant legal and financial vulnerability.
 
-#### 1.1.2 Localized Operational Landscape: The Davao Context
-In the Davao Region, security operations are uniquely shaped by the "Culture of Security" (2026) framework. This policy—built on the four pillars of Volunteer, Report, Remind, and Participate—requires a level of transparency and rapid information sharing that traditional manual systems cannot support. For a security agency in Davao City to be effective, it must act as a node in a wider safety network, necessitating a system that can generate standardized, law-enforcement-ready incident reports at a moment's notice. The operational context in Davao demands that security is not just a service provided to a client, but a coordinated effort with local government units (LGUs), requiring high-fidelity data and rapid response capabilities.
+In the localized environment of Davao City, these national mandates are further intensified by the city's proactive "Culture of Security" initiative. This policy expects private security clusters to function as a seamless, high-integrity extension of public law enforcement. For agencies managing high-value assets like armored car fleets and extensive firearm inventories, there is a "zero-fail" operational expectation. However, the current reliance on physical ledgers and cabinets creates "data drift," where vehicle deployments and weapon serial numbers are not reconciled with active duty rosters. This lack of a unified "Digital Chain of Custody" means that assets can be logically double-booked or deployed without a qualified driver or licensed guard, presenting a direct threat to public safety and regional security standards.
 
-#### 1.1.3 The Efficiency Gap in Workforce Management
-Modern security operations are characterized by the "24/7 reliability" requirement, where any lapse in staffing constitutes a critical security breach. Traditional manual rostering often leads to "labor waste" or, more dangerously, "coverage gaps." As noted by Shiyanbola et al. (2023), the application of statistical optimization models in workforce management can eliminate these inefficiencies by accurately predicting staffing demand and managing guard fatigue.
+Furthermore, a persistent "discovery lag" in workforce management continues to plague operational reliability. In current manual setups, supervisors often remain unaware of a personnel "no-show" until a client site has already been left unguarded for a significant duration. This failure in proactive oversight directly violates service-level agreements and damages the agency's professional standing. While global security platforms exist to solve these issues, they are frequently cost-prohibitive for local Small and Medium Enterprises (SMEs) and lack the specialized backend logic required for Philippine-specific SOSIA reporting and armored logistics.
 
-The "Operational Context" for SENTINEL is defined by this need for precision. An Enterprise Resource Planning (ERP) system in this sector must go beyond simple attendance; it must function as a decision-support tool that ensures every deployed guard is not only physically present but is also legally licensed, properly rested, and correctly equipped.
-
-#### 1.1.4 Cybersecurity Architecture and Trust
-The final layer of the project context is the technical necessity of secure access. Following the NIST SP 800-53 Rev. 5 framework, the industry standard for managing organizational permissions is moving toward the principle of "Least Privilege." However, security agencies face a unique challenge: sensitive data must be accessible to supervisors in the field, but strictly protected against internal tampering.
-
-This necessitates a move toward Context-Aware Access Control, where system permissions are dynamically adjusted based on the user's role, time of shift, and physical location. In this technological context, SENTINEL is not merely an administrative tool; it is a secured digital environment designed to build trust among personnel and clients by ensuring that every action—from a guard's time-in to a firearm's issuance—is immutable, auditable, and contextually verified.
+SENTINEL is developed to resolve these systemic failures by providing a high-performance, unified ecosystem that bridges the gap between field operations and regulatory mandates. By utilizing a memory-safe Rust/Axum backend and a robust PostgreSQL relational core, the system is engineered to handle the "24/7" high-concurrency demands of security work, ensuring that every check-in and asset movement is validated against a real-time compliance database. This technical approach eliminates "data drift" and "discovery lag," transforming the agency from a reactive organization into a data-driven enterprise. Ultimately, SENTINEL ensures that every guard on the floor, every bullet in the vault, and every vehicle on the road is accounted for with the absolute digital precision required to survive and thrive in the 2026 regulatory landscape.
 ### 1.2 Purpose and Description
 
 The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into a unified system for Davao Security & Investigation Agency, Inc.
@@ -82,53 +74,50 @@ The SENTINEL system is a web-based platform intended to strengthen operational c
 
 ### 1.5 Review of Related Literature
 
-This integrative review examines the technical and regulatory landscape of security management systems. It establishes the necessity of SENTINEL by analyzing the shift from manual operations to context-aware, legally mandated digital ecosystems.
+This integrative review synthesizes the landscape of global security management platforms and the regulatory pressures driving industry transformation in the Philippines. By examining leading commercial solutions and the specialized requirements of Philippine PSAs, SENTINEL is positioned as a solution that combines industry-standard architecture with localized regulatory sophistication.
 
-#### 1.5.1 The Regulatory Shift: RA 11917 and Data Privacy Mandates
-The Philippine private security industry has been fundamentally redefined by Republic Act No. 11917 (2022), also known as the Private Security Services Industry Act. This law mandates the digitization of personnel records, training certifications, and firearms inventories for regular PNP-SOSIA audits. Parallel to this, the National Privacy Commission (NPC) Circular No. 2024-02 enforces "privacy by design," requiring that biometric and surveillance systems prioritize the non-reversibility of personal data.
+#### 1.5.1 Global Security Platform Landscape
 
-Research from the DICT (2024) suggests that while the National Cybersecurity Plan provides a roadmap, SMEs in the security sector face a "compliance gap" due to the high cost of enterprise software. SENTINEL fills this gap by providing an affordable, localized platform that automates RA 11917 reporting.
+**TrackTik (2025)**: Known as a "Gold Standard" in guard management, TrackTik integrates patrol management, GPS tracking, and mobile-first technology. Its success in enterprise markets demonstrates that modern security platforms require seamless mobile UX combined with centralized real-time data analytics. However, TrackTik is engineered for multinational corporations and lacks the granular licensing logic required by Philippine PSAs.
 
-#### 1.5.2 Technical Architecture: Hybrid Access Control Models
-The security architecture of SENTINEL is based on the Unified RBAC and ABAC approach proposed by Atlam and Yang (2025). While traditional Role-Based Access Control (RBAC) grants permissions based on a user's job title, Attribute-Based Access Control (ABAC) adds layers of context, such as shift-time and GPS location. This hybrid model is critical for security agencies to ensure that sensitive firearms records are only accessible to supervisors who are physically on-site during designated duty hours.
+**Guardhouse (2026)**: Known for its focus on administrative automation, Guardhouse has demonstrated that integrating scheduling with automated invoicing can reduce office-based administrative hours by up to 60%. Its "Confidence in Compliance" module serves as a benchmark for SENTINEL, as it performs daily automated checks against personnel licensing databases to ensure no guard is deployed illegally.
 
-#### 1.5.3 Data Integrity and Biometric Protection
-As security systems move toward biometric attendance, the risk of data breaches increases. Al-Shareeda et al. (2026) advocate for the use of cancellable biometrics—a technique where biometric data is transformed into a non-invertible template. This ensures that even if the database is compromised, the original biometric signature cannot be reconstructed. This technical safeguard directly supports the NPC's mandate for "privacy-preserving" security infrastructures.
+**Securitas "MySecuritas" (2026)**: The MySecuritas platform emphasizes the transition from "raw data collection" to "actionable intelligence." By providing supervisors with a unified dashboard for incident statistics and compliance metrics, it allows for faster, data-driven decision-making. This system's success is rooted in its ability to present complex operational data in a simplified, visually intuitive format.
 
-#### 1.5.4 Workforce Optimization and Niche ERP Adoption
-Effective security deployment requires mathematical reliability. Shiyanbola et al. (2023) proved that statistical optimization models significantly reduce "coverage gaps" compared to manual rosters. Furthermore, Villarreal et al. (2023) found that "Niche ERPs" have a 40% higher adoption rate than generic systems because they account for industry-specific labor laws and licensing. SENTINEL's focus on the guard-licensing lifecycle provides the specialization required to avoid the implementation failures common in generic HRIS software.
+**Silvertrac Software (2026)**: Silvertrac pioneered the "Proof of Performance" model, using QR/NFC checkpoints to verify that guards are physically present and active at their posts. While highly effective for patrol verification, research into the system indicates a lack of native integration for complex assets like armored car fleets or weapon serial number tracking—functional areas that SENTINEL seeks to unify.
 
-#### 1.5.5 Davao Localization: The Culture of Security
-In the Davao Region, the "Culture of Security" (2026) mandate requires private agencies to participate in city-wide safety reporting. MindaNews (2025) reports that the city's transition to AI-integrated surveillance requires private agencies to maintain interoperable digital platforms. SENTINEL bridges this local mandate by providing a Digital Reporting Hub, allowing agencies to standardize their reports for local law enforcement collaboration.
+**Connecteam (2025)**: While primarily an internal communication and engagement tool, Connecteam's success lies in its high adoption rates within "deskless" workforces. It demonstrates that a mobile-first UI is essential for frontline personnel, though it lacks the rigorous backend security logic required for the custody of firearms and high-value logistics.
 
----
+#### 1.5.2 Synthesis: The SENTINEL Advantage
+
+The analysis of global systems like TrackTik, Guardhouse, and Securitas reveals a clear industry standard: Mobile-First Experience, Real-Time Accountability, and Centralized Data Ownership. However, these systems are frequently engineered for broad global markets and often fail to accommodate the granular administrative nuances of Philippine law. SENTINEL addresses this specific void by combining the "Gold Standard" of high-concurrency architecture (Rust/Axum) with a specialized suite of modules for Philippine-specific licensing (RA 11917), Firearm Custody Tracking, and Armored Car Fleet Management. This integration allows regional agencies in Davao to achieve multinational levels of operational visibility while maintaining strict adherence to local regulatory mandates.
 ### 1.6 References
 
-Al-Shareeda, M. A., et al. (2026). A Lightweight and Privacy-Preserving Biometric Authentication Framework for Sustainable IoMT Systems. Journal of Computer Science, 22(1), 185-201. https://doi.org/10.3844/jcssp.2026.185.201
+Atlam, H. F., & Yang, Y. (2025). Enhancing Healthcare Security: A Unified RBAC and ABAC Risk-Aware Access Control Approach. Retrieved from https://doi.org/10.3390/fi17060262
 
-Anaya, L., Flak, L., & Abushakra, A. (2023). Realizing Sustainable Value from ERP Systems Implementation. Sustainability, 15(7), 5783. https://doi.org/10.3390/su15075783
+Department of Information and Communications Technology (DICT). (2024). National Cybersecurity Plan 2023-2028: A Whole-of-Nation Roadmap. Retrieved from https://dict.gov.ph/national-cybersecurity-plan-2023-2028/
 
-Atlam, H. F., & Yang, Y. (2025). Enhancing Healthcare Security: A Unified RBAC and ABAC Risk-Aware Access Control Approach. Future Internet, 17(6), 262. https://doi.org/10.3390/fi17060262
+Guardhouse. (2026). 2026 Pricing, Features, Reviews & Alternatives. Retrieved from https://www.getapp.com/operations-management-software/a/guardhouse/
 
-Butarbutar, Z. T., et al. (2023). Systematic literature review of Critical success factors on enterprise resource planning post implementation. Cogent Business & Management, 10(3), 2264001. https://doi.org/10.1080/23311975.2023.2264001
+Jur.ph. (2025). The Private Security Services Industry Act: Law Summary and IRR. Retrieved from https://jur.ph/law/summary/the-private-security-services-industry-act
 
-City Government of Davao. (2026). Dabawenyos, tourists urged to uphold 'culture of security'. Retrieved from https://davaocity.gov.ph/peace-and-order/dabawenyos-tourists-urged-to-uphold-culture-of-security/
+Khinvasara, T., Shankar, A., & Wong, C. (2024). Survey of Artificial Intelligence for Automated Regulatory Compliance Tracking. Retrieved from https://doi.org/10.9734/jerr/2024/v26i71217
 
-Department of Information and Communications Technology (DICT). (2024). National Cybersecurity Plan 2023-2028: A Whole-of-Nation Roadmap. Retrieved from https://dict.gov.ph/national-cyber-security-plan
+NashTech. (2025). Building High-Performance Web Services with Rust and Axum. Retrieved from https://blog.nashtechglobal.com/building-high-performance-web-services-with-rust-and-axum/
 
-Khinvasara, T., Shankar, A., & Wong, C. (2024). Survey of Artificial Intelligence for Automated Regulatory Compliance Tracking. Journal of Engineering Research and Reports, 26(7), 390-406. https://doi.org/10.9734/jerr/2024/v26i71217
+Nguyen, R. (2025). PostgreSQL ACID In-Depth: Reliability and Consistency in Modern Transactions. Retrieved from https://medium.com/engineering/postgresql-acid-in-depth
 
-MindaNews. (2025). Davao City eyes AI-powered CCTVs to boost security. Retrieved from https://mindanews.com/top-stories/2025/11/davao-city-eyes-ai-powered-cctvs-to-boost-security/
-
-National Privacy Commission (NPC). (2024). Guidelines on the Processing of Personal Data through CCTV Systems (Circular No. 2024-02). Retrieved from https://privacy.gov.ph/npc-issues-circular-on-cctv-systems/
-
-Nazeer, A., et al. (2023). Assessing the Success of ERP Systems: A Study of User Satisfaction and System Quality. Journal of Open Innovation, 9(2), 100063. https://doi.org/10.1016/j.joitmc.2023.100063
+PostgreSQL Global Development Group. (2025). PostgreSQL 17 Documentation: Data Integrity and ACID Compliance. Retrieved from https://www.postgresql.org/docs/17/acid.html
 
 Republic Act No. 11917. (2022). The Private Security Services Industry Act. Retrieved from https://www.officialgazette.gov.ph/2022/10/10/republic-act-no-11917/
 
-Shiyanbola, J. O., et al. (2023). A Workforce Capacity Optimization Model for Lean Environments. Iconic Research And Engineering Journals, 6(11), 975-992. https://www.irejournals.com/paper-details/1704408
+ResearchGate. (2025). How Effective Is Your Security Guard? An Inquiry into the Philippine Private Security Industry. Retrieved from https://www.researchgate.net/publication/395214472_How_Effective_Is_Your_Security_Guard
 
-Villarreal, J., et al. (2023). A Comparative Analysis of ERP System Providers. Theseus Repository. Retrieved from https://www.theseus.fi/handle/10024/815980
+Scofield, M. B. (2025). Rust Axum Web Development: Build High-Performance APIs and Services. Retrieved from https://www.amazon.com/Rust-Axum-Web-Development-High-Performance/dp/B0CX7N4K6J
+
+Shiyanbola, J. O., et al. (2023). A Workforce Capacity Optimization Model for Lean Environments. Retrieved from https://www.irejournals.com/paper-details/1704408
+
+TrackTik. (2025). Top 5 End-to-End Security Guard Management Software for 2025. Retrieved from https://www.tracktik.com/resources/blog-articles/top-5-end-to-end-security-guard-management-software-for-2025/
 
 ---
 ---
