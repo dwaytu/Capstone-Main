@@ -72,33 +72,33 @@ The SENTINEL system is a web-based platform intended to strengthen operational c
 - Multi-timezone operations are not addressed in the current implementation.
 - Third-party security equipment integrations (CCTV, sensors) are not included.
 
-###1.5 Review of Related Literature
+### 1.5 Review of Related Literature
 The Review of Related Literature (RRL) establishes the multidisciplinary foundation for SENTINEL, synthesizing recent advancements in Regulatory Technology (RegTech), Memory-Safe System Architectures, and Asynchronous Workforce Optimization. This section identifies the critical disconnect between current security operations and the emerging digital mandates in the Philippine landscape.
 
-####1.5.1 The Legislative Shift: RA 11917 and Digital Accountability
+#### 1.5.1 The Legislative Shift: RA 11917 and Digital Accountability
 The Philippine private security sector is currently navigating its most significant legal transition in over fifty years. The enactment of the Private Security Services Industry Act (Republic Act No. 11917, 2022) effectively repealed the outdated RA 5487, shifting the industry toward a regime of "Professionalized Accountability." According to Jur.ph (2025), the law’s Implementing Rules and Regulations (IRR) mandate that Private Security Agencies (PSAs) maintain highly accurate, digitized records of License to Exercise Security Profession (LESP) and firearm permits. The act introduces a "strict liability" framework where administrative negligence—such as deploying an unlicensed guard—can result in fines ranging from ₱50,000 to ₱100,000 per violation, or up to ₱5,000,000 for agency-wide license failures.
 
 This regulatory pressure has necessitated a move toward Automated Regulatory Compliance Tracking (ARCT). Research by Khinvasara, T., Shankar, A., & Wong, C. (2024) suggests that for organizations managing complex, shifting rules, the use of automated monitoring is a "significant advancement" that eliminates the "discovery lag" inherent in manual audits. By leveraging system-driven triggers for license expirations, PSAs can transition from reactive compliance to a proactive stance, ensuring that no personnel or asset is deployed without valid legal authorization.
 
-####1.5.2 High-Performance Backend Architecture: The Rust/Axum Advantage
+#### 1.5.2 High-Performance Backend Architecture: The Rust/Axum Advantage
 The selection of the backend technical stack is a core security decision for mission-critical systems. Scofield, M. B. (2025) argues that Rust’s "ownership and borrowing" model provides a fundamental architectural advantage: Memory Safety without a Garbage Collector. This ensures that SENTINEL is natively resistant to buffer overflows and data races—vulnerabilities that often plague systems handling high-concurrency data like real-time firearm tracking.
 
 Complementing the language is the Axum framework, which is built on the Tokio asynchronous runtime. As highlighted by NashTech (2025), Axum is designed for high-performance web services where scalability and raw speed are non-negotiable. For SENTINEL, this means the Attendance Tracking and No-Show Detection modules can handle hundreds of simultaneous "check-in" requests during shift rotations without performance degradation. This "asynchronous-first" design allows the system to remain responsive even when processing complex relational logic across personnel, vehicle, and firearm databases.
 
-####1.5.3 Relational Integrity and ACID Compliance in PostgreSQL
+#### 1.5.3 Relational Integrity and ACID Compliance in PostgreSQL
 In an Integrated Operations Platform, the database must serve as the immutable "Single Source of Truth." PostgreSQL (2025) is recognized as the premier open-source RDBMS for enterprise planning due to its strict adherence to ACID (Atomicity, Consistency, Isolation, Durability) properties. Nguyen, R. (2025) emphasizes that PostgreSQL’s implementation of Foreign Key Constraints and Unique Exclusion Constraints is the primary defense against "data drift."
 
 In the SENTINEL ecosystem, these constraints ensure that a firearm or armored vehicle cannot be logically "double-booked" or assigned to a guard who does not exist in the personnel table. This high level of relational integrity is a prerequisite for generating the legally defensible Audit Logs required by the National Cybersecurity Plan 2023-2028 (DICT, 2024), ensuring that every asset movement is tied to a verifiable digital identity.
 
-###1.6 Related Studies and Systems
+### 1.6 Related Studies and Systems
 This section examines the performance and structural outcomes of existing security management frameworks, comparing empirical research with industry-leading commercial solutions.
 
-####1.6.1 Related Studies: Operational Impact of Automation
+#### 1.6.1 Related Studies: Operational Impact of Automation
 Empirical research confirms that automated oversight is a primary driver of operational integrity. A study by Atlam, H. F., & Yang, Y. (2025) found that organizations utilizing unified Access Control and Resource Planning (ERP) systems saw a 27% drop in unauthorized access violations and reclaimed 36% of staff time previously lost to manual verification. These findings suggest that hardwiring compliance into the system architecture—rather than treating it as an afterthought—tightens process integrity and reduces the risk of internal data tampering.
 
 Furthermore, research by Shiyanbola, J. O., et al. (2023) on "Workforce Capacity Optimization" highlights a flaw in traditional security: "discovery lag." This occurs when supervisors only identify a personnel gap after a shift has failed. Their study demonstrates that real-time, asynchronous detection models allow for a proactive 11.8% improvement in site coverage reliability. Locally, ResearchGate (2025) cites a study by Respicio (2023) which found that Philippine security guards operating under digital monitoring exhibited significantly higher levels of alertness and punctuality because the system provided a transparent, inescapable layer of accountability that manual logs could not match.
 
-####1.6.2 Related Systems: Global Benchmarks
+#### 1.6.2 Related Systems: Global Benchmarks
 The functional blueprint of SENTINEL is informed by the performance of several industry-leading platforms:
 
 TrackTik (2025): This global leader integrates frontline guard tours with back-office analytics. Its success is driven by AI-powered demand-based scheduling, which has contributed to a reported 20% increase in operational efficiency for its clients. While successful, its high cost often creates a barrier for regional Philippine agencies.
@@ -109,10 +109,10 @@ Securitas "MySecuritas" (2026): This platform focuses on "Situational Understand
 
 Silvertrac Software (2026): A leader in "Proof of Performance," Silvertrac uses mobile-logged incidents and QR/NFC checkpoints. While effective for patrols, it lacks the deep integration for Armored Fleet Management and Firearm Custody that SENTINEL provides as a specialized, niche solution.
 
-####1.6.3 Synthesis: The SENTINEL Advantage
+#### 1.6.3 Synthesis: The SENTINEL Advantage
 Global systems like TrackTik and Guardhouse demonstrate that the industry standard is defined by Mobile-First Experience, Real-Time Accountability, and Centralized Data Ownership. However, these systems often fail to accommodate the granular administrative nuances of Philippine law. SENTINEL addresses this void by combining high-concurrency Rust/Axum architecture with modules specifically for Philippine-specific licensing (RA 11917), Firearm Custody, and Armored Car Fleet Management, allowing local agencies to achieve multinational levels of visibility and compliance.
 
-####1.7 References
+#### 1.7 References
 Atlam, H. F., & Yang, Y. (2025). Enhancing Healthcare Security: A Unified RBAC and ABAC Risk-Aware Access Control Approach. Future Internet, 17(6), 262. https://doi.org/10.3390/fi17060262
 
 Department of Information and Communications Technology (DICT). (2024). National Cybersecurity Plan 2023-2028: A Whole-of-Nation Roadmap. https://dict.gov.ph/national-cybersecurity-plan-2023-2028/
