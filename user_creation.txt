@@ -1,0 +1,3 @@
+✗ ERROR
+Exception: Response status code does not indicate success: 500 (Internal Server Error).
+Status: 500
