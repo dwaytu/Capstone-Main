@@ -1,9 +1,0 @@
-{
-  "request": "{\r\n  \"email\": \"testuser_20260304044326@gmail.com\",\r\n  \"licenseNumber\": \"LIC123456\",\r\n  \"role\": \"user\",\r\n  \"licenseExpiryDate\": \"2026-12-31T00:00:00Z\",\r\n  \"password\": \"user123\",\r\n  \"phoneNumber\": \"1234567890\",\r\n  \"fullName\": \"Test User\",\r\n  \"username\": \"user\"\r\n}",
-  "statusCode": 500,
-  "email": "testuser_20260304044326@gmail.com",
-  "timestamp": "20260304044326",
-  "responseBody": "Could not read response",
-  "status": "ERROR",
-  "errorMessage": "Response status code does not indicate success: 500 (Internal Server Error)."
-}

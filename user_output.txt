@@ -1,5 +1,0 @@
-Status Code: 409
-Response:
-{
-  "error": "User already exists"
-}
