@@ -1,7 +1,13 @@
 !start up system
 
-cd "d:\Capstone Main\DasiaAIO-Backend"
+# 1) Start backend + database
+cd "D:\Dwight\Capstone Main\DasiaAIO-Backend"
 docker compose up -d
 
-cd "d:\Capstone Main\DasiaAIO-Frontend"
-npm run dev -- --host
+# 2) Build frontend image (only needed after frontend code/dependency changes)
+cd "D:\Dwight\Capstone Main\DasiaAIO-Frontend"
+docker build -t dasiaaio-frontend-local .
+
+# 3) Run frontend container
+docker rm -f dasiaaio-frontend-local-run 2>$null
+docker run -d --name dasiaaio-frontend-local-run -p 5173:3000 dasiaaio-frontend-local
