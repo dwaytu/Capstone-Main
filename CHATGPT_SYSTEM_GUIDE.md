@@ -175,6 +175,9 @@ Current backend reality:
 - API authorization is still the final source of truth even when frontend hides/shows role surfaces
 - Centralized middleware coverage now spans both primary and legacy privileged route families (users, firearms, allocations, schedules, missions, analytics, notifications, tickets, merit, armored cars, trips, permits, maintenance, training)
 - Audit logging is route-layered on write endpoints and captures both authorized writes and authorization failures that return HTTP error responses
+- Guard-scoped ownership enforcement was tightened in handlers to prevent cross-user access on authenticated routes:
+  - `DasiaAIO-Backend/src/handlers/firearm_allocation.rs`: `get_guard_allocations` now requires `self` access or minimum `supervisor` role.
+  - `DasiaAIO-Backend/src/handlers/guard_replacement.rs`: `check_in`, `check_out`, `set_availability`, `get_guard_shifts`, and `get_guard_attendance` now enforce self-or-supervisor checks, with additional guard/shift ownership validation in attendance flows.
 
 ## 10. Frontend Context Snapshot (Keep Updated)
 
@@ -207,6 +210,10 @@ Current frontend reality:
 - Header consistency guardrail:
   - Shared `Header` now renders a default `Refresh` button beside theme toggle when a dashboard does not provide a custom `rightSlot` (desktop and mobile)
   - Dashboards with custom right-side controls keep their custom controls
+- Role typing/gating centralization is now in place:
+  - `DasiaAIO-Frontend/src/types/auth.ts`: defines `Role`, `normalizeRole`, and elevated-role helpers.
+  - `DasiaAIO-Frontend/src/utils/permissions.ts`: defines capability map and `can(...)` helper for UI gating.
+  - `DasiaAIO-Frontend/src/App.tsx`: now uses normalized roles and centralized permission checks for dashboard routing decisions.
 
 ## 11. Local Runbook (Docker-first)
 
@@ -275,6 +282,13 @@ Verified in this session (Docker runtime):
 - Frontend verification in this session:
   - `npm run build` succeeded
   - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+- Frontend verification after role-helper refactor:
+  - `DasiaAIO-Frontend/src/App.tsx` diagnostics: no TypeScript errors
+  - `npm run build` succeeded (Vite production build)
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+- Backend verification after latest ownership hardening:
+  - Backend rebuilt successfully in Docker (`docker compose up -d --build`)
+  - `cargo check` could not be executed in this shell because `cargo` was not available in PATH
 - Backend compatibility verification in this session:
   - `POST /api/support-tickets` accepted camelCase `guardId` payload after model alias update
 
