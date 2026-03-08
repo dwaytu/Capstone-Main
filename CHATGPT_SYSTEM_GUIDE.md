@@ -213,8 +213,12 @@ Current frontend reality:
 - Role typing/gating centralization is now in place:
   - `DasiaAIO-Frontend/src/types/auth.ts`: defines `Role`, `normalizeRole`, and elevated-role helpers.
   - `DasiaAIO-Frontend/src/utils/permissions.ts`: defines capability map and `can(...)` helper for UI gating.
+  - `DasiaAIO-Frontend/src/utils/permissions.ts`: now also exposes `canAny(...)` and `canAll(...)` for composite UI permission checks.
+  - `DasiaAIO-Frontend/src/config/navigation.ts`: single source for role-aware sidebar navigation across elevated and guard workspaces.
   - `DasiaAIO-Frontend/src/App.tsx`: now uses normalized roles and centralized permission checks for dashboard routing decisions.
   - `DasiaAIO-Frontend/src/components/AccountManager.tsx`: legacy `'user'` role-specific branch removed to stay aligned with normalized `Role` typing.
+  - `DasiaAIO-Frontend/src/components/dashboard/SectionPanel.tsx` + `DasiaAIO-Frontend/src/components/dashboard/CommandMetricCard.tsx`: reusable command-center layout primitives used for dashboard readability and KPI consistency.
+  - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`, `DasiaAIO-Frontend/src/components/AdminDashboard.tsx`, `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`, and `DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx` now consume centralized navigation and reduced ad-hoc role checks.
 
 ## 11. Local Runbook (Docker-first)
 
@@ -286,6 +290,10 @@ Verified in this session (Docker runtime):
 - Frontend verification after role-helper refactor:
   - `DasiaAIO-Frontend/src/App.tsx` diagnostics: no TypeScript errors
   - `npm run build` succeeded (Vite production build)
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+- Frontend verification after command-center/navigation refactor:
+  - Workspace diagnostics: no TypeScript errors
+  - `npm run build` succeeded
   - `npm test -- --runInBand` succeeded (`5/5` tests passing)
 - Backend verification after latest ownership hardening:
   - Backend rebuilt successfully in Docker (`docker compose up -d --build`)
