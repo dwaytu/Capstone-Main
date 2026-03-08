@@ -196,8 +196,11 @@ Current frontend reality:
 
 - Routing intent is:
   - `superadmin` -> superadmin dashboard path
-  - `admin` and `supervisor` -> shared superadmin-style dashboard shell (with role-gated actions)
+    - `admin` and `supervisor` -> shared superadmin-style dashboard shell (with role-gated actions)
   - `guard` and legacy `user` -> guard/user path
+  - Elevated landing-page fix:
+    - `DasiaAIO-Frontend/src/App.tsx` now sets default post-login/home view for all elevated roles (`superadmin`, `admin`, `supervisor`) to `dashboard` instead of `users`, preventing supervisor failures on restricted user-management routes.
+    - `DasiaAIO-Frontend/src/App.tsx` now renders the unified elevated shell (`SuperadminDashboard`) for `admin` and `supervisor` so visual structure is consistent across elevated roles.
 - Approvals tab exists for elevated roles and is expected in shared elevated navigation surfaces
 - Elevated role pages should send `Authorization: Bearer <token>` for protected API calls
 - Guard-specific pages must avoid calling endpoints restricted to elevated roles
@@ -232,8 +235,10 @@ Current frontend reality:
     - `DasiaAIO-Frontend/src/index.css`: tokenized tactical dark/light palette aligned to SOC surfaces, status semantics (`success`/`warning`/`danger`/`info`), and shared utilities (`status-bar-*`, `critical-glow`, `command-panel`, `skip-link`).
     - `DasiaAIO-Frontend/src/index.css`: global themed scrollbar system added (WebKit + Firefox) with tokenized track/thumb states and forced-colors fallback.
   - New reusable logo component:
-    - `DasiaAIO-Frontend/src/components/SentinelLogo.tsx` (SVG shield/reticle mark, theme-aware, reusable across shells).
+    - `DasiaAIO-Frontend/src/components/SentinelLogo.tsx` now implements the `Target & Scope` reticle-eye concept as pure SVG geometry with Tailwind-aware dark/light adaptation and explicit variants (`IconOnly`, `FullLogo`).
+    - `SentinelLogo` now supports `animated?: boolean` and includes a lightweight SVG radar system: rotating sweep beam (~3s), fading trail, pulse rings, and center-eye pulse (no JavaScript timers).
     - `DasiaAIO-Frontend/src/components/Logo.tsx` now serves as compatibility wrapper over `SentinelLogo`.
+    - Integration touchpoints updated for variant/animation usage: `DasiaAIO-Frontend/src/components/LoginPage.tsx`, `DasiaAIO-Frontend/src/components/Sidebar.tsx`, `DasiaAIO-Frontend/src/components/Header.tsx`, `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`.
   - Command-center visual hierarchy modernization:
     - `DasiaAIO-Frontend/src/components/dashboard/CommandMetricCard.tsx`
     - `DasiaAIO-Frontend/src/components/dashboard/SectionPanel.tsx`
@@ -256,6 +261,10 @@ Current frontend reality:
     - `DasiaAIO-Frontend/src/components/Header.tsx` and `DasiaAIO-Frontend/src/components/Sidebar.tsx` now embed `SentinelLogo` and use SOC typography/tokens.
     - `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` adds an explicit skip link + `main#maincontent` focus target.
     - `DasiaAIO-Frontend/src/components/LoginPage.tsx` now renders a mission-access terminal layout with tactical grid backdrop, branded auth card, and right-side system status panel.
+    - `LoginPage` now also includes command-center polish features:
+      - subtle full-viewport rotating radar sweep overlay in the background (pure CSS, low-opacity)
+      - live-style system status cards with iconography, status lights, and slow node ticker updates
+      - terminal-style login action button with glow/elevation hover, active flash/scale, and stronger keyboard focus ring
 
 ## 11. Local Runbook (Docker-first)
 
@@ -363,6 +372,24 @@ Verified in this session (Docker runtime):
   - `DasiaAIO-Frontend/src/index.css` diagnostics: no errors
   - `npm run build` succeeded
   - Route-by-route smoke on `http://localhost:4173` covered analytics, calendar, performance, trip management, merit scores, and armored cars without navigation regressions.
+- Frontend verification after SentinelLogo redesign:
+  - Diagnostics: no TypeScript errors in updated logo/integration files
+  - `npm run build` succeeded
+  - Runtime check: `http://localhost:5173` loaded successfully after update session (active page reachable)
+- Frontend verification after elevated-role routing fix + radar animation refinement:
+  - Diagnostics: no TypeScript errors in `App.tsx`, `SuperadminDashboard.tsx`, and updated logo integration files
+  - `npm run build` succeeded
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+  - Rebuilt and relaunched local frontend container on `5173`; supervisor session now lands on the unified dashboard shell (instead of user-management landing), with no blocking UI error banner.
+- Frontend verification after tactical login enhancements:
+  - Diagnostics: no errors in `SentinelLogo.tsx`, `LoginPage.tsx`, and `index.css`
+  - `npm run build` succeeded
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+  - Runtime checks on `http://localhost:5173` confirmed:
+    - animated radar logo active (`animateTransform` present)
+    - login background radar sweep overlay present (`.login-radar-sweep`)
+    - command-style login button class active (`.terminal-login-btn`)
+    - system status panel icons/lights rendered and monitoring-node ticker exposed via `aria-live="polite"`
 - Frontend runtime smoke (fresh Vite server on `http://localhost:4173`):
   - Admin login succeeded and rendered command-center blocks (`Security Operations Command Center`, quick actions, ops metric cards, and asset/shift widgets).
   - Sidebar role routing and section switching remained operational during smoke checks.
