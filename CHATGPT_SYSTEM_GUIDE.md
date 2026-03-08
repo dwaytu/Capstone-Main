@@ -178,6 +178,8 @@ Current backend reality:
 - Guard-scoped ownership enforcement was tightened in handlers to prevent cross-user access on authenticated routes:
   - `DasiaAIO-Backend/src/handlers/firearm_allocation.rs`: `get_guard_allocations` now requires `self` access or minimum `supervisor` role.
   - `DasiaAIO-Backend/src/handlers/guard_replacement.rs`: `check_in`, `check_out`, `set_availability`, `get_guard_shifts`, and `get_guard_attendance` now enforce self-or-supervisor checks, with additional guard/shift ownership validation in attendance flows.
+- Overdue firearm allocation query fix:
+  - `DasiaAIO-Backend/src/handlers/firearm_allocation.rs`: `get_overdue_allocations` now queries the existing `firearm_allocations.return_date` column (instead of non-existent `expected_return_date`) and returns `returnDate` in payload rows.
 
 ## 10. Frontend Context Snapshot (Keep Updated)
 
@@ -221,6 +223,39 @@ Current frontend reality:
   - `DasiaAIO-Frontend/src/components/dashboard/OperationalSummaryStrip.tsx` + `DasiaAIO-Frontend/src/components/dashboard/QuickActionsPanel.tsx`: shared dashboard modules for command metrics and high-frequency operations shortcuts.
   - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`, `DasiaAIO-Frontend/src/components/AdminDashboard.tsx`, `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`, and `DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx` now consume centralized navigation and reduced ad-hoc role checks.
   - `AdminDashboard` and `SuperadminDashboard` now both present command-style summary and quick-action sections to improve cross-role layout consistency and reduce clicks for common operations.
+  - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` now uses shared API helpers (`fetchJsonOrThrow`, `getAuthHeaders`) for user/shifts/missions/approvals CRUD and mission/schedule submissions, removing ad-hoc fetch/error parsing.
+  - `SuperadminDashboard` shell-logo navigation now synchronizes both internal section state and parent app view state via `onViewChange('dashboard')`.
+  - `DasiaAIO-Frontend/src/hooks/useOpsSummary.ts` now targets the correct pluralized firearm allocation endpoints (`/api/firearm-allocations/active`, `/api/firearm-allocations/overdue`) and maps backend response keys (`activeAllocations`/`overdueAllocations`).
+  - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` + `DasiaAIO-Frontend/src/hooks/useOpsAlerts.ts` were adjusted so alerts are derived from already-loaded summary state, removing duplicate summary API fetches.
+  - Global theming and visual tokens were refactored for SOC-style dual modes:
+    - `DasiaAIO-Frontend/src/context/ThemeProvider.tsx`: dark mode is now default (`localStorage`-persisted), still toggles `dark` class on `<html>`, and updates `meta[name='theme-color']`.
+    - `DasiaAIO-Frontend/src/index.css`: tokenized tactical dark/light palette aligned to SOC surfaces, status semantics (`success`/`warning`/`danger`/`info`), and shared utilities (`status-bar-*`, `critical-glow`, `command-panel`, `skip-link`).
+    - `DasiaAIO-Frontend/src/index.css`: global themed scrollbar system added (WebKit + Firefox) with tokenized track/thumb states and forced-colors fallback.
+  - New reusable logo component:
+    - `DasiaAIO-Frontend/src/components/SentinelLogo.tsx` (SVG shield/reticle mark, theme-aware, reusable across shells).
+    - `DasiaAIO-Frontend/src/components/Logo.tsx` now serves as compatibility wrapper over `SentinelLogo`.
+  - Command-center visual hierarchy modernization:
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandMetricCard.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/SectionPanel.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/OperationalSummaryStrip.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/QuickActionsPanel.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/OpsMetricCard.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/OpsAlertFeed.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/OpsTableWidget.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/OpsSectionGrid.tsx`
+  - Additional SOC consistency pass for non-command-center operational views:
+    - `DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx`: legacy light-only cards replaced with tokenized command panels and status-bar KPIs.
+    - `DasiaAIO-Frontend/src/components/TripManagement.tsx`: error/banner states, action buttons, modal surfaces, and assignment chips updated to SOC token classes.
+    - `DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx`: alert banners, KPI strip, and tab panels moved to `bento-card`/`command-panel`/`table-glass` hierarchy.
+    - `DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx`: ranking/detail/evaluation surfaces updated to command-panel styling and shared action button styles.
+    - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: filter controls, monthly grid states, and day-detail status chips aligned to shared SOC status tokens; added skip link and `main#maincontent` focus target.
+    - `DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx`: table header/metric styling aligned to SOC command surfaces; attendance progress bars and task chips moved to semantic token-driven styles; added skip link and `main#maincontent` focus target.
+    - `DasiaAIO-Frontend/src/index.css`: added shared SOC utilities for multi-page reuse (`soc-btn*`, `soc-alert-*`, `soc-chip`).
+  - Branded shell/login integration:
+    - `DasiaAIO-Frontend/src/components/Header.tsx` and `DasiaAIO-Frontend/src/components/Sidebar.tsx` now embed `SentinelLogo` and use SOC typography/tokens.
+    - `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` adds an explicit skip link + `main#maincontent` focus target.
+    - `DasiaAIO-Frontend/src/components/LoginPage.tsx` now renders a mission-access terminal layout with tactical grid backdrop, branded auth card, and right-side system status panel.
 
 ## 11. Local Runbook (Docker-first)
 
@@ -297,6 +332,47 @@ Verified in this session (Docker runtime):
   - Workspace diagnostics: no TypeScript errors
   - `npm run build` succeeded
   - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+- Frontend verification after superadmin API-helper unification:
+  - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` diagnostics: no TypeScript errors
+  - `npm run build` succeeded
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+- Frontend verification after command-center endpoint and alert-fetch optimization:
+  - `npm run build` succeeded
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+- Frontend verification after SOC visual/theming refactor:
+  - Workspace diagnostics: no TypeScript errors in modified frontend files
+  - `npm run build` succeeded
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+  - Browser smoke on `http://localhost:4173` verified:
+    - command-center top/middle/bottom hierarchy and quick-action console layout
+    - skip-link presence and keyboard focus target (`#maincontent`)
+    - branded login terminal layout and integrated `SentinelLogo`
+    - header theme toggle + dark/light mode switching behavior
+- Frontend verification after additional multi-page SOC consistency pass:
+  - Workspace diagnostics: no TypeScript errors in modified files
+  - `npm run build` succeeded
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+  - Browser smoke checks confirmed updated visual system is active on auth and operational workspaces, including armored-car and merit-score flows.
+- Frontend verification after final calendar/performance SOC polish:
+  - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx` diagnostics: no TypeScript errors
+  - `DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx` diagnostics: no TypeScript errors
+  - `npm run build` succeeded
+  - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+  - Browser smoke (`http://localhost:4173`) confirmed calendar route render and navigation stability; note that long-running local container instances may require refresh/rebuild to reflect latest static bundle text changes.
+- Frontend verification after global scrollbar polish:
+  - `DasiaAIO-Frontend/src/index.css` diagnostics: no errors
+  - `npm run build` succeeded
+  - Route-by-route smoke on `http://localhost:4173` covered analytics, calendar, performance, trip management, merit scores, and armored cars without navigation regressions.
+- Frontend runtime smoke (fresh Vite server on `http://localhost:4173`):
+  - Admin login succeeded and rendered command-center blocks (`Security Operations Command Center`, quick actions, ops metric cards, and asset/shift widgets).
+  - Sidebar role routing and section switching remained operational during smoke checks.
+- Production runtime sweep in this session:
+  - `GET /api/health` => `200`
+  - RBAC matrix: `GET /api/users` => `admin=200`, `supervisor=403`, `guard=403`
+  - RBAC matrix: `GET /api/analytics` => `admin=200`, `supervisor=200`, `guard=403`
+- Backend endpoint compatibility checks for command-center data:
+  - `GET /api/firearm-allocations/active` => `200`
+  - `GET /api/firearm-allocations/overdue` => `200` after handler query correction
 - Backend verification after latest ownership hardening:
   - Backend rebuilt successfully in Docker (`docker compose up -d --build`)
   - `cargo check` could not be executed in this shell because `cargo` was not available in PATH
@@ -316,6 +392,7 @@ Role-based runtime sweep (recommended):
 - Frontend still shares dashboard surfaces for some elevated roles; backend authorization remains the source of truth.
 - Visual design parity between `AdminDashboard` and `SuperadminDashboard` is improved functionally but can still be unified further.
 - Continue auditing newly added UI actions for missing auth headers whenever a component introduces a fresh `/api/*` call.
+- Frontend local smoke depends on API base URL targeting an available backend. When frontend points to production while local backend is expected (or vice versa), dashboard widgets can show partial data/loading states even if UI wiring is correct.
 - Existing build warnings remain for unused structs/fields in some modules. These are non-blocking for current runtime but should be tracked.
 - Railway CLI was not available in this environment (`railway` command not found), so production account SQL could not be executed directly from this machine.
 
