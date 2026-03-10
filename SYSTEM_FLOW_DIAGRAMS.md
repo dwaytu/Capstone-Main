@@ -95,7 +95,7 @@ flowchart TD
 ## 3. Data Flow Diagram (Level 1)
 
 ```mermaid
-flowchart LR
+flowchart TD
     %% External Entities
     U[User\nSuperadmin Admin Supervisor Guard]
     M[Mail Provider\nVerification + Reset Codes]
@@ -114,6 +114,7 @@ flowchart LR
 
     %% Flows
     U -->|Credentials Registration Data| P1
+    U -->|Bearer Token + Requests| P2
     P1 -->|Verification/Reset Emails| M
     M -->|Codes| U
 
@@ -123,7 +124,6 @@ flowchart LR
     D2 -->|Token Validation| P1
 
     P1 -->|JWT + Session Context| P2
-    U -->|Bearer Token + Requests| P2
     P2 -->|Authorized Requests| P3
     P2 -->|Authorized Requests| P4
     P2 -->|Denied/Error| U
@@ -145,7 +145,7 @@ flowchart LR
 ### 4.1 Auth and Account Lifecycle (Level 2)
 
 ```mermaid
-flowchart LR
+flowchart TD
         U[User] -->|Register/Login/Reset Input| P11[1.1 Validate Request]
         P11 --> P12[1.2 Register Guard]
         P11 --> P13[1.3 Authenticate Login]
@@ -176,7 +176,7 @@ flowchart LR
 ### 4.2 Operations Core (Firearms, Vehicles, Trips, Missions)
 
 ```mermaid
-flowchart LR
+flowchart TD
         E[Elevated User] --> P31[3.1 Resource Catalog Access]
         E --> P32[3.2 Allocation + Assignment]
         E --> P33[3.3 Trip and Mission Control]
@@ -206,29 +206,46 @@ flowchart LR
 ### 4.3 Support, Notification, Merit, Analytics
 
 ```mermaid
-flowchart LR
-        U[User] --> P41[4.1 Ticket Submission + Tracking]
-        U --> P42[4.2 Notification Center]
-        U --> P43[4.3 Merit and Performance Views]
-        U --> P44[4.4 Analytics Dashboard]
+flowchart TD
+        U[User]
 
-        P41 <--> D41[(Support Tickets)]
-        P42 <--> D42[(Notifications)]
-        P43 <--> D43[(Merit Scores + Evaluations)]
-        P44 <--> D44[(Operational Aggregates)]
+        subgraph Interaction Processes
+            P41[4.1 Ticket Submission + Tracking]
+            P42[4.2 Notification Center]
+            P43[4.3 Merit and Performance Views]
+            P44[4.4 Analytics Dashboard]
+        end
+
+        subgraph Data Stores
+            D41[(Support Tickets)]
+            D42[(Notifications)]
+            D43[(Merit Scores + Evaluations)]
+            D44[(Operational Aggregates)]
+        end
+
+        U --> P41
+        U --> P42
+        U --> P43
+        U --> P44
+
+        P41 <--> D41
+        P42 <--> D42
+        P43 <--> D43
+        P44 <--> D44
 
         P41 --> P45[4.5 Alert + Event Propagation]
         P43 --> P45
         P45 --> D42
-        P45 --> U
 
+        D42 --> P42
+        P42 --> U
         P44 --> U
 ```
 
 ## 5. Role-Based Swimlane Activity Diagram
 
 ```mermaid
-flowchart LR
+flowchart TB
         subgraph Guard Lane
             G1[Login] --> G2[View Schedule and Assignments]
             G2 --> G3[Check-In/Check-Out]
