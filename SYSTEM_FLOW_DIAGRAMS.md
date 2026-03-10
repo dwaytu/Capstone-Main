@@ -139,3 +139,147 @@ flowchart LR
     P3 -->|Write Audit Events| D4
     P4 -->|Write Audit Events| D4
 ```
+
+## 4. Data Flow Diagram (Level 2)
+
+### 4.1 Auth and Account Lifecycle (Level 2)
+
+```mermaid
+flowchart LR
+        U[User] -->|Register/Login/Reset Input| P11[1.1 Validate Request]
+        P11 --> P12[1.2 Register Guard]
+        P11 --> P13[1.3 Authenticate Login]
+        P11 --> P14[1.4 Password Recovery]
+        P11 --> P15[1.5 Email Verification]
+
+        P12 --> D1[(Users)]
+        P12 --> D2[(Verifications)]
+        P12 --> D5[(Notifications)]
+
+        P15 --> D2
+        P15 --> D1
+
+        P13 --> D1
+        P13 --> U
+
+        P14 --> D6[(Password Reset Tokens)]
+        P14 --> D1
+        P14 --> U
+
+        D1 --> P16[1.6 Approval Gate Check]
+        D2 --> P16
+        P16 -->|Approved + Verified| P17[1.7 JWT Session Issue]
+        P16 -->|Rejected/Pending| U
+        P17 --> U
+```
+
+### 4.2 Operations Core (Firearms, Vehicles, Trips, Missions)
+
+```mermaid
+flowchart LR
+        E[Elevated User] --> P31[3.1 Resource Catalog Access]
+        E --> P32[3.2 Allocation + Assignment]
+        E --> P33[3.3 Trip and Mission Control]
+        E --> P34[3.4 Maintenance and Permit Oversight]
+
+        P31 <--> D31[(Firearms)]
+        P31 <--> D32[(Armored Cars)]
+
+        P32 <--> D33[(Firearm Allocations)]
+        P32 <--> D34[(Car Allocations)]
+        P32 <--> D35[(Driver Assignments)]
+
+        P33 <--> D36[(Trips)]
+        P33 <--> D37[(Missions)]
+        P33 <--> D38[(Shifts + Attendance)]
+
+        P34 <--> D39[(Firearm Maintenance)]
+        P34 <--> D40[(Vehicle Maintenance)]
+        P34 <--> D41[(Guard Permits)]
+
+        P32 --> P35[3.5 Operational Status Aggregation]
+        P33 --> P35
+        P34 --> P35
+        P35 --> E
+```
+
+### 4.3 Support, Notification, Merit, Analytics
+
+```mermaid
+flowchart LR
+        U[User] --> P41[4.1 Ticket Submission + Tracking]
+        U --> P42[4.2 Notification Center]
+        U --> P43[4.3 Merit and Performance Views]
+        U --> P44[4.4 Analytics Dashboard]
+
+        P41 <--> D41[(Support Tickets)]
+        P42 <--> D42[(Notifications)]
+        P43 <--> D43[(Merit Scores + Evaluations)]
+        P44 <--> D44[(Operational Aggregates)]
+
+        P41 --> P45[4.5 Alert + Event Propagation]
+        P43 --> P45
+        P45 --> D42
+        P45 --> U
+
+        P44 --> U
+```
+
+## 5. Role-Based Swimlane Activity Diagram
+
+```mermaid
+flowchart LR
+        subgraph Guard Lane
+            G1[Login] --> G2[View Schedule and Assignments]
+            G2 --> G3[Check-In/Check-Out]
+            G3 --> G4[View Permits and Notifications]
+            G4 --> G5[Create Support Ticket]
+        end
+
+        subgraph Supervisor Lane
+            S1[Login] --> S2[View Dashboard and Alerts]
+            S2 --> S3[Approve/Reject Pending Guards]
+            S3 --> S4[Coordinate Shifts and Replacements]
+            S4 --> S5[Monitor Trips and Equipment Status]
+        end
+
+        subgraph Admin Lane
+            A1[Login] --> A2[Operate Elevated Dashboard]
+            A2 --> A3[Manage Users below Superadmin]
+            A3 --> A4[Manage Firearms, Vehicles, Allocations]
+            A4 --> A5[Review Analytics, Merit, Tickets]
+        end
+
+        subgraph Superadmin Lane
+            SA1[Login] --> SA2[Global Operational Oversight]
+            SA2 --> SA3[Create/Manage Admin and Supervisor Accounts]
+            SA3 --> SA4[Mission Assignment and High-Risk Decisions]
+            SA4 --> SA5[Audit and Policy Enforcement]
+        end
+
+        G5 --> S2
+        S5 --> A2
+        A5 --> SA2
+        SA5 --> S2
+```
+
+## 6. PNG Export-Ready Outputs
+
+Use Mermaid CLI to export PNG files from this document.
+
+```powershell
+cd "d:\Dwight\Capstone Main"
+npx -y @mermaid-js/mermaid-cli -i SYSTEM_FLOW_DIAGRAMS.md -o SYSTEM_FLOW_DIAGRAMS.png
+```
+
+If your Mermaid CLI version does not support multi-diagram markdown input, export each diagram by placing each code block in its own `.mmd` file and run:
+
+```powershell
+npx -y @mermaid-js/mermaid-cli -i process-flow.mmd -o process-flow.png
+npx -y @mermaid-js/mermaid-cli -i activity-flow.mmd -o activity-flow.png
+npx -y @mermaid-js/mermaid-cli -i dfd-level1.mmd -o dfd-level1.png
+npx -y @mermaid-js/mermaid-cli -i dfd-level2-auth.mmd -o dfd-level2-auth.png
+npx -y @mermaid-js/mermaid-cli -i dfd-level2-ops.mmd -o dfd-level2-ops.png
+npx -y @mermaid-js/mermaid-cli -i dfd-level2-support.mmd -o dfd-level2-support.png
+npx -y @mermaid-js/mermaid-cli -i swimlane-roles.mmd -o swimlane-roles.png
+```
