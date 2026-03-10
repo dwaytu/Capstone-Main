@@ -269,7 +269,32 @@ Use Mermaid CLI to export PNG files from this document.
 
 ```powershell
 cd "d:\Dwight\Capstone Main"
-npx -y @mermaid-js/mermaid-cli -i SYSTEM_FLOW_DIAGRAMS.md -o SYSTEM_FLOW_DIAGRAMS.png
+npx -y @mermaid-js/mermaid-cli -w 2480 -H 3508 -i SYSTEM_FLOW_DIAGRAMS.md -o SYSTEM_FLOW_DIAGRAMS.png
+```
+
+Note: Mermaid CLI keeps tight content bounds, so each image may still be smaller than full A4 canvas.
+To force exact A4 page size for each PNG, pad the exports with this command:
+
+```powershell
+cd "d:\Dwight\Capstone Main"
+Add-Type -AssemblyName System.Drawing
+$targetW = 2480
+$targetH = 3508
+Get-ChildItem SYSTEM_FLOW_DIAGRAMS-*.png | ForEach-Object {
+    $srcPath = $_.FullName
+    $img = [System.Drawing.Image]::FromFile($srcPath)
+    $bmp = New-Object System.Drawing.Bitmap($targetW, $targetH)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.Clear([System.Drawing.Color]::White)
+    $x = [int](($targetW - $img.Width) / 2)
+    $y = [int](($targetH - $img.Height) / 2)
+    $g.DrawImage($img, $x, $y, $img.Width, $img.Height)
+    $img.Dispose(); $g.Dispose()
+    $tmp = "$srcPath.a4.tmp.png"
+    $bmp.Save($tmp, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    Move-Item -Force $tmp $srcPath
+}
 ```
 
 If your Mermaid CLI version does not support multi-diagram markdown input, export each diagram by placing each code block in its own `.mmd` file and run:
