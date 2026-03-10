@@ -67,6 +67,7 @@ Behavior highlights:
 - Login requires both email verification and `approval_status = approved`
 - Admin/supervisor accounts should be created internally via authenticated management flows
 - Email verification required when email provider is configured
+- Email verification is mandatory for guard self-registration; registration is rejected when email verification provider is not configured
 - JWT token issued on login and used by frontend persistence
 
 Approval workflow highlights (implemented):
@@ -171,6 +172,9 @@ Current backend reality:
 
 - Role hierarchy in business logic is `superadmin > admin > supervisor > guard` with `user` legacy compatibility
 - Public registration creates pending guards that require reviewer approval
+- Public registration now always creates `verified = false` pending guards and always issues a verification-code challenge
+- `POST /api/register` now fails fast when `RESEND_API_KEY` is missing so unverified guard accounts are not created without a deliverable code path
+- `POST /api/verify` now validates confirmation codes against both code and email (joined to the `users` table), reducing cross-account code misuse risk
 - Reviewer notifications and guard decision notifications are persisted in `notifications`
 - API authorization is still the final source of truth even when frontend hides/shows role surfaces
 - Centralized middleware coverage now spans both primary and legacy privileged route families (users, firearms, allocations, schedules, missions, analytics, notifications, tickets, merit, armored cars, trips, permits, maintenance, training)
@@ -224,6 +228,12 @@ Current frontend reality:
   - `DasiaAIO-Frontend/src/components/AccountManager.tsx`: legacy `'user'` role-specific branch removed to stay aligned with normalized `Role` typing.
   - `DasiaAIO-Frontend/src/components/dashboard/SectionPanel.tsx` + `DasiaAIO-Frontend/src/components/dashboard/CommandMetricCard.tsx`: reusable command-center layout primitives used for dashboard readability and KPI consistency.
   - `DasiaAIO-Frontend/src/components/dashboard/OperationalSummaryStrip.tsx` + `DasiaAIO-Frontend/src/components/dashboard/QuickActionsPanel.tsx`: shared dashboard modules for command metrics and high-frequency operations shortcuts.
+  - `DasiaAIO-Frontend/src/components/dashboard/LiveOperationsFeed.tsx` + `DasiaAIO-Frontend/src/components/dashboard/SystemInfrastructureStatus.tsx`: new SOC live-storytelling and infrastructure-health panels (status dots, category coloring, chronological event feed).
+  - `DasiaAIO-Frontend/src/components/dashboard/MissionTimelinePanel.tsx`: mission progression panel with queued/active/completed tactical states.
+  - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPlaceholder.tsx`: animated tactical map placeholder with radar sweep/ping and active-trip/deployed-guard counters.
+  - `DasiaAIO-Frontend/src/components/dashboard/IncidentAlertFeed.tsx`: dedicated incident stream panel for prioritized alerts.
+  - `DasiaAIO-Frontend/src/components/dashboard/GuardDeploymentOverview.tsx`: deployment summary cards + guard/site/status table.
+  - `DasiaAIO-Frontend/src/hooks/useServiceHealth.ts`: live endpoint probes powering binary service reachability states.
   - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`, `DasiaAIO-Frontend/src/components/AdminDashboard.tsx`, `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`, and `DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx` now consume centralized navigation and reduced ad-hoc role checks.
   - `AdminDashboard` and `SuperadminDashboard` now both present command-style summary and quick-action sections to improve cross-role layout consistency and reduce clicks for common operations.
   - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` now uses shared API helpers (`fetchJsonOrThrow`, `getAuthHeaders`) for user/shifts/missions/approvals CRUD and mission/schedule submissions, removing ad-hoc fetch/error parsing.
@@ -249,6 +259,19 @@ Current frontend reality:
     - `DasiaAIO-Frontend/src/components/dashboard/OpsAlertFeed.tsx`
     - `DasiaAIO-Frontend/src/components/dashboard/OpsTableWidget.tsx`
     - `DasiaAIO-Frontend/src/components/dashboard/OpsSectionGrid.tsx`
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now includes:
+      - global operations strip with system status, threat level, active guards, active missions, alert count, and live clock
+      - live operations feed with chronological activity categories (guard, vehicle, mission, equipment, system)
+      - system infrastructure status panel (Database, API Gateway, Monitoring Nodes, Vehicle Telemetry, Authentication Service)
+      - periodic refresh for command metrics/data and subtle live updates
+      - mission timeline, operational map placeholder, incident alert feed, and guard deployment overview while preserving existing tactical shell/layout
+      - infrastructure status indicators now represent live endpoint reachability (`online` green / `offline` red), not static placeholders
+  - Micro-interaction upgrades:
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandMetricCard.tsx` animates numeric metric changes.
+    - `DasiaAIO-Frontend/src/components/Header.tsx` and `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` refresh controls now use rotating refresh-icon feedback.
+    - `DasiaAIO-Frontend/src/components/Sidebar.tsx` adds visual group separators between `MAIN MENU`, `OPERATIONS`, and `RESOURCES` without changing nav structure.
+  - Guard approvals table consistency update:
+    - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` and `DasiaAIO-Frontend/src/components/AdminDashboard.tsx` now always render approval tables with consistent columns (`Guard Name`, `Requested Role`, `Submitted Date`, `Status`, `Actions`) and table-embedded empty state: `No pending guard approvals.`
   - Additional SOC consistency pass for non-command-center operational views:
     - `DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx`: legacy light-only cards replaced with tokenized command panels and status-bar KPIs.
     - `DasiaAIO-Frontend/src/components/TripManagement.tsx`: error/banner states, action buttons, modal surfaces, and assignment chips updated to SOC token classes.
@@ -405,6 +428,24 @@ Verified in this session (Docker runtime):
   - `cargo check` could not be executed in this shell because `cargo` was not available in PATH
 - Backend compatibility verification in this session:
   - `POST /api/support-tickets` accepted camelCase `guardId` payload after model alias update
+- Frontend verification after SOC command-center operations enhancements + approvals table consistency update:
+  - Workspace diagnostics: no errors in modified frontend/backend files
+  - `npm run build` succeeded
+  - `cargo check` could not be executed in this shell because `cargo` is not available in PATH
+- Backend runtime verification after mandatory verification + dashboard follow-up session:
+  - `docker compose up -d --build` succeeded in `DasiaAIO-Backend`
+  - `docker compose ps` shows backend up and postgres healthy
+  - `GET /api/health` returned `200` with `{"status":"ok"}`
+  - Non-destructive endpoint probes: unauthenticated `GET /api/users/pending-approvals` returned `401`; invalid `POST /api/verify` returned `400`
+- Frontend runtime verification after mission-control panel expansion:
+  - `npm run build` succeeded
+  - Frontend Docker image rebuilt and relaunched on `http://localhost:5173`
+  - Browser smoke confirms command center renders new panels: `Mission Timeline`, `Operational Map`, `Incident Alert Feed`, and `Guard Deployment Overview`
+- Account login verification in this session (`POST /api/login`) with provided credentials:
+  - `Dwight / december262001` => `200` (`superadmin`)
+  - `admin / admin123` => `200` (`admin`)
+  - `supervisor / supervisor123` => `200` (`supervisor`)
+  - `guard / guard123` => `200` (`guard`)
 
 Role-based runtime sweep (recommended):
 
