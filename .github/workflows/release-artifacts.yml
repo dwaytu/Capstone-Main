@@ -122,6 +122,7 @@ jobs:
           npm run build --prefix DasiaAIO-Frontend -- --mode mobile
           npm run sync --prefix apps/android-capacitor
           cd apps/android-capacitor/android
+          chmod +x gradlew
           ./gradlew :app:assembleRelease
 
       - name: Upload signed APK
