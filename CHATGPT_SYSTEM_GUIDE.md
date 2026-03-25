@@ -20,6 +20,7 @@ It manages:
 - Database: PostgreSQL
 - Runtime/Deployment: Docker + Docker Compose (local), Railway (production)
 - ORM/DB client: `sqlx 0.8.x` (upgraded from 0.7.x)
+- Mapping: OpenStreetMap tiles rendered via Leaflet + React Leaflet (`DasiaAIO-Frontend`)
 
 ## 3. Repository Layout
 
@@ -28,7 +29,7 @@ It manages:
 - Root docs:
   - `SYSTEM_AUDIT_REPORT.md`
   - `explanation.md`
-  - `Capstone_Option_5_DASIA_Implemented_System.md`
+  - `SENTINEL - Group 8.pdf`
 
 ## 4. Current Role Model (Important)
 
@@ -42,6 +43,7 @@ It manages:
 ### Legacy compatibility still present
 
 - `user` is still accepted as a legacy role value and normalized to `guard` in critical paths.
+- Frontend role normalization now treats role strings case-insensitively (for example `Admin`, `ADMIN`, ` admin `), reducing accidental fallback to `guard` caused by inconsistent casing.
 
 If ChatGPT is asked about roles, it should verify code paths before assuming docs are fully accurate.
 
@@ -119,6 +121,13 @@ Main table domains include:
 - `firearms`, `firearm_allocations`, permit/maintenance related tables
 - `armored_cars`, car allocations, trips, driver assignments, vehicle maintenance
 - Notifications, tickets, merit-related tables
+- Operational map tracking tables: `client_sites`, `tracking_points`
+- AI operational intelligence tables:
+  - `guard_absence_predictions`
+  - `smart_guard_replacements`
+  - `incident_severity_classifications`
+  - `predictive_vehicle_maintenance`
+  - `ai_incident_summaries`
 
 `users.role` is a free-form varchar in schema, but business logic constrains allowed values in auth and frontend checks.
 
@@ -144,6 +153,7 @@ API utility hardening:
 - JWT generation and verification are active and used in managed user creation.
 - Permission-based authorization middleware is active (`DasiaAIO-Backend/src/middleware/authz.rs`) and applied at route level in `DasiaAIO-Backend/src/main.rs`.
 - Centralized write audit middleware is active (`DasiaAIO-Backend/src/middleware/audit.rs`) and records write outcomes (`success`/`failed`) into `audit_logs`.
+- Elevated roles can now review those records through `GET /api/audit-logs` (admin+). The handler (`DasiaAIO-Backend/src/handlers/audit.rs`) supports pagination + filtering and joins user context so SOC operators can trace who performed each action.
 - Managed user creation endpoint (`POST /api/users`) enforces role hierarchy:
   - `superadmin` can create `admin`, `supervisor`, and `guard`
   - `admin` can create `supervisor` and `guard`
@@ -177,6 +187,9 @@ Current backend reality:
 - `POST /api/verify` now validates confirmation codes against both code and email (joined to the `users` table), reducing cross-account code misuse risk
 - Reviewer notifications and guard decision notifications are persisted in `notifications`
 - API authorization is still the final source of truth even when frontend hides/shows role surfaces
+- Dashboard contract aliases are now explicitly available for integration stability:
+  - `GET /api/guards` (approved guards list)
+  - `GET /api/vehicles` (armored-car list alias)
 - Centralized middleware coverage now spans both primary and legacy privileged route families (users, firearms, allocations, schedules, missions, analytics, notifications, tickets, merit, armored cars, trips, permits, maintenance, training)
 - Audit logging is route-layered on write endpoints and captures both authorized writes and authorization failures that return HTTP error responses
 - Guard-scoped ownership enforcement was tightened in handlers to prevent cross-user access on authenticated routes:
@@ -184,6 +197,57 @@ Current backend reality:
   - `DasiaAIO-Backend/src/handlers/guard_replacement.rs`: `check_in`, `check_out`, `set_availability`, `get_guard_shifts`, and `get_guard_attendance` now enforce self-or-supervisor checks, with additional guard/shift ownership validation in attendance flows.
 - Overdue firearm allocation query fix:
   - `DasiaAIO-Backend/src/handlers/firearm_allocation.rs`: `get_overdue_allocations` now queries the existing `firearm_allocations.return_date` column (instead of non-existent `expected_return_date`) and returns `returnDate` in payload rows.
+- Presence tracking update:
+  - `DasiaAIO-Backend/src/models.rs`: `User` and `UserResponse` now include `last_seen_at`.
+  - `DasiaAIO-Backend/src/db.rs`: startup schema bootstrap now ensures `users.last_seen_at TIMESTAMPTZ` exists.
+  - `DasiaAIO-Backend/src/middleware/presence.rs`: new global middleware updates `users.last_seen_at` on authenticated requests.
+  - `DasiaAIO-Backend/src/main.rs`: global `touch_last_seen` middleware is now wired with DB state.
+  - `DasiaAIO-Backend/src/handlers/auth.rs`: successful login now updates `last_seen_at`.
+  - `DasiaAIO-Backend/src/handlers/users.rs`: user list/detail queries now select `last_seen_at` so frontend can render presence.
+- Operational map tracking update:
+  - `DasiaAIO-Backend/src/db.rs`: startup schema bootstrap now creates `client_sites` and `tracking_points` plus entity/time index.
+  - `DasiaAIO-Backend/src/handlers/tracking.rs`: new handlers for map data retrieval and telemetry/site ingestion.
+  - `DasiaAIO-Backend/src/handlers/mod.rs`: `tracking` module export added.
+  - `DasiaAIO-Backend/src/main.rs`: new authenticated routes:
+    - `GET /api/tracking/map-data`
+    - `POST /api/tracking/points`
+    - `POST /api/tracking/client-sites`
+  - Guard safety rule: guards can only submit `entityType='guard'` points for their own `entityId` (JWT `sub`).
+  - Expanded tracking API for location lifecycle and live streaming:
+    - `GET /api/tracking/client-sites`
+    - `PUT /api/tracking/client-sites/:id`
+    - `DELETE /api/tracking/client-sites/:id`
+    - `POST /api/tracking/heartbeat` (guard session heartbeat -> guard tracking point)
+    - `GET /api/tracking/ws?token=<jwt>` (websocket snapshot stream)
+  - `DasiaAIO-Backend/Cargo.toml`: `axum` now enables `ws` feature for websocket upgrades.
+  - Websocket broadcast behavior:
+    - tracking/site create-update-delete and heartbeat actions publish map refresh events.
+    - active websocket clients receive updated map snapshots without polling reload.
+  - Session-autoplot behavior:
+    - map snapshots for elevated roles now include online guard session markers (`last_seen_at` window + latest guard coordinates).
+- Predictive alerting surface (new):
+  - `DasiaAIO-Backend/src/handlers/alerts.rs`: aggregates near-term risk heuristics (permits expiring within 7 days, overdue vehicle maintenance, repeated guard no-shows, low guard availability) and normalizes them into alert objects.
+  - `GET /api/alerts/predictive` (supervisor+) now returns these alerts, sharing the analytics authorization path (`require_analytics_view`).
+  - Responses include severity, category, detected timestamp, and structured context so the frontend can render warning cards without re-querying raw tables.
+- Guard absence prediction surface (new):
+  - `DasiaAIO-Backend/src/services/guard_prediction_service.rs`: deterministic scoring service for upcoming-shift guards using weighted heuristic
+    - `AbsenceRisk = (previous_absences * 0.5) + (late_checkins * 0.3) + (recent_leave_requests * 0.2)`
+    - Inputs are sourced from `punctuality_records`, `guard_availability`, and leave-like `support_tickets` text signals.
+  - Service persists explainable prediction artifacts in `guard_absence_predictions` (`explanation`, `contributing_factors`, `source_snapshot`).
+  - `DasiaAIO-Backend/src/handlers/ai.rs`: exposes `GET /api/ai/guard-absence-risk` (supervisor+).
+  - `DasiaAIO-Backend/src/main.rs`: route registration for `/api/ai/guard-absence-risk` behind analytics view authorization.
+- Smart guard replacement surface (new):
+  - `DasiaAIO-Backend/src/services/replacement_ai_service.rs`: deterministic recommendation engine for post coverage with scoring model:
+    - `ReplacementScore = (reliability_score * 0.4) + (availability * 0.3) + (distance_score * 0.3)`
+    - Candidate filters enforce `availability = true` and valid active permit before ranking.
+    - Distance scoring uses post coordinates (`client_sites`) and latest guard coordinates (`tracking_points`) via Haversine distance.
+  - `suggest_replacement(post_id)` returns top 3 guards and persists explainable records in `smart_guard_replacements` when an active/scheduled shift is found for the post.
+  - `DasiaAIO-Backend/src/handlers/ai.rs`: exposes `GET /api/ai/replacement-suggestions?post_id=<client_site_id>` (supervisor+).
+  - `DasiaAIO-Backend/src/main.rs`: route registration for `/api/ai/replacement-suggestions` behind analytics view authorization.
+- System audit review API (new):
+  - `DasiaAIO-Backend/src/handlers/audit.rs`: exposes paginated + filterable reads on `audit_logs` while enforcing `require_min_role('admin')`.
+  - `DasiaAIO-Backend/src/models.rs`: adds `AuditLogEntry`, `AuditLogListResponse`, and `AuditLogPageMeta` so contracts stay typed.
+  - `DasiaAIO-Backend/src/main.rs`: registers `GET /api/audit-logs` with authenticated middleware; only admin/superadmin requests succeed.
 
 ## 10. Frontend Context Snapshot (Keep Updated)
 
@@ -208,6 +272,13 @@ Current frontend reality:
 - Approvals tab exists for elevated roles and is expected in shared elevated navigation surfaces
 - Elevated role pages should send `Authorization: Bearer <token>` for protected API calls
 - Guard-specific pages must avoid calling endpoints restricted to elevated roles
+  - Frontend auth-expiry handling is now centralized:
+    - `DasiaAIO-Frontend/src/utils/api.ts`: `fetchJsonOrThrow` now detects invalid/expired-token responses (`401/403` or token-expiry error text), emits a one-time `auth:token-expired` browser event, and throws a normalized session-expired message.
+    - `DasiaAIO-Frontend/src/App.tsx`: listens for `auth:token-expired`, clears local auth storage, and returns the UI to the login screen to stop repeated protected polling attempts and console-error spam.
+  - Frontend console-noise suppression for expected auth failures:
+    - `DasiaAIO-Frontend/src/utils/logger.ts`: new shared logger utility with `isExpectedAuthNoise(...)` and `logError(...)` to suppress expected invalid-token/session-expiry fetch noise while preserving unexpected-error logging.
+    - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`, `DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx`, and `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx` now route noisy fetch logs through `logError(...)`.
+    - Rollout expanded to additional operational surfaces: `FirearmInventory.tsx`, `FirearmAllocation.tsx`, `EditScheduleModal.tsx`, `FirearmMaintenance.tsx`, `GuardFirearmPermits.tsx`, `MeritScoreDashboard.tsx`, `PerformanceDashboard.tsx`, `NotificationPanel.tsx`, `ProfileDashboard.tsx`, and `UserDashboard.tsx`.
 - Guard/profile/support flows were hardened to include bearer headers on protected endpoints (attendance, allocations, tickets, profile update/photo actions)
 - UI permission gates in shared elevated shell:
   - `superadmin`: full management actions
@@ -221,6 +292,7 @@ Current frontend reality:
   - Dashboards with custom right-side controls keep their custom controls
 - Role typing/gating centralization is now in place:
   - `DasiaAIO-Frontend/src/types/auth.ts`: defines `Role`, `normalizeRole`, and elevated-role helpers.
+    - Role parsing now trims and lowercases role input before validation, then applies legacy `user -> guard` compatibility.
   - `DasiaAIO-Frontend/src/utils/permissions.ts`: defines capability map and `can(...)` helper for UI gating.
   - `DasiaAIO-Frontend/src/utils/permissions.ts`: now also exposes `canAny(...)` and `canAll(...)` for composite UI permission checks.
   - `DasiaAIO-Frontend/src/config/navigation.ts`: single source for role-aware sidebar navigation across elevated and guard workspaces.
@@ -228,6 +300,8 @@ Current frontend reality:
   - `DasiaAIO-Frontend/src/components/AccountManager.tsx`: legacy `'user'` role-specific branch removed to stay aligned with normalized `Role` typing.
   - `DasiaAIO-Frontend/src/components/dashboard/SectionPanel.tsx` + `DasiaAIO-Frontend/src/components/dashboard/CommandMetricCard.tsx`: reusable command-center layout primitives used for dashboard readability and KPI consistency.
   - `DasiaAIO-Frontend/src/components/dashboard/OperationalSummaryStrip.tsx` + `DasiaAIO-Frontend/src/components/dashboard/QuickActionsPanel.tsx`: shared dashboard modules for command metrics and high-frequency operations shortcuts.
+  - `DasiaAIO-Frontend/src/components/dashboard/SystemStatusBanner.tsx`: global SOC status banner rendered at top of the command center with `operational`/`warning`/`critical` state and key metrics (guards, incidents, firearms checked out, deployed vehicles).
+  - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx`: elevated users now have a visible map-header `+ Add Client Site` button to start location creation directly from the map surface.
   - `DasiaAIO-Frontend/src/components/dashboard/LiveOperationsFeed.tsx` + `DasiaAIO-Frontend/src/components/dashboard/SystemInfrastructureStatus.tsx`: new SOC live-storytelling and infrastructure-health panels (status dots, category coloring, chronological event feed).
   - `DasiaAIO-Frontend/src/components/dashboard/MissionTimelinePanel.tsx`: mission progression panel with queued/active/completed tactical states.
   - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPlaceholder.tsx`: animated tactical map placeholder with radar sweep/ping and active-trip/deployed-guard counters.
@@ -280,6 +354,28 @@ Current frontend reality:
     - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: filter controls, monthly grid states, and day-detail status chips aligned to shared SOC status tokens; added skip link and `main#maincontent` focus target.
     - `DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx`: table header/metric styling aligned to SOC command surfaces; attendance progress bars and task chips moved to semantic token-driven styles; added skip link and `main#maincontent` focus target.
     - `DasiaAIO-Frontend/src/index.css`: added shared SOC utilities for multi-page reuse (`soc-btn*`, `soc-alert-*`, `soc-chip`).
+  - Latest command-center and cross-dashboard UX architecture pass:
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`: now includes executive SOC header block with clear hierarchy (`System`, `Threat`, `Incidents`, `Clock`) while preserving all command modules and existing API integrations.
+    - `DasiaAIO-Frontend/src/components/dashboard/SectionPanel.tsx`: improved accessible heading linkage (`aria-labelledby`) and action region semantics.
+    - `DasiaAIO-Frontend/src/components/dashboard/LiveOperationsFeed.tsx` + `DasiaAIO-Frontend/src/components/dashboard/IncidentAlertFeed.tsx`: timeline-like animated entries and clearer severity/timestamp labeling for faster operator scanability.
+  - Console-issue remediation pass (March 2026):
+    - `DasiaAIO-Backend/src/handlers/audit.rs`: fixed `GET /api/audit-logs` SQL composition by restoring valid spacing/newline query text in the SELECT/FROM segment, resolving server-side `500` syntax failures seen in the audit-log dashboard.
+    - `DasiaAIO-Frontend/src/components/AuditLogViewer.tsx`: audit filter controls now include explicit `id`/`name` and `htmlFor` associations (`audit-search`, `audit-result`, `audit-entity-type`, `audit-page-size`) to satisfy browser autofill/accessibility form-field checks.
+    - `DasiaAIO-Frontend/src/components/SentinelLogo.tsx` + `DasiaAIO-Frontend/src/index.css`: replaced conflicting dual-class SVG beam animation wiring with unified `sentinel-beam-animated` class and CSS keyframes so radar sweep rotation and opacity pulse run together again; retained `prefers-reduced-motion` fallback.
+    - `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts` + `DasiaAIO-Frontend/.env.local`: websocket map stream remains opt-in via `VITE_ENABLE_TRACKING_WS=true`; if backend rejects websocket upgrade/token, browser will still show connection warnings while periodic polling continues.
+    - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx`: operational legend and usage hints added (without changing map data contracts).
+    - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: schedule workspace header and stable tokenized event color classes (using CSS variables) replacing fragile class names.
+    - `DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx`: restructured into SOC surface hierarchy with KPI blocks and accessible utilization progressbars.
+    - `DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx`, `DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx`, `DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx`, `DasiaAIO-Frontend/src/components/ProfileDashboard.tsx`: standardized top-level context headers and KPI/section hierarchy for consistent operator workflows.
+    - `DasiaAIO-Frontend/src/components/Sidebar.tsx`: navigation IA visuals updated with compact glyph tags while preserving existing route structure and permission-driven grouping.
+    - `DasiaAIO-Frontend/src/index.css`: added missing semantic tokens (`status-*`, focus ring, stronger borders) and new shared SOC primitives (`soc-surface`, `soc-kpi`, timeline utilities).
+  - Audit-log entity filter parity fix (March 2026):
+    - `DasiaAIO-Backend/src/handlers/audit.rs`: `entity_type` filtering now treats `user` and `users` as equivalent aliases so records from both `/api/user/:id` and `/api/users/:id` write routes are returned together under user-management filtering.
+    - `DasiaAIO-Backend/src/middleware/audit.rs`: audit-write middleware now logs database insertion failures (`failed to persist audit log entry`) instead of silently swallowing errors, improving forensic reliability diagnostics.
+  - Follow-up responsive and micro-interaction hardening:
+    - `DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx`: inventory tab form grid now stacks on small screens (`grid-cols-1` at mobile, `lg:grid-cols-2`) to avoid cramped two-column rendering.
+    - `DasiaAIO-Frontend/src/components/ProfileDashboard.tsx`: message severity detection now treats neutral/success updates (for example, photo removal) as success unless message contains failure/error keywords.
+    - `DasiaAIO-Frontend/src/index.css`: added global `prefers-reduced-motion: reduce` handling to disable non-essential radar/pulse/feed animations and shorten transitions for motion-sensitive users.
   - Branded shell/login integration:
     - `DasiaAIO-Frontend/src/components/Header.tsx` and `DasiaAIO-Frontend/src/components/Sidebar.tsx` now embed `SentinelLogo` and use SOC typography/tokens.
     - `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` adds an explicit skip link + `main#maincontent` focus target.
@@ -288,6 +384,69 @@ Current frontend reality:
       - subtle full-viewport rotating radar sweep overlay in the background (pure CSS, low-opacity)
       - live-style system status cards with iconography, status lights, and slow node ticker updates
       - terminal-style login action button with glow/elevation hover, active flash/scale, and stronger keyboard focus ring
+  - Presence/status and UX polish updates:
+    - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` now computes user `Online`/`Offline` state from backend `last_seen_at` recency instead of static labels.
+    - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` and `DasiaAIO-Frontend/src/components/AdminDashboard.tsx` now truncate long email/username/name text with hover title for full value visibility.
+    - `DasiaAIO-Frontend/src/components/Sidebar.tsx` now persists sidebar scroll position in `sessionStorage` to prevent jump-to-top after navigation/view remounts.
+  - User management table architecture upgrade (latest):
+    - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` now renders an expanded SOC-style user management workspace with:
+      - role filter + status filter + search in one control strip,
+      - summary KPI cards (`total`, `active`, `pending`, `supervisors`),
+      - status model derived from live/pending metadata (`active`, `inactive`, `pending`, `suspended`),
+      - human-readable `Last Login` column (`Just now`, `x minutes ago`, `Yesterday`, etc.),
+      - bulk row selection and bulk actions (`Approve Selected`, `Suspend Selected` placeholder, `Delete Selected`),
+      - responsive mobile card rendering for user rows.
+    - Table now uses reusable local primitives in the same file (`UserAvatar`, `RoleBadge`, `StatusIndicator`) to keep row visuals consistent and reduce duplicated role/status styling logic.
+    - Bulk approval uses the existing guard approval endpoint (`PUT /api/users/:id/approval`) only for currently pending rows.
+    - Suspension/reset controls are intentionally surfaced as UX placeholders with explicit warning notifications because no dedicated backend suspend/admin-reset endpoints exist in current API contracts.
+  - Admin dashboard parity update (latest):
+    - `DasiaAIO-Frontend/src/components/AdminDashboard.tsx` now mirrors the same user-management table architecture used by the elevated shell pattern:
+      - role + status filtering, search, KPI summary cards, derived user status chips, human-readable last-login column,
+      - bulk row selection with bulk actions (`Approve Selected`, `Suspend Selected` placeholder, `Delete Selected`),
+      - responsive mobile user cards,
+      - role-aware visibility/edit constraints (`admin` excludes `superadmin`; `supervisor` scoped to `guard`).
+  - Calendar bento metric data-source correction (latest):
+    - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: `SecurityBentoGrid` inputs are now derived from live fetched calendar events (shifts/trips/missions/maintenance) instead of hardcoded demo values.
+    - `DasiaAIO-Frontend/src/components/SecurityBentoGrid.tsx`: removed built-in demo defaults (`24`, `3`, `97`) and made metric data required so callers must pass real values.
+  - Real map replacement updates:
+    - `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts`: polls `/api/tracking/map-data` every 15s and exposes site/unit telemetry.
+    - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx`: real OpenStreetMap/Leaflet map with live client-site and guard/vehicle markers.
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`: now renders `OperationalMapPanel` instead of placeholder panel.
+    - `DasiaAIO-Frontend/src/main.tsx`: imports Leaflet CSS for map rendering.
+    - `DasiaAIO-Frontend/package.json`: map dependencies added (`leaflet`, `react-leaflet@4`, `@types/leaflet`).
+  - Client-location management + live transport updates:
+    - `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts` now supports:
+      - websocket-driven snapshot updates (`/api/tracking/ws`)
+      - client-site CRUD helpers (`createClientSite`, `updateClientSite`, `deleteClientSite`)
+      - guard geolocation heartbeat submission (`/api/tracking/heartbeat`)
+    - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx` now includes an elevated-role "Client Location Manager" UI for add/edit/delete site operations directly in the dashboard.
+    - `OperationalMapPanel` now supports click-to-place coordinates: operators can press `Pick Position On Map`, click map, and auto-fill latitude/longitude for add/edit workflows.
+    - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` now includes a guard-facing `Turn On Live Location` / `Turn Off Live Location` control (consent-based device geolocation heartbeat to backend).
+    - Guard location UX now includes:
+      - explicit geolocation permission prompt trigger when enabling tracking,
+      - permission state indicator (`prompt` / `granted` / `denied`),
+      - live `Location Accuracy Meter` showing current meter estimate and quality tier.
+- Predictive alerts UI (new):
+  - `DasiaAIO-Frontend/src/hooks/usePredictiveAlerts.ts`: fetches `/api/alerts/predictive`, stores status/error metadata, and refreshes alongside other SOC telemetry.
+  - `DasiaAIO-Frontend/src/components/dashboard/PredictiveAlertsPanel.tsx`: renders command-panel style warning cards (icon + severity border + category chip + context chips).
+  - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`: now mounts `PredictiveAlertsPanel` in the left column, refreshes the predictive alerts hook every 15 seconds, and surfaces last-updated metadata for operators.
+- Guard absence prediction UI (new):
+  - `DasiaAIO-Frontend/src/hooks/useGuardAbsencePrediction.ts`: fetches `/api/ai/guard-absence-risk` and tracks loading/error/refresh timestamps.
+  - `DasiaAIO-Frontend/src/components/dashboard/GuardAbsencePredictionPanel.tsx`: renders guard name, risk score, and risk level with SOC color coding (`LOW` green, `MEDIUM` yellow, `HIGH` red).
+  - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`: mounts `GuardAbsencePredictionPanel` in the predictive insights section and refreshes it with the existing 15-second command-center polling cycle.
+- Smart replacement UI (new):
+  - `DasiaAIO-Frontend/src/hooks/useReplacementSuggestions.ts`: resolves active post from `/api/tracking/client-sites`, then fetches `/api/ai/replacement-suggestions` with `post_id` query and tracks loading/error/refresh metadata.
+    - Hook now supports both response shapes from `/api/tracking/client-sites` (`ClientSite[]` and `{ sites: ClientSite[] }`) to prevent false empty-state errors.
+  - `DasiaAIO-Frontend/src/components/dashboard/ReplacementSuggestionPanel.tsx`: command-center recommendation card showing guard name, reliability score, distance, availability, permit validity, and replacement score.
+  - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`: mounts `ReplacementSuggestionPanel` in forward insights and refreshes it within the 15-second command-center polling cycle.
+- Command-center AI and fallback continuity (latest):
+  - `DasiaAIO-Frontend/src/components/dashboard/IncidentSeverityClassifier.tsx`: dedicated card for `/api/ai/classify-incident` scoring.
+  - `DasiaAIO-Frontend/src/components/dashboard/IncidentSummaryGenerator.tsx`: dedicated card for `/api/ai/summarize-incident` summaries and key phrases.
+  - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now includes scoped mock fallback datasets for shifts/incidents/AI predictions when core feeds are simultaneously empty, preserving operator context without breaking real-data flows.
+- System audit viewer (new):
+  - `DasiaAIO-Frontend/src/hooks/useAuditLogs.ts`: shared hook for fetching `/api/audit-logs` with filter + pagination awareness and consistent error handling.
+  - `DasiaAIO-Frontend/src/components/AuditLogViewer.tsx`: renders searchable/filterable audit table with status chips, metadata preview, and paging controls; uses SOC token classes for contrast/compliance.
+  - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`: adds `audit-log` section + conditional render + navigation wiring, while `src/config/navigation.ts` introduces the “System Audit Log” nav item (admin & superadmin via `manage_users` permission).
 
 ## 11. Local Runbook (Docker-first)
 
@@ -382,6 +541,24 @@ Verified in this session (Docker runtime):
     - header theme toggle + dark/light mode switching behavior
 - Frontend verification after additional multi-page SOC consistency pass:
   - Workspace diagnostics: no TypeScript errors in modified files
+ - Frontend verification after latest user-management table overhaul:
+   - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` diagnostics: no TypeScript errors
+   - `npm run build` succeeded
+ - Backend verification after audit-log entity alias fix:
+   - `DasiaAIO-Backend/src/handlers/audit.rs` diagnostics: no Rust analyzer errors
+   - `cargo check` could not be executed in this session because `cargo` is not available in the active terminal environment.
+- Live audit API smoke verification (latest):
+  - Backend service rebuilt and restarted locally via Docker compose before test execution.
+  - Authenticated admin smoke calls succeeded:
+    - `GET /api/audit-logs?page=1&page_size=10` => `200`
+    - `GET /api/audit-logs?...&entity_type=users` => `200`
+    - `GET /api/audit-logs?...&entity_type=user` => `200`
+  - Filter alias parity confirmed in runtime:
+    - `entity_type=users` and `entity_type=user` return equal totals.
+  - Fresh write-ingestion check confirmed:
+    - `POST /api/support-tickets` produced audit row `POST /api/support-tickets` with `result=success` and `reason=HTTP 201`.
+  - Fresh user-route filter check confirmed:
+    - generated a safe failed `PUT /api/users/:id/profile-photo` (`HTTP 400`) and validated that both `entity_type=users` and `entity_type=user` queries returned that row (`result=failed`).
   - `npm run build` succeeded
   - `npm test -- --runInBand` succeeded (`5/5` tests passing)
   - Browser smoke checks confirmed updated visual system is active on auth and operational workspaces, including armored-car and merit-score flows.
@@ -408,6 +585,18 @@ Verified in this session (Docker runtime):
   - Diagnostics: no errors in `SentinelLogo.tsx`, `LoginPage.tsx`, and `index.css`
   - `npm run build` succeeded
   - `npm test -- --runInBand` succeeded (`5/5` tests passing)
+- Frontend verification after latest dashboard UX architecture pass:
+  - `npm run build` succeeded (Vite production build)
+  - Residual note: Vite chunk-size warning remains (`index` bundle > 500kb) and is unchanged functional-wise; consider follow-up code splitting for performance budget enforcement.
+- Frontend verification after responsive/motion follow-up pass:
+  - `npm run build` succeeded
+  - Residual note unchanged: Vite reports chunk-size warning (>500kb) with no functional regression.
+- Frontend verification after auth-expiry handling hardening:
+  - `npm run build` succeeded
+  - Browser smoke with stale token on `http://127.0.0.1:5173` now returns to login view automatically (instead of repeatedly logging invalid-token fetch errors across dashboard polling calls).
+- Frontend verification after logger suppression pass:
+  - `npm run build` succeeded
+  - Diagnostics: no errors in `utils/logger.ts` and all updated component files listed above.
   - Runtime checks on `http://localhost:5173` confirmed:
     - animated radar logo active (`animateTransform` present)
     - login background radar sweep overlay present (`.login-radar-sweep`)
@@ -446,6 +635,264 @@ Verified in this session (Docker runtime):
   - `admin / admin123` => `200` (`admin`)
   - `supervisor / supervisor123` => `200` (`supervisor`)
   - `guard / guard123` => `200` (`guard`)
+- Presence/UX verification after sidebar and online-status updates:
+  - Backend runtime checks passed: `docker compose config -q`, `docker compose ps`, and `GET /api/health` => `200` (`{"status":"ok"}`).
+  - Frontend `npm run build` succeeded.
+  - Editor diagnostics (`get_errors`) reported no issues in modified backend/frontend files.
+  - `cargo check` remains unavailable in this shell (`cargo` not found in PATH), so compile verification is runtime + diagnostics based.
+- Map-tracking verification in this session:
+  - Backend container rebuilt successfully; Rust compile completed inside Docker build.
+  - Frontend `npm run build` succeeded after Leaflet integration.
+  - Browser runtime check (`http://localhost:5173`) confirmed map section now shows `OpenStreetMap live field tracking` and Leaflet attribution.
+  - API end-to-end checks succeeded:
+    - `POST /api/tracking/client-sites` => `201` (sample site created)
+    - `POST /api/tracking/points` => `201` (sample vehicle telemetry point created)
+    - `GET /api/tracking/map-data` => includes created site + tracking point payloads
+  - Browser snapshot confirmed map counters updated (`Tracked Units: 1`, `Client Sites: 1`).
+- Expanded map lifecycle and live-update verification in this session:
+  - Backend rebuilt successfully in Docker after websocket + CRUD route additions.
+  - Frontend rebuilt and redeployed successfully on `http://localhost:5173` after manager/websocket hook updates.
+  - API verification:
+    - `POST /api/tracking/client-sites` => `201`
+    - `PUT /api/tracking/client-sites/:id` => `200`
+    - `DELETE /api/tracking/client-sites/:id` => `200`
+    - `POST /api/tracking/heartbeat` (guard token) => `201`
+  - Runtime browser verification:
+    - Operational map shows `Client Location Manager` with editable site rows and action controls.
+    - `Client Sites` counter and site table updated live after a server-side create action (`WS Live Site`) without manual route change, validating websocket delivery.
+  - Map UX verification after click-to-pick enhancement:
+    - Operational map manager now renders `Pick Position On Map` action and coordinate inputs update from map-click selection flow.
+    - Frontend build and diagnostics passed after guard-location toggle addition in `UserDashboard`.
+  - Accuracy-meter and permission-prompt verification:
+    - Frontend build succeeded after adding permission-state and accuracy UI.
+    - No diagnostics issues in `UserDashboard.tsx` and `OperationalMapPanel.tsx`.
+  - All-user tracking verification (latest):
+    - Runtime probe executed against active local backend on `http://localhost:5000`.
+    - `POST /api/tracking/heartbeat` (admin token) => `201` and persisted a `tracking_points` row with `entityType: "user"` and `accuracyMeters` populated.
+    - `GET /api/tracking/map-data` returned the new `user` point in `trackingPoints` payload.
+    - Heartbeat response contract was normalized from `"Guard heartbeat recorded"` to `"Location heartbeat recorded"` to reflect all-role behavior.
+    - Frontend accuracy tuning added:
+      - App-level all-user location capture now performs an immediate `getCurrentPosition` call on login and uses fresher geolocation cache (`maximumAge: 2000`) before watch updates.
+      - Heartbeat payload status now flags low-precision fixes as `low_accuracy` when `accuracyMeters > 60`.
+      - Guard dashboard renders an explicit low-accuracy warning message and operational map popups show `Low GPS precision` for weak fixes.
+    - Smoke test after tuning:
+      - Frontend `npm run build` passed.
+      - Backend services rebuilt and running (`docker compose ps`: backend up, postgres healthy).
+      - `GET /api/health` => `200`.
+      - `POST /api/tracking/heartbeat` (admin token) => `201` with message `Location heartbeat recorded`.
+      - `GET /api/tracking/map-data` includes inserted `user` tracking point with `accuracyMeters` value.
+  - User management + map ops updates (latest):
+    - User table filter control in `SuperadminDashboard` is now active and role-scoped (`all`, `superadmin`, `admin`, `supervisor`, `guard`).
+    - User table ordering now enforces role priority first, then alphabetical name ordering:
+      - `superadmin` -> `admin` -> `supervisor` -> `guard`.
+    - Operational map symbology updated:
+      - Current signed-in user: red location pin and map center anchor.
+      - Armored cars: blue circles.
+      - Guards: green circles.
+      - Client sites: larger yellow circles with 1 km geofence radius overlays.
+    - New backend proximity-risk notifications:
+      - Added `POST /api/tracking/proximity-alerts/check` (supervisor+).
+      - `GET /api/tracking/map-data` now also evaluates one-hour pre-shift proximity risk for scheduled guards and creates leadership notifications (`superadmin`, `admin`, `supervisor`) when guard-to-client distance exceeds 1 km.
+      - Notification type: `proximity_alert` with dedupe window.
+  - Smoke verification for this update:
+    - Frontend build passed (`npm run build`).
+    - Backend rebuilt and healthy in Docker.
+    - `GET /api/health` => `200`.
+    - `POST /api/tracking/proximity-alerts/check` => success (`Proximity alert evaluation complete`).
+    - `GET /api/tracking/map-data` => `200` with tracking payload.
+  - Map accuracy tuning (latest):
+    - Tracking snapshot selection now prefers recent, higher-confidence points:
+      - quality preference window: last 10 minutes
+      - preferred accuracy threshold: `accuracy_meters <= 80` (or null)
+      - fallback remains latest point when no preferred candidate exists
+    - Session-derived guard points now require recent tracking telemetry (`recorded_at` within 15 minutes) to reduce stale map positions.
+    - Validation:
+      - Backend rebuilt successfully after query updates.
+      - `GET /api/tracking/map-data` returns payload successfully and includes current user point with expected `accuracyMeters`.
+  - Strict accuracy mode (latest):
+    - User/guard map points are now strict-filtered to improve reliability:
+      - required precision: `accuracy_meters <= 20`
+      - required recency: within 3 minutes
+      - stale session-overlay guard points were removed from map snapshot composition to avoid drift artifacts.
+    - Vehicle points keep a separate recency gate (10 minutes).
+    - Ingestion hardening:
+      - `POST /api/tracking/heartbeat` now ignores low-precision user/guard samples (returns `202` with `accepted=false`).
+      - `POST /api/tracking/points` applies the same low-precision rejection for `entityType` guard/user.
+    - Frontend capture hardening:
+      - `App.tsx` skips all-user heartbeat submission unless GPS accuracy is <= 20m.
+      - `UserDashboard.tsx` skips guard heartbeat submission for low-precision fixes and shows explicit guidance to improve GPS lock.
+    - Smoke validation:
+      - low-accuracy heartbeat sample (`accuracyMeters=65`) => ignored (`accepted=false`) and absent from map snapshot.
+      - high-accuracy heartbeat sample (`accuracyMeters=8`) => recorded and visible in map snapshot.
+  - Mobile-vs-PC positioning hardening (latest):
+    - Frontend now uses mobile-first geolocation policy:
+      - mobile required accuracy threshold: `<= 20m`
+      - desktop required accuracy threshold: `<= 8m`
+    - Both `getCurrentPosition` and `watchPosition` now request fresh fixes (`maximumAge: 0`, longer timeout) to reduce cached/coarse desktop location artifacts.
+    - Guard dashboard messaging now explicitly explains desktop Wi-Fi/IP drift and recommends mobile GPS for reliable tracking.
+    - Runtime note: map data contracts still enforce strict backend filtering; frontend policy now further suppresses low-confidence desktop submissions.
+  - Permission-prompt UX hardening (latest):
+    - Added app-wide location diagnostics banner in `App.tsx` for all logged-in users while geolocation is not granted.
+    - Banner includes explicit `Prompt Location Access` action, with context-aware messaging for:
+      - denied permission state (site settings remediation)
+      - insecure context (HTTPS requirement on mobile/LAN)
+      - unsupported geolocation environments.
+  - Configurable tracking policy + trust indicators (latest):
+    - Added frontend policy utility: `DasiaAIO-Frontend/src/utils/trackingPolicy.ts`.
+      - Modes: `strict` and `balanced`.
+      - Stores selected mode in `localStorage` key `dasi.trackingAccuracyMode`.
+      - Supports env fallback `VITE_TRACKING_ACCURACY_MODE`.
+    - Added admin-visible control in `SuperadminDashboard` user-management header:
+      - `Accuracy` selector with `Strict` / `Balanced`.
+      - Selection persists client-side and shows notification feedback.
+    - Operational map trust enhancements in `OperationalMapPanel`:
+      - Marker popup now shows `Source`, `Accuracy`, and `Updated: Xs ago`.
+      - Stale tracking points are auto-hidden based on current mode thresholds.
+      - UI now shows hidden stale count (`stale hidden`) in tracked-units card.
+  - Backend policy configurability (latest):
+    - `tracking.rs` now reads configurable policy from environment:
+      - `TRACKING_ACCURACY_MODE` (`strict`/`balanced`)
+      - `TRACKING_REQUIRED_ACCURACY_METERS`
+      - `TRACKING_PERSON_RECENCY_MINUTES`
+      - `TRACKING_VEHICLE_RECENCY_MINUTES`
+    - If override vars are absent, mode defaults are applied.
+  - Regression checks (latest):
+    - Added script: `scripts/tracking_smoke_test.ps1`.
+      - Verifies health, auth, low-accuracy rejection, high-accuracy acceptance, and map snapshot visibility rules.
+    - Added checklist: `scripts/tracking_permission_checklist.md`.
+      - Covers manual geolocation prompt validation and trust-indicator/stale-point UI checks.
+    - Script runtime validation in this session: `PASS: tracking smoke test succeeded.`
+  - Deployment note:
+    - These latest changes are validated locally (Docker + local runtime) and intentionally not pushed/deployed to Railway yet.
+  - Command-center UX update (latest):
+    - `CommandCenterDashboard` now renders `SystemStatusBanner` above the main section stack for high-visibility system health.
+    - Banner color and glow are state-driven (`green` operational, `yellow` warning, `red` critical) and derived from existing alert severity logic.
+    - Banner metrics currently map to: `Guards Active`, `Active Incidents` (warning+critical), `Firearms Checked Out`, and `Vehicles Deployed`.
+  - Incident Management module (latest):
+    - Backend — new `incidents` table (PostgreSQL, auto-migrated on startup via `db.rs`):
+      - Columns: `id`, `title`, `description`, `location`, `reported_by` (FK → `users.id`), `status` (open/investigating/resolved), `priority` (low/medium/high/critical), `created_at`, `updated_at`.
+      - Index: `idx_incidents_status_priority_created` on `(status, priority, created_at DESC)`.
+    - Backend — new handler file `handlers/incidents.rs` exposing 4 endpoints:
+      - `POST   /api/incidents`           — create incident (min role: `guard`)
+      - `GET    /api/incidents`           — all incidents, ordered by `created_at DESC` (authenticated)
+      - `GET    /api/incidents/active`    — open/investigating, ordered by priority weight then time (authenticated)
+      - `PATCH  /api/incidents/:id/status` — update status (min role: `supervisor`)
+    - Backend — new models in `models.rs`: `Incident`, `CreateIncidentRequest` (camelCase serde), `UpdateIncidentStatusRequest`.
+    - Frontend — `src/hooks/useIncidents.ts`:
+      - Polls `GET /api/incidents/active`, exposes `{ incidents, activeCount, loading, error, lastUpdated, refresh, reportIncident, updateStatus }`.
+      - `reportIncident()` → POST, `updateStatus()` → PATCH, both trigger auto-refresh.
+    - Frontend — `src/components/dashboard/ActiveIncidentsWidget.tsx`:
+      - SOC widget with priority color coding: `critical=red`, `high=orange`, `medium=yellow`, `low=green`.
+      - Shows incident title, location, priority badge, status, and time reported.
+      - Remains available as a reusable tactical incident list widget.
+    - Frontend — `src/components/dashboard/IncidentReportForm.tsx`:
+      - Accessible form (WCAG 2.2 AA): `aria-required`, `aria-invalid`, `aria-describedby`, focus management on first invalid field on submit.
+      - Fields: title, description, location, priority select.
+    - Frontend — `src/components/dashboard/IncidentPanel.tsx`:
+      - Full management panel: filter tabs (all/open/investigating/resolved), table with priority/status badges.
+      - Status advancement buttons (investigating → resolved) gated to `supervisor`/`admin`/`superadmin` via `normalizeRole()`.
+      - Embeds `IncidentReportForm` toggle for all roles.
+    - Frontend — `CommandCenterDashboard.tsx` updated:
+      - Imports `useIncidents` and uses incidents state to drive middle-section AI monitoring cards.
+      - `activeIncidents` in `SystemStatusBanner` now prefers real `incidentsState.activeCount` over alert-derived count.
+      - Refresh interval includes `incidentsState.refresh()`.
+    - Browser smoke (latest): `ActiveIncidentsWidget` renders in dashboard — "Active Incidents" heading, live timestamp, "No active incidents" with empty DB confirmed.
+  - Operational Activity Feed (latest):
+    - Component `OperationalActivityFeed.tsx` remains available for tactical event-stream use.
+    - `CommandCenterDashboard` was later refactored to prioritize AI module sections; activity feed generation was removed from this view.
+  - Predictive Vehicle Maintenance (latest):
+    - Backend — new service `DasiaAIO-Backend/src/services/vehicle_predictive_service.rs`:
+      - Exposes `predict_vehicle_risk(vehicle_id)` and fleet aggregation helper.
+      - Inputs include armored car mileage, last maintenance date, and maintenance history/trip telemetry.
+      - Deterministic risk formula:
+        - `MaintenanceRisk = (mileage_since_service * 0.5) + (days_since_service * 0.5)`
+        - Service applies normalization (mileage/10,000 and days/180) so persisted `risk_score` remains in `[0,1]` for `predictive_vehicle_maintenance` table constraints.
+      - Returns `LOW | MEDIUM | HIGH` with recommended maintenance action text.
+      - Persists generated predictions to `predictive_vehicle_maintenance`.
+    - Backend — AI endpoint contract:
+      - `GET /api/ai/vehicle-maintenance-risk` (supervisor+) now returns fleet risk rows with:
+        - `vehicleId`, `licensePlate`, `riskScore`, `riskLevel`, `mileageSinceService`, `daysSinceService`, `maintenanceHistoryCount`, `recommendedAction`, `formula`, `calculatedAt`.
+      - Route registered in `DasiaAIO-Backend/src/main.rs` with analytics-view authorization.
+    - Frontend — new SOC panel wiring:
+      - `DasiaAIO-Frontend/src/hooks/useVehicleMaintenancePrediction.ts` fetches `/api/ai/vehicle-maintenance-risk` and tracks loading/error/refresh metadata.
+      - `DasiaAIO-Frontend/src/components/dashboard/VehicleMaintenancePredictionPanel.tsx` renders vehicle identifier, risk score, risk level, and recommended action.
+      - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now mounts the vehicle panel in the Bottom Section and includes it in the 15-second refresh cycle.
+    - Validation in this session:
+      - Backend Docker rebuild/restart succeeded after adding the new service and route.
+      - Frontend `npm run build` succeeded after panel/hook integration.
+      - Runtime API verification:
+        - `POST /api/incidents` created a test incident successfully.
+        - `GET /api/incidents/active` returned the created active incident.
+        - `GET /api/ai/vehicle-maintenance-risk` returned `200` with an empty array in current seed state (no vehicles scored).
+      - Browser smoke:
+        - `Predictive Vehicle Maintenance` panel is visible in the command center and renders empty-state text when no vehicles are available.
+  - Guard reliability 500 fix (latest):
+    - Backend — `DasiaAIO-Backend/src/handlers/analytics.rs`:
+      - `get_guard_reliability` SQL now casts score expressions to `NUMERIC` before `ROUND(..., 2)`.
+      - Fix resolves PostgreSQL error `function round(double precision, integer) does not exist` that previously caused dashboard reliability widget failures.
+    - Validation:
+      - `GET /api/analytics/guard-reliability` now returns `200` with ranked guard rows.
+      - Browser dashboard no longer shows the prior `Failed to fetch guard reliability` error banner after refresh.
+  - AI Incident Summarization (latest):
+    - Backend — new service `DasiaAIO-Backend/src/services/incident_summary_service.rs`:
+      - `extract_key_phrases(description)` selects high-signal keywords after stopword filtering.
+      - `summarize_incident(description)` returns a deterministic 1-2 sentence summary.
+    - Backend — API contract:
+      - `POST /api/ai/summarize-incident` (authenticated) accepts `{ description }`.
+      - Returns `{ summary, keyPhrases }` in camelCase response shape.
+      - Route wired in `DasiaAIO-Backend/src/main.rs`; handler added in `src/handlers/ai.rs`.
+    - Frontend — Incident panel summary preview:
+      - `DasiaAIO-Frontend/src/components/dashboard/IncidentPanel.tsx` now adds an on-demand `Preview AI Summary` action per incident row.
+      - Summary is rendered inline under the incident title after generation, with loading/error feedback.
+    - Validation:
+      - Runtime API check for `POST /api/ai/summarize-incident` returns summary + extracted key phrases.
+      - Frontend build succeeds with summary preview integration.
+  - Command center AI layout refactor (latest):
+    - Frontend — `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`:
+      - Layout now follows a strict three-tier SOC module stack with tactical section headers:
+        - Top Section: `GuardAbsencePredictionPanel`
+        - Middle Section: `IncidentSeverityMonitoringPanel` + `ReplacementSuggestionPanel`
+        - Bottom Section: `VehicleMaintenancePredictionPanel` + `PredictiveAlertsPanel` (retitled in-view as `AI Operational Insights`)
+      - New `IncidentSeverityMonitoringPanel.tsx` provides high-density severity counters (critical/high/medium/low) and active incident rows with status + severity indicators.
+      - Dashboard keeps dark command-center styling and maintains 15-second polling across all AI modules.
+    - Frontend — `DasiaAIO-Frontend/src/components/dashboard/PredictiveAlertsPanel.tsx`:
+      - Added optional `title` and `subtitle` props so the same panel can be presented as `AI Operational Insights` without duplicating logic.
+    - Validation:
+      - `npm run build` succeeds after the refactor.
+      - Browser snapshot confirms Top/Middle/Bottom section headings and all required AI panels render in order.
+  - Command center operational module restoration (latest):
+    - Frontend — `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`:
+      - Restored critical command-center modules while keeping all new AI modules active.
+      - Current dashboard section flow:
+        - `System Status`: `SystemStatusBanner` + `OperationalSummaryStrip`
+        - `Tactical View`: `OperationalMapPanel` + `GuardDeploymentOverview`
+        - `Live Operations`: `LiveOperationsFeed` + `IncidentAlertFeed` + retained AI overlays (`IncidentSeverityMonitoringPanel`, `AI Operational Insights` via `PredictiveAlertsPanel`)
+        - `Operations Management`: `TodaysShiftOperations` + `GuardAbsencePredictionPanel` + `ReplacementSuggestionPanel`
+        - `Asset Monitoring`: `VehicleMaintenancePredictionPanel` + `FirearmsStatusPanel`
+      - Feed wiring uses existing hook-backed data sources (`useOpsShifts`, `useOpsAssets`, `useIncidents`, `getOpsAlerts`) and stays on the existing 15-second polling cycle.
+    - Frontend — newly restored components:
+      - `DasiaAIO-Frontend/src/components/dashboard/TodaysShiftOperations.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/FirearmsStatusPanel.tsx`
+    - Validation:
+      - Frontend build passes after restoration (`npm run build`).
+      - Browser snapshot verifies all required restored modules render in the command center alongside AI modules.
+  - Full system audit closure (latest):
+    - Backend endpoint matrix verified with authenticated smoke tests:
+      - `GET /api/incidents`
+      - `GET /api/incidents/active`
+      - `GET /api/guards`
+      - `GET /api/vehicles`
+      - `GET /api/ai/guard-absence-risk`
+      - `GET /api/ai/replacement-suggestions?post_id=<active_client_site_id>`
+      - `GET /api/ai/vehicle-maintenance-risk`
+      - `POST /api/ai/classify-incident`
+      - `POST /api/ai/summarize-incident`
+    - Replacement suggestion 404 root cause was test-input related (invalid/nonexistent `post_id`); verified healthy behavior returns `200` with valid active client-site id.
+    - Frontend runtime snapshot confirms all required command-center sections and modules render:
+      - `System Status`, `Tactical View`, `Live Operations`, `Operations Management`, `Asset Monitoring`
+      - `Operational Map`, `Guard Deployment Overview`, `Live Operations Feed`, `Incident Alert Feed`, `Today's Shifts`, `Firearms Status`
+      - `Guard Absence Prediction`, `Smart Guard Replacement`, `Predictive Vehicle Maintenance`, `Incident Severity Classifier`, `Incident Summary Generator`
+    - Requested architecture document created: `architecture.md`.
 
 Role-based runtime sweep (recommended):
 
@@ -463,6 +910,11 @@ Role-based runtime sweep (recommended):
 - Frontend local smoke depends on API base URL targeting an available backend. When frontend points to production while local backend is expected (or vice versa), dashboard widgets can show partial data/loading states even if UI wiring is correct.
 - Existing build warnings remain for unused structs/fields in some modules. These are non-blocking for current runtime but should be tracked.
 - Railway CLI was not available in this environment (`railway` command not found), so production account SQL could not be executed directly from this machine.
+- User presence currently uses an activity recency window (`last_seen_at`) as the online heuristic, not websocket session tracking.
+- Operational map supports websocket push updates (`/api/tracking/ws`) and also keeps a periodic refresh fallback in the frontend hook.
+- Browser geolocation remains permission-dependent; denied permissions prevent automatic location submission.
+- Location precision remains environment-dependent (device GPS, OS settings, browser permissions, network conditions), so accuracy can vary even when tracking is functioning correctly.
+- `replacement_status` is not present in all deployed `shifts` schemas; proximity-alert logic intentionally avoids hard dependency on that column for compatibility.
 
 ## 14. Suggested Prompt for Any Future ChatGPT Session
 

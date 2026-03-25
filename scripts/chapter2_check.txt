@@ -1,0 +1,312 @@
+CHAPTER 2
+
+METHODOLOGY
+
+The proponents will use Agile Scrum Methodology to support iterative development, continuous feedback, and progressive feature validation. This methodology will be selected because the proposed system will contain multiple operational modules that will require regular client consultation and frequent integration testing.
+
+The development process will start with project alignment, requirements consolidation, and sprint planning. The proponents will convert high-level requirements into a prioritized product backlog, then will implement features in controlled sprint cycles. Each sprint will cover development, testing, stakeholder review, and retrospective refinement. Through this cycle, the system will progress from core user and scheduling features to advanced operational modules such as analytics, alerts, and map-based monitoring.
+
+Figure 4. Scrum Model
+
+Technical Background
+
+Technologies to be Used in the System
+
+SENTINEL is a web-based integrated security operations platform designed for multi-role operational management. The proponents will use the following technologies in developing and implementing the proposed system:
+
+1. React + TypeScript. Will be used to build role-based and reusable user interface components with strong type validation.
+
+2. Vite. Will be used for faster build performance and optimized frontend asset bundling.
+
+3. Tailwind CSS. Will be used for utility-first styling and responsive user interface layout across dashboards and modules.
+
+4. Leaflet + OpenStreetMap. Will be used for map rendering and real-time visualization of tracking and client-site data.
+
+5. Rust + Axum. Will be used to implement secure, asynchronous, and high-performance backend API services.
+
+6. PostgreSQL. Will be used as the centralized relational database for personnel, schedules, attendance, assets, incidents, alerts, and audit logs.
+
+7. Docker + Docker Compose. Will be used to standardize local development, service orchestration, and deployment consistency.
+
+8. JWT Authentication. Will be used for token-based session control and secured role-based API access.
+
+9. Resend. Will be used for transactional email delivery such as verification codes, password reset codes, and operational notifications.
+
+10. Railway. Will be used as a cloud deployment platform for backend runtime and managed service hosting.
+
+11. Namecheap. Will be used for domain registration and domain-level DNS management.
+
+12. Git and GitHub. Will be used for version control, collaboration, and change tracking.
+
+Figure 5. Work Breakdown Structure
+
+The Work Breakdown Structure (WBS) will model the project into major deliverables and sub-deliverables for tracking and control.
+
+WBS Diagram (Mermaid Model)
+
+```mermaid
+graph TD
+	A[1.0 Project Management]
+	A --> A1[1.1 Project initiation and scope definition]
+	A --> A2[1.2 Stakeholder consultation and approvals]
+	A --> A3[1.3 Sprint planning and monitoring]
+
+	B[2.0 Requirements Engineering]
+	B --> B1[2.1 Requirements elicitation]
+	B --> B2[2.2 Functional and non-functional analysis]
+	B --> B3[2.3 Requirements validation and sign-off]
+
+	C[3.0 System Design]
+	C --> C1[3.1 Architecture and database design]
+	C --> C2[3.2 API and module design]
+	C --> C3[3.3 Storyboard and interface design]
+
+	D[4.0 System Development]
+	D --> D1[4.1 Authentication and account lifecycle module]
+	D --> D2[4.2 User, scheduling, and attendance module]
+	D --> D3[4.3 Replacement, asset, and compliance module]
+	D --> D4[4.4 Fleet, incident, and support module]
+	D --> D5[4.5 Analytics, alerts, and map tracking module]
+
+	E[5.0 Testing and Quality Assurance]
+	E --> E1[5.1 Module and integration testing]
+	E --> E2[5.2 Security and role-permission testing]
+	E --> E3[5.3 Defect fixing and regression testing]
+
+	F[6.0 Documentation and Deployment]
+	F --> F1[6.1 Deployment and runtime validation]
+	F --> F2[6.2 Technical and user documentation]
+	F --> F3[6.3 Defense preparation and final turnover]
+```
+
+WBS Diagram (Text Model)
+
+1.0 Project Management
+1.1 Project initiation and scope definition
+1.2 Stakeholder consultation and approvals
+1.3 Sprint planning and monitoring
+
+2.0 Requirements Engineering
+2.1 Requirements elicitation
+2.2 Functional and non-functional analysis
+2.3 Requirements validation and sign-off
+
+3.0 System Design
+3.1 Architecture and database design
+3.2 API and module design
+3.3 Storyboard and interface design
+
+4.0 System Development
+4.1 Authentication and account lifecycle module
+4.2 User, scheduling, and attendance module
+4.3 Replacement, asset, and compliance module
+4.4 Fleet, incident, and support module
+4.5 Analytics, alerts, and map tracking module
+
+5.0 Testing and Quality Assurance
+5.1 Module and integration testing
+5.2 Security and role-permission testing
+5.3 Defect fixing and regression testing
+
+6.0 Documentation and Deployment
+6.1 Deployment and runtime validation
+6.2 Technical and user documentation
+6.3 Defense preparation and final turnover
+
+Gantt Chart of Activities
+
+The project timeline will be organized into phased milestones covering initiation, planning, requirements gathering, sprint-based development, integration, testing, documentation, and defense preparation. Activities will be sequenced chronologically to ensure that each output becomes input for the next development phase.
+
+Figure 6. Gantt Chart of Activities
+
+Gantt Chart of Activities (Mermaid Model)
+
+```mermaid
+gantt
+	title SENTINEL Project Gantt Chart
+	dateFormat  YYYY-MM-DD
+	axisFormat  %b
+
+	section Planning
+	Project Initiation                  :a1, 2026-02-01, 30d
+	Requirements Gathering              :a2, 2026-03-01, 31d
+	System Architecture and UI Planning :a3, 2026-04-01, 30d
+
+	section Development Sprints
+	Sprint 1 Auth Users Approvals       :b1, 2026-05-01, 31d
+	Sprint 2 Schedule Attendance Replace :b2, 2026-06-01, 30d
+	Sprint 3 Firearms Permits Training  :b3, 2026-07-01, 31d
+	Sprint 4 Fleet Trips Incidents      :b4, 2026-08-01, 31d
+	Sprint 5 Analytics Alerts Mapping   :b5, 2026-09-01, 30d
+
+	section Validation and Closeout
+	Integration Testing and Bug Fixing  :c1, 2026-10-01, 31d
+	User Validation and Documentation   :c2, 2026-11-01, 30d
+	Final Review Defense and Turnover   :c3, 2026-12-01, 31d
+```
+
+Gantt Chart of Activities (Planned Timeline)
+
+Month: February
+Activity: Project initiation and problem definition
+
+Month: March
+Activity: Requirements gathering and validation
+
+Month: April
+Activity: System architecture and interface planning
+
+Month: May
+Activity: Sprint 1 implementation (auth, users, approvals)
+
+Month: June
+Activity: Sprint 2 implementation (scheduling, attendance, replacement)
+
+Month: July
+Activity: Sprint 3 implementation (firearms, permits, training)
+
+Month: August
+Activity: Sprint 4 implementation (fleet, trips, incidents, support)
+
+Month: September
+Activity: Sprint 5 implementation (analytics, alerts, map tracking)
+
+Month: October
+Activity: Integration testing and bug fixing
+
+Month: November
+Activity: User validation, documentation, and refinements
+
+Month: December
+Activity: Final review, defense preparation, and turnover
+
+Calendar of Activities
+
+The calendar of activities will summarize the detailed sequence of tasks to be performed by the proponents, including objectives, involved personnel, and required resources.
+
+1. Project initiation and problem definition.
+Purpose: Define project boundaries, objectives, and target operational issues.
+Persons involved: Proponents, adviser, client representative.
+Resources needed: Consultation sessions, initial proposal documents, reference studies.
+
+2. Requirements gathering and validation.
+Purpose: Elicit functional and non-functional requirements.
+Persons involved: Proponents, operations users, adviser.
+Resources needed: Interview guides, requirement templates, process notes.
+
+3. System architecture and interface planning.
+Purpose: Define system architecture, database model, API scope, and storyboard screens.
+Persons involved: Proponents and adviser.
+Resources needed: ERD tools, wireframe tools, architecture notes.
+
+4. Sprint-based development and integration.
+Purpose: Implement modules incrementally and integrate frontend-backend workflows.
+Persons involved: Proponents.
+Resources needed: VS Code, Rust toolchain, Node.js, PostgreSQL, Docker.
+
+5. Testing, debugging, and refinement.
+Purpose: Validate module behavior, fix defects, and improve reliability.
+Persons involved: Proponents, adviser, selected testers.
+Resources needed: Test scripts, issue tracker, runtime logs.
+
+6. Final review, documentation, and defense preparation.
+Purpose: Consolidate manuscript outputs and prepare defense artifacts.
+Persons involved: Proponents and adviser.
+Resources needed: Final manuscript file, presentation slides, appendices.
+
+Resources
+
+Hardware Requirements (Recommended)
+
+Table 1 presents the minimum hardware requirements needed for development and implementation.
+
+Table 1: Minimum System Requirements of Laptop or Desktop
+
+Operating System: Windows 10 or Windows 11
+Processor: Intel i5 / Ryzen 5 or equivalent
+Memory / RAM: 8 GB minimum (16 GB recommended)
+Disk Storage: 250 GB SSD minimum
+Graphics: Integrated graphics supported by modern browser stack
+Screen Resolution: 1366x768 or higher
+Connection: Stable broadband internet connection
+
+Software Requirements
+
+The following software resources are required for project development, testing, and documentation:
+
+1. Web browsers (Google Chrome, Microsoft Edge) for testing web modules.
+2. Visual Studio Code for frontend and backend development.
+3. Node.js and npm for frontend package management and builds.
+4. Rust and Cargo for backend API development.
+5. PostgreSQL for relational data management.
+6. Docker Desktop and Docker Compose for containerized runtime.
+7. Git and GitHub for source versioning and collaboration.
+8. Documentation tools (MS Word / Google Docs) for manuscript development.
+
+Requirements Analysis
+
+SENTINEL provides a computing solution for private security operations using the standard requirement analysis framework of Who, What, Where, When, and How.
+
+Who. The primary users are Superadmin, Administrator, Supervisor, and Guard, each with role-specific privileges.
+
+What. The system manages personnel administration, scheduling, attendance, replacement workflows, firearm and vehicle operations, incident handling, support tickets, notifications, and analytics.
+
+Where. The system is used in office and field operations through desktop and mobile web browsers, with map-based operational visibility.
+
+When. The system operates continuously, with high activity during shift changes, deployment scheduling, incident escalation, and compliance monitoring windows.
+
+How. Existing manual and fragmented procedures are replaced by centralized digital workflows, rule-based validations, and role-controlled dashboards.
+
+Requirements Documentation
+
+This section establishes the agreement between the client and the proponents regarding what the software must do and how each user role will interact with the system.
+
+Guard:
+
+- Can log in and access personal dashboard features.
+- Can view schedule, assigned resources, and attendance records.
+- Can perform check-in/check-out based on assigned shifts.
+- Can submit support tickets and receive notifications.
+- Can update profile details within allowed permissions.
+
+Supervisor:
+
+- Can monitor team schedules and attendance status.
+- Can review no-show events and manage replacement workflows.
+- Can view operational alerts and incident updates.
+- Can review performance indicators and duty coverage.
+
+Administrator:
+
+- Can manage users, approvals, scheduling, and operational assignments.
+- Can manage firearm and vehicle records, allocations, and maintenance entries.
+- Can monitor tickets, notifications, and compliance statuses.
+- Can access analytics and reporting modules.
+
+Superadmin:
+
+- Has full control over system governance and global operations.
+- Can manage all user roles, permissions, and audit visibility.
+- Can oversee integrated operational, analytical, and security modules.
+
+Design of Software, System, Product, and/or Processes.
+
+The system design follows a layered and modular approach to ensure maintainability, scalability, and operational traceability. It defines how user interfaces, backend processes, and the data layer interact under secured, role-aware workflows.
+
+1. Presentation Layer. Role-based dashboards and workflow pages are designed for fast, clear task execution on desktop and mobile devices.
+
+2. Application Layer. Backend services implement business logic for authentication, approvals, scheduling, attendance, allocations, incidents, alerts, and analytics.
+
+3. Data Layer. PostgreSQL stores structured operational data with relational integrity and timestamped auditability.
+
+4. Security and Control Layer. JWT authentication, route-level authorization, and audit logging enforce controlled access and action traceability.
+
+5. Process Flow Design. Major processes are designed as state-based workflows:
+
+- Account lifecycle: register, verify, approve, login, and role-scoped access.
+- Schedule and attendance lifecycle: create shifts, check-in/out, detect no-shows, assign replacements.
+- Asset lifecycle: register inventory, allocate, return, maintain, and track compliance.
+- Incident and support lifecycle: report, classify, notify, respond, and resolve.
+- Analytics lifecycle: aggregate operational data, compute trends, and present decision-support indicators.
+
+The resulting system design ensures that SENTINEL delivers a centralized, auditable, and responsive platform aligned with the operational requirements of Davao Security & Investigation Agency, Inc.

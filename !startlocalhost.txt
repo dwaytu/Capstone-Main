@@ -1,13 +1,25 @@
-!start up system
+!start up system (localhost)
 
 # 1) Start backend + database
-cd "D:\Dwight\Capstone Main\DasiaAIO-Backend"
+Set-Location "D:\Dwight\Capstone Main\DasiaAIO-Backend"
 docker compose up -d
 
-# 2) Build frontend image (only needed after frontend code/dependency changes)
-cd "D:\Dwight\Capstone Main\DasiaAIO-Frontend"
+# 2) Build frontend image (needed after frontend code/dependency changes)
+Set-Location "D:\Dwight\Capstone Main\DasiaAIO-Frontend"
 docker build -t dasiaaio-frontend-local .
 
 # 3) Run frontend container
 docker rm -f dasiaaio-frontend-local-run 2>$null
 docker run -d --name dasiaaio-frontend-local-run -p 5173:3000 dasiaaio-frontend-local
+
+# 4) Verify app is live
+# Frontend: http://localhost:5173
+# Backend health: http://localhost:8080/api/health
+
+# Optional checks
+docker ps --filter "name=guard-firearm-backend" --filter "name=guard-firearm-postgres" --filter "name=dasiaaio-frontend-local-run"
+
+# Stop everything when done
+# Set-Location "D:\Dwight\Capstone Main\DasiaAIO-Backend"
+# docker compose down
+# docker rm -f dasiaaio-frontend-local-run
