@@ -63,6 +63,7 @@ From repository root:
 ### Desktop
 
 - apps/desktop-tauri/src-tauri/target-release/release/bundle/msi/SENTINEL_1.0.0_x64_en-US.msi
+- apps/desktop-tauri/src-tauri/target-release/release/bundle/nsis/SENTINEL_1.0.0_x64-setup.exe
 
 ### Android
 

@@ -47,18 +47,22 @@ jobs:
           $env:VITE_API_BASE_URL = "${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}"
           npm run release:desktop --prefix DasiaAIO-Frontend
 
-      - name: Upload desktop MSI
+      - name: Upload desktop installers
         uses: actions/upload-artifact@v4
         with:
-          name: sentinel-desktop-msi
-          path: apps/desktop-tauri/src-tauri/target-release/release/bundle/msi/*.msi
+          name: sentinel-desktop-installers
+          path: |
+            apps/desktop-tauri/src-tauri/target-release/release/bundle/msi/*.msi
+            apps/desktop-tauri/src-tauri/target-release/release/bundle/nsis/*.exe
 
-      - name: Publish desktop MSI to GitHub Release
+      - name: Publish desktop installers to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: apps/desktop-tauri/src-tauri/target-release/release/bundle/msi/*.msi
+          files: |
+            apps/desktop-tauri/src-tauri/target-release/release/bundle/msi/*.msi
+            apps/desktop-tauri/src-tauri/target-release/release/bundle/nsis/*.exe
           fail_on_unmatched_files: false
 
   android-release:
