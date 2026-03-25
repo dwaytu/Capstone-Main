@@ -26,6 +26,8 @@ It manages:
 
 - `DasiaAIO-Frontend/`: Web app UI, dashboards, client-side logic, tests
 - `DasiaAIO-Backend/`: API server, DB migrations/init, domain handlers
+- `apps/android-capacitor/`: Capacitor Android shell consuming `DasiaAIO-Frontend/app-dist`
+- `apps/desktop-tauri/`: Tauri desktop shell consuming `DasiaAIO-Frontend/app-dist`
 - Root docs:
   - `SYSTEM_AUDIT_REPORT.md`
   - `explanation.md`
@@ -262,6 +264,23 @@ Primary frontend files that must be rechecked when roles/auth/dashboards change:
 
 Current frontend reality:
 
+- Multi-platform environment routing is active through Vite mode files:
+  - `DasiaAIO-Frontend/.env.web`
+  - `DasiaAIO-Frontend/.env.mobile`
+  - `DasiaAIO-Frontend/.env.desktop`
+- API host resolution now prioritizes `VITE_API_BASE_URL` (with legacy fallback to `VITE_API_URL`):
+  - `DasiaAIO-Frontend/src/config.ts`
+- Runtime platform tagging now sets DOM classes for platform-specific UX (`platform-mobile`, `platform-desktop`, `platform-web`):
+  - `DasiaAIO-Frontend/src/utils/platform.ts`
+  - `DasiaAIO-Frontend/src/main.tsx`
+- Mobile adaptation pass (without dashboard redesign):
+  - safe-area padding + touch-focused spacing rules in `DasiaAIO-Frontend/src/index.css`
+  - user/approvals/schedule tables include mobile card fallback in `DasiaAIO-Frontend/src/components/AdminDashboard.tsx`
+- Build pipeline now includes cross-platform scripts in `DasiaAIO-Frontend/package.json`:
+  - `build:web`
+  - `build:android`
+  - `build:desktop`
+
 - Routing intent is:
   - `superadmin` -> superadmin dashboard path
     - `admin` and `supervisor` -> shared superadmin-style dashboard shell (with role-gated actions)
@@ -496,6 +515,14 @@ Backend (runtime validation):
 docker compose config -q
 docker compose ps
 curl http://localhost:5000/api/health
+```
+
+Cross-platform build validation:
+
+```bash
+npm run build:web --prefix DasiaAIO-Frontend
+npm run build:android --prefix DasiaAIO-Frontend
+npm run build:desktop --prefix DasiaAIO-Frontend
 ```
 
 Verified in this session (Docker runtime):

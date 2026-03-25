@@ -1,0 +1,98 @@
+name: Release Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: Production backend URL used by web/desktop/mobile builds
+        required: true
+        default: https://backend-production-0c47.up.railway.app
+  push:
+    tags:
+      - v*
+
+jobs:
+  desktop-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            DasiaAIO-Frontend/package-lock.json
+            apps/desktop-tauri/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend deps
+        working-directory: DasiaAIO-Frontend
+        run: npm ci
+
+      - name: Install desktop wrapper deps
+        working-directory: apps/desktop-tauri
+        run: npm ci
+
+      - name: Build desktop release artifact
+        shell: pwsh
+        run: |
+          $env:VITE_API_BASE_URL = "${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}"
+          npm run release:desktop --prefix DasiaAIO-Frontend
+
+      - name: Upload desktop MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-desktop-msi
+          path: apps/desktop-tauri/src-tauri/target-release/release/bundle/msi/*.msi
+
+  android-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            DasiaAIO-Frontend/package-lock.json
+            apps/android-capacitor/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install frontend deps
+        working-directory: DasiaAIO-Frontend
+        run: npm ci
+
+      - name: Install android wrapper deps
+        working-directory: apps/android-capacitor
+        run: npm ci
+
+      - name: Build android release artifact
+        env:
+          VITE_API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}
+        run: |
+          npm run build --prefix DasiaAIO-Frontend -- --mode mobile
+          npm run sync --prefix apps/android-capacitor
+          cd apps/android-capacitor/android
+          ./gradlew :app:assembleRelease
+
+      - name: Upload unsigned APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-android-release-unsigned
+          path: apps/android-capacitor/android/app/build/outputs/apk/release/app-release-unsigned.apk

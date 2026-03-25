@@ -1,4 +1,14 @@
 {
+  "scripts": {
+    "build:web": "npm run build:web --prefix DasiaAIO-Frontend",
+    "build:android": "npm run build:android --prefix DasiaAIO-Frontend",
+    "build:desktop": "npm run build:desktop --prefix DasiaAIO-Frontend",
+    "release:web": "npm run release:web --prefix DasiaAIO-Frontend",
+    "release:desktop": "npm run release:desktop --prefix DasiaAIO-Frontend",
+    "release:android": "npm run release:android --prefix DasiaAIO-Frontend",
+    "release:android:bundle": "npm run release:android:bundle --prefix DasiaAIO-Frontend",
+    "release:all": "npm run release:all --prefix DasiaAIO-Frontend"
+  },
   "dependencies": {
     "pg": "^8.19.0"
   }

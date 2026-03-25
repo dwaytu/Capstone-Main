@@ -1,0 +1,15 @@
+{
+  "name": "sentinel-desktop-tauri",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tauri desktop wrapper for SENTINEL frontend",
+  "scripts": {
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:prod": "tauri build -- --target-dir target-release",
+    "build": "npm run tauri:build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0"
+  }
+}
