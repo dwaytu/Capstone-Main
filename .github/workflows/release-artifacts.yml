@@ -94,7 +94,15 @@ jobs:
           cd apps/android-capacitor/android
           ./gradlew :app:assembleRelease
 
+      - name: Upload signed APK
+        if: ${{ hashFiles('apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-android-release-signed
+          path: apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk
+
       - name: Upload unsigned APK
+        if: ${{ hashFiles('apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk') == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-android-release-unsigned
@@ -116,7 +124,8 @@ jobs:
       - name: Download android artifact
         uses: actions/download-artifact@v4
         with:
-          name: sentinel-android-release-unsigned
+          pattern: sentinel-android-release-*
+          merge-multiple: true
           path: dist/android
 
       - name: Publish GitHub release assets

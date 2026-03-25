@@ -88,7 +88,7 @@ Trigger modes:
 Outputs:
 
 - Desktop MSI artifact
-- Android unsigned APK artifact
+- Android signed APK artifact when signing vars are configured, otherwise unsigned APK artifact
 
 When triggered by a tag push matching `v*`, the workflow also publishes both files to the GitHub Release for that tag so users can download from the repository Releases page.
 
