@@ -9,3 +9,10 @@ __pycache__/
 .vscode/
 *.swp
 *.swo
+
+# Generated app dependencies/build outputs
+apps/android-capacitor/node_modules/
+apps/desktop-tauri/node_modules/
+apps/desktop-tauri/src-tauri/target/
+apps/desktop-tauri/src-tauri/target-alt/
+apps/desktop-tauri/src-tauri/target-release/
