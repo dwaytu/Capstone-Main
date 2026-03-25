@@ -90,6 +90,12 @@ Outputs:
 - Desktop MSI artifact
 - Android unsigned APK artifact
 
+When triggered by a tag push matching `v*`, the workflow also publishes both files to the GitHub Release for that tag so users can download from the repository Releases page.
+
+Download location after release job finishes:
+
+- `https://github.com/Cloudyrowdyyy/Capstone-Main/releases`
+
 ## 7. Final Production Checklist
 
 1. Confirm production API URL is correct for all target builds.
