@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: |
             DasiaAIO-Frontend/package-lock.json
@@ -92,7 +92,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: |
             DasiaAIO-Frontend/package-lock.json
@@ -125,26 +125,50 @@ jobs:
           chmod +x gradlew
           ./gradlew :app:assembleRelease
 
-      - name: Upload signed APK
-        if: ${{ hashFiles('apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-android-release-signed
-          path: apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk
+      - name: Prepare installable APK
+        run: |
+          APK_DIR="apps/android-capacitor/android/app/build/outputs/apk/release"
+          SIGNED_APK="$APK_DIR/app-release.apk"
+          UNSIGNED_APK="$APK_DIR/app-release-unsigned.apk"
+          INSTALLABLE_APK="$APK_DIR/app-release-installable.apk"
 
-      - name: Upload unsigned APK
-        if: ${{ hashFiles('apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk') == '' }}
+          if [ -f "$SIGNED_APK" ]; then
+            cp "$SIGNED_APK" "$INSTALLABLE_APK"
+            echo "Using existing signed release APK"
+          else
+            echo "No signed release key found, signing fallback APK for sideload install"
+            keytool -genkeypair -v \
+              -keystore "$RUNNER_TEMP/fallback-release.keystore" \
+              -storepass android \
+              -keypass android \
+              -alias fallback \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Sentinel, OU=Dev, O=Sentinel, L=City, S=State, C=US" \
+              -noprompt
+
+            BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
+            APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+            "$APKSIGNER" sign \
+              --ks "$RUNNER_TEMP/fallback-release.keystore" \
+              --ks-pass pass:android \
+              --key-pass pass:android \
+              --ks-key-alias fallback \
+              --out "$INSTALLABLE_APK" \
+              "$UNSIGNED_APK"
+          fi
+
+      - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: sentinel-android-release-unsigned
-          path: apps/android-capacitor/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          name: sentinel-android-release-installable
+          path: apps/android-capacitor/android/app/build/outputs/apk/release/app-release-installable.apk
 
       - name: Publish Android APK to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: |
-            apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk
-            apps/android-capacitor/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          files: apps/android-capacitor/android/app/build/outputs/apk/release/app-release-installable.apk
           fail_on_unmatched_files: false
