@@ -62,6 +62,10 @@ Backend endpoints include:
 - `POST /api/forgot-password`
 - `POST /api/verify-reset-code`
 - `POST /api/reset-password`
+- `POST /api/refresh`
+- `POST /api/auth/refresh`
+- `POST /api/logout`
+- `POST /api/auth/logout`
 
 Behavior highlights:
 
@@ -72,7 +76,7 @@ Behavior highlights:
 - Admin/supervisor accounts should be created internally via authenticated management flows
 - Email verification required when email provider is configured
 - Email verification is mandatory for guard self-registration; registration is rejected when email verification provider is not configured
-- JWT token issued on login and used by frontend persistence
+- Access and refresh JWTs issued on login; refresh sessions are persisted server-side and rotated on refresh
 
 Approval workflow highlights (implemented):
 
@@ -424,6 +428,28 @@ Current frontend reality:
       - bulk row selection with bulk actions (`Approve Selected`, `Suspend Selected` placeholder, `Delete Selected`),
       - responsive mobile user cards,
       - role-aware visibility/edit constraints (`admin` excludes `superadmin`; `supervisor` scoped to `guard`).
+  - SOC dashboard realism refinement (latest):
+    - Added reusable live-freshness UI primitive:
+      - `DasiaAIO-Frontend/src/components/dashboard/ui/LiveFreshnessPill.tsx` renders consistent live/delayed/offline status with relative age text.
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now shows `SOC stream` freshness in the command header and keeps sync state aligned with the 15-second refresh cycle.
+    - `DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx` now includes:
+      - analytics-feed freshness indicator,
+      - KPI deltas versus command targets,
+      - operational narrative cards for anomaly/risk/action storytelling.
+    - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx` now includes:
+      - mobile-toggle filter panel,
+      - operational-state legend (`Scheduled`, `In Progress`, `Needs Attention`, `Completed`),
+      - day-cell attention highlighting,
+      - selected-day attention counts and event-level recommended actions,
+      - calendar-feed freshness indicator.
+    - `DasiaAIO-Frontend/src/components/AdminDashboard.tsx` and `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` now include:
+      - `Roster sync` freshness indicator in user-management control bars,
+      - precise `Signal x[s|m|h] ago` metadata next to relative last-login values in desktop and mobile user rows.
+    - AI panel action framing upgrades:
+      - `DasiaAIO-Frontend/src/components/dashboard/PredictiveAlertsPanel.tsx`: now includes `Suggested action` per alert severity/category.
+      - `DasiaAIO-Frontend/src/components/dashboard/GuardAbsencePredictionPanel.tsx`: now includes explicit risk reasons and suggested operator action.
+      - `DasiaAIO-Frontend/src/components/dashboard/ReplacementSuggestionPanel.tsx`: now includes recommendation reason and dispatch guidance.
+      - `DasiaAIO-Frontend/src/components/dashboard/VehicleMaintenancePredictionPanel.tsx`: now includes urgency note tied to risk level.
   - Calendar bento metric data-source correction (latest):
     - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: `SecurityBentoGrid` inputs are now derived from live fetched calendar events (shifts/trips/missions/maintenance) instead of hardcoded demo values.
     - `DasiaAIO-Frontend/src/components/SecurityBentoGrid.tsx`: removed built-in demo defaults (`24`, `3`, `97`) and made metric data required so callers must pass real values.
@@ -466,6 +492,65 @@ Current frontend reality:
   - `DasiaAIO-Frontend/src/hooks/useAuditLogs.ts`: shared hook for fetching `/api/audit-logs` with filter + pagination awareness and consistent error handling.
   - `DasiaAIO-Frontend/src/components/AuditLogViewer.tsx`: renders searchable/filterable audit table with status chips, metadata preview, and paging controls; uses SOC token classes for contrast/compliance.
   - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`: adds `audit-log` section + conditional render + navigation wiring, while `src/config/navigation.ts` introduces the “System Audit Log” nav item (admin & superadmin via `manage_users` permission).
+- Production hardening and AI contract update (March 2026):
+  - Backend route and middleware updates:
+    - `DasiaAIO-Backend/src/error.rs`: added `RateLimited` app error mapped to HTTP `429`.
+    - `DasiaAIO-Backend/src/middleware/rate_limit.rs`: new auth-rate limiter middleware with window and request ceilings configurable via environment variables.
+    - `DasiaAIO-Backend/src/main.rs`: auth endpoints now pass through rate limiting and system health route now includes `GET /api/health/system`.
+    - `DasiaAIO-Backend/src/handlers/health.rs`: system health payload now includes database probe status for runtime readiness checks.
+    - `DasiaAIO-Backend/src/utils.rs`: JWT expiry now configurable (`JWT_EXPIRY_HOURS`), bcrypt cost now configurable (`BCRYPT_COST`), token verification failures are normalized to unauthorized responses, and shared pagination helpers were added.
+  - Backend API contract updates for scale and AI consistency:
+    - `DasiaAIO-Backend/src/handlers/users.rs`: `GET /api/users` now supports paginated response (`total`, `page`, `pageSize`, `users`).
+    - `DasiaAIO-Backend/src/handlers/guard_replacement.rs`: list endpoints now support pagination (`get_guard_shifts`, `get_all_shifts`).
+    - `DasiaAIO-Backend/src/handlers/incidents.rs`: `GET /api/incidents` and `GET /api/incidents/active` now return paginated metadata with list payload.
+    - `DasiaAIO-Backend/src/handlers/ai.rs`: incident AI endpoints now return standardized fields including `riskLevel`, `confidence`, `explanation`, and `suggestedActions`.
+  - Frontend runtime and AI presentation updates:
+    - `DasiaAIO-Frontend/src/utils/api.ts`: fetch wrapper now supports retry/backoff for retryable failures and offline-aware messaging.
+    - `DasiaAIO-Frontend/src/config.ts`: platform-aware API host resolution now supports web/desktop/mobile-specific overrides and safer Capacitor fallback behavior.
+    - `DasiaAIO-Frontend/src/hooks/useIncidents.ts`: now supports paginated incident responses while retaining array compatibility.
+    - AI panels now surface standardized AI fields (risk, confidence, explanation, suggested actions):
+      - `DasiaAIO-Frontend/src/components/dashboard/PredictiveAlertsPanel.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/GuardAbsencePredictionPanel.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/ReplacementSuggestionPanel.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/VehicleMaintenancePredictionPanel.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/IncidentSeverityClassifier.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/IncidentSummaryGenerator.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/IncidentPanel.tsx`
+      - `DasiaAIO-Frontend/src/components/dashboard/IncidentReportForm.tsx`
+
+      - Security hardening update (latest):
+        - Backend auth hardening:
+          - `DasiaAIO-Backend/src/handlers/auth.rs`: login lockout is now database-backed (`auth_login_attempts`) for per-user and per-IP scopes so counters survive restarts and scale across instances.
+          - `DasiaAIO-Backend/src/handlers/auth.rs`: login persists refresh token sessions, refresh rotates sessions transactionally, and logout revokes refresh sessions.
+          - `DasiaAIO-Backend/src/handlers/auth.rs`: `verify_reset_code` and `reset_password` enforce trimmed input, strict 6-digit reset-code format, and stronger password policy checks.
+          - `DasiaAIO-Backend/src/handlers/auth.rs`: forgot-password flow returns generic success for unknown accounts to reduce enumeration risk.
+          - Login/refresh response contract remains additive: `token`, `refreshToken`, `tokenType`, `expiresInSeconds`.
+        - Token/security utilities:
+          - `DasiaAIO-Backend/src/utils.rs`: added `hash_token` for persisted refresh-token fingerprinting.
+          - `DasiaAIO-Backend/src/models.rs`: `RefreshTokenRequest` (`refreshToken`) is used for refresh and logout revocation flows.
+        - Schema and route updates:
+          - `DasiaAIO-Backend/src/db.rs`: added `auth_login_attempts` and `refresh_token_sessions` tables plus indexes.
+          - `DasiaAIO-Backend/src/main.rs`: wired `/api/logout` and `/api/auth/logout` alongside refresh routes.
+          - `DasiaAIO-Backend/src/main.rs`: global API rate limiting and expensive-endpoint throttling remain active.
+        - Audit and schema updates:
+          - `DasiaAIO-Backend/src/db.rs`: `audit_logs` includes `source_ip` with supporting index.
+          - `DasiaAIO-Backend/src/middleware/audit.rs`: write-audit entries persist requester source IP.
+          - `DasiaAIO-Backend/src/handlers/audit.rs` + `DasiaAIO-Backend/src/models.rs`: audit list returns `source_ip` and supports source-IP filtering/search.
+        - Frontend auth-session updates:
+          - `DasiaAIO-Frontend/src/utils/api.ts`: centralized auth session helpers now include secure-session hydration and Capacitor secure refresh-token persistence when secure plugin is available.
+          - `DasiaAIO-Frontend/src/App.tsx`: startup now hydrates secure session state before auth restore and logout now calls backend revocation endpoint.
+          - `DasiaAIO-Frontend/src/components/LoginPage.tsx`: login stores both access and refresh tokens; client-side password checks match stronger policy expectations.
+        - Desktop/mobile wrapper hardening:
+          - `apps/desktop-tauri/src-tauri/tauri.conf.json`: explicit production and development CSP policies are enforced.
+          - `apps/android-capacitor/capacitor.config.ts`: Android scheme uses `https` in production builds.
+          - `apps/android-capacitor/android/app/src/main/AndroidManifest.xml`: Android backup extraction disabled (`allowBackup=false`, `fullBackupContent=false`).
+          - `apps/android-capacitor/package.json`: added `capacitor-secure-storage-plugin` (Capacitor 7-compatible) and synced Android plugins.
+        - Validation performed:
+          - Backend: `cargo check` completed successfully.
+          - Frontend: `npm run build` completed successfully.
+          - Mobile wrapper: `npm run build` in `apps/android-capacitor` completed successfully with secure storage plugin present in sync output.
+        - Remaining follow-up:
+          - For strict compliance in high-security deployments, add device-policy guidance to require screen lock and encrypted storage at OS level, then perform physical-device compromise testing.
 
 ## 11. Local Runbook (Docker-first)
 
@@ -525,6 +610,42 @@ npm run build:android --prefix DasiaAIO-Frontend
 npm run build:desktop --prefix DasiaAIO-Frontend
 ```
 
+## 13. Release and Distribution Snapshot (Latest)
+
+- Canonical release workflow:
+  - `.github/workflows/release-artifacts.yml`
+- Trigger conditions:
+  - manual dispatch (`api_base_url` input)
+  - tag push matching `v*`
+
+Current release behavior:
+
+- Desktop artifacts:
+  - MSI + EXE are built and uploaded as `sentinel-desktop-installers`.
+- Android artifact:
+  - CI now always publishes an installable APK (`sentinel-android-release-installable`).
+  - If production signing secrets are absent, CI performs fallback signing (ephemeral keystore) so sideload install still works.
+- GitHub Release publishing:
+  - For `v*` tags, desktop and android installables are attached to the Release entry.
+
+Checkout/build stability updates applied:
+
+- Switched from `actions/checkout` to manual authenticated git fetch/checkout in both jobs to avoid prior git checkout/submodule failures (`exit 128`).
+- Android release build sets executable permission on gradle wrapper before execution (`chmod +x gradlew`) to avoid Linux permission failures (`exit 126`).
+- Build runtime updated to Node.js 24 in both jobs.
+
+Warning interpretation (important):
+
+- Node 20 deprecation warnings may still appear in workflow annotations when third-party actions internally run on Node 20.
+- Those warnings are action-runtime warnings, not a failure of the app runtime itself.
+
+## 14. Release Validation Update (March 2026)
+
+- Release workflow run completed successfully for both jobs (`desktop-windows` and `android-release`) with artifacts generated:
+  - `sentinel-desktop-installers`
+  - `sentinel-android-release-installable`
+- Remaining warnings were deprecation notices from upstream GitHub actions runtime and did not block artifact output.
+
 Verified in this session (Docker runtime):
 
 - Build/recreate successful via `docker compose up -d --build`.
@@ -560,6 +681,16 @@ Verified in this session (Docker runtime):
 - Frontend verification after SOC visual/theming refactor:
   - Workspace diagnostics: no TypeScript errors in modified frontend files
   - `npm run build` succeeded
+- Frontend verification in this hardening pass:
+  - Workspace diagnostics: no TypeScript errors in modified AI, incident, API, and config files.
+- Backend verification in this hardening pass:
+  - Workspace diagnostics: no Rust errors in modified middleware, route, health, incidents, users, and AI handler files.
+- Cross-platform build verification in this hardening pass:
+  - `npm run build:android --prefix DasiaAIO-Frontend` succeeded, including `npx cap sync android`.
+  - `npm run build:desktop --prefix DasiaAIO-Frontend` succeeded, including full Tauri MSI/NSIS bundle generation.
+- Remaining validation scope:
+  - Device-level runtime smoke checks (native Android device + installed desktop binary).
+  - End-to-end API/UX assertion for all newly paginated list endpoints from deployed frontend surfaces.
   - `npm test -- --runInBand` succeeded (`5/5` tests passing)
   - Browser smoke on `http://localhost:4173` verified:
     - command-center top/middle/bottom hierarchy and quick-action console layout
@@ -571,6 +702,9 @@ Verified in this session (Docker runtime):
  - Frontend verification after latest user-management table overhaul:
    - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx` diagnostics: no TypeScript errors
    - `npm run build` succeeded
+- Frontend verification after SOC realism refinement pass:
+  - `npm run build --prefix DasiaAIO-Frontend` succeeded
+  - `npm --prefix DasiaAIO-Frontend test -- --runInBand` succeeded (`5/5` tests passing)
  - Backend verification after audit-log entity alias fix:
    - `DasiaAIO-Backend/src/handlers/audit.rs` diagnostics: no Rust analyzer errors
    - `cargo check` could not be executed in this session because `cargo` is not available in the active terminal environment.

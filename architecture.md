@@ -510,6 +510,49 @@
 4. API returns structured output.
 5. Frontend renders AI output in command-center modules.
 
+## 11. Release and Distribution Architecture
+
+### CI/CD Release Workflow
+- Workflow file: `.github/workflows/release-artifacts.yml`
+- Trigger modes:
+  - Manual: `workflow_dispatch` with `api_base_url` override
+  - Tagged release: push tag matching `v*`
+- Permissions:
+  - `contents: write` for publishing assets to GitHub Releases
+
+### Desktop Packaging Pipeline
+- Build runner: `windows-latest`
+- Packaging target: Tauri bundle outputs in `apps/desktop-tauri/src-tauri/target-release/release/bundle/`
+- Published installer formats:
+  - MSI (`.msi`)
+  - NSIS EXE (`.exe`)
+- Artifact name in Actions:
+  - `sentinel-desktop-installers`
+
+### Android Packaging Pipeline
+- Build runner: `ubuntu-latest`
+- Build command path:
+  - frontend mobile build -> capacitor sync -> gradle release assemble
+- `gradlew` execute bit is explicitly set in CI before build (`chmod +x gradlew`).
+- Release output behavior:
+  - If a production-signed APK exists (`app-release.apk`), it is used.
+  - If not, CI signs `app-release-unsigned.apk` with an ephemeral fallback keystore and publishes `app-release-installable.apk` for sideload installation.
+- Artifact name in Actions:
+  - `sentinel-android-release-installable`
+
+### Source Checkout Strategy in CI
+- To avoid repository git/submodule metadata failures (`git exit 128`) during checkout, both desktop and android jobs use manual authenticated git fetch/checkout and clone the frontend repository explicitly.
+
+### Runtime and Action Notes
+- Workflow build runtime uses Node.js 24 via `actions/setup-node`.
+- GitHub may still show Node 20 deprecation warnings for third-party actions that have not yet migrated their internal runtime; these warnings are non-blocking when jobs succeed.
+
+### Distribution Surface
+- Successful tag builds publish install artifacts directly to GitHub Releases for the matching tag.
+- Release page should contain:
+  - Desktop `.msi` and `.exe`
+  - Android installable `.apk`
+
 ## Reviewer Notes
 - Architecture is endpoint-centric with middleware-enforced security and role policy.
 - Operational and AI data are clearly separated while linked by user/incident/asset identifiers.

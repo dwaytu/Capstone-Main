@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   appName: 'SENTINEL',
   webDir: '../../DasiaAIO-Frontend/app-dist',
   server: {
-    androidScheme: 'http',
+    androidScheme: isProduction ? 'https' : 'http',
     cleartext: !isProduction,
   },
   android: {
