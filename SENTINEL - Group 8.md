@@ -253,7 +253,9 @@ the Axum backend, map viewport synchronization safeguards for Leaflet runtime st
 
 cross-platform client security reinforcement, including a first-use Terms of Agreement gate
 
-that blocks access until the user explicitly accepts policy terms on Web, Desktop, and Mobile runtimes.
+that blocks access until the user explicitly accepts policy terms on Web, Desktop, and Mobile runtimes. Additional runtime hardening includes wrapper-origin CORS support for
+
+`capacitor://localhost`, `tauri://localhost`, and secure localhost WebView origins to prevent mobile login fetch failures, plus an in-app update availability prompt that compares deployed app version metadata against GitHub latest-release tags and guides users to download newer builds.
 
 
 
@@ -1004,6 +1006,8 @@ Planning activities began with requirements consolidation, role-mapping, and mod
 Development was executed through frontend-backend parallel work with recurring integration checkpoints. Frontend components and hooks were built alongside backend handlers, middleware, and service logic, then connected through authenticated API contracts. This feature-based integration pattern reduced interface drift and enabled earlier discovery of role-permission, payload, and workflow defects.
 
 Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario tests, API contract verification, and runtime build validation for web, desktop, and Android outputs. Security and reliability refinements (for example lockout persistence, refresh-session revocation, authorization enforcement, and rate-limiting controls) were integrated as iterative hardening tasks.
+
+Release-readiness refinement also added build-time version metadata propagation and release endpoint configuration so packaged desktop/mobile clients can detect newer published releases and notify users with a controlled update prompt.
 
 Deployment considerations were addressed through Dockerized service orchestration, PostgreSQL-backed persistence, and release-oriented build scripts for cross-platform distribution. This ensured that the methodology did not end at coding, but covered operational readiness and maintainability for real-world SOC usage.
 

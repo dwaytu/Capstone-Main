@@ -55,6 +55,9 @@ jobs:
         shell: pwsh
         run: |
           $env:VITE_API_BASE_URL = "${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}"
+          $env:VITE_APP_VERSION = "${{ github.ref_name || 'dev' }}"
+          $env:VITE_LATEST_RELEASE_API_URL = "https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest"
+          $env:VITE_RELEASE_DOWNLOAD_URL = "https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest"
           npm run release:desktop --prefix DasiaAIO-Frontend
 
       - name: Upload desktop installers
@@ -118,6 +121,9 @@ jobs:
       - name: Build android release artifact
         env:
           VITE_API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}
+          VITE_APP_VERSION: ${{ github.ref_name || 'dev' }}
+          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest
+          VITE_RELEASE_DOWNLOAD_URL: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
         run: |
           npm run build --prefix DasiaAIO-Frontend -- --mode mobile
           npm run sync --prefix apps/android-capacitor

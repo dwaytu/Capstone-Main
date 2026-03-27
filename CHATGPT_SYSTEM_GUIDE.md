@@ -158,6 +158,8 @@ Client access governance hardening:
 
 - `DasiaAIO-Frontend/src/App.tsx` now enforces a first-use Terms of Agreement gate across Web, Desktop (Tauri), and Mobile (Capacitor) runtimes.
 - Access is blocked by an application modal until users explicitly agree, with acceptance persisted per app profile using `localStorage` key `dasi.toa.accepted.v1`.
+- `DasiaAIO-Frontend/src/App.tsx` now checks GitHub Releases for newer tagged builds and prompts users to download updates via in-app modal (`Later` / `Download update`) when a newer release than `VITE_APP_VERSION` is available.
+- `DasiaAIO-Frontend/src/config.ts` now exposes app/update metadata (`APP_VERSION`, `LATEST_RELEASE_API_URL`, `RELEASE_DOWNLOAD_URL`) and uses a production-safe API fallback for Capacitor release builds when no explicit mobile API env var is injected.
 
 ## 8. API and Security Notes
 
@@ -174,6 +176,7 @@ Client access governance hardening:
 - Guard login is blocked when `approval_status != approved`.
 - CORS accepts both `CORS_ORIGINS` (comma-separated, preferred) and `CORS_ORIGIN` (single-origin compatibility).
 - If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` includes local development and production web origins (`https://dasiasentinel.xyz`, `https://www.dasiasentinel.xyz`, `https://dasiaaio.up.railway.app`).
+- CORS fallback allow-lists now also include runtime origins used by packaged clients (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) to prevent mobile/desktop WebView login fetch failures when strict CORS env vars are absent.
 - Legacy high-privilege routes were hardened with centralized middleware, including:
   - permits + firearm maintenance + training record endpoints
   - car allocation + car maintenance + driver assignment endpoints
