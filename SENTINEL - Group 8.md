@@ -247,7 +247,13 @@ scenarios and resolving 15 or more production issues. Recent production-hardenin
 
 also implemented distributed login lockout persistence, refresh-token rotation and revocation,
 
-global and endpoint-level abuse protection, and cross-platform client security reinforcement.
+global and endpoint-level abuse protection, explicit production-origin CORS allow-listing in
+
+the Axum backend, map viewport synchronization safeguards for Leaflet runtime stability, and
+
+cross-platform client security reinforcement, including a first-use Terms of Agreement gate
+
+that blocks access until the user explicitly accepts policy terms on Web, Desktop, and Mobile runtimes.
 
 
 

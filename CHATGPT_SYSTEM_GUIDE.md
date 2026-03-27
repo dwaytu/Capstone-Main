@@ -154,6 +154,11 @@ API utility hardening:
 - `src/utils/api.ts` supports safe non-JSON parsing fallback
 - `fetchJsonOrThrow` supports timeout-based abort
 
+Client access governance hardening:
+
+- `DasiaAIO-Frontend/src/App.tsx` now enforces a first-use Terms of Agreement gate across Web, Desktop (Tauri), and Mobile (Capacitor) runtimes.
+- Access is blocked by an application modal until users explicitly agree, with acceptance persisted per app profile using `localStorage` key `dasi.toa.accepted.v1`.
+
 ## 8. API and Security Notes
 
 - JWT generation and verification are active and used in managed user creation.
@@ -167,7 +172,8 @@ API utility hardening:
   - `GET /api/users/pending-approvals`
   - `PUT /api/users/:id/approval`
 - Guard login is blocked when `approval_status != approved`.
-- CORS is permissive by default unless `CORS_ORIGIN` env var is set.
+- CORS accepts both `CORS_ORIGINS` (comma-separated, preferred) and `CORS_ORIGIN` (single-origin compatibility).
+- If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` includes local development and production web origins (`https://dasiasentinel.xyz`, `https://www.dasiasentinel.xyz`, `https://dasiaaio.up.railway.app`).
 - Legacy high-privilege routes were hardened with centralized middleware, including:
   - permits + firearm maintenance + training record endpoints
   - car allocation + car maintenance + driver assignment endpoints
