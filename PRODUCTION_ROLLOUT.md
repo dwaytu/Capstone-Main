@@ -46,6 +46,11 @@ Code-sign MSI installers with your organization certificate to reduce SmartScree
 
 From repository root:
 
+Required env vars before release commands:
+
+- `VITE_API_BASE_URL` (must be HTTPS production backend URL)
+- `VITE_APP_VERSION` (semantic version, for example `v1.2.3`)
+
 1. Web release build
    - npm run release:web
 
@@ -59,6 +64,10 @@ From repository root:
    - npm run release:all
 
 ## 5. Artifact Output Paths
+
+### Web
+
+- `sentinel-web-dist.tar.gz` (GitHub Actions artifact + Release asset on `v*` tags)
 
 ### Desktop
 
@@ -88,6 +97,7 @@ Trigger modes:
 
 Outputs:
 
+- Web static bundle artifact (`sentinel-web-static`)
 - Desktop MSI artifact
 - Android signed APK artifact when signing vars are configured, otherwise unsigned APK artifact
 
@@ -100,6 +110,7 @@ Download location after release job finishes:
 ## 7. Final Production Checklist
 
 1. Confirm production API URL is correct for all target builds.
+2. Ensure release env vars are set before running release commands (`VITE_API_BASE_URL`, `VITE_APP_VERSION`).
 2. Build and publish desktop MSI.
 3. Build signed Android release (APK/AAB for distribution/store).
 4. Smoke test login and key workflows in web, desktop, and mobile.

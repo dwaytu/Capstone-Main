@@ -14,7 +14,71 @@ on:
     tags:
       - v*
 
+concurrency:
+  group: release-artifacts-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  web-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (manual)
+        run: |
+          git init .
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git fetch --depth 1 origin "${{ github.sha }}"
+          git checkout --detach FETCH_HEAD
+
+      - name: Clone frontend repository
+        run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Cloudyrowdyyy/DasiaAIO-Frontend.git" DasiaAIO-Frontend
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: DasiaAIO-Frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: DasiaAIO-Frontend
+        run: npm ci
+
+      - name: Build web release artifact
+        env:
+          VITE_API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}
+          VITE_APP_VERSION: ${{ github.ref_name || 'v0.0.0-local' }}
+          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest
+          VITE_RELEASE_DOWNLOAD_URL: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+          NODE_ENV: production
+        run: npm run release:web --prefix DasiaAIO-Frontend
+
+      - name: Verify web artifact does not contain local API hosts
+        run: |
+          if grep -R --line-number -E "http://(localhost|127\\.0\\.0\\.1|10\\.0\\.2\\.2|192\\.168\\.)" DasiaAIO-Frontend/app-dist/assets; then
+            echo "Local API URL detected in production web artifact"
+            exit 1
+          fi
+
+      - name: Package web artifact
+        run: |
+          cd DasiaAIO-Frontend
+          tar -czf ../sentinel-web-dist.tar.gz app-dist
+
+      - name: Upload web static bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-web-static
+          path: sentinel-web-dist.tar.gz
+
+      - name: Publish web static bundle to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: sentinel-web-dist.tar.gz
+          fail_on_unmatched_files: false
+
   desktop-windows:
     runs-on: windows-latest
     steps:
@@ -55,9 +119,10 @@ jobs:
         shell: pwsh
         run: |
           $env:VITE_API_BASE_URL = "${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}"
-          $env:VITE_APP_VERSION = "${{ github.ref_name || 'dev' }}"
+          $env:VITE_APP_VERSION = "${{ github.ref_name || 'v0.0.0-local' }}"
           $env:VITE_LATEST_RELEASE_API_URL = "https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest"
           $env:VITE_RELEASE_DOWNLOAD_URL = "https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest"
+          $env:NODE_ENV = "production"
           npm run release:desktop --prefix DasiaAIO-Frontend
 
       - name: Upload desktop installers
@@ -121,10 +186,13 @@ jobs:
       - name: Build android release artifact
         env:
           VITE_API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}
-          VITE_APP_VERSION: ${{ github.ref_name || 'dev' }}
+          VITE_APP_VERSION: ${{ github.ref_name || 'v0.0.0-local' }}
           VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest
           VITE_RELEASE_DOWNLOAD_URL: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+          NODE_ENV: production
+          CAPACITOR_ENV: production
         run: |
+          node DasiaAIO-Frontend/scripts/ensure-production-env.mjs android-ci
           npm run build --prefix DasiaAIO-Frontend -- --mode mobile
           npm run sync --prefix apps/android-capacitor
           cd apps/android-capacitor/android

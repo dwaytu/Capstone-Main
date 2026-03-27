@@ -159,7 +159,9 @@ Client access governance hardening:
 - `DasiaAIO-Frontend/src/App.tsx` now enforces a first-use Terms of Agreement gate across Web, Desktop (Tauri), and Mobile (Capacitor) runtimes.
 - Access is blocked by an application modal until users explicitly agree, with acceptance persisted per app profile using `localStorage` key `dasi.toa.accepted.v1`.
 - `DasiaAIO-Frontend/src/App.tsx` now checks GitHub Releases for newer tagged builds and prompts users to download updates via in-app modal (`Later` / `Download update`) when a newer release than `VITE_APP_VERSION` is available.
-- `DasiaAIO-Frontend/src/config.ts` now exposes app/update metadata (`APP_VERSION`, `LATEST_RELEASE_API_URL`, `RELEASE_DOWNLOAD_URL`) and uses a production-safe API fallback for Capacitor release builds when no explicit mobile API env var is injected.
+- `DasiaAIO-Frontend/src/config.ts` now exposes app/update metadata (`APP_VERSION`, `LATEST_RELEASE_API_URL`, `RELEASE_DOWNLOAD_URL`) and resolves API base URL strictly from `VITE_API_BASE_URL`.
+- Runtime API fallback paths were removed to prevent cross-platform drift between web, desktop, and mobile clients.
+- Frontend release scripts now enforce production env safety via `DasiaAIO-Frontend/scripts/ensure-production-env.mjs`, blocking unsafe releases when `VITE_API_BASE_URL` is missing/non-HTTPS/private-host or when `VITE_APP_VERSION` is not a semantic release value.
 
 ## 8. API and Security Notes
 
@@ -177,6 +179,11 @@ Client access governance hardening:
 - CORS accepts both `CORS_ORIGINS` (comma-separated, preferred) and `CORS_ORIGIN` (single-origin compatibility).
 - If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` includes local development and production web origins (`https://dasiasentinel.xyz`, `https://www.dasiasentinel.xyz`, `https://dasiaaio.up.railway.app`).
 - CORS fallback allow-lists now also include runtime origins used by packaged clients (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) to prevent mobile/desktop WebView login fetch failures when strict CORS env vars are absent.
+- When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS now still augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
+- Backend config now enforces production startup guards (`DasiaAIO-Backend/src/config.rs`) when `APP_ENV=production` or `NODE_ENV=production`:
+  - requires strong non-default `JWT_SECRET`,
+  - rejects default `ADMIN_CODE=122601`,
+  - requires explicit `CORS_ORIGINS` or `CORS_ORIGIN`.
 - Legacy high-privilege routes were hardened with centralized middleware, including:
   - permits + firearm maintenance + training record endpoints
   - car allocation + car maintenance + driver assignment endpoints
@@ -281,8 +288,11 @@ Current frontend reality:
   - `DasiaAIO-Frontend/.env.web`
   - `DasiaAIO-Frontend/.env.mobile`
   - `DasiaAIO-Frontend/.env.desktop`
-- API host resolution now prioritizes `VITE_API_BASE_URL` (with legacy fallback to `VITE_API_URL`):
-  - `DasiaAIO-Frontend/src/config.ts`
+- API host resolution now uses a strict single source of truth (`VITE_API_BASE_URL`) with startup validation in `DasiaAIO-Frontend/src/config.ts`:
+  - Missing/empty URL now fails fast.
+  - Production requires `https://`.
+  - Production rejects localhost/private hosts (`localhost`, `127.0.0.1`, `10.*`, `192.168.*`, `172.16-31.*`, `10.0.2.2`).
+  - Legacy runtime/query-param fallback paths were removed.
 - Runtime platform tagging now sets DOM classes for platform-specific UX (`platform-mobile`, `platform-desktop`, `platform-web`):
   - `DasiaAIO-Frontend/src/utils/platform.ts`
   - `DasiaAIO-Frontend/src/main.tsx`
@@ -475,11 +485,16 @@ Current frontend reality:
       - guard geolocation heartbeat submission (`/api/tracking/heartbeat`)
     - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx` now includes an elevated-role "Client Location Manager" UI for add/edit/delete site operations directly in the dashboard.
     - `OperationalMapPanel` now supports click-to-place coordinates: operators can press `Pick Position On Map`, click map, and auto-fill latitude/longitude for add/edit workflows.
-    - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` now includes a guard-facing `Turn On Live Location` / `Turn Off Live Location` control (consent-based device geolocation heartbeat to backend).
+    - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` now includes a guard-facing `Turn On Live Location` / `Turn Off Live Location` control (consent-gated heartbeat flow to backend).
     - Guard location UX now includes:
-      - explicit geolocation permission prompt trigger when enabling tracking,
+      - explicit consent gate (`dasi.locationConsent.v1`) before tracking can be enabled,
+      - explicit runtime permission prompt trigger when enabling tracking,
       - permission state indicator (`prompt` / `granted` / `denied`),
-      - live `Location Accuracy Meter` showing current meter estimate and quality tier.
+      - live `Location Accuracy Meter` showing current meter estimate and quality tier,
+      - cross-platform location fallback behavior:
+        - Web: browser geolocation then IP-based fallback when precise location is unavailable.
+        - Capacitor mobile: plugin permission + precise location, then IP-based fallback.
+        - Tauri desktop: secure-context geolocation when available, otherwise IP-based fallback.
 - Predictive alerts UI (new):
   - `DasiaAIO-Frontend/src/hooks/usePredictiveAlerts.ts`: fetches `/api/alerts/predictive`, stores status/error metadata, and refreshes alongside other SOC telemetry.
   - `DasiaAIO-Frontend/src/components/dashboard/PredictiveAlertsPanel.tsx`: renders command-panel style warning cards (icon + severity border + category chip + context chips).
@@ -493,10 +508,11 @@ Current frontend reality:
     - Hook now supports both response shapes from `/api/tracking/client-sites` (`ClientSite[]` and `{ sites: ClientSite[] }`) to prevent false empty-state errors.
   - `DasiaAIO-Frontend/src/components/dashboard/ReplacementSuggestionPanel.tsx`: command-center recommendation card showing guard name, reliability score, distance, availability, permit validity, and replacement score.
   - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx`: mounts `ReplacementSuggestionPanel` in forward insights and refreshes it within the 15-second command-center polling cycle.
-- Command-center AI and fallback continuity (latest):
+- Command-center AI and data continuity (latest):
   - `DasiaAIO-Frontend/src/components/dashboard/IncidentSeverityClassifier.tsx`: dedicated card for `/api/ai/classify-incident` scoring.
   - `DasiaAIO-Frontend/src/components/dashboard/IncidentSummaryGenerator.tsx`: dedicated card for `/api/ai/summarize-incident` summaries and key phrases.
-  - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now includes scoped mock fallback datasets for shifts/incidents/AI predictions when core feeds are simultaneously empty, preserving operator context without breaking real-data flows.
+  - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now renders only backend-provided operational datasets (mock fallback datasets removed from command surfaces).
+  - `DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx` now sources guard performance from `GET /api/analytics/guard-reliability` instead of simulated/randomized rows.
 - System audit viewer (new):
   - `DasiaAIO-Frontend/src/hooks/useAuditLogs.ts`: shared hook for fetching `/api/audit-logs` with filter + pagination awareness and consistent error handling.
   - `DasiaAIO-Frontend/src/components/AuditLogViewer.tsx`: renders searchable/filterable audit table with status chips, metadata preview, and paging controls; uses SOC token classes for contrast/compliance.
@@ -629,13 +645,17 @@ npm run build:desktop --prefix DasiaAIO-Frontend
 
 Current release behavior:
 
+- Web artifact:
+  - CI now builds and uploads a static web bundle (`sentinel-web-static`) and publishes `sentinel-web-dist.tar.gz` on `v*` tags.
 - Desktop artifacts:
   - MSI + EXE are built and uploaded as `sentinel-desktop-installers`.
 - Android artifact:
   - CI now always publishes an installable APK (`sentinel-android-release-installable`).
   - If production signing secrets are absent, CI performs fallback signing (ephemeral keystore) so sideload install still works.
+- Release guard behavior:
+  - release jobs set production runtime flags (`NODE_ENV=production`, plus `CAPACITOR_ENV=production` for Android) and execute frontend release env validation before packaging.
 - GitHub Release publishing:
-  - For `v*` tags, desktop and android installables are attached to the Release entry.
+  - For `v*` tags, web, desktop, and android artifacts are attached to the Release entry.
 
 Checkout/build stability updates applied:
 
@@ -1082,7 +1102,7 @@ Role-based runtime sweep (recommended):
 - Railway CLI was not available in this environment (`railway` command not found), so production account SQL could not be executed directly from this machine.
 - User presence currently uses an activity recency window (`last_seen_at`) as the online heuristic, not websocket session tracking.
 - Operational map supports websocket push updates (`/api/tracking/ws`) and also keeps a periodic refresh fallback in the frontend hook.
-- Browser geolocation remains permission-dependent; denied permissions prevent automatic location submission.
+- Location submission is consent-gated first. When consent is accepted, tracking attempts precise runtime geolocation and degrades to IP-based fallback when permission is denied or unavailable.
 - Location precision remains environment-dependent (device GPS, OS settings, browser permissions, network conditions), so accuracy can vary even when tracking is functioning correctly.
 - `replacement_status` is not present in all deployed `shifts` schemas; proximity-alert logic intentionally avoids hard dependency on that column for compatibility.
 

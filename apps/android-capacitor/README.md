@@ -29,4 +29,5 @@ This app wraps the existing React frontend from ../../DasiaAIO-Frontend.
 ## Environment
 
 The frontend reads API base URL from ../../DasiaAIO-Frontend/.env.mobile.
-Use your LAN IP (for example http://192.168.1.25:5000), not localhost.
+Default local emulator mapping uses http://10.0.2.2:5000 (host machine loopback).
+If needed, override with LAN host in a local mode file (for example http://192.168.1.25:5000).

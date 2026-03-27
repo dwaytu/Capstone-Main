@@ -255,7 +255,7 @@ cross-platform client security reinforcement, including a first-use Terms of Agr
 
 that blocks access until the user explicitly accepts policy terms on Web, Desktop, and Mobile runtimes. Additional runtime hardening includes wrapper-origin CORS support for
 
-`capacitor://localhost`, `tauri://localhost`, and secure localhost WebView origins to prevent mobile login fetch failures, plus an in-app update availability prompt that compares deployed app version metadata against GitHub latest-release tags and guides users to download newer builds.
+`capacitor://localhost`, `tauri://localhost`, and secure localhost WebView origins to prevent mobile login fetch failures, with these wrapper origins now enforced even when explicit web CORS origin environment variables are configured. Release hardening also added fail-fast environment validation for frontend production packaging (HTTPS production API target plus semantic app version requirement), while the runtime includes an in-app update availability prompt that compares deployed app version metadata against GitHub latest-release tags and guides users to download newer builds.
 
 
 
@@ -1007,7 +1007,7 @@ Development was executed through frontend-backend parallel work with recurring i
 
 Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario tests, API contract verification, and runtime build validation for web, desktop, and Android outputs. Security and reliability refinements (for example lockout persistence, refresh-session revocation, authorization enforcement, and rate-limiting controls) were integrated as iterative hardening tasks.
 
-Release-readiness refinement also added build-time version metadata propagation and release endpoint configuration so packaged desktop/mobile clients can detect newer published releases and notify users with a controlled update prompt.
+Release-readiness refinement also added build-time version metadata propagation and release endpoint configuration so packaged desktop/mobile clients can detect newer published releases and notify users with a controlled update prompt. The automated release pipeline now produces web static bundles in addition to desktop and Android artifacts to keep all supported runtime outputs aligned per tagged release.
 
 Deployment considerations were addressed through Dockerized service orchestration, PostgreSQL-backed persistence, and release-oriented build scripts for cross-platform distribution. This ensured that the methodology did not end at coding, but covered operational readiness and maintainability for real-world SOC usage.
 
@@ -1531,9 +1531,13 @@ SENTINEL implementation was executed as a feature-driven integration program in 
 
 Frontend development focused on role-aware dashboard experiences and modular operational components. React + TypeScript components were organized around command-center views, approvals, scheduling, assets, incidents, analytics, and audit-log workspaces, with shared hooks for API access, polling, and real-time state updates. This structure allowed consistent behavior across superadmin, admin, supervisor, and guard interfaces while preserving role constraints.
 
+Production configuration was standardized so all runtimes (web, desktop, and Android) consume a single backend source of truth through `VITE_API_BASE_URL`. Client startup now validates this value and fails fast when it is missing, malformed, non-HTTPS in production, or points to localhost/private-network hosts. This reduced environment drift and prevented accidental release builds that target unsafe or non-routable API origins.
+
 Backend development was organized around Axum route handlers, middleware, and service modules. Handlers implemented domain endpoints for authentication, approvals, guard workflows, firearms, armored vehicles, incidents, analytics, notifications, tracking, support tickets, and audit retrieval. Middleware layers enforced authentication, role authorization, audit capture, presence updates, and rate-limiting controls. Service-layer logic encapsulated deterministic AI scoring and recommendation workflows.
 
 Integration development connected frontend workflows to secured backend APIs using JWT-authenticated requests, refresh-session handling, and role-scoped endpoint access. Real-time monitoring capabilities were integrated through websocket snapshot streaming and polling fallback, ensuring operational continuity when network conditions vary.
+
+Location workflows were hardened with explicit privacy consent before any heartbeat submission. If consent is not accepted, location tracking remains disabled. After consent, runtime-specific acquisition is applied: browser geolocation for web, Capacitor plugin geolocation for Android, and desktop secure-context geolocation when available; all flows degrade to IP-based fallback when precise coordinates are unavailable. This preserved cross-platform tracking continuity while keeping consent and safety controls explicit.
 
 Cross-platform expansion followed a staged model. The web build remained the canonical UI source; Capacitor packaged this build for Android field use; and Tauri packaged the same build for Windows desktop command-center use. This approach reduced duplication, preserved feature parity, and kept release validation aligned across all supported runtime targets.
 
@@ -1550,6 +1554,8 @@ At the data layer, PostgreSQL maintains normalized operational entities for user
 The data flow is API-centric: user actions from dashboards and module views are submitted as authenticated requests, evaluated by middleware, processed by domain handlers/services, persisted in PostgreSQL, and returned as structured responses to update frontend state. Tracking-specific flows additionally emit websocket snapshot updates so command views reflect location changes with reduced latency.
 
 The real-time architecture combines websocket broadcasting with polling-based refresh. Tracking and client-site updates are published through websocket snapshot streams for low-latency awareness, while polling remains an intentional fallback path to preserve dashboard usability when persistent socket channels are interrupted.
+
+Analytics and command-center surfaces were also aligned to production data contracts by removing simulated/mock fallback datasets from operational dashboards. Performance views now read backend reliability analytics directly, and command-center panels display only persisted API responses with loading/empty/error states.
 
 The AI services layer is integrated as deterministic decision-support logic connected to operational data rather than an isolated experimental component. AI endpoints produce explainable risk and recommendation outputs that supervisors and administrators use within existing workflows for staffing, incident triage, and proactive alerts.
 
