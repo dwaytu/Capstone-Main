@@ -1,5 +1,9 @@
 # SENTINEL Capstone Main
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://cloudyrowdyyy.github.io/Capstone-Main/)
+
+**📖 Documentation:** https://cloudyrowdyyy.github.io/Capstone-Main/
+
 SENTINEL is a full-stack security operations and asset management platform with a shared React frontend and platform wrappers for web, desktop, and Android.
 
 ## Downloads
@@ -84,4 +88,4 @@ Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0
 
 ## Documentation
 
-- Main docs: https://cloudyrowdyyy.github.io/Capstone-Main
+- Main docs: https://cloudyrowdyyy.github.io/Capstone-Main/
