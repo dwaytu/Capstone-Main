@@ -34,7 +34,9 @@
       --font-mono:  'JetBrains Mono', 'Fira Code', monospace;
     }
 
-    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: no-preference) {
+      html { scroll-behavior: smooth; }
+    }
 
     body {
       font-family: 'Inter', -apple-system, sans-serif;
@@ -366,7 +368,7 @@
       box-shadow: 0 12px 32px rgba(0,0,0,.5);
     }
     .screenshot-card img {
-      width: 100%; display: block;
+      width: 100%; height: auto; display: block;
       border-bottom: 1px solid var(--border);
     }
     .screenshot-label {
@@ -472,6 +474,10 @@
       .footer-bottom { flex-direction: column; text-align: center; }
       h1 { font-size: 2rem; }
     }
+    @media (max-width: 768px) {
+      /* Mobile nav is hidden visually; provide skip-to-content as fallback */
+      #nav-mobile-note { display: block; }
+    }
     @media (max-width: 480px) {
       .footer-inner { grid-template-columns: 1fr; }
     }
@@ -531,28 +537,28 @@
     </a>
   </div>
 
-  <div class="platform-strip" aria-label="Available platforms">
-    <div class="platform-badge">
+  <ul class="platform-strip" aria-label="Available platforms" style="padding-left:0;list-style:none;display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:48px;">
+    <li class="platform-badge">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
       Web (Railway)
-    </div>
-    <div class="platform-badge">
+    </li>
+    <li class="platform-badge">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 3H4a2 2 0 00-2 2v11a2 2 0 002 2h6v2H8v2h8v-2h-2v-2h6a2 2 0 002-2V5a2 2 0 00-2-2zm0 13H4V5h16v11z"/></svg>
       Windows Desktop (Tauri)
-    </div>
-    <div class="platform-badge">
+    </li>
+    <li class="platform-badge">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.523 15.341l-.854-.49a6.94 6.94 0 00.354-2.12 6.94 6.94 0 00-.354-2.12l.854-.49a.5.5 0 000-.866l-7-4a.5.5 0 00-.5 0l-7 4a.5.5 0 000 .866l.854.49A6.94 6.94 0 003.523 12.73a6.94 6.94 0 00.354 2.12l-.854.49a.5.5 0 000 .866l7 4a.5.5 0 00.5 0l7-4a.5.5 0 000-.866z"/></svg>
       Android (Capacitor)
-    </div>
-    <div class="platform-badge">
+    </li>
+    <li class="platform-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       React + TypeScript
-    </div>
-    <div class="platform-badge">
+    </li>
+    <li class="platform-badge">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.5 2C6.81 2 3 5.81 3 10.5S6.81 19 11.5 19h.5v3c4.86-2.34 8-7 8-11.5C20 5.81 16.19 2 11.5 2zm1 14.5h-2v-2h2v2zm0-4h-2c0-3.25 3-3 3-5 0-1.1-.9-2-2-2s-2 .9-2 2h-2c0-2.21 1.79-4 4-4s4 1.79 4 4c0 2.5-3 2.75-3 5z"/></svg>
       Rust + Axum
-    </div>
-  </div>
+    </li>
+  </ul>
 </section>
 
 <hr class="divider" />
@@ -690,7 +696,7 @@
     <div class="screenshots-grid">
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-12-User-Login-Module.png"
+          src="screenshots/chapter2-modules/Figure-12-User-Login-Module.png"
           alt="SENTINEL login screen"
           loading="lazy"
         />
@@ -698,7 +704,7 @@
       </div>
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-13-Superadmin-Module.png"
+          src="screenshots/chapter2-modules/Figure-13-Superadmin-Module.png"
           alt="Superadmin command center dashboard"
           loading="lazy"
         />
@@ -706,7 +712,7 @@
       </div>
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-14-Administrator-Module.png"
+          src="screenshots/chapter2-modules/Figure-14-Administrator-Module.png"
           alt="Administrator dashboard"
           loading="lazy"
         />
@@ -714,7 +720,7 @@
       </div>
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-15-Supervisor-Module.png"
+          src="screenshots/chapter2-modules/Figure-15-Supervisor-Module.png"
           alt="Supervisor dashboard"
           loading="lazy"
         />
@@ -722,7 +728,7 @@
       </div>
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-16-Guard-Module.png"
+          src="screenshots/chapter2-modules/Figure-16-Guard-Module.png"
           alt="Guard daily operations workspace"
           loading="lazy"
         />
@@ -730,7 +736,7 @@
       </div>
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-17-Scheduling-and-Attendance-Module.png"
+          src="screenshots/chapter2-modules/Figure-17-Scheduling-and-Attendance-Module.png"
           alt="Scheduling and attendance module"
           loading="lazy"
         />
@@ -738,7 +744,7 @@
       </div>
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-18-Asset-and-Compliance-Module.png"
+          src="screenshots/chapter2-modules/Figure-18-Asset-and-Compliance-Module.png"
           alt="Asset and compliance module"
           loading="lazy"
         />
@@ -746,7 +752,7 @@
       </div>
       <div class="screenshot-card">
         <img
-          src="../screenshots/chapter2-modules/Figure-19-Analytics-and-Reporting-Module.png"
+          src="screenshots/chapter2-modules/Figure-19-Analytics-and-Reporting-Module.png"
           alt="Analytics and reporting dashboard"
           loading="lazy"
         />
@@ -768,7 +774,7 @@
       Rust/Axum backend, distributed across web, desktop, and mobile wrappers.
     </p>
 
-    <div class="arch-diagram" role="img" aria-label="System architecture diagram showing layers from client to database">
+    <div class="arch-diagram">
       <div class="arch-layers">
         <!-- Clients -->
         <div class="arch-layer">
