@@ -166,7 +166,7 @@ Client access governance hardening:
 - Access is blocked by an application modal until users explicitly agree, and final acceptance is persisted server-side through `POST /api/legal/consent`.
 - Legal acceptance metadata (`consentAcceptedAt`, `consentVersion`, `legalConsentAccepted`) is now returned by login and used for restore-auth gating.
 - Consent recording now captures compliance trace metadata (`consent_ip`, `consent_user_agent`) in the `users` table.
-- `App.tsx` consent modal now links directly to repository legal documents (`TermsOfAgreement.md`, `PrivacyPolicy.md`, `AcceptableUsePolicy.md`).
+- `App.tsx` consent modal now links directly to repository legal documents (`TermsOfAgreement.md`, `PrivacyPolicy.md`, `AcceptableUsePolicy.md`) in the active `Cloudyrowdyyy/Capstone-Main` repository.
 - `DasiaAIO-Frontend/src/App.tsx` now checks GitHub Releases for newer tagged builds and prompts users to download updates via in-app modal (`Later` / `Download update`) when a newer release than `VITE_APP_VERSION` is available.
 - `DasiaAIO-Frontend/src/App.tsx` now includes a manual "Check for Updates" action in addition to scheduled update checks.
 - `DasiaAIO-Frontend/src/config.ts` now exposes app/update metadata (`APP_VERSION`, `LATEST_RELEASE_API_URL`, `RELEASE_DOWNLOAD_URL`) and resolves API base URL strictly from `VITE_API_BASE_URL`.

@@ -84,4 +84,4 @@ Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0
 
 ## Documentation
 
-- Main docs: https://cloudyrowdyyy.github.io/capstone-1.0
+- Main docs: https://cloudyrowdyyy.github.io/Capstone-Main
