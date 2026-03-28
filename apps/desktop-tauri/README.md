@@ -25,3 +25,14 @@ This app wraps the existing React frontend from ../../DasiaAIO-Frontend.
 ## Environment
 
 Desktop API host comes from ../../DasiaAIO-Frontend/.env.desktop.
+
+## Auto-Update Configuration
+
+Tauri updater is enabled for production builds.
+
+Set these environment variables before packaging:
+
+- `TAURI_UPDATER_PUBLIC_KEY`: updater signing public key
+- `TAURI_UPDATER_ENDPOINT`: updater manifest endpoint URL
+
+During runtime, SENTINEL checks for new versions and allows one-click install with automatic app relaunch.

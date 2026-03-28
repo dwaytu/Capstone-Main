@@ -31,7 +31,10 @@ It manages:
 - Root docs:
   - `SYSTEM_AUDIT_REPORT.md`
   - `explanation.md`
-  - `SENTINEL - Group 8.pdf`
+  - `SENTINEL - Group 8.md`
+  - `TermsOfAgreement.md`
+  - `PrivacyPolicy.md`
+  - `AcceptableUsePolicy.md`
 
 ## 4. Current Role Model (Important)
 
@@ -154,20 +157,33 @@ API utility hardening:
 
 - `src/utils/api.ts` supports safe non-JSON parsing fallback
 - `fetchJsonOrThrow` supports timeout-based abort
+- `fetchJsonOrThrow` now blocks protected `/api/*` requests when no session token exists and emits a normalized session-expired event instead of sending unauthenticated dashboard calls.
+- `fetchJsonOrThrow` now auto-attaches `Authorization: Bearer <token>` on protected API calls when caller headers omit it, reducing silent auth-header drift between dashboard modules.
 
 Client access governance hardening:
 
 - `DasiaAIO-Frontend/src/App.tsx` now enforces a first-use Terms of Agreement gate across Web, Desktop (Tauri), and Mobile (Capacitor) runtimes.
-- Access is blocked by an application modal until users explicitly agree, with acceptance persisted per app profile using `localStorage` key `dasi.toa.accepted.v1`.
+- Access is blocked by an application modal until users explicitly agree, and final acceptance is persisted server-side through `POST /api/legal/consent`.
+- Legal acceptance metadata (`consentAcceptedAt`, `consentVersion`, `legalConsentAccepted`) is now returned by login and used for restore-auth gating.
+- Consent recording now captures compliance trace metadata (`consent_ip`, `consent_user_agent`) in the `users` table.
+- `App.tsx` consent modal now links directly to repository legal documents (`TermsOfAgreement.md`, `PrivacyPolicy.md`, `AcceptableUsePolicy.md`).
 - `DasiaAIO-Frontend/src/App.tsx` now checks GitHub Releases for newer tagged builds and prompts users to download updates via in-app modal (`Later` / `Download update`) when a newer release than `VITE_APP_VERSION` is available.
+- `DasiaAIO-Frontend/src/App.tsx` now includes a manual "Check for Updates" action in addition to scheduled update checks.
 - `DasiaAIO-Frontend/src/config.ts` now exposes app/update metadata (`APP_VERSION`, `LATEST_RELEASE_API_URL`, `RELEASE_DOWNLOAD_URL`) and resolves API base URL strictly from `VITE_API_BASE_URL`.
 - Runtime API fallback paths were removed to prevent cross-platform drift between web, desktop, and mobile clients.
 - Frontend release scripts now enforce production env safety via `DasiaAIO-Frontend/scripts/ensure-production-env.mjs`, blocking unsafe releases when `VITE_API_BASE_URL` is missing/non-HTTPS/private-host or when `VITE_APP_VERSION` is not a semantic release value.
+- `DasiaAIO-Frontend/src/utils/location.ts` now uses CORS-compatible IP geolocation providers (`ipinfo.io` with `geolocation-db.com` fallback) plus short-lived caching to avoid repeated blocked external requests when precise GPS is unavailable.
 
 ## 8. API and Security Notes
 
 - JWT generation and verification are active and used in managed user creation.
+- JWT access and refresh token claims now include `legal_consent_accepted` to enforce consent state in protected routes.
+- Legal consent endpoints are active:
+  - `POST /api/legal/consent`
+  - `GET /api/legal/consent/status`
+- Consent endpoint issuance now persists refresh-token session rows in `refresh_token_sessions` so post-consent refresh rotation remains valid.
 - Permission-based authorization middleware is active (`DasiaAIO-Backend/src/middleware/authz.rs`) and applied at route level in `DasiaAIO-Backend/src/main.rs`.
+- `require_authenticated` and permission middleware now enforce legal-consent acceptance for protected routes, while legal bootstrap/logout paths are explicitly bypassed.
 - Centralized write audit middleware is active (`DasiaAIO-Backend/src/middleware/audit.rs`) and records write outcomes (`success`/`failed`) into `audit_logs`.
 - Elevated roles can now review those records through both legacy and expanded contracts:
   - `GET /api/audit-logs` (legacy compatibility)
@@ -188,6 +204,20 @@ Client access governance hardening:
 - CORS fallback allow-lists now also include runtime origins used by packaged clients (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) to prevent mobile/desktop WebView login fetch failures when strict CORS env vars are absent.
 - When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS now still augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
 - The explicit-CORS path also now always augments with local web dev origins `http://localhost:5173` and `http://127.0.0.1:5173`, preventing browser preflight failures when developers run the frontend locally against the deployed backend.
+- Global middleware order in `DasiaAIO-Backend/src/main.rs` now keeps CORS outermost so browser CORS headers are still attached when upstream middleware (rate-limit/auth/presence) returns early errors.
+- API/auth/expensive rate-limit middleware (`DasiaAIO-Backend/src/middleware/rate_limit.rs`) now bypasses `OPTIONS` requests so browser preflight checks are never rate-limited.
+- Rate-limit middleware now returns CORS-safe `429` responses so browser clients receive explicit throttling status instead of opaque CORS failures under load.
+- Global API rate-limit requester identity now falls back to verified bearer-token user IDs when proxy IP headers are unavailable, reducing shared `unknown-client` bucket collisions in local/containerized runs.
+- Global API limiter buckets are now keyed by requester and path (`api:<requester>:<path>`), reducing cross-endpoint throttling collisions during dashboard burst startup while preserving per-route abuse protection.
+- Auth/API/expensive endpoint rate limiting now enforces both per-IP and per-user buckets (`*:ip:*` + `*:user:*`) when identity data is available, with fallback buckets retained for unknown-client contexts.
+- `/api/health` is excluded from global API rate limiting so dashboard/service probes remain responsive during burst traffic.
+- Global timeout middleware (`DasiaAIO-Backend/src/middleware/request_timeout.rs`) now caps request execution time (default 30s, configurable via `REQUEST_TIMEOUT_SECS`) and returns structured `504` responses.
+- Global security-header middleware (`DasiaAIO-Backend/src/middleware/security_headers.rs`) now applies `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, and production `Strict-Transport-Security` headers.
+- Error responses are standardized in `DasiaAIO-Backend/src/error.rs` with stable fields: `error`, `code`, `status`, `timestamp`; raw database/internal details are logged server-side and not exposed to clients.
+- Health payloads (`/api/health`, `/api/health/system`) now include DB state, websocket state (`activeConnections`), uptime seconds, and timestamp.
+- New platform-release metadata endpoint is active: `GET /api/system/version` (`latestVersion`, `changelog`, `downloadLinks`).
+- Backend Docker runtime now enforces least privilege by running the server as a dedicated non-root user (`USER sentinel`) and enforces lockfile-based reproducible builds via `Cargo.lock` + `cargo build --locked` (`DasiaAIO-Backend/Dockerfile`).
+- Release packaging workflow now uses `actions/checkout` for both orchestration and frontend repository retrieval, replacing manual tokenized git shell commands in `.github/workflows/release-artifacts.yml`.
 - Backend config now enforces production startup guards (`DasiaAIO-Backend/src/config.rs`) when `APP_ENV=production` or `NODE_ENV=production`:
   - requires strong non-default `JWT_SECRET`,
   - rejects default `ADMIN_CODE=122601`,
@@ -215,6 +245,11 @@ Current backend reality:
 - Public registration now always creates `verified = false` pending guards and always issues a verification-code challenge
 - `POST /api/register` now fails fast when `RESEND_API_KEY` is missing so unverified guard accounts are not created without a deliverable code path
 - `POST /api/verify` now validates confirmation codes against both code and email (joined to the `users` table), reducing cross-account code misuse risk
+- Users now have persisted legal consent metadata columns (`consent_accepted_at`, `consent_version`, `consent_ip`, `consent_user_agent`) created by startup schema guards in `db.rs`.
+- Login payload now includes legal consent state (`legalConsentAccepted`, `consentAcceptedAt`, `consentVersion`), and token issuance inherits that state.
+- Legal consent routes are active and protected by auth middleware with legal-bootstrap bypass behavior:
+  - `POST /api/legal/consent`
+  - `GET /api/legal/consent/status`
 - Reviewer notifications and guard decision notifications are persisted in `notifications`
 - API authorization is still the final source of truth even when frontend hides/shows role surfaces
 - Dashboard contract aliases are now explicitly available for integration stability:
@@ -257,6 +292,9 @@ Current backend reality:
     - `DELETE /api/tracking/client-sites/:id`
     - `POST /api/tracking/heartbeat` (guard session heartbeat -> guard tracking point)
     - `GET /api/tracking/ws?token=<jwt>` (websocket snapshot stream)
+  - Websocket lifecycle hardening:
+    - `DasiaAIO-Backend/src/handlers/tracking.rs`: websocket auth rejection, snapshot-build failures, receive errors, lag events, and disconnects now produce structured tracing logs for production troubleshooting.
+    - websocket snapshot send failures now terminate the client loop cleanly instead of failing silently.
   - Geofence transition intelligence:
     - guard/user tracking inserts evaluate enter/exit state changes against configured `site_geofences` (radius or polygon per site)
     - if a site has no active geofence zones, transition logic falls back to the default 1 km site-radius boundary
@@ -342,6 +380,12 @@ Current frontend reality:
   - Frontend auth-expiry handling is now centralized:
     - `DasiaAIO-Frontend/src/utils/api.ts`: `fetchJsonOrThrow` now detects invalid/expired-token responses (`401/403` or token-expiry error text), emits a one-time `auth:token-expired` browser event, and throws a normalized session-expired message.
     - `DasiaAIO-Frontend/src/App.tsx`: listens for `auth:token-expired`, clears local auth storage, and returns the UI to the login screen to stop repeated protected polling attempts and console-error spam.
+  - `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts` now uses strict-mode-safe websocket lifecycle management with bounded exponential backoff reconnects, periodic polling fallback continuity, and connection-state tracking (`disabled`/`connecting`/`open`/`backoff`/`closed`) to prevent live-map socket flapping from cascading into dashboard instability.
+  - `DasiaAIO-Frontend/src/App.tsx` now uses backend-driven version discovery (`GET /api/system/version`) with GitHub fallback, then presents platform-aware update prompts:
+    - web/mobile -> external download flow
+    - Tauri desktop -> in-app one-click updater (`@tauri-apps/plugin-updater`) with relaunch.
+  - `DasiaAIO-Frontend/src/App.tsx` now includes connectivity resilience UX: online/offline listeners, recurring backend health probe, and a persistent disconnected banner when backend/network is unavailable.
+  - Mobile runtime now exposes bottom quick-navigation for key dashboards when running under Capacitor to improve touch access and small-screen workflow continuity.
   - Frontend console-noise suppression for expected auth failures:
     - `DasiaAIO-Frontend/src/utils/logger.ts`: new shared logger utility with `isExpectedAuthNoise(...)` and `logError(...)` to suppress expected invalid-token/session-expiry fetch noise while preserving unexpected-error logging.
     - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`, `DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx`, and `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx` now route noisy fetch logs through `logError(...)`.
@@ -699,9 +743,22 @@ Current release behavior:
 
 Checkout/build stability updates applied:
 
-- Switched from `actions/checkout` to manual authenticated git fetch/checkout in both jobs to avoid prior git checkout/submodule failures (`exit 128`).
+- Release workflow now uses pinned `actions/checkout` for both orchestration and frontend repository retrieval.
 - Android release build sets executable permission on gradle wrapper before execution (`chmod +x gradlew`) to avoid Linux permission failures (`exit 126`).
 - Build runtime updated to Node.js 24 in both jobs.
+
+Documentation and licensing distribution updates:
+
+- GitHub Pages docs portal now includes dedicated runtime/distribution pages:
+  - `DasiaAIO-Frontend/docs/download.md`
+  - `DasiaAIO-Frontend/docs/features.md`
+  - `DasiaAIO-Frontend/docs/security.md`
+  - `DasiaAIO-Frontend/docs/architecture.md`
+- Site landing/navigation were updated in:
+  - `DasiaAIO-Frontend/docs/index.md`
+  - `DasiaAIO-Frontend/docs/_layouts/default.html`
+  - `DasiaAIO-Frontend/docs/_config.yml`
+- Repository licensing is now proprietary (`All Rights Reserved`) with `UNLICENSED` package metadata.
 
 Warning interpretation (important):
 
@@ -714,6 +771,18 @@ Warning interpretation (important):
   - `sentinel-desktop-installers`
   - `sentinel-android-release-installable`
 - Remaining warnings were deprecation notices from upstream GitHub actions runtime and did not block artifact output.
+
+Latest compliance/docs pass (March 28, 2026):
+
+- Backend compile verification: `cargo check` succeeded after legal-consent endpoint and JWT-claim updates (warnings only; no compile errors).
+- Frontend verification: `npm run build --prefix DasiaAIO-Frontend` succeeded after consent-modal and legal-link updates.
+- Frontend tests: `npm test --prefix DasiaAIO-Frontend -- --runInBand` succeeded (`5/5` tests passing).
+- Documentation verification: GitHub Pages docs now include `download`, `features`, `security`, and `architecture` pages plus updated navigation and landing links.
+
+Residual risks / follow-ups:
+
+- Runtime smoke of `/api/legal/consent` and `/api/legal/consent/status` should still be executed against deployed staging/production with real auth tokens.
+- License posture is now proprietary; downstream redistribution channels should confirm no stale cached MIT artifacts remain.
 
 Verified in this session (Docker runtime):
 

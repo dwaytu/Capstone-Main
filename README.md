@@ -2,6 +2,28 @@
 
 SENTINEL is a full-stack security operations and asset management platform with a shared React frontend and platform wrappers for web, desktop, and Android.
 
+## Downloads
+
+- Web (latest): https://dasiaaio.up.railway.app
+- Desktop installer (MSI/EXE): https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+- Android APK: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+
+## Installation Guide
+
+1. Web
+- Open https://dasiaaio.up.railway.app
+- Sign in with your provisioned SENTINEL account
+
+2. Desktop (Tauri)
+- Go to https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+- Download either the `.msi` or `.exe` installer
+- Run installer and launch SENTINEL
+
+3. Android (Capacitor)
+- Go to https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+- Download the latest release APK
+- Install on device (enable sideloading if required)
+
 ## Repository Layout
 
 - `DasiaAIO-Frontend/`: React + TypeScript + Vite application.
@@ -50,6 +72,21 @@ npm run release:desktop
 npm run release:android
 npm run release:all
 ```
+
+Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0.0`).
+
+## Production Runtime Configuration
+
+- Frontend builds require `VITE_API_BASE_URL` and enforce HTTPS in production mode.
+- Backend startup in production requires strong `JWT_SECRET`, non-default `ADMIN_CODE`, and explicit CORS origin configuration.
+- Desktop updater uses Tauri updater endpoints and signed update metadata.
+- Mobile and desktop share the same API origin contract as the web client.
+
+## Screenshots
+
+![User Login Module](screenshots/chapter2-modules/Figure-12-User-Login-Module.png)
+![Superadmin Module](screenshots/chapter2-modules/Figure-13-Superadmin-Module.png)
+![Analytics and Reporting Module](screenshots/chapter2-modules/Figure-19-Analytics-and-Reporting-Module.png)
 
 ## Copilot Customization Notes
 

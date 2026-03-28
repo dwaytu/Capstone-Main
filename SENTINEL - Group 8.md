@@ -259,6 +259,16 @@ that blocks access until the user explicitly accepts policy terms on Web, Deskto
 
 For browser-based local development against a deployed backend, explicit CORS configuration now also preserves `http://localhost:5173` and `http://127.0.0.1:5173` so preflight checks for authentication and protected API calls do not fail during SOC workflow validation.
 
+To eliminate cross-dashboard communication failures, backend middleware execution now keeps CORS as the outermost layer so even early middleware responses (authorization/rate-limit) still return browser-valid CORS headers, while API rate-limit guards bypass `OPTIONS` preflight probes. On the frontend, protected API calls are now blocked when no token is present, and the live operational map websocket path uses bounded exponential-retry with polling fallback continuity to preserve command-center availability during transient socket disruptions.
+
+Further stabilization now ensures API throttling responses (`429`) also include CORS headers and that rate-limit identity keys can derive from verified bearer-token user IDs when proxy IP headers are unavailable, reducing false-positive throttling collisions in containerized local runs. The global API limiter key also now includes request path segmentation (`api:<requester>:<path>`) to prevent one dashboard module from consuming another module's burst budget during startup. Location fallback behavior was also updated to use CORS-compatible IP providers with short-lived caching so denied GPS sessions do not flood the console with blocked external geolocation requests.
+
+The production-hardening pass now applies dual-dimension abuse protection (per-IP and per-user buckets), structured timeout protection for long-running requests, and standardized backend error payloads that preserve stable client contracts while suppressing raw internal diagnostics from user-facing responses. Backend response hardening also now includes explicit security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, and production HSTS), expanded health telemetry (`/api/health`, `/api/health/system`) with database/websocket/uptime visibility, and a centralized release metadata endpoint (`GET /api/system/version`) that powers unified update checks across platform runtimes.
+
+Cross-platform release behavior was refined so Web, Desktop, and Mobile clients query the same backend version source before prompting updates. Desktop builds now support in-app one-click update and relaunch through the Tauri updater plugin, while mobile and web builds route users to release download channels. Mobile runtime polish also includes explicit Android network/location permissions and a touch-first bottom quick-navigation strip for key command views. These changes preserve existing module workflows while improving deployability, operational resilience, and production governance.
+
+Deployment pipeline hardening now also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation replaces manual tokenized git shell checkout with pinned `actions/checkout` steps for both orchestration and frontend repository retrieval.
+
 
 
 ---
@@ -388,6 +398,14 @@ b. Deliver the desktop runtime through Tauri packaging for command-center deploy
 c. Deliver the mobile runtime through Capacitor Android packaging for field operations.
 
 d. Validate cross-platform API connectivity and authentication/session behavior across Web, Desktop, and Android targets.
+
+14. Implement legal and policy compliance enforcement.
+
+a. Require first-use acceptance of Terms of Agreement, Privacy Policy, and Acceptable Use Policy before protected module access.
+
+b. Persist legal acceptance metadata (timestamp, policy version, requester IP, and user agent) in the backend user record.
+
+c. Enforce legal-consent checks in backend authorization middleware while preserving bootstrap-safe paths for consent and logout.
 ---
 
 Scope and Limitations
@@ -404,6 +422,7 @@ Data
 - Missions, incidents, support tickets, notifications, predictive alerts, tracking/map points, and audit/access logs.
 - Geofence transition events, site geofence zone definitions (radius/polygon), movement-history path records, and anomaly-evidence metadata used for command investigation and post-incident review.
 - Authentication lockout records, refresh-session lifecycle records, and audit source-IP traces for security monitoring and accountability.
+- Legal-consent records including acceptance timestamp, policy version, requester IP, and user-agent evidence.
 
 Process
 
@@ -417,6 +436,7 @@ Process
 - Guard movement reconstruction workflows including active-guard roster monitoring, historical trail replay, and geofence transition escalation.
 - Audit forensics workflows including timeline filtering, actor-specific activity reconstruction, anomaly signal review, and operational story sequencing.
 - Session hardening workflows including refresh-token rotation, logout revocation, and lockout persistence.
+- Legal confirmation workflows including policy review links, mandatory acceptance capture, and protected-route access gating until accepted.
 
 People
 
@@ -1022,6 +1042,8 @@ Recent iterations specifically expanded two intelligence-driven capability strea
 
 Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario tests, API contract verification, and runtime build validation for web, desktop, and Android outputs. Security and reliability refinements (for example lockout persistence, refresh-session revocation, authorization enforcement, and rate-limiting controls) were integrated as iterative hardening tasks. Current validation includes passing Rust integration tests for tracking/audit role gates and geofence CRUD paths, successful backend health checks on localhost, and successful frontend production builds after route-level lazy loading and chunk splitting for the audit dashboard surface.
 
+The most recent hardening increment added backend-enforced legal consent compliance. Consent acceptance now calls dedicated API endpoints, persists acceptance evidence in PostgreSQL, propagates consent state through JWT claims, and is enforced by authenticated middleware prior to protected route access. This prevented local-only consent drift and aligned legal gating with server-side authority.
+
 Release-readiness refinement also added build-time version metadata propagation and release endpoint configuration so packaged desktop/mobile clients can detect newer published releases and notify users with a controlled update prompt. The automated release pipeline now produces web static bundles in addition to desktop and Android artifacts to keep all supported runtime outputs aligned per tagged release.
 
 Deployment considerations were addressed through Dockerized service orchestration, PostgreSQL-backed persistence, and release-oriented build scripts for cross-platform distribution. This ensured that the methodology did not end at coding, but covered operational readiness and maintainability for real-world SOC usage.
@@ -1059,6 +1081,8 @@ SENTINEL is implemented as a web-first integrated security operations platform w
 12. Tauri: Used to package the same frontend for Windows desktop command-center deployment. Compared with heavier desktop wrappers, Tauri was selected for lighter runtime footprint and stronger security controls.
 
 13. Resend + managed deployment/tooling stack (Railway, GitHub): Resend is used for transactional account workflows (verification and reset flows), while Railway and GitHub pipelines support deployment and release operations. Compared with ad hoc SMTP and manual release processes, this stack improves delivery consistency and operational manageability.
+
+14. GitHub Pages documentation portal + legal-policy artifacts: Documentation delivery now includes dedicated pages for download channels, feature coverage, security controls, and architecture references, plus repository-level legal policy documents (Terms of Agreement, Privacy Policy, Acceptable Use Policy). Compared with scattered notes, this provides a consistent release-ready operator and compliance reference.
 
 Figure 5. Work Breakdown Structure
 
@@ -1344,6 +1368,8 @@ Development Requirements
 
 6. Git and GitHub for version control, branch-based collaboration, and release workflow integration.
 
+7. Markdown/Jekyll-compatible documentation tooling for maintaining GitHub Pages deployment content and release documentation artifacts.
+
 Runtime Requirements
 
 1. Modern web browser (Chromium-based or equivalent) for the web deployment target.
@@ -1361,6 +1387,8 @@ Requirements Analysis
 The requirements baseline for SENTINEL was defined from actual private-security operational pain points: fragmented coordination, delayed visibility, compliance exposure, and weak traceability of sensitive asset workflows. Based on current implementation, the requirements analysis prioritizes role-governed access, real-time operational awareness, and auditable process execution across personnel, equipment, vehicle, incident, and analytics domains.
 
 As implementation matured, requirements depth was extended from basic monitoring to decision-grade intelligence outputs. This introduced explicit contracts for guard movement reconstruction (active roster, path replay, geofence transitions) and forensic audit interpretation (filtered timeline, actor activity history, anomaly grouping), while preserving backward compatibility with existing dashboard and API behavior.
+
+Compliance requirements were further expanded into enforceable legal-governance controls. Rather than relying on client-local acceptance flags alone, requirements now mandate backend-persisted legal acceptance evidence and middleware-level route gating so protected modules remain inaccessible until legal consent is recorded through authenticated API contracts.
 
 Technology and software selection was treated as a requirements decision, not only an implementation preference. For the frontend layer, React + TypeScript + Vite was selected to satisfy modular dashboard composition, strict role-based rendering, and rapid iteration. Angular was considered because it provides a full framework with built-in dependency injection and strong conventions; however, its heavier project structure was less aligned with the team's component-by-component delivery pace. Vue was considered for its simpler learning curve and progressive adoption model, but the existing codebase and shared component strategy were already established around React patterns. Plain JavaScript React was also considered, but TypeScript was chosen to reduce contract errors in role logic, API payload mapping, and cross-module state handling.
 
@@ -1410,6 +1438,10 @@ FR-11. The system shall provide audit-log visibility for authorized elevated rol
 
 FR-11a. The system shall provide forensic audit intelligence endpoints for user-activity timelines and anomaly extraction to support investigative workflows.
 
+FR-12. The system shall enforce legal consent acceptance through authenticated backend contracts and deny protected-route access until Terms of Agreement, Privacy Policy, and Acceptable Use Policy acceptance is recorded.
+
+FR-13. The system shall provide a release-oriented documentation portal that includes download channels, security profile, architecture references, and legal-policy links for web, desktop, and Android distribution.
+
 Non-Functional Requirements
 
 NFR-01. Security: The system shall enforce JWT-based authentication, RBAC authorization, approval-gated guard access, audit logging, lockout controls, and rate limiting for abuse resistance.
@@ -1421,6 +1453,8 @@ NFR-03. Usability: The system shall provide role-centered dashboards and modular
 NFR-04. Reliability: The system shall support robust session continuity through refresh-token persistence, rotation, and explicit logout revocation.
 
 NFR-05. Scalability: The system architecture shall remain API-driven and modular so additional modules, integrations, and platform targets can be added without redesigning the full stack.
+
+NFR-06. Compliance Traceability: Legal acceptance and policy governance events shall be persisted with timestamped metadata suitable for operational and compliance review.
 
 Storyboard (Proposed Interface Flow)
 
@@ -1562,6 +1596,8 @@ Production configuration was standardized so all runtimes (web, desktop, and And
 
 Backend development was organized around Axum route handlers, middleware, and service modules. Handlers implemented domain endpoints for authentication, approvals, guard workflows, firearms, armored vehicles, incidents, analytics, notifications, tracking, support tickets, and audit retrieval. Middleware layers enforced authentication, role authorization, audit capture, presence updates, and rate-limiting controls. Service-layer logic encapsulated deterministic AI scoring and recommendation workflows.
 
+Legal-compliance development added a dedicated backend consent module with `POST /api/legal/consent` and `GET /api/legal/consent/status`, startup schema guards for consent columns, and JWT claim propagation for consent state. Auth middleware now evaluates legal-consent state before allowing protected-route execution, with controlled bypass for consent/bootstrap-safe paths.
+
 Integration development connected frontend workflows to secured backend APIs using JWT-authenticated requests, refresh-session handling, and role-scoped endpoint access. Real-time monitoring capabilities were integrated through websocket snapshot streaming and polling fallback, ensuring operational continuity when network conditions vary.
 
 The tracking layer now includes movement-intelligence contracts for active guard extraction, guard-history retrieval, and guard-path replay. Map workflows were extended with zoom-to-guard controls, route playback, clustered marker rendering at low zoom levels, and live geofence alert feeds sourced from persisted enter/exit transitions. Dedicated geofence-management endpoints now allow supervisors and above to define per-site radius or polygon zones, enabling configurable boundary logic instead of fixed-radius-only behavior.
@@ -1572,6 +1608,10 @@ Location workflows were hardened with explicit privacy consent before any heartb
 
 Cross-platform expansion followed a staged model. The web build remained the canonical UI source; Capacitor packaged this build for Android field use; and Tauri packaged the same build for Windows desktop command-center use. This approach reduced duplication, preserved feature parity, and kept release validation aligned across all supported runtime targets.
 
+Documentation and governance development were also formalized into release workflow outputs. The GitHub Pages documentation site now includes dedicated download, features, security, and architecture pages, while repository-level legal policy files are maintained as versioned artifacts. Licensing metadata and repository licenses were shifted to a proprietary All Rights Reserved posture for controlled distribution.
+
+Current validation status for this update cycle includes successful backend compilation (`cargo check`), successful frontend production build (`npm run build --prefix DasiaAIO-Frontend`), and passing frontend unit tests (`npm test --prefix DasiaAIO-Frontend -- --runInBand`, 5/5 tests). Remaining verification risk is concentrated in deployed-environment smoke validation of legal-consent endpoints and final release-channel checks to ensure no stale permissive-license artifacts remain in distribution caches.
+
 Design of Software, System, Product, and/or Processes.
 
 The implemented SENTINEL architecture follows a frontend-backend separation model in which React clients consume secured Axum APIs over HTTP(S), while PostgreSQL serves as the transactional system of record. This separation supports maintainability, independent scaling of service layers, and clear contract boundaries between interface behavior and business logic.
@@ -1579,6 +1619,8 @@ The implemented SENTINEL architecture follows a frontend-backend separation mode
 At the presentation layer, role-based UI rendering is applied so each authenticated role receives task-appropriate modules and controls. Dashboard surfaces are modularized into reusable panels and data widgets, enabling command-center composition without duplicating core business logic per role.
 
 At the application layer, backend handlers and middleware process incoming requests through a consistent lifecycle: request reception, token validation, authorization checks, business-rule execution, database transaction/query, and structured response output. Security and governance are integrated into this lifecycle through authorization middleware, centralized write-audit middleware, session controls, and rate-limit enforcement.
+
+Legal-consent enforcement is now an explicit part of the application lifecycle: after token validation, middleware checks consent claim state and blocks protected-module access until server-side consent records exist. This moves legal gating from UI-only behavior to backend-enforced policy control.
 
 At the data layer, PostgreSQL maintains normalized operational entities for users, schedules, attendance, assets, incidents, tickets, notifications, tracking telemetry, AI outputs, and audit records. This schema supports traceability and cross-module analytics while preserving relational consistency for compliance-sensitive workflows.
 

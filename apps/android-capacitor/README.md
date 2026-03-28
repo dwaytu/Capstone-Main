@@ -31,3 +31,9 @@ This app wraps the existing React frontend from ../../DasiaAIO-Frontend.
 The frontend reads API base URL from ../../DasiaAIO-Frontend/.env.mobile.
 Default local emulator mapping uses http://10.0.2.2:5000 (host machine loopback).
 If needed, override with LAN host in a local mode file (for example http://192.168.1.25:5000).
+
+## Production Notes
+
+- Android manifest includes `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, and `ACCESS_COARSE_LOCATION`.
+- GPS permission is requested at runtime via Capacitor Geolocation before heartbeat tracking.
+- Build outputs are generated from shared frontend assets so web/mobile/desktop stay API-compatible.

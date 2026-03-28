@@ -1,4 +1,5 @@
 {
+  "license": "UNLICENSED",
   "scripts": {
     "build:web": "npm run build:web --prefix DasiaAIO-Frontend",
     "build:android": "npm run build:android --prefix DasiaAIO-Frontend",
