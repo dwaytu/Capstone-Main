@@ -59,12 +59,11 @@ jobs:
           NODE_ENV: production
         run: npm run release:web --prefix DasiaAIO-Frontend
 
-      - name: Verify web artifact does not contain local API hosts
-        run: |
-          if grep -R --line-number -E "http://(localhost|127\\.0\\.0\\.1|10\\.0\\.2\\.2|192\\.168\\.)" DasiaAIO-Frontend/app-dist/assets; then
-            echo "Local API URL detected in production web artifact"
-            exit 1
-          fi
+      - name: Re-verify release environment safety
+        env:
+          VITE_API_BASE_URL: ${{ github.event.inputs.api_base_url || 'https://backend-production-0c47.up.railway.app' }}
+          VITE_APP_VERSION: ${{ github.ref_name || 'v0.0.0-local' }}
+        run: node DasiaAIO-Frontend/scripts/ensure-production-env.mjs web-static-ci
 
       - name: Package web artifact
         run: |

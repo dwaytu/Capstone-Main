@@ -352,7 +352,8 @@ Current frontend reality:
   - `DasiaAIO-Frontend/.env.mobile`
   - `DasiaAIO-Frontend/.env.desktop`
 - API host resolution now uses a strict single source of truth (`VITE_API_BASE_URL`) with startup validation in `DasiaAIO-Frontend/src/config.ts`:
-  - Missing/empty URL now fails fast.
+  - Missing/empty URL now falls back to `https://backend-production-0c47.up.railway.app` in production builds to prevent blank-screen startup failures.
+  - Non-production sessions still fail fast when `VITE_API_BASE_URL` is missing.
   - Production requires `https://`.
   - Production rejects localhost/private hosts (`localhost`, `127.0.0.1`, `10.*`, `192.168.*`, `172.16-31.*`, `10.0.2.2`).
   - Legacy runtime/query-param fallback paths were removed.
@@ -746,6 +747,7 @@ Checkout/build stability updates applied:
 - Release workflow now uses pinned `actions/checkout` for both orchestration and frontend repository retrieval.
 - Repository submodule metadata is now explicitly declared in `.gitmodules` for `DasiaAIO-Backend` and `DasiaAIO-Frontend`, preventing checkout-time `No url found for submodule path` failures.
 - Release checkout steps now explicitly set `submodules: false` to avoid unintended recursive submodule sync during web/desktop/android artifact packaging.
+- Web artifact validation now relies on `ensure-production-env.mjs` (required HTTPS/public `VITE_API_BASE_URL`) instead of broad static-string grep checks to avoid false-positive release failures from non-runtime localhost text in bundled assets.
 - Android release build sets executable permission on gradle wrapper before execution (`chmod +x gradlew`) to avoid Linux permission failures (`exit 126`).
 - Build runtime updated to Node.js 24 in both jobs.
 
