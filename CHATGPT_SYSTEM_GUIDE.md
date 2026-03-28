@@ -744,6 +744,8 @@ Current release behavior:
 Checkout/build stability updates applied:
 
 - Release workflow now uses pinned `actions/checkout` for both orchestration and frontend repository retrieval.
+- Repository submodule metadata is now explicitly declared in `.gitmodules` for `DasiaAIO-Backend` and `DasiaAIO-Frontend`, preventing checkout-time `No url found for submodule path` failures.
+- Release checkout steps now explicitly set `submodules: false` to avoid unintended recursive submodule sync during web/desktop/android artifact packaging.
 - Android release build sets executable permission on gradle wrapper before execution (`chmod +x gradlew`) to avoid Linux permission failures (`exit 126`).
 - Build runtime updated to Node.js 24 in both jobs.
 

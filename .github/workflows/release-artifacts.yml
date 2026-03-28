@@ -27,6 +27,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+          submodules: false
 
       - name: Checkout frontend repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -35,6 +36,7 @@ jobs:
           path: DasiaAIO-Frontend
           fetch-depth: 1
           persist-credentials: false
+          submodules: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
@@ -91,6 +93,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+          submodules: false
 
       - name: Checkout frontend repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -99,6 +102,7 @@ jobs:
           path: DasiaAIO-Frontend
           fetch-depth: 1
           persist-credentials: false
+          submodules: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
@@ -157,6 +161,7 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+          submodules: false
 
       - name: Checkout frontend repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -165,6 +170,7 @@ jobs:
           path: DasiaAIO-Frontend
           fetch-depth: 1
           persist-credentials: false
+          submodules: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node

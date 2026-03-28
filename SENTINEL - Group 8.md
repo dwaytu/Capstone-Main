@@ -267,7 +267,7 @@ The production-hardening pass now applies dual-dimension abuse protection (per-I
 
 Cross-platform release behavior was refined so Web, Desktop, and Mobile clients query the same backend version source before prompting updates. Desktop builds now support in-app one-click update and relaunch through the Tauri updater plugin, while mobile and web builds route users to release download channels. Mobile runtime polish also includes explicit Android network/location permissions and a touch-first bottom quick-navigation strip for key command views. These changes preserve existing module workflows while improving deployability, operational resilience, and production governance.
 
-Deployment pipeline hardening now also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation replaces manual tokenized git shell checkout with pinned `actions/checkout` steps for both orchestration and frontend repository retrieval.
+Deployment pipeline hardening now also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation replaces manual tokenized git shell checkout with pinned `actions/checkout` steps for both orchestration and frontend repository retrieval. To prevent release pipeline checkout failures in repositories that include backend/frontend gitlink paths, submodule metadata is now explicitly maintained and release checkout stages enforce non-recursive submodule behavior.
 
 
 
