@@ -82,23 +82,6 @@ Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0
 - Desktop updater uses Tauri updater endpoints and signed update metadata.
 - Mobile and desktop share the same API origin contract as the web client.
 
-## Screenshots
-
-![User Login Module](screenshots/chapter2-modules/Figure-12-User-Login-Module.png)
-![Superadmin Module](screenshots/chapter2-modules/Figure-13-Superadmin-Module.png)
-![Analytics and Reporting Module](screenshots/chapter2-modules/Figure-19-Analytics-and-Reporting-Module.png)
-
-## Copilot Customization Notes
-
-Desktop and mobile development support includes:
-
-- Agent: `.github/agents/playwright-tester.agent.md`
-- Skill: `.github/skills/winapp-cli/SKILL.md`
-- Skill: `.github/skills/msstore-cli/SKILL.md`
-- Skill: `.github/skills/scoutqa-test/SKILL.md`
-
 ## Documentation
 
 - Main docs: https://cloudyrowdyyy.github.io/capstone-1.0
-- System guide: `CHATGPT_SYSTEM_GUIDE.md`
-- Capstone paper: `SENTINEL - Group 8.md`
