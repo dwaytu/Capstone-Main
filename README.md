@@ -8,14 +8,14 @@ SENTINEL is a full-stack security operations and asset management platform with 
 
 ## Downloads
 
-- Web (latest): https://dasiaaio.up.railway.app
+- Web (latest): https://dasiasentinel.xyz/
 - Desktop installer (MSI/EXE): https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
 - Android APK: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
 
 ## Installation Guide
 
 1. Web
-- Open https://dasiaaio.up.railway.app
+- Open https://dasiasentinel.xyz/
 - Sign in with your provisioned SENTINEL account
 
 2. Desktop (Tauri)
