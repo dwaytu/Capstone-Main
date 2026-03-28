@@ -127,7 +127,8 @@ Main table domains include:
 - `firearms`, `firearm_allocations`, permit/maintenance related tables
 - `armored_cars`, car allocations, trips, driver assignments, vehicle maintenance
 - Notifications, tickets, merit-related tables
-- Operational map tracking tables: `client_sites`, `tracking_points`
+- Operational map tracking tables: `client_sites`, `tracking_points`, `geofence_events`, `site_geofences`
+- Audit traceability table: `audit_logs` now stores `source_ip`, `user_agent`, structured `metadata`, and indexed result/time dimensions for forensic querying
 - AI operational intelligence tables:
   - `guard_absence_predictions`
   - `smart_guard_replacements`
@@ -168,7 +169,13 @@ Client access governance hardening:
 - JWT generation and verification are active and used in managed user creation.
 - Permission-based authorization middleware is active (`DasiaAIO-Backend/src/middleware/authz.rs`) and applied at route level in `DasiaAIO-Backend/src/main.rs`.
 - Centralized write audit middleware is active (`DasiaAIO-Backend/src/middleware/audit.rs`) and records write outcomes (`success`/`failed`) into `audit_logs`.
-- Elevated roles can now review those records through `GET /api/audit-logs` (admin+). The handler (`DasiaAIO-Backend/src/handlers/audit.rs`) supports pagination + filtering and joins user context so SOC operators can trace who performed each action.
+- Elevated roles can now review those records through both legacy and expanded contracts:
+  - `GET /api/audit-logs` (legacy compatibility)
+  - `GET /api/audit/logs`
+  - `GET /api/audit/logs/filter`
+  - `GET /api/audit/user-activity/:id`
+  - `GET /api/audit/anomalies`
+  The handler (`DasiaAIO-Backend/src/handlers/audit.rs`) supports pagination, multi-field filtering, user-activity timelines, and anomaly group extraction for high-fidelity SOC review.
 - Managed user creation endpoint (`POST /api/users`) enforces role hierarchy:
   - `superadmin` can create `admin`, `supervisor`, and `guard`
   - `admin` can create `supervisor` and `guard`
@@ -180,6 +187,7 @@ Client access governance hardening:
 - If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` includes local development and production web origins (`https://dasiasentinel.xyz`, `https://www.dasiasentinel.xyz`, `https://dasiaaio.up.railway.app`).
 - CORS fallback allow-lists now also include runtime origins used by packaged clients (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) to prevent mobile/desktop WebView login fetch failures when strict CORS env vars are absent.
 - When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS now still augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
+- The explicit-CORS path also now always augments with local web dev origins `http://localhost:5173` and `http://127.0.0.1:5173`, preventing browser preflight failures when developers run the frontend locally against the deployed backend.
 - Backend config now enforces production startup guards (`DasiaAIO-Backend/src/config.rs`) when `APP_ENV=production` or `NODE_ENV=production`:
   - requires strong non-default `JWT_SECRET`,
   - rejects default `ADMIN_CODE=122601`,
@@ -227,13 +235,21 @@ Current backend reality:
   - `DasiaAIO-Backend/src/handlers/auth.rs`: successful login now updates `last_seen_at`.
   - `DasiaAIO-Backend/src/handlers/users.rs`: user list/detail queries now select `last_seen_at` so frontend can render presence.
 - Operational map tracking update:
-  - `DasiaAIO-Backend/src/db.rs`: startup schema bootstrap now creates `client_sites` and `tracking_points` plus entity/time index.
-  - `DasiaAIO-Backend/src/handlers/tracking.rs`: new handlers for map data retrieval and telemetry/site ingestion.
+  - `DasiaAIO-Backend/src/db.rs`: startup schema bootstrap now creates/extends `client_sites`, `tracking_points` (including `user_id` association), `geofence_events`, and `site_geofences` with operational indexes.
+  - `DasiaAIO-Backend/src/handlers/tracking.rs`: handlers now cover map snapshots, telemetry/site ingestion, guard movement intelligence, and geofence transition evaluation.
   - `DasiaAIO-Backend/src/handlers/mod.rs`: `tracking` module export added.
   - `DasiaAIO-Backend/src/main.rs`: new authenticated routes:
     - `GET /api/tracking/map-data`
     - `POST /api/tracking/points`
     - `POST /api/tracking/client-sites`
+    - `GET /api/tracking/guard-history/:id`
+    - `GET /api/tracking/guard-path/:id`
+    - `GET /api/tracking/active-guards`
+    - `GET /api/tracking/geofences`
+    - `GET /api/tracking/client-sites/:id/geofences`
+    - `POST /api/tracking/client-sites/:id/geofences`
+    - `PUT /api/tracking/geofences/:id`
+    - `DELETE /api/tracking/geofences/:id`
   - Guard safety rule: guards can only submit `entityType='guard'` points for their own `entityId` (JWT `sub`).
   - Expanded tracking API for location lifecycle and live streaming:
     - `GET /api/tracking/client-sites`
@@ -241,6 +257,11 @@ Current backend reality:
     - `DELETE /api/tracking/client-sites/:id`
     - `POST /api/tracking/heartbeat` (guard session heartbeat -> guard tracking point)
     - `GET /api/tracking/ws?token=<jwt>` (websocket snapshot stream)
+  - Geofence transition intelligence:
+    - guard/user tracking inserts evaluate enter/exit state changes against configured `site_geofences` (radius or polygon per site)
+    - if a site has no active geofence zones, transition logic falls back to the default 1 km site-radius boundary
+    - transitions are persisted to `geofence_events` and emitted as map snapshot `geofenceAlerts`
+    - leadership notification fanout is sent on enter/exit transitions (`geofence_alert`)
   - `DasiaAIO-Backend/Cargo.toml`: `axum` now enables `ws` feature for websocket upgrades.
   - Websocket broadcast behavior:
     - tracking/site create-update-delete and heartbeat actions publish map refresh events.
@@ -268,8 +289,12 @@ Current backend reality:
   - `DasiaAIO-Backend/src/main.rs`: route registration for `/api/ai/replacement-suggestions` behind analytics view authorization.
 - System audit review API (new):
   - `DasiaAIO-Backend/src/handlers/audit.rs`: exposes paginated + filterable reads on `audit_logs` while enforcing `require_min_role('admin')`.
+  - Expanded review endpoints now provide:
+    - timeline/filter access (`/api/audit/logs`, `/api/audit/logs/filter`)
+    - per-user operational stories and hourly activity heatmap data (`/api/audit/user-activity/:id`)
+    - anomaly summaries for failed bursts, activity spikes, and suspicious source IPs (`/api/audit/anomalies`)
   - `DasiaAIO-Backend/src/models.rs`: adds `AuditLogEntry`, `AuditLogListResponse`, and `AuditLogPageMeta` so contracts stay typed.
-  - `DasiaAIO-Backend/src/main.rs`: registers `GET /api/audit-logs` with authenticated middleware; only admin/superadmin requests succeed.
+  - `DasiaAIO-Backend/src/main.rs`: registers both legacy and expanded audit endpoint family with authenticated middleware; admin/superadmin policy enforcement is handled in handler-level role gates.
 
 ## 10. Frontend Context Snapshot (Keep Updated)
 
@@ -483,8 +508,17 @@ Current frontend reality:
       - websocket-driven snapshot updates (`/api/tracking/ws`)
       - client-site CRUD helpers (`createClientSite`, `updateClientSite`, `deleteClientSite`)
       - guard geolocation heartbeat submission (`/api/tracking/heartbeat`)
+      - guard-history/path intelligence fetchers (`/api/tracking/guard-history/:id`, `/api/tracking/guard-path/:id`)
+      - active-guard roster intelligence fetcher (`/api/tracking/active-guards`)
+      - geofence alert stream hydration (`geofenceAlerts` in map snapshots)
     - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx` now includes an elevated-role "Client Location Manager" UI for add/edit/delete site operations directly in the dashboard.
     - `OperationalMapPanel` now supports click-to-place coordinates: operators can press `Pick Position On Map`, click map, and auto-fill latitude/longitude for add/edit workflows.
+    - `OperationalMapPanel` now also includes movement-intelligence controls:
+      - zoom-to-guard command chips from live active roster
+      - patrol trail rendering via guard path endpoint
+      - playback scrubber + auto-play trail animation
+      - zoom-aware clustered marker rendering for dense map states
+      - live geofence enter/exit feed panel
     - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` now includes a guard-facing `Turn On Live Location` / `Turn Off Live Location` control (consent-gated heartbeat flow to backend).
     - Guard location UX now includes:
       - explicit consent gate (`dasi.locationConsent.v1`) before tracking can be enabled,
@@ -517,6 +551,12 @@ Current frontend reality:
   - `DasiaAIO-Frontend/src/hooks/useAuditLogs.ts`: shared hook for fetching `/api/audit-logs` with filter + pagination awareness and consistent error handling.
   - `DasiaAIO-Frontend/src/components/AuditLogViewer.tsx`: renders searchable/filterable audit table with status chips, metadata preview, and paging controls; uses SOC token classes for contrast/compliance.
   - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`: adds `audit-log` section + conditional render + navigation wiring, while `src/config/navigation.ts` introduces the “System Audit Log” nav item (admin & superadmin via `manage_users` permission).
+  - Intelligence dashboard upgrade:
+    - `DasiaAIO-Frontend/src/components/AuditDashboard.tsx`: new command-style audit intelligence surface (timeline, anomaly panel, heatmap, and operational story feed)
+    - `DasiaAIO-Frontend/src/hooks/useAuditIntelligence.ts`: added anomaly and user-activity fetchers (`/api/audit/anomalies`, `/api/audit/user-activity/:id`)
+    - `DasiaAIO-Frontend/src/hooks/useAuditLogs.ts`: now targets `/api/audit/logs` and supports advanced filters (`status`, `action_type`, `resource_type`, source/user-agent, date window)
+    - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`: `audit-log` section now lazy-loads and renders `AuditDashboard` for investigative workflows
+    - `DasiaAIO-Frontend/vite.config.ts`: manual chunking now splits mapping/icons bundles to keep main production chunk below the previous warning threshold
 - Production hardening and AI contract update (March 2026):
   - Backend route and middleware updates:
     - `DasiaAIO-Backend/src/error.rs`: added `RateLimited` app error mapped to HTTP `429`.
@@ -777,10 +817,10 @@ Verified in this session (Docker runtime):
   - `npm test -- --runInBand` succeeded (`5/5` tests passing)
 - Frontend verification after latest dashboard UX architecture pass:
   - `npm run build` succeeded (Vite production build)
-  - Residual note: Vite chunk-size warning remains (`index` bundle > 500kb) and is unchanged functional-wise; consider follow-up code splitting for performance budget enforcement.
+  - Audit dashboard now ships as a dedicated lazy chunk and the main bundle no longer emits the previous >500kb warning.
 - Frontend verification after responsive/motion follow-up pass:
   - `npm run build` succeeded
-  - Residual note unchanged: Vite reports chunk-size warning (>500kb) with no functional regression.
+  - Bundle split remains stable with dedicated `mapping`, `icons`, and `AuditDashboard` chunks.
 - Frontend verification after auth-expiry handling hardening:
   - `npm run build` succeeded
   - Browser smoke with stale token on `http://127.0.0.1:5173` now returns to login view automatically (instead of repeatedly logging invalid-token fetch errors across dashboard polling calls).

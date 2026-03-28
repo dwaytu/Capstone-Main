@@ -257,6 +257,8 @@ that blocks access until the user explicitly accepts policy terms on Web, Deskto
 
 `capacitor://localhost`, `tauri://localhost`, and secure localhost WebView origins to prevent mobile login fetch failures, with these wrapper origins now enforced even when explicit web CORS origin environment variables are configured. Release hardening also added fail-fast environment validation for frontend production packaging (HTTPS production API target plus semantic app version requirement), while the runtime includes an in-app update availability prompt that compares deployed app version metadata against GitHub latest-release tags and guides users to download newer builds.
 
+For browser-based local development against a deployed backend, explicit CORS configuration now also preserves `http://localhost:5173` and `http://127.0.0.1:5173` so preflight checks for authentication and protected API calls do not fail during SOC workflow validation.
+
 
 
 ---
@@ -345,6 +347,12 @@ c. Provide client site CRUD and shift proximity alert checks.
 
 d. Enable real-time websocket tracking stream for live operational visibility.
 
+e. Provide guard movement-intelligence endpoints for path replay, historical patrol reconstruction, and active guard roster extraction.
+
+f. Detect geofence enter/exit transitions against client-site boundaries and surface leadership alerts for movement anomalies.
+
+g. Provide dedicated geofence management endpoints so each site can maintain configurable radius or polygon zones.
+
 10. Implement analytics, predictive intelligence, and decision support.
 
 a. Provide analytics overview, trends, and guard reliability endpoints.
@@ -369,6 +377,8 @@ b. Support session/token-based authenticated API access, presence/last-seen trac
 
 c. Provide health-check endpoints, authentication throttling, and API rate-limiting controls for operational readiness and abuse protection.
 
+d. Provide forensic audit intelligence endpoints for filtered timeline retrieval, per-user activity reconstruction, and anomaly detection (failed bursts, activity spikes, suspicious source-IP patterns).
+
 13. Implement and validate cross-platform runtime delivery.
 
 a. Deliver the web runtime for browser-based command and operational access.
@@ -392,6 +402,7 @@ Data
 - Firearm inventory, firearm allocations, firearm maintenance records, and firearm permit compliance data.
 - Armored vehicle assets, car allocations, driver assignments, trip records, and vehicle maintenance history.
 - Missions, incidents, support tickets, notifications, predictive alerts, tracking/map points, and audit/access logs.
+- Geofence transition events, site geofence zone definitions (radius/polygon), movement-history path records, and anomaly-evidence metadata used for command investigation and post-incident review.
 - Authentication lockout records, refresh-session lifecycle records, and audit source-IP traces for security monitoring and accountability.
 
 Process
@@ -403,6 +414,8 @@ Process
 - Firearm issuance/return workflows with permit validation, maintenance scheduling, and custody traceability.
 - Vehicle allocation, driver assignment, trip lifecycle management, and preventive/corrective maintenance tracking.
 - Incident reporting, support ticket handling, notification delivery, and real-time operations tracking.
+- Guard movement reconstruction workflows including active-guard roster monitoring, historical trail replay, and geofence transition escalation.
+- Audit forensics workflows including timeline filtering, actor-specific activity reconstruction, anomaly signal review, and operational story sequencing.
 - Session hardening workflows including refresh-token rotation, logout revocation, and lockout persistence.
 
 People
@@ -1005,7 +1018,9 @@ Planning activities began with requirements consolidation, role-mapping, and mod
 
 Development was executed through frontend-backend parallel work with recurring integration checkpoints. Frontend components and hooks were built alongside backend handlers, middleware, and service logic, then connected through authenticated API contracts. This feature-based integration pattern reduced interface drift and enabled earlier discovery of role-permission, payload, and workflow defects.
 
-Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario tests, API contract verification, and runtime build validation for web, desktop, and Android outputs. Security and reliability refinements (for example lockout persistence, refresh-session revocation, authorization enforcement, and rate-limiting controls) were integrated as iterative hardening tasks.
+Recent iterations specifically expanded two intelligence-driven capability streams: (1) guard movement intelligence through guard-history/path and active-roster APIs with geofence enter/exit persistence; and (2) forensic audit intelligence through timeline filtering, per-user activity reconstruction, and anomaly grouping endpoints. These increments were further extended with dedicated geofence-management APIs (configurable radius/polygon zones per site) and validated using endpoint-level integration tests that exercised role-based access scenarios across guard, supervisor, and admin roles.
+
+Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario tests, API contract verification, and runtime build validation for web, desktop, and Android outputs. Security and reliability refinements (for example lockout persistence, refresh-session revocation, authorization enforcement, and rate-limiting controls) were integrated as iterative hardening tasks. Current validation includes passing Rust integration tests for tracking/audit role gates and geofence CRUD paths, successful backend health checks on localhost, and successful frontend production builds after route-level lazy loading and chunk splitting for the audit dashboard surface.
 
 Release-readiness refinement also added build-time version metadata propagation and release endpoint configuration so packaged desktop/mobile clients can detect newer published releases and notify users with a controlled update prompt. The automated release pipeline now produces web static bundles in addition to desktop and Android artifacts to keep all supported runtime outputs aligned per tagged release.
 
@@ -1037,11 +1052,13 @@ SENTINEL is implemented as a web-first integrated security operations platform w
 
 9. WebSocket + polling fallback: Used for real-time tracking snapshots with continuity under unstable transport conditions. Compared with polling-only, websocket streaming reduces latency; compared with websocket-only, polling fallback improves operational resilience.
 
-10. Capacitor: Used to package the web frontend for Android field deployment. Compared with fully separate native Android codebases, Capacitor preserves feature parity with lower maintenance overhead.
+10. Forensic audit intelligence endpoint design: Used to transform raw audit logs into timeline, user-activity, and anomaly-oriented command data. Compared with flat log listing only, this pattern improves investigation speed and supports command storytelling without changing underlying compliance records.
 
-11. Tauri: Used to package the same frontend for Windows desktop command-center deployment. Compared with heavier desktop wrappers, Tauri was selected for lighter runtime footprint and stronger security controls.
+11. Capacitor: Used to package the web frontend for Android field deployment. Compared with fully separate native Android codebases, Capacitor preserves feature parity with lower maintenance overhead.
 
-12. Resend + managed deployment/tooling stack (Railway, GitHub): Resend is used for transactional account workflows (verification and reset flows), while Railway and GitHub pipelines support deployment and release operations. Compared with ad hoc SMTP and manual release processes, this stack improves delivery consistency and operational manageability.
+12. Tauri: Used to package the same frontend for Windows desktop command-center deployment. Compared with heavier desktop wrappers, Tauri was selected for lighter runtime footprint and stronger security controls.
+
+13. Resend + managed deployment/tooling stack (Railway, GitHub): Resend is used for transactional account workflows (verification and reset flows), while Railway and GitHub pipelines support deployment and release operations. Compared with ad hoc SMTP and manual release processes, this stack improves delivery consistency and operational manageability.
 
 Figure 5. Work Breakdown Structure
 
@@ -1337,9 +1354,13 @@ Runtime Requirements
 
 4. Network connectivity between client runtimes and backend API services, including websocket access for live tracking views.
 
+5. Stable API reachability for audit-intelligence endpoints (`/api/audit/logs`, `/api/audit/user-activity/:id`, `/api/audit/anomalies`) to support command-level forensic visualization.
+
 Requirements Analysis
 
 The requirements baseline for SENTINEL was defined from actual private-security operational pain points: fragmented coordination, delayed visibility, compliance exposure, and weak traceability of sensitive asset workflows. Based on current implementation, the requirements analysis prioritizes role-governed access, real-time operational awareness, and auditable process execution across personnel, equipment, vehicle, incident, and analytics domains.
+
+As implementation matured, requirements depth was extended from basic monitoring to decision-grade intelligence outputs. This introduced explicit contracts for guard movement reconstruction (active roster, path replay, geofence transitions) and forensic audit interpretation (filtered timeline, actor activity history, anomaly grouping), while preserving backward compatibility with existing dashboard and API behavior.
 
 Technology and software selection was treated as a requirements decision, not only an implementation preference. For the frontend layer, React + TypeScript + Vite was selected to satisfy modular dashboard composition, strict role-based rendering, and rapid iteration. Angular was considered because it provides a full framework with built-in dependency injection and strong conventions; however, its heavier project structure was less aligned with the team's component-by-component delivery pace. Vue was considered for its simpler learning curve and progressive adoption model, but the existing codebase and shared component strategy were already established around React patterns. Plain JavaScript React was also considered, but TypeScript was chosen to reduce contract errors in role logic, API payload mapping, and cross-module state handling.
 
@@ -1373,6 +1394,10 @@ FR-05. The system shall support armored vehicle lifecycle management including r
 
 FR-06. The system shall provide real-time tracking capabilities through map data endpoints, heartbeat ingestion, client-site management, and live websocket updates with polling fallback.
 
+FR-06a. The system shall provide guard-history, guard-path, and active-guard intelligence endpoints to support replay-driven monitoring and command decisions.
+
+FR-06b. The system shall detect and persist geofence enter/exit transitions and expose these alerts in live map snapshots for supervisory awareness.
+
 FR-07. The system shall provide analytics and command-level dashboards for operational summaries, trends, approvals, and decision support.
 
 FR-08. The system shall provide AI-assisted decision-support outputs for absence risk, replacement recommendation, incident classification, incident summarization, and predictive alerts.
@@ -1382,6 +1407,8 @@ FR-09. The system shall provide ticketing and notification workflows to support 
 FR-10. The system shall support cross-platform runtime delivery for web, Windows desktop (Tauri), and Android mobile (Capacitor).
 
 FR-11. The system shall provide audit-log visibility for authorized elevated roles, with filterable and paginated audit records.
+
+FR-11a. The system shall provide forensic audit intelligence endpoints for user-activity timelines and anomaly extraction to support investigative workflows.
 
 Non-Functional Requirements
 
@@ -1537,6 +1564,10 @@ Backend development was organized around Axum route handlers, middleware, and se
 
 Integration development connected frontend workflows to secured backend APIs using JWT-authenticated requests, refresh-session handling, and role-scoped endpoint access. Real-time monitoring capabilities were integrated through websocket snapshot streaming and polling fallback, ensuring operational continuity when network conditions vary.
 
+The tracking layer now includes movement-intelligence contracts for active guard extraction, guard-history retrieval, and guard-path replay. Map workflows were extended with zoom-to-guard controls, route playback, clustered marker rendering at low zoom levels, and live geofence alert feeds sourced from persisted enter/exit transitions. Dedicated geofence-management endpoints now allow supervisors and above to define per-site radius or polygon zones, enabling configurable boundary logic instead of fixed-radius-only behavior.
+
+Audit governance was similarly expanded from static listing into investigative command visualization. The audit workspace now integrates timeline filters, anomaly indicators, activity heatmaps, and actor-level operational story reconstruction through dedicated backend endpoints. On the frontend, the audit route is now lazy-loaded and bundled into a dedicated chunk to reduce initial payload pressure and improve startup performance for non-audit workflows.
+
 Location workflows were hardened with explicit privacy consent before any heartbeat submission. If consent is not accepted, location tracking remains disabled. After consent, runtime-specific acquisition is applied: browser geolocation for web, Capacitor plugin geolocation for Android, and desktop secure-context geolocation when available; all flows degrade to IP-based fallback when precise coordinates are unavailable. This preserved cross-platform tracking continuity while keeping consent and safety controls explicit.
 
 Cross-platform expansion followed a staged model. The web build remained the canonical UI source; Capacitor packaged this build for Android field use; and Tauri packaged the same build for Windows desktop command-center use. This approach reduced duplication, preserved feature parity, and kept release validation aligned across all supported runtime targets.
@@ -1551,7 +1582,11 @@ At the application layer, backend handlers and middleware process incoming reque
 
 At the data layer, PostgreSQL maintains normalized operational entities for users, schedules, attendance, assets, incidents, tickets, notifications, tracking telemetry, AI outputs, and audit records. This schema supports traceability and cross-module analytics while preserving relational consistency for compliance-sensitive workflows.
 
+Tracking persistence now includes geofence transition records linked to client sites and guard identities, plus site geofence configuration records that store radius or polygon zone definitions per client location. Audit persistence includes richer request-origin context (for example user-agent) to improve forensic reconstruction quality.
+
 The data flow is API-centric: user actions from dashboards and module views are submitted as authenticated requests, evaluated by middleware, processed by domain handlers/services, persisted in PostgreSQL, and returned as structured responses to update frontend state. Tracking-specific flows additionally emit websocket snapshot updates so command views reflect location changes with reduced latency.
+
+For command-intelligence workflows, additional API contracts provide derived operational views from persisted records: guard-history/path and active-guard extraction for movement replay, plus anomaly/timeline aggregation for audit investigations.
 
 The real-time architecture combines websocket broadcasting with polling-based refresh. Tracking and client-site updates are published through websocket snapshot streams for low-latency awareness, while polling remains an intentional fallback path to preserve dashboard usability when persistent socket channels are interrupted.
 
