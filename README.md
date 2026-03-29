@@ -1,17 +1,21 @@
 # SENTINEL Capstone Main
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://cloudyrowdyyy.github.io/Capstone-Main/)
+
+**📖 Documentation:** https://cloudyrowdyyy.github.io/Capstone-Main/
+
 SENTINEL is a full-stack security operations and asset management platform with a shared React frontend and platform wrappers for web, desktop, and Android.
 
 ## Downloads
 
-- Web (latest): https://dasiaaio.up.railway.app
+- Web (latest): https://dasiasentinel.xyz/
 - Desktop installer (MSI/EXE): https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
 - Android APK: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
 
 ## Installation Guide
 
 1. Web
-- Open https://dasiaaio.up.railway.app
+- Open https://dasiasentinel.xyz/
 - Sign in with your provisioned SENTINEL account
 
 2. Desktop (Tauri)
@@ -84,4 +88,4 @@ Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0
 
 ## Documentation
 
-- Main docs: https://cloudyrowdyyy.github.io/Capstone-Main
+- Main docs: https://cloudyrowdyyy.github.io/Capstone-Main/
