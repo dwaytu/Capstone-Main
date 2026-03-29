@@ -1,0 +1,355 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: Release version (for example v1.2.3)
+        required: true
+        type: string
+      api_base_url:
+        description: Production backend URL used by all client builds
+        required: true
+        default: https://backend-production-0c47.up.railway.app
+        type: string
+
+concurrency:
+  group: release-${{ github.ref || github.event.inputs.release_version }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    name: Prepare Release Metadata
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.version.outputs.release_tag }}
+      app_version: ${{ steps.version.outputs.app_version }}
+      android_version_code: ${{ steps.version.outputs.android_version_code }}
+      api_base_url: ${{ steps.config.outputs.api_base_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - name: Resolve release version metadata
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION_INPUT="${{ github.event.inputs.release_version }}"
+          else
+            VERSION_INPUT="${{ github.ref_name }}"
+          fi
+
+          node scripts/release-version.js --version "$VERSION_INPUT" --github-output "$GITHUB_OUTPUT" --env-output .release.env
+
+      - name: Resolve API base URL
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            API_BASE_URL="${{ github.event.inputs.api_base_url }}"
+          else
+            API_BASE_URL="https://backend-production-0c47.up.railway.app"
+          fi
+
+          echo "api_base_url=$API_BASE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes and What's New summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/generate-release-notes.js \
+            --version "${{ steps.version.outputs.release_tag }}" \
+            --output release-notes.md \
+            --summary-output whats-new.txt
+
+      - name: Upload release metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-metadata
+          path: |
+            release-notes.md
+            whats-new.txt
+
+  web:
+    name: Build Web Artifact
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: DasiaAIO-Frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: DasiaAIO-Frontend
+        run: npm ci
+
+      - name: Sync release version across wrappers
+        run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
+
+      - name: Download release metadata
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-metadata
+          path: .release
+
+      - name: Build production web bundle
+        shell: bash
+        env:
+          VITE_API_BASE_URL: ${{ needs.prepare.outputs.api_base_url }}
+          VITE_APP_VERSION: ${{ needs.prepare.outputs.release_tag }}
+          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest
+          VITE_RELEASE_DOWNLOAD_URL: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          WHAT_NEW_TEXT="$(tr '\n' ' ' < .release/whats-new.txt | sed 's/[[:space:]]\+/ /g' | sed 's/^ *//;s/ *$//')"
+          export VITE_WHATS_NEW="$WHAT_NEW_TEXT"
+          npm run release:web --prefix DasiaAIO-Frontend
+          tar -czf sentinel-web-dist.tar.gz -C DasiaAIO-Frontend app-dist
+          node scripts/rename-artifacts.js --platform web --version "${{ needs.prepare.outputs.release_tag }}" --input sentinel-web-dist.tar.gz --output-dir release-files
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-web
+          path: release-files/*
+
+  desktop:
+    name: Build Desktop Artifacts
+    needs: prepare
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            DasiaAIO-Frontend/package-lock.json
+            apps/desktop-tauri/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+
+      - name: Install frontend dependencies
+        working-directory: DasiaAIO-Frontend
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: apps/desktop-tauri
+        run: npm ci
+
+      - name: Sync release version across wrappers
+        run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
+
+      - name: Download release metadata
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-metadata
+          path: .release
+
+      - name: Build desktop installers
+        shell: pwsh
+        run: |
+          $env:VITE_API_BASE_URL = "${{ needs.prepare.outputs.api_base_url }}"
+          $env:VITE_APP_VERSION = "${{ needs.prepare.outputs.release_tag }}"
+          $env:VITE_LATEST_RELEASE_API_URL = "https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest"
+          $env:VITE_RELEASE_DOWNLOAD_URL = "https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest"
+          $env:VITE_WHATS_NEW = (Get-Content .release/whats-new.txt -Raw).Trim()
+          $env:NODE_ENV = "production"
+          npm run release:desktop --prefix DasiaAIO-Frontend
+
+      - name: Rename desktop artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release-files | Out-Null
+          Get-ChildItem "apps/desktop-tauri/src-tauri/target-release/release/bundle/msi/*.msi" | ForEach-Object {
+            node scripts/rename-artifacts.js --platform desktop --version "${{ needs.prepare.outputs.release_tag }}" --input $_.FullName --output-dir release-files
+          }
+          Get-ChildItem "apps/desktop-tauri/src-tauri/target-release/release/bundle/nsis/*.exe" | ForEach-Object {
+            node scripts/rename-artifacts.js --platform desktop --version "${{ needs.prepare.outputs.release_tag }}" --input $_.FullName --output-dir release-files
+          }
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-desktop
+          path: release-files/*
+
+  android:
+    name: Build Android Artifacts
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            DasiaAIO-Frontend/package-lock.json
+            apps/android-capacitor/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+
+      - name: Install frontend dependencies
+        working-directory: DasiaAIO-Frontend
+        run: npm ci
+
+      - name: Install android dependencies
+        working-directory: apps/android-capacitor
+        run: npm ci
+
+      - name: Sync release version across wrappers
+        run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
+
+      - name: Download release metadata
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-metadata
+          path: .release
+
+      - name: Materialize Android signing keystore
+        shell: bash
+        env:
+          SENTINEL_ANDROID_KEYSTORE_BASE64: ${{ secrets.SENTINEL_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SENTINEL_ANDROID_KEYSTORE_BASE64" ]; then
+            echo "SENTINEL_ANDROID_KEYSTORE_BASE64 secret is required for signed Android releases." >&2
+            exit 1
+          fi
+
+          echo "$SENTINEL_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/sentinel-release.keystore"
+
+      - name: Build signed Android release artifacts
+        shell: bash
+        env:
+          VITE_API_BASE_URL: ${{ needs.prepare.outputs.api_base_url }}
+          VITE_APP_VERSION: ${{ needs.prepare.outputs.release_tag }}
+          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest
+          VITE_RELEASE_DOWNLOAD_URL: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+          NODE_ENV: production
+          CAPACITOR_ENV: production
+          SENTINEL_APP_VERSION: ${{ needs.prepare.outputs.app_version }}
+          SENTINEL_ANDROID_VERSION_CODE: ${{ needs.prepare.outputs.android_version_code }}
+          SENTINEL_UPLOAD_STORE_FILE: ${{ runner.temp }}/sentinel-release.keystore
+          SENTINEL_UPLOAD_STORE_PASSWORD: ${{ secrets.SENTINEL_UPLOAD_STORE_PASSWORD }}
+          SENTINEL_UPLOAD_KEY_ALIAS: ${{ secrets.SENTINEL_UPLOAD_KEY_ALIAS }}
+          SENTINEL_UPLOAD_KEY_PASSWORD: ${{ secrets.SENTINEL_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$SENTINEL_UPLOAD_STORE_PASSWORD" ] || [ -z "$SENTINEL_UPLOAD_KEY_ALIAS" ] || [ -z "$SENTINEL_UPLOAD_KEY_PASSWORD" ]; then
+            echo "Android signing secrets are incomplete. Required: SENTINEL_UPLOAD_STORE_PASSWORD, SENTINEL_UPLOAD_KEY_ALIAS, SENTINEL_UPLOAD_KEY_PASSWORD." >&2
+            exit 1
+          fi
+
+          WHAT_NEW_TEXT="$(tr '\n' ' ' < .release/whats-new.txt | sed 's/[[:space:]]\+/ /g' | sed 's/^ *//;s/ *$//')"
+          export VITE_WHATS_NEW="$WHAT_NEW_TEXT"
+
+          npm run release:android --prefix DasiaAIO-Frontend
+          npm run release:android:bundle --prefix DasiaAIO-Frontend
+
+          node scripts/rename-artifacts.js --platform android --version "${{ needs.prepare.outputs.release_tag }}" --input apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk --output-dir release-files
+          node scripts/rename-artifacts.js --platform android --version "${{ needs.prepare.outputs.release_tag }}" --input apps/android-capacitor/android/app/build/outputs/bundle/release/app-release.aab --output-dir release-files
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-android
+          path: release-files/*
+
+  publish:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - prepare
+      - web
+      - desktop
+      - android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download web artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-web
+          path: release-files
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-desktop
+          path: release-files
+
+      - name: Download Android artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-android
+          path: release-files
+
+      - name: Download release metadata
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-metadata
+          path: release-meta
+
+      - name: Publish release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.release_tag }}
+          name: SENTINEL ${{ needs.prepare.outputs.release_tag }}
+          body_path: release-meta/release-notes.md
+          files: release-files/*
+          fail_on_unmatched_files: true

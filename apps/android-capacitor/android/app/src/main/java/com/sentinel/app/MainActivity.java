@@ -1,4 +1,4 @@
-package com.sentinel.ops;
+package com.sentinel.app;
 
 import com.getcapacitor.BridgeActivity;
 

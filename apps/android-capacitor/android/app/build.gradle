@@ -18,8 +18,67 @@ def releaseKeyAlias = envOrProp('SENTINEL_UPLOAD_KEY_ALIAS')
 def releaseKeyPassword = envOrProp('SENTINEL_UPLOAD_KEY_PASSWORD')
 def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
 
+def sanitizeVersionName = { String raw ->
+    def fallback = '1.0.0'
+    if (raw == null) {
+        return fallback
+    }
+
+    def normalized = raw.trim().replaceFirst(/(?i)^v/, '')
+    if (!normalized) {
+        return fallback
+    }
+
+    if (!(normalized ==~ /^\d+\.\d+\.\d+([-.][0-9A-Za-z.]+)?$/)) {
+        return fallback
+    }
+
+    return normalized
+}
+
+def deriveVersionCode = { String versionName ->
+    def matcher = (versionName =~ /^(\d+)\.(\d+)\.(\d+)/)
+    if (!matcher.matches()) {
+        return 10000
+    }
+
+    def major = matcher.group(1).toInteger()
+    def minor = matcher.group(2).toInteger()
+    def patch = matcher.group(3).toInteger()
+    return (major * 10000) + (minor * 100) + patch
+}
+
+def isPositiveInteger = { String value ->
+    return value != null && (value ==~ /^\d+$/) && value.toInteger() > 0
+}
+
+def appVersionName = sanitizeVersionName(envOrProp('SENTINEL_APP_VERSION') ?: envOrProp('VITE_APP_VERSION'))
+def appVersionCode = isPositiveInteger(envOrProp('SENTINEL_ANDROID_VERSION_CODE'))
+    ? envOrProp('SENTINEL_ANDROID_VERSION_CODE').toInteger()
+    : deriveVersionCode(appVersionName)
+
+def requiresAppReleaseTask = { taskGraph ->
+    taskGraph.allTasks.any { task ->
+        task.path.startsWith(':app:') && task.path.toLowerCase().contains('release')
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (!requiresAppReleaseTask(taskGraph)) {
+        return
+    }
+
+    if (!hasReleaseSigning) {
+        throw new RuntimeException('Release signing credentials are required for release builds. Set SENTINEL_UPLOAD_STORE_FILE, SENTINEL_UPLOAD_STORE_PASSWORD, SENTINEL_UPLOAD_KEY_ALIAS, and SENTINEL_UPLOAD_KEY_PASSWORD.')
+    }
+
+    if (!file(releaseStoreFile).exists()) {
+        throw new RuntimeException("Release keystore file not found at: ${releaseStoreFile}")
+    }
+}
+
 android {
-    namespace "com.sentinel.ops"
+    namespace "com.sentinel.app"
     compileSdk rootProject.ext.compileSdkVersion
 
     if (hasReleaseSigning) {
@@ -34,11 +93,11 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.sentinel.ops"
+        applicationId "com.sentinel.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

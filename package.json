@@ -1,6 +1,11 @@
 {
+  "version": "1.0.0",
   "license": "UNLICENSED",
   "scripts": {
+    "release:version": "node scripts/release-version.js",
+    "release:sync-version": "node scripts/sync-release-version.js",
+    "release:notes": "node scripts/generate-release-notes.js",
+    "release:rename-artifact": "node scripts/rename-artifacts.js",
     "build:web": "npm run build:web --prefix DasiaAIO-Frontend",
     "build:android": "npm run build:android --prefix DasiaAIO-Frontend",
     "build:desktop": "npm run build:desktop --prefix DasiaAIO-Frontend",

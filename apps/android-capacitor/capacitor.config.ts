@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli'
 const isProduction = process.env.CAPACITOR_ENV === 'production' || process.env.NODE_ENV === 'production'
 
 const config: CapacitorConfig = {
-  appId: 'com.sentinel.ops',
+  appId: 'com.sentinel.app',
   appName: 'SENTINEL',
   webDir: '../../DasiaAIO-Frontend/app-dist',
   server: {

@@ -80,6 +80,9 @@ Behavior highlights:
 - Email verification required when email provider is configured
 - Email verification is mandatory for guard self-registration; registration is rejected when email verification provider is not configured
 - Access and refresh JWTs issued on login; refresh sessions are persisted server-side and rotated on refresh
+- Password-reset codes are now generated at 8 digits by default, stored as hashes (not plaintext), and validated with account/IP lockout checks to reduce brute-force risk.
+- Password reset now redeems tokens atomically and revokes active refresh-token sessions in the same transaction after password update.
+- `POST /api/resend-code`, `POST /api/verify-reset-code`, and `POST /api/reset-password` now return enumeration-safe responses that do not disclose whether an account exists.
 
 Approval workflow highlights (implemented):
 
@@ -167,12 +170,14 @@ Client access governance hardening:
 - Legal acceptance metadata (`consentAcceptedAt`, `consentVersion`, `legalConsentAccepted`) is now returned by login and used for restore-auth gating.
 - Consent recording now captures compliance trace metadata (`consent_ip`, `consent_user_agent`) in the `users` table.
 - `App.tsx` consent modal now links directly to repository legal documents (`TermsOfAgreement.md`, `PrivacyPolicy.md`, `AcceptableUsePolicy.md`) in the active `Cloudyrowdyyy/Capstone-Main` repository.
-- `DasiaAIO-Frontend/src/App.tsx` now checks GitHub Releases for newer tagged builds and prompts users to download updates via in-app modal (`Later` / `Download update`) when a newer release than `VITE_APP_VERSION` is available.
+- `DasiaAIO-Frontend/src/App.tsx` now checks backend release metadata (`GET /api/system/version`) with GitHub fallback, then prompts users to update when a newer release than `VITE_APP_VERSION` is available.
 - `DasiaAIO-Frontend/src/App.tsx` now includes a manual "Check for Updates" action in addition to scheduled update checks.
-- `DasiaAIO-Frontend/src/config.ts` now exposes app/update metadata (`APP_VERSION`, `LATEST_RELEASE_API_URL`, `RELEASE_DOWNLOAD_URL`) and resolves API base URL strictly from `VITE_API_BASE_URL`.
+- `DasiaAIO-Frontend/src/App.tsx` now renders a one-time per-version "What's New" dialog sourced from `VITE_WHATS_NEW`, persisted locally via version-scoped keys.
+- `DasiaAIO-Frontend/src/config.ts` now exposes app/update metadata (`APP_VERSION`, `APP_WHATS_NEW`, `LATEST_RELEASE_API_URL`, `RELEASE_DOWNLOAD_URL`) and resolves API base URL strictly from `VITE_API_BASE_URL`.
 - Runtime API fallback paths were removed to prevent cross-platform drift between web, desktop, and mobile clients.
 - Frontend release scripts now enforce production env safety via `DasiaAIO-Frontend/scripts/ensure-production-env.mjs`, blocking unsafe releases when `VITE_API_BASE_URL` is missing/non-HTTPS/private-host or when `VITE_APP_VERSION` is not a semantic release value.
 - `DasiaAIO-Frontend/src/utils/location.ts` now uses CORS-compatible IP geolocation providers (`ipinfo.io` with `geolocation-db.com` fallback) plus short-lived caching to avoid repeated blocked external requests when precise GPS is unavailable.
+- `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now uses dynamic-viewport height plus safe-area bottom padding on scroll surfaces to reduce clipping and overlap on mobile wrappers.
 
 ## 8. API and Security Notes
 
@@ -200,10 +205,12 @@ Client access governance hardening:
   - `PUT /api/users/:id/approval`
 - Guard login is blocked when `approval_status != approved`.
 - CORS accepts both `CORS_ORIGINS` (comma-separated, preferred) and `CORS_ORIGIN` (single-origin compatibility).
-- If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` includes local development and production web origins (`https://dasiasentinel.xyz`, `https://www.dasiasentinel.xyz`, `https://dasiaaio.up.railway.app`).
+- If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` is localhost/native-wrapper only (`http://localhost:*`, `127.0.0.1`, `https://localhost`, `capacitor://localhost`, `tauri://localhost`).
 - CORS fallback allow-lists now also include runtime origins used by packaged clients (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) to prevent mobile/desktop WebView login fetch failures when strict CORS env vars are absent.
-- When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS now still augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
-- The explicit-CORS path also now always augments with local web dev origins `http://localhost:5173` and `http://127.0.0.1:5173`, preventing browser preflight failures when developers run the frontend locally against the deployed backend.
+- When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
+- Local web dev origins `http://localhost:5173` and `http://127.0.0.1:5173` are now only auto-augmented for non-production runtime, tightening production CORS posture while preserving local developer ergonomics.
+- Tracking websocket upgrades (`GET /api/tracking/ws`) now explicitly reject users without accepted legal consent, aligning websocket access with protected-route legal-consent policy.
+- Tracking websocket authentication now supports token transport via `Sec-WebSocket-Protocol` (`sentinel-tracking-v1`, `bearer.<jwt>`) to avoid exposing JWTs in URL query strings; temporary query-token fallback remains for transition compatibility.
 - Global middleware order in `DasiaAIO-Backend/src/main.rs` now keeps CORS outermost so browser CORS headers are still attached when upstream middleware (rate-limit/auth/presence) returns early errors.
 - API/auth/expensive rate-limit middleware (`DasiaAIO-Backend/src/middleware/rate_limit.rs`) now bypasses `OPTIONS` requests so browser preflight checks are never rate-limited.
 - Rate-limit middleware now returns CORS-safe `429` responses so browser clients receive explicit throttling status instead of opaque CORS failures under load.
@@ -217,7 +224,7 @@ Client access governance hardening:
 - Health payloads (`/api/health`, `/api/health/system`) now include DB state, websocket state (`activeConnections`), uptime seconds, and timestamp.
 - New platform-release metadata endpoint is active: `GET /api/system/version` (`latestVersion`, `changelog`, `downloadLinks`).
 - Backend Docker runtime now enforces least privilege by running the server as a dedicated non-root user (`USER sentinel`) and enforces lockfile-based reproducible builds via `Cargo.lock` + `cargo build --locked` (`DasiaAIO-Backend/Dockerfile`).
-- Release packaging workflow now uses `actions/checkout` for both orchestration and frontend repository retrieval, replacing manual tokenized git shell commands in `.github/workflows/release-artifacts.yml`.
+- Release packaging is now centralized in `.github/workflows/release.yml` with tag-driven orchestration, unified version synchronization (`scripts/release-version.js`, `scripts/sync-release-version.js`), and deterministic artifact renaming (`scripts/rename-artifacts.js`).
 - Backend config now enforces production startup guards (`DasiaAIO-Backend/src/config.rs`) when `APP_ENV=production` or `NODE_ENV=production`:
   - requires strong non-default `JWT_SECRET`,
   - rejects default `ADMIN_CODE=122601`,
@@ -227,6 +234,15 @@ Client access governance hardening:
   - car allocation + car maintenance + driver assignment endpoints
   - legacy trips endpoints and legacy firearm maintenance listing endpoint
 - Support-ticket create request now accepts both `guard_id` and `guardId` payload keys for compatibility.
+- Seeder credential hardening:
+  - `DasiaAIO-Backend/seed.js` no longer contains a hardcoded database connection string.
+  - Seeder now requires `DATABASE_URL` and supports optional TLS behavior via `DATABASE_SSL_MODE`.
+- Password-reset migration compatibility fix:
+  - `DasiaAIO-Backend/migrations/add_password_reset_tokens.sql` now uses `user_id VARCHAR(36)` (aligned with `users.id`) and `TIMESTAMPTZ` columns to match backend runtime schema expectations.
+- Release workflow secret-binding simplification:
+  - `.github/workflows/release.yml` now references signing secrets directly (`secrets.SENTINEL_ANDROID_KEYSTORE_BASE64`, `secrets.SENTINEL_UPLOAD_STORE_PASSWORD`, `secrets.SENTINEL_UPLOAD_KEY_ALIAS`, `secrets.SENTINEL_UPLOAD_KEY_PASSWORD`) instead of indexed indirection.
+- Release workflow supply-chain hardening:
+  - `.github/workflows/release.yml` now pins third-party actions to immutable commit SHAs (`setup-node`, `setup-java`, `upload/download-artifact`, `setup-android`, `action-gh-release`, and `rust-toolchain`).
 
 ## 9. Backend Context Snapshot (Keep Updated)
 
@@ -245,6 +261,7 @@ Current backend reality:
 - Public registration now always creates `verified = false` pending guards and always issues a verification-code challenge
 - `POST /api/register` now fails fast when `RESEND_API_KEY` is missing so unverified guard accounts are not created without a deliverable code path
 - `POST /api/verify` now validates confirmation codes against both code and email (joined to the `users` table), reducing cross-account code misuse risk
+- Password-reset storage and verification now use hashed reset codes (`password_reset_tokens.token` widened to 128 chars) with transaction-safe redemption and post-reset refresh-session revocation.
 - Users now have persisted legal consent metadata columns (`consent_accepted_at`, `consent_version`, `consent_ip`, `consent_user_agent`) created by startup schema guards in `db.rs`.
 - Login payload now includes legal consent state (`legalConsentAccepted`, `consentAcceptedAt`, `consentVersion`), and token issuance inherits that state.
 - Legal consent routes are active and protected by auth middleware with legal-bootstrap bypass behavior:
@@ -268,6 +285,13 @@ Current backend reality:
   - `DasiaAIO-Backend/src/middleware/presence.rs`: new global middleware updates `users.last_seen_at` on authenticated requests.
   - `DasiaAIO-Backend/src/main.rs`: global `touch_last_seen` middleware is now wired with DB state.
   - `DasiaAIO-Backend/src/handlers/auth.rs`: successful login now updates `last_seen_at`.
+- Validation snapshot (latest hardening pass):
+  - Backend checks: `cargo test` passed after auth/tracking/schema/CORS hardening updates.
+  - Frontend checks: `npm test -- --runInBand` and `npm run build` passed after websocket + reset UX updates.
+  - Workflow hardening: release workflow action pins were updated to immutable SHAs.
+- Residual risks / follow-up checks:
+  - Validate websocket subprotocol token auth compatibility in staged/production edge-proxy paths.
+  - Confirm signed Android artifact release path remains healthy after workflow pinning changes.
   - `DasiaAIO-Backend/src/handlers/users.rs`: user list/detail queries now select `last_seen_at` so frontend can render presence.
 - Operational map tracking update:
   - `DasiaAIO-Backend/src/db.rs`: startup schema bootstrap now creates/extends `client_sites`, `tracking_points` (including `user_id` association), `geofence_events`, and `site_geofences` with operational indexes.
@@ -382,11 +406,25 @@ Current frontend reality:
     - `DasiaAIO-Frontend/src/utils/api.ts`: `fetchJsonOrThrow` now detects invalid/expired-token responses (`401/403` or token-expiry error text), emits a one-time `auth:token-expired` browser event, and throws a normalized session-expired message.
     - `DasiaAIO-Frontend/src/App.tsx`: listens for `auth:token-expired`, clears local auth storage, and returns the UI to the login screen to stop repeated protected polling attempts and console-error spam.
   - `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts` now uses strict-mode-safe websocket lifecycle management with bounded exponential backoff reconnects, periodic polling fallback continuity, and connection-state tracking (`disabled`/`connecting`/`open`/`backoff`/`closed`) to prevent live-map socket flapping from cascading into dashboard instability.
+    - websocket close events now detect auth-expired close codes (`1008`, `4001`, `4401`, `4403`) and emit `auth:token-expired` instead of entering reconnect loops with invalid sessions.
   - `DasiaAIO-Frontend/src/App.tsx` now uses backend-driven version discovery (`GET /api/system/version`) with GitHub fallback, then presents platform-aware update prompts:
     - web/mobile -> external download flow
     - Tauri desktop -> in-app one-click updater (`@tauri-apps/plugin-updater`) with relaunch.
+  - `DasiaAIO-Frontend/src/App.tsx` now shows a version-scoped "What's New" dialog after release upgrades, populated from `VITE_WHATS_NEW` and persisted so each version is shown once.
   - `DasiaAIO-Frontend/src/App.tsx` now includes connectivity resilience UX: online/offline listeners, recurring backend health probe, and a persistent disconnected banner when backend/network is unavailable.
-  - Mobile runtime now exposes bottom quick-navigation for key dashboards when running under Capacitor to improve touch access and small-screen workflow continuity.
+  - Mobile runtime now exposes bottom quick-navigation for guard workflow continuity under Capacitor while reducing redundant elevated-role navigation chrome.
+  - Floating runtime notices in `App.tsx` (update/location/error banners) now account for mobile safe-area + bottom-nav offsets to reduce overlap with touch controls on small screens.
+  - Core shell touch-target tuning:
+    - `Header.tsx`, `Sidebar.tsx`, `NotificationCenter.tsx`, and `OperationalMapPanel.tsx` now use larger interactive target sizing and focus-visible affordances for mobile/tablet usability and keyboard access.
+    - `ProfileDashboard.tsx` photo overlay action now uses a semantic button with accessible labeling instead of a mouse-only clickable `div`.
+  - Second-pass control-density refinements:
+    - `App.tsx` now uses dynamic mobile quick-nav column sizing to avoid sparse/awkward guard navigation spacing on small screens, and `auth:token-expired` handlers now surface the event message before session reset.
+    - `App.tsx` restore-auth now validates persisted access-token freshness on startup and attempts refresh-token recovery before restoring a logged-in session; if refresh recovery fails, local auth state is cleared before gated workflows (including legal-consent submission) can execute.
+    - `App.tsx` legal-consent acceptance now performs pre-submit session validation/refresh and routes expired sessions back to login instead of allowing stale-token consent POST attempts.
+    - `NotificationPanel.tsx` now uses explicit button semantics (`type="button"` + labels), Escape/outside-close behavior, larger touch targets, and inline panel error messaging instead of blocking alert dialogs.
+    - `AdminDashboard.tsx`, `SuperadminDashboard.tsx`, `SectionPanel.tsx`, and consent/update modal actions in `App.tsx` now enforce higher-frequency control sizing (44px-class minimum targets) for mobile and kiosk ergonomics.
+    - `index.css` now expands Leaflet zoom control hit areas and focus-visible outlines for keyboard and touch accessibility on operational map surfaces.
+    - `Header.tsx` and `AccountManager.tsx` now establish an explicit high-priority stacking context (`z-[1200+]`) so account/profile controls remain clickable above Leaflet map panes and controls.
   - Frontend console-noise suppression for expected auth failures:
     - `DasiaAIO-Frontend/src/utils/logger.ts`: new shared logger utility with `isExpectedAuthNoise(...)` and `logError(...)` to suppress expected invalid-token/session-expiry fetch noise while preserving unexpected-error logging.
     - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`, `DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx`, and `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx` now route noisy fetch logs through `logError(...)`.
@@ -723,32 +761,33 @@ npm run build:desktop --prefix DasiaAIO-Frontend
 ## 13. Release and Distribution Snapshot (Latest)
 
 - Canonical release workflow:
-  - `.github/workflows/release-artifacts.yml`
+  - `.github/workflows/release.yml`
 - Trigger conditions:
-  - manual dispatch (`api_base_url` input)
   - tag push matching `v*`
+  - manual dispatch (`release_version`, `api_base_url`)
 
 Current release behavior:
 
 - Web artifact:
-  - CI now builds and uploads a static web bundle (`sentinel-web-static`) and publishes `sentinel-web-dist.tar.gz` on `v*` tags.
+  - CI builds a production web bundle and publishes a versioned archive (`sentinel-web-v<version>.tar.gz`).
 - Desktop artifacts:
-  - MSI + EXE are built and uploaded as `sentinel-desktop-installers`.
+  - Windows MSI + NSIS installers are built and published with deterministic names (`sentinel-desktop-windows-v<version>.<ext>`).
 - Android artifact:
-  - CI now always publishes an installable APK (`sentinel-android-release-installable`).
-  - If production signing secrets are absent, CI performs fallback signing (ephemeral keystore) so sideload install still works.
+  - CI publishes signed release APK and AAB artifacts with deterministic names (`sentinel-android-v<version>.apk/.aab`).
+  - Android release builds are now signed-only; builds fail if signing secrets/keystore are missing.
 - Release guard behavior:
-  - release jobs set production runtime flags (`NODE_ENV=production`, plus `CAPACITOR_ENV=production` for Android) and execute frontend release env validation before packaging.
+  - release jobs set production runtime flags (`NODE_ENV=production`, plus `CAPACITOR_ENV=production` for Android), run frontend env-policy validation, and propagate a unified semantic version across wrapper manifests/configs before building.
+- Release metadata generation:
+  - `scripts/generate-release-notes.js` extracts the target version section from `CHANGELOG.md`.
+  - generated notes are used as GitHub release body, and a condensed `VITE_WHATS_NEW` payload is injected into built clients.
 - GitHub Release publishing:
-  - For `v*` tags, web, desktop, and android artifacts are attached to the Release entry.
+  - For `v*` tags, web/desktop/android artifacts and generated release notes are attached to the Release entry.
 
 Checkout/build stability updates applied:
 
-- Release workflow now uses pinned `actions/checkout` for both orchestration and frontend repository retrieval.
+- Release workflow now uses pinned `actions/checkout` with `submodules: recursive` in all release jobs, so web/desktop/android artifacts build from the exact repository-pinned frontend snapshot instead of an external moving-target checkout.
 - Repository submodule metadata is now explicitly declared in `.gitmodules` for `DasiaAIO-Backend` and `DasiaAIO-Frontend`, preventing checkout-time `No url found for submodule path` failures.
-- Release checkout steps now explicitly set `submodules: false` to avoid unintended recursive submodule sync during web/desktop/android artifact packaging.
 - Web artifact validation now relies on `ensure-production-env.mjs` (required HTTPS/public `VITE_API_BASE_URL`) instead of broad static-string grep checks to avoid false-positive release failures from non-runtime localhost text in bundled assets.
-- Android release build sets executable permission on gradle wrapper before execution (`chmod +x gradlew`) to avoid Linux permission failures (`exit 126`).
 - Build runtime updated to Node.js 24 in both jobs.
 
 Documentation and licensing distribution updates:
@@ -771,9 +810,13 @@ Warning interpretation (important):
 
 ## 14. Release Validation Update (March 2026)
 
-- Release workflow run completed successfully for both jobs (`desktop-windows` and `android-release`) with artifacts generated:
-  - `sentinel-desktop-installers`
-  - `sentinel-android-release-installable`
+- Release workflow run now validates four stages (`prepare`, `web`, `desktop`, `android`) and publishes deterministic artifacts:
+  - `sentinel-web-v<version>.tar.gz`
+  - `sentinel-desktop-windows-v<version>.msi`
+  - `sentinel-desktop-windows-v<version>.exe`
+  - `sentinel-android-v<version>.apk`
+  - `sentinel-android-v<version>.aab`
+- Android release packaging now requires signing secrets and no longer uses fallback ephemeral signing.
 - Remaining warnings were deprecation notices from upstream GitHub actions runtime and did not block artifact output.
 
 Latest compliance/docs pass (March 28, 2026):

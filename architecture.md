@@ -513,12 +513,16 @@
 ## 11. Release and Distribution Architecture
 
 ### CI/CD Release Workflow
-- Workflow file: `.github/workflows/release-artifacts.yml`
+- Workflow file: `.github/workflows/release.yml`
 - Trigger modes:
-  - Manual: `workflow_dispatch` with `api_base_url` override
+  - Manual: `workflow_dispatch` with `release_version` and optional `api_base_url`
   - Tagged release: push tag matching `v*`
-- Permissions:
-  - `contents: write` for publishing assets to GitHub Releases
+- Pipeline jobs:
+  - `prepare`: resolves semantic release metadata and generates release notes from `CHANGELOG.md`
+  - `web`: builds `app-dist` and packages a tarball artifact
+  - `desktop`: builds MSI/NSIS installers through Tauri
+  - `android`: builds signed APK and AAB artifacts only
+  - `publish`: attaches release assets to GitHub Releases for tag-driven runs
 
 ### Desktop Packaging Pipeline
 - Build runner: `windows-latest`
@@ -526,32 +530,65 @@
 - Published installer formats:
   - MSI (`.msi`)
   - NSIS EXE (`.exe`)
-- Artifact name in Actions:
-  - `sentinel-desktop-installers`
+- Artifact naming is normalized by `scripts/rename-artifacts.js`:
+  - `sentinel-desktop-windows-v<version>.msi`
+  - `sentinel-desktop-windows-v<version>.exe`
 
 ### Android Packaging Pipeline
 - Build runner: `ubuntu-latest`
 - Build command path:
-  - frontend mobile build -> capacitor sync -> gradle release assemble
-- `gradlew` execute bit is explicitly set in CI before build (`chmod +x gradlew`).
-- Release output behavior:
-  - If a production-signed APK exists (`app-release.apk`), it is used.
-  - If not, CI signs `app-release-unsigned.apk` with an ephemeral fallback keystore and publishes `app-release-installable.apk` for sideload installation.
-- Artifact name in Actions:
-  - `sentinel-android-release-installable`
+  - frontend production build -> capacitor sync -> Gradle release assemble + bundle
+- Release signing behavior:
+  - `SENTINEL_ANDROID_KEYSTORE_BASE64` is required
+  - `SENTINEL_UPLOAD_STORE_PASSWORD`, `SENTINEL_UPLOAD_KEY_ALIAS`, and `SENTINEL_UPLOAD_KEY_PASSWORD` are required
+  - workflow exits early when signing inputs are missing (no unsigned fallback path)
+- Artifact naming is normalized by `scripts/rename-artifacts.js`:
+  - `sentinel-android-v<version>.apk`
+  - `sentinel-android-v<version>.aab`
 
-### Source Checkout Strategy in CI
-- To avoid repository git/submodule metadata failures (`git exit 128`) during checkout, both desktop and android jobs use manual authenticated git fetch/checkout and clone the frontend repository explicitly.
+### Version Synchronization and Metadata
+- `scripts/release-version.js` derives release tag, app version, and Android versionCode
+- `scripts/sync-release-version.js` synchronizes versions across:
+  - root `package.json`
+  - `DasiaAIO-Frontend/package.json`
+  - `apps/android-capacitor/package.json`
+  - `apps/desktop-tauri/package.json`
+  - `apps/desktop-tauri/src-tauri/tauri.conf.json`
+  - `apps/desktop-tauri/src-tauri/Cargo.toml`
+- `scripts/generate-release-notes.js` generates release notes and a short `What's New` summary for clients
 
 ### Runtime and Action Notes
 - Workflow build runtime uses Node.js 24 via `actions/setup-node`.
-- GitHub may still show Node 20 deprecation warnings for third-party actions that have not yet migrated their internal runtime; these warnings are non-blocking when jobs succeed.
+- Release builds inject one shared backend base URL through `VITE_API_BASE_URL` for web, desktop, and Android outputs.
+- Frontend release scripts enforce production safety checks (`DasiaAIO-Frontend/scripts/ensure-production-env.mjs`) before packaging.
 
 ### Distribution Surface
 - Successful tag builds publish install artifacts directly to GitHub Releases for the matching tag.
 - Release page should contain:
+  - Web release tarball (`sentinel-web-v<version>.tar.gz`)
   - Desktop `.msi` and `.exe`
-  - Android installable `.apk`
+  - Android `.apk` and `.aab`
+
+## 12. Latest Hardening Delta (2026-03-29)
+
+- Removed hardcoded database credentials from `DasiaAIO-Backend/seed.js`; seeding now requires `DATABASE_URL`.
+- Corrected password-reset migration contract in `DasiaAIO-Backend/migrations/add_password_reset_tokens.sql` (`user_id VARCHAR(36)`, timezone-aware timestamps).
+- Aligned Android wrapper test namespaces with active package ID (`com.sentinel.app`) under:
+  - `apps/android-capacitor/android/app/src/test/java/com/sentinel/app/`
+  - `apps/android-capacitor/android/app/src/androidTest/java/com/sentinel/app/`
+- Simplified release workflow secret bindings in `.github/workflows/release.yml` to direct secret references.
+
+### Validation Snapshot
+
+- Frontend tests: pass (`npm test --prefix DasiaAIO-Frontend -- --runInBand`).
+- Frontend build: pass (`npm run build --prefix DasiaAIO-Frontend`).
+- Backend tests: pass (`cargo test --manifest-path DasiaAIO-Backend/Cargo.toml`).
+- Runtime health: pass (`docker compose up -d` and `GET /api/health` returns `status: ok`).
+
+### Current Residual Risk
+
+- Final confidence for release secrets requires a live GitHub Actions run in repository context.
+- Android classpath validation should still be confirmed through Android Studio/CI Gradle test execution.
 
 ## Reviewer Notes
 - Architecture is endpoint-centric with middleware-enforced security and role policy.
