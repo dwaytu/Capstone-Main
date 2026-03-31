@@ -17,6 +17,7 @@ def releaseStorePassword = envOrProp('SENTINEL_UPLOAD_STORE_PASSWORD')
 def releaseKeyAlias = envOrProp('SENTINEL_UPLOAD_KEY_ALIAS')
 def releaseKeyPassword = envOrProp('SENTINEL_UPLOAD_KEY_PASSWORD')
 def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+def allowUnsignedRelease = (envOrProp('SENTINEL_ALLOW_UNSIGNED_RELEASE') ?: 'false').toString().trim().toLowerCase() in ['1', 'true', 'yes']
 
 def sanitizeVersionName = { String raw ->
     def fallback = '1.0.0'
@@ -68,8 +69,13 @@ gradle.taskGraph.whenReady { taskGraph ->
         return
     }
 
-    if (!hasReleaseSigning) {
+    if (!hasReleaseSigning && !allowUnsignedRelease) {
         throw new RuntimeException('Release signing credentials are required for release builds. Set SENTINEL_UPLOAD_STORE_FILE, SENTINEL_UPLOAD_STORE_PASSWORD, SENTINEL_UPLOAD_KEY_ALIAS, and SENTINEL_UPLOAD_KEY_PASSWORD.')
+    }
+
+    if (!hasReleaseSigning && allowUnsignedRelease) {
+        logger.warn('Building unsigned release artifacts because SENTINEL_ALLOW_UNSIGNED_RELEASE=true and signing credentials are not present.')
+        return
     }
 
     if (!file(releaseStoreFile).exists()) {

@@ -177,7 +177,10 @@ Client access governance hardening:
 - Runtime API fallback paths were removed to prevent cross-platform drift between web, desktop, and mobile clients.
 - Frontend release scripts now enforce production env safety via `DasiaAIO-Frontend/scripts/ensure-production-env.mjs`, blocking unsafe releases when `VITE_API_BASE_URL` is missing/non-HTTPS/private-host or when `VITE_APP_VERSION` is not a semantic release value.
 - `DasiaAIO-Frontend/src/utils/location.ts` now uses CORS-compatible IP geolocation providers (`ipinfo.io` with `geolocation-db.com` fallback) plus short-lived caching to avoid repeated blocked external requests when precise GPS is unavailable.
-- `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now uses dynamic-viewport height plus safe-area bottom padding on scroll surfaces to reduce clipping and overlap on mobile wrappers.
+- Dashboard layout now uses a fixed-shell contract: sidebar is fixed, app shell is viewport-locked (`h-[100dvh]`), and only main content regions own vertical scrolling.
+- `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now enforces `main` as a `min-h-0 overflow-hidden` container with a dedicated `overflow-y-auto` content pane, preventing nested body/document scroll drift.
+- Shared dashboard roots (`UserDashboard`, `FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, `PerformanceDashboard`, `MeritScoreDashboard`, `ArmoredCarDashboard`, `CalendarDashboard`, `ProfileDashboard`) now use `h-[100dvh]` + `overflow-hidden` shells and `min-h-0` main columns to eliminate overlap/clipping between fixed sidebar and content.
+- Global shell styling in `DasiaAIO-Frontend/src/index.css` now locks `html/body/#root` to full height with hidden document overflow and moves atmospheric gradient rendering to a fixed background layer (`body::before`) so decorative layers no longer interfere with scrollable content.
 
 ## 8. API and Security Notes
 
@@ -190,13 +193,14 @@ Client access governance hardening:
 - Permission-based authorization middleware is active (`DasiaAIO-Backend/src/middleware/authz.rs`) and applied at route level in `DasiaAIO-Backend/src/main.rs`.
 - `require_authenticated` and permission middleware now enforce legal-consent acceptance for protected routes, while legal bootstrap/logout paths are explicitly bypassed.
 - Centralized write audit middleware is active (`DasiaAIO-Backend/src/middleware/audit.rs`) and records write outcomes (`success`/`failed`) into `audit_logs`.
-- Elevated roles can now review those records through both legacy and expanded contracts:
+- Superadmin-only audit review is enforced for both legacy and expanded contracts:
   - `GET /api/audit-logs` (legacy compatibility)
   - `GET /api/audit/logs`
   - `GET /api/audit/logs/filter`
   - `GET /api/audit/user-activity/:id`
   - `GET /api/audit/anomalies`
   The handler (`DasiaAIO-Backend/src/handlers/audit.rs`) supports pagination, multi-field filtering, user-activity timelines, and anomaly group extraction for high-fidelity SOC review.
+- A new global authorization-failure audit middleware now persists non-write `401/403` API denials into `audit_logs` (`action_key` prefixed with `AUTHZ_DENIED`), while existing write-audit middleware continues to capture write outcomes.
 - Managed user creation endpoint (`POST /api/users`) enforces role hierarchy:
   - `superadmin` can create `admin`, `supervisor`, and `guard`
   - `admin` can create `supervisor` and `guard`
@@ -209,7 +213,7 @@ Client access governance hardening:
 - CORS fallback allow-lists now also include runtime origins used by packaged clients (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) to prevent mobile/desktop WebView login fetch failures when strict CORS env vars are absent.
 - When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
 - Local web dev origins `http://localhost:5173` and `http://127.0.0.1:5173` are now only auto-augmented for non-production runtime, tightening production CORS posture while preserving local developer ergonomics.
-- Tracking websocket upgrades (`GET /api/tracking/ws`) now explicitly reject users without accepted legal consent, aligning websocket access with protected-route legal-consent policy.
+- Tracking websocket upgrades (`GET /api/tracking/ws`) now explicitly reject users without accepted legal consent and reject roles outside `supervisor`/`guard`.
 - Tracking websocket authentication now supports token transport via `Sec-WebSocket-Protocol` (`sentinel-tracking-v1`, `bearer.<jwt>`) to avoid exposing JWTs in URL query strings; temporary query-token fallback remains for transition compatibility.
 - Global middleware order in `DasiaAIO-Backend/src/main.rs` now keeps CORS outermost so browser CORS headers are still attached when upstream middleware (rate-limit/auth/presence) returns early errors.
 - API/auth/expensive rate-limit middleware (`DasiaAIO-Backend/src/middleware/rate_limit.rs`) now bypasses `OPTIONS` requests so browser preflight checks are never rate-limited.
@@ -297,7 +301,7 @@ Current backend reality:
   - `DasiaAIO-Backend/src/db.rs`: startup schema bootstrap now creates/extends `client_sites`, `tracking_points` (including `user_id` association), `geofence_events`, and `site_geofences` with operational indexes.
   - `DasiaAIO-Backend/src/handlers/tracking.rs`: handlers now cover map snapshots, telemetry/site ingestion, guard movement intelligence, and geofence transition evaluation.
   - `DasiaAIO-Backend/src/handlers/mod.rs`: `tracking` module export added.
-  - `DasiaAIO-Backend/src/main.rs`: new authenticated routes:
+  - `DasiaAIO-Backend/src/main.rs`: tracking routes now require `supervisor` or `guard` role at middleware level:
     - `GET /api/tracking/map-data`
     - `POST /api/tracking/points`
     - `POST /api/tracking/client-sites`
@@ -310,7 +314,7 @@ Current backend reality:
     - `PUT /api/tracking/geofences/:id`
     - `DELETE /api/tracking/geofences/:id`
   - Guard safety rule: guards can only submit `entityType='guard'` points for their own `entityId` (JWT `sub`).
-  - Expanded tracking API for location lifecycle and live streaming:
+  - Expanded tracking API for location lifecycle and live streaming (same `supervisor`/`guard` scope):
     - `GET /api/tracking/client-sites`
     - `PUT /api/tracking/client-sites/:id`
     - `DELETE /api/tracking/client-sites/:id`
@@ -350,13 +354,13 @@ Current backend reality:
   - `DasiaAIO-Backend/src/handlers/ai.rs`: exposes `GET /api/ai/replacement-suggestions?post_id=<client_site_id>` (supervisor+).
   - `DasiaAIO-Backend/src/main.rs`: route registration for `/api/ai/replacement-suggestions` behind analytics view authorization.
 - System audit review API (new):
-  - `DasiaAIO-Backend/src/handlers/audit.rs`: exposes paginated + filterable reads on `audit_logs` while enforcing `require_min_role('admin')`.
+  - `DasiaAIO-Backend/src/handlers/audit.rs`: exposes paginated + filterable reads on `audit_logs` while enforcing `require_min_role('superadmin')`.
   - Expanded review endpoints now provide:
     - timeline/filter access (`/api/audit/logs`, `/api/audit/logs/filter`)
     - per-user operational stories and hourly activity heatmap data (`/api/audit/user-activity/:id`)
     - anomaly summaries for failed bursts, activity spikes, and suspicious source IPs (`/api/audit/anomalies`)
   - `DasiaAIO-Backend/src/models.rs`: adds `AuditLogEntry`, `AuditLogListResponse`, and `AuditLogPageMeta` so contracts stay typed.
-  - `DasiaAIO-Backend/src/main.rs`: registers both legacy and expanded audit endpoint family with authenticated middleware; admin/superadmin policy enforcement is handled in handler-level role gates.
+  - `DasiaAIO-Backend/src/main.rs`: registers both legacy and expanded audit endpoint family with `require_superadmin` route middleware.
 
 ## 10. Frontend Context Snapshot (Keep Updated)
 
@@ -412,8 +416,8 @@ Current frontend reality:
     - Tauri desktop -> in-app one-click updater (`@tauri-apps/plugin-updater`) with relaunch.
   - `DasiaAIO-Frontend/src/App.tsx` now shows a version-scoped "What's New" dialog after release upgrades, populated from `VITE_WHATS_NEW` and persisted so each version is shown once.
   - `DasiaAIO-Frontend/src/App.tsx` now includes connectivity resilience UX: online/offline listeners, recurring backend health probe, and a persistent disconnected banner when backend/network is unavailable.
-  - Mobile runtime now exposes bottom quick-navigation for guard workflow continuity under Capacitor while reducing redundant elevated-role navigation chrome.
-  - Floating runtime notices in `App.tsx` (update/location/error banners) now account for mobile safe-area + bottom-nav offsets to reduce overlap with touch controls on small screens.
+  - Mobile bottom quick-navigation in `App.tsx` is currently disabled to avoid duplicated navigation surfaces with the fixed sidebar shell and to keep role routing single-sourced.
+  - Floating runtime notices in `App.tsx` (update/location/error banners) account for safe-area offsets without depending on bottom quick-nav spacing.
   - Core shell touch-target tuning:
     - `Header.tsx`, `Sidebar.tsx`, `NotificationCenter.tsx`, and `OperationalMapPanel.tsx` now use larger interactive target sizing and focus-visible affordances for mobile/tablet usability and keyboard access.
     - `ProfileDashboard.tsx` photo overlay action now uses a semantic button with accessible labeling instead of a mouse-only clickable `div`.
@@ -437,6 +441,7 @@ Current frontend reality:
 - Full-width layout guardrails:
   - Global CSS enforces `html/body/#root` full-width/full-height and `body { margin: 0 }`
   - Avoid removing root width/height guarantees when adjusting dashboard overflow behavior, otherwise right-side viewport gaps can reappear
+  - Keep dashboard shells on fixed-height (`h-[100dvh]`) + `overflow-hidden` roots with `min-h-0` main columns so only designated content panes own vertical scroll.
 - Header consistency guardrail:
   - Shared `Header` now renders a default `Refresh` button beside theme toggle when a dashboard does not provide a custom `rightSlot` (desktop and mobile)
   - Dashboards with custom right-side controls keep their custom controls
@@ -1012,11 +1017,10 @@ Verified in this session (Docker runtime):
   - Accuracy-meter and permission-prompt verification:
     - Frontend build succeeded after adding permission-state and accuracy UI.
     - No diagnostics issues in `UserDashboard.tsx` and `OperationalMapPanel.tsx`.
-  - All-user tracking verification (latest):
+  - Tracking scope verification (latest):
     - Runtime probe executed against active local backend on `http://localhost:5000`.
-    - `POST /api/tracking/heartbeat` (admin token) => `201` and persisted a `tracking_points` row with `entityType: "user"` and `accuracyMeters` populated.
-    - `GET /api/tracking/map-data` returned the new `user` point in `trackingPoints` payload.
-    - Heartbeat response contract was normalized from `"Guard heartbeat recorded"` to `"Location heartbeat recorded"` to reflect all-role behavior.
+    - `POST /api/tracking/heartbeat` and `GET /api/tracking/map-data` are now restricted to `supervisor` and `guard` roles; admin/superadmin requests are expected to return `403` and generate authz-failure audit entries.
+    - Guard requests continue to persist heartbeat telemetry and receive `Location heartbeat recorded` success responses when precision policy is satisfied.
     - Frontend accuracy tuning added:
       - App-level all-user location capture now performs an immediate `getCurrentPosition` call on login and uses fresher geolocation cache (`maximumAge: 2000`) before watch updates.
       - Heartbeat payload status now flags low-precision fixes as `low_accuracy` when `accuracyMeters > 60`.
@@ -1025,8 +1029,8 @@ Verified in this session (Docker runtime):
       - Frontend `npm run build` passed.
       - Backend services rebuilt and running (`docker compose ps`: backend up, postgres healthy).
       - `GET /api/health` => `200`.
-      - `POST /api/tracking/heartbeat` (admin token) => `201` with message `Location heartbeat recorded`.
-      - `GET /api/tracking/map-data` includes inserted `user` tracking point with `accuracyMeters` value.
+      - `POST /api/tracking/heartbeat` (supervisor/guard token) => `201` with message `Location heartbeat recorded`.
+      - `GET /api/tracking/map-data` returns role-scoped tracking payload for supervisor/guard sessions.
   - User management + map ops updates (latest):
     - User table filter control in `SuperadminDashboard` is now active and role-scoped (`all`, `superadmin`, `admin`, `supervisor`, `guard`).
     - User table ordering now enforces role priority first, then alphabetical name ordering:
@@ -1120,8 +1124,8 @@ Verified in this session (Docker runtime):
       - Index: `idx_incidents_status_priority_created` on `(status, priority, created_at DESC)`.
     - Backend — new handler file `handlers/incidents.rs` exposing 4 endpoints:
       - `POST   /api/incidents`           — create incident (min role: `guard`)
-      - `GET    /api/incidents`           — all incidents, ordered by `created_at DESC` (authenticated)
-      - `GET    /api/incidents/active`    — open/investigating, ordered by priority weight then time (authenticated)
+      - `GET    /api/incidents`           — role-scoped listing; guards only see incidents they reported, elevated roles see full feed
+      - `GET    /api/incidents/active`    — role-scoped active feed (same guard/elevated visibility model)
       - `PATCH  /api/incidents/:id/status` — update status (min role: `supervisor`)
     - Backend — new models in `models.rs`: `Incident`, `CreateIncidentRequest` (camelCase serde), `UpdateIncidentStatusRequest`.
     - Frontend — `src/hooks/useIncidents.ts`:
@@ -1239,6 +1243,24 @@ Verified in this session (Docker runtime):
       - `Operational Map`, `Guard Deployment Overview`, `Live Operations Feed`, `Incident Alert Feed`, `Today's Shifts`, `Firearms Status`
       - `Guard Absence Prediction`, `Smart Guard Replacement`, `Predictive Vehicle Maintenance`, `Incident Severity Classifier`, `Incident Summary Generator`
     - Requested architecture document created: `architecture.md`.
+  - RBAC and layout hardening pass (latest):
+    - Backend authorization updates:
+      - `/api/audit-logs`, `/api/audit/logs`, `/api/audit/logs/filter`, `/api/audit/user-activity/:id`, `/api/audit/anomalies` now require superadmin route and handler gates.
+      - Tracking routes now require supervisor/guard role middleware; websocket upgrades reject non-supervisor/non-guard roles.
+      - Incident reads are role-scoped: guard sees self-reported incidents only; elevated roles retain full incident feed.
+      - Global authz-failure audit middleware records API read denials (`401/403`) into `audit_logs`.
+    - Frontend authorization/layout updates:
+      - `audit-log` navigation permission moved to `view_audit_logs` (superadmin only).
+      - Restricted views now render explicit Access Denied fallback instead of silently falling through to dashboard.
+      - Sidebar is fixed with a desktop spacer; dashboard shells now use `h-[100dvh]` + `overflow-hidden` + `min-h-0` main columns, with only content panes scrolling.
+      - Global CSS locks document scroll and moves gradient atmosphere to fixed background layer.
+    - Validation completed in this session:
+      - Backend: `cargo test` passed (including `tracking_audit_integration` suite).
+      - Frontend: `npm run build` passed.
+      - Diagnostics: no errors on modified backend/frontend files in workspace checks.
+    - Residual risks to monitor:
+      - Existing integration tests do not yet include explicit 403 assertions for admin/superadmin access to tracking routes after scope tightening.
+      - Stale client state pointing to now-restricted views may surface additional Access Denied transitions that should be validated in staged end-to-end smoke tests.
 
 Role-based runtime sweep (recommended):
 

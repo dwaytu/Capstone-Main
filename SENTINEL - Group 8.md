@@ -1420,7 +1420,7 @@ FR-04. The system shall support firearm lifecycle management including records, 
 
 FR-05. The system shall support armored vehicle lifecycle management including records, driver assignment, trip operations, and maintenance tracking.
 
-FR-06. The system shall provide real-time tracking capabilities through map data endpoints, heartbeat ingestion, client-site management, and live websocket updates with polling fallback.
+FR-06. The system shall provide real-time tracking capabilities through map data endpoints, heartbeat ingestion, client-site management, and live websocket updates with polling fallback, with tracking-surface access restricted to supervisor and guard roles.
 
 FR-06a. The system shall provide guard-history, guard-path, and active-guard intelligence endpoints to support replay-driven monitoring and command decisions.
 
@@ -1434,7 +1434,7 @@ FR-09. The system shall provide ticketing and notification workflows to support 
 
 FR-10. The system shall support cross-platform runtime delivery for web, Windows desktop (Tauri), and Android mobile (Capacitor).
 
-FR-11. The system shall provide audit-log visibility for authorized elevated roles, with filterable and paginated audit records.
+FR-11. The system shall provide audit-log visibility for authorized superadmin users, with filterable and paginated audit records.
 
 FR-11a. The system shall provide forensic audit intelligence endpoints for user-activity timelines and anomaly extraction to support investigative workflows.
 
@@ -1592,9 +1592,11 @@ SENTINEL implementation was executed as a feature-driven integration program in 
 
 Frontend development focused on role-aware dashboard experiences and modular operational components. React + TypeScript components were organized around command-center views, approvals, scheduling, assets, incidents, analytics, and audit-log workspaces, with shared hooks for API access, polling, and real-time state updates. This structure allowed consistent behavior across superadmin, admin, supervisor, and guard interfaces while preserving role constraints.
 
+A dedicated layout-architecture refinement pass was implemented to standardize dashboard rendering and prevent overlapping scroll regions. The frontend now uses a fixed-shell model (`h-[100dvh]` root, fixed sidebar, `min-h-0` main columns), with only the content panel owning vertical scroll (`overflow-y-auto`). Global document scrolling is locked (`html/body/#root` fixed height with hidden overflow), and atmospheric gradient layers were moved to a fixed decorative background so visual layers no longer interfere with command-panel scrolling.
+
 Production configuration was standardized so all runtimes (web, desktop, and Android) consume a single backend source of truth through `VITE_API_BASE_URL`. Client startup validates this value and rejects malformed, non-HTTPS production URLs and localhost/private-network targets. For production builds where the variable is accidentally omitted, the runtime now applies a controlled fallback to the designated production backend origin to prevent blank-screen boot failures while preserving secure-host validation rules.
 
-Backend development was organized around Axum route handlers, middleware, and service modules. Handlers implemented domain endpoints for authentication, approvals, guard workflows, firearms, armored vehicles, incidents, analytics, notifications, tracking, support tickets, and audit retrieval. Middleware layers enforced authentication, role authorization, audit capture, presence updates, and rate-limiting controls. Service-layer logic encapsulated deterministic AI scoring and recommendation workflows.
+Backend development was organized around Axum route handlers, middleware, and service modules. Handlers implemented domain endpoints for authentication, approvals, guard workflows, firearms, armored vehicles, incidents, analytics, notifications, tracking, support tickets, and audit retrieval. Middleware layers enforced authentication, role authorization, audit capture, presence updates, and rate-limiting controls. Recent RBAC hardening tightened matrix enforcement by requiring superadmin for audit-log APIs, restricting tracking APIs/websocket access to supervisor and guard roles, and adding role-scoped incident reads (guards see only self-reported incidents while elevated roles retain full visibility). Service-layer logic encapsulated deterministic AI scoring and recommendation workflows.
 
 Legal-compliance development added a dedicated backend consent module with `POST /api/legal/consent` and `GET /api/legal/consent/status`, startup schema guards for consent columns, and JWT claim propagation for consent state. Auth middleware now evaluates legal-consent state before allowing protected-route execution, with controlled bypass for consent/bootstrap-safe paths.
 
@@ -1618,9 +1620,9 @@ Release pipeline governance was also hardened by pinning third-party GitHub Acti
 
 Documentation and governance development were also formalized into release workflow outputs. The GitHub Pages documentation site now includes dedicated download, features, security, and architecture pages, while repository-level legal policy files are maintained as versioned artifacts in the active Capstone Main repository. Licensing metadata and repository licenses were shifted to a proprietary All Rights Reserved posture for controlled distribution.
 
-Current validation status for this update cycle includes successful backend compilation and tests (`cargo test`), successful frontend production build (`npm run build --prefix DasiaAIO-Frontend`), and passing frontend unit tests (`npm test --prefix DasiaAIO-Frontend -- --runInBand`, 5/5 tests) after the second-pass security patches. Operational runtime checks from the same cycle continue to show healthy backend/database containers and positive `/api/health` responses in local deployment. Verified hardening outcomes now include hashed reset-token persistence, reset replay-race mitigation, websocket token transport migration away from query strings, tightened CORS fallback behavior, and immutable action-SHA pinning in release automation.
+Current validation status for this update cycle includes successful backend compilation and tests (`cargo test`, including tracking/audit integration cases), successful frontend production build (`npm run build --prefix DasiaAIO-Frontend`), and passing frontend unit tests (`npm test --prefix DasiaAIO-Frontend -- --runInBand`, 5/5 tests) after the second-pass security patches. A follow-up frontend verification after the latest layout-architecture pass also completed with a successful production build and no TypeScript diagnostics on updated dashboard shells, sidebar, and shared layout components. Operational runtime checks from the same cycle continue to show healthy backend/database containers and positive `/api/health` responses in local deployment. Verified hardening outcomes now include hashed reset-token persistence, reset replay-race mitigation, websocket token transport migration away from query strings, tightened CORS fallback behavior, immutable action-SHA pinning in release automation, superadmin-only audit-log API enforcement, supervisor/guard-only tracking API enforcement, role-scoped incident visibility, and fixed-shell single-scroll dashboard layout behavior.
 
-Remaining verification risk is concentrated in staged/production smoke testing of websocket subprotocol authentication compatibility behind edge proxies, plus post-release channel validation to ensure workflow pin updates and signed Android artifacts behave consistently across all target environments.
+Remaining verification risk is concentrated in staged/production smoke testing of websocket subprotocol authentication compatibility behind edge proxies, cross-device visual confirmation of fixed-shell long-form dashboard behavior (especially narrow mobile viewports), post-release channel validation to ensure workflow pin updates and signed Android artifacts behave consistently across all target environments, and additional role-matrix regression checks for newly tightened tracking-route access rules.
 
 Design of Software, System, Product, and/or Processes.
 
@@ -1628,7 +1630,7 @@ The implemented SENTINEL architecture follows a frontend-backend separation mode
 
 At the presentation layer, role-based UI rendering is applied so each authenticated role receives task-appropriate modules and controls. Dashboard surfaces are modularized into reusable panels and data widgets, enabling command-center composition without duplicating core business logic per role.
 
-At the application layer, backend handlers and middleware process incoming requests through a consistent lifecycle: request reception, token validation, authorization checks, business-rule execution, database transaction/query, and structured response output. Security and governance are integrated into this lifecycle through authorization middleware, centralized write-audit middleware, session controls, and rate-limit enforcement.
+At the application layer, backend handlers and middleware process incoming requests through a consistent lifecycle: request reception, token validation, authorization checks, business-rule execution, database transaction/query, and structured response output. Security and governance are integrated into this lifecycle through authorization middleware, centralized write-audit middleware, authorization-failure audit capture for read-denied requests (`401/403`), session controls, and rate-limit enforcement.
 
 Legal-consent enforcement is now an explicit part of the application lifecycle: after token validation, middleware checks consent claim state and blocks protected-module access until server-side consent records exist. This moves legal gating from UI-only behavior to backend-enforced policy control.
 

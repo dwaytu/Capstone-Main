@@ -52,7 +52,7 @@ function resolveExtension(filePath) {
 function buildBaseName(platform, normalizedVersion) {
   if (platform === 'web') return `sentinel-web-v${normalizedVersion}`
   if (platform === 'desktop') return `sentinel-desktop-windows-v${normalizedVersion}`
-  if (platform === 'android') return `sentinel-android-v${normalizedVersion}`
+  if (platform === 'android') return `SENTINEL_v${normalizedVersion}`
   throw new Error(`Unsupported platform: ${platform}`)
 }
 
