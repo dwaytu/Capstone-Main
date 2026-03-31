@@ -181,6 +181,10 @@ Client access governance hardening:
 - `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now enforces `main` as a `min-h-0 overflow-hidden` container with a dedicated `overflow-y-auto` content pane, preventing nested body/document scroll drift.
 - Shared dashboard roots (`UserDashboard`, `FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, `PerformanceDashboard`, `MeritScoreDashboard`, `ArmoredCarDashboard`, `CalendarDashboard`, `ProfileDashboard`) now use `h-[100dvh]` + `overflow-hidden` shells and `min-h-0` main columns to eliminate overlap/clipping between fixed sidebar and content.
 - Global shell styling in `DasiaAIO-Frontend/src/index.css` now locks `html/body/#root` to full height with hidden document overflow and moves atmospheric gradient rendering to a fixed background layer (`body::before`) so decorative layers no longer interfere with scrollable content.
+- Frontend theming now uses an expanded semantic token contract in `DasiaAIO-Frontend/src/index.css` covering dual light/dark palettes, component surfaces, interactive states, role badges, overlays, and status tones (`.soc-*` utility classes) for consistent SOC visual behavior.
+- Shared shell components (`Sidebar`, `Header`, `SectionBadge`, `AccountManager`, `NotificationPanel`, `LoginPage`) were refactored to consume tokenized classes instead of hardcoded hex/rgba inline colors.
+- `DasiaAIO-Frontend/src/context/ThemeProvider.tsx` now initializes theme state synchronously from persisted preference/system fallback and applies root theme classes in a layout effect to reduce first-paint theme flicker.
+- A follow-up dashboard consistency pass normalized residual micro-typography and control spacing in `Sidebar`, `AuditDashboard`, `IncidentPanel`, and `IncidentSeverityClassifier`, aligning compact labels/chips and action control heights without changing module behavior.
 
 ## 8. API and Security Notes
 
