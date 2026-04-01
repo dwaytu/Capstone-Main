@@ -186,7 +186,10 @@ Client access governance hardening:
 - `DasiaAIO-Frontend/src/context/ThemeProvider.tsx` now initializes theme state synchronously from persisted preference/system fallback and applies root theme classes in a layout effect to reduce first-paint theme flicker.
 - A follow-up dashboard consistency pass normalized residual micro-typography and control spacing in `Sidebar`, `AuditDashboard`, `IncidentPanel`, and `IncidentSeverityClassifier`, aligning compact labels/chips and action control heights without changing module behavior.
 - Tracking telemetry hooks now enforce frontend role gating (`supervisor`/`guard`) before calling tracking APIs/websocket endpoints (`useOperationalMapData`, `useReplacementSuggestions`, and app-level heartbeat dispatch in `App.tsx`), preventing repeated `403` tracking calls for non-tracking roles.
+- Sidebar service-health polling (`DasiaAIO-Frontend/src/hooks/useServiceHealth.ts`) now uses `/api/health/system` payloads instead of probing role-restricted operational routes, eliminating expected-but-noisy `403` console spam for lower-privilege sessions.
 - Release workflow Android fallback behavior (`.github/workflows/release.yml`) now builds unsigned CI artifacts as APK-only when signing secrets are unavailable, while signed paths continue producing both APK and AAB outputs.
+- Android CI setup now includes Gradle dependency caching (`gradle/actions/setup-gradle@v4`), dual SDK package provisioning (`platforms;android-33` + `build-tools;33.0.2` and `platforms;android-35` + `build-tools;35.0.0`), and robust license acceptance handling that avoids `yes | sdkmanager --licenses` pipefail termination.
+- Android release job now validates with `:app:assembleDebug` first, then performs signed release build when keystore/secrets are present or unsigned `:app:assembleRelease` fallback when signing is unavailable; Gradle release commands run with `--stacktrace` for explicit failure diagnostics.
 
 ## 8. API and Security Notes
 
@@ -213,6 +216,7 @@ Client access governance hardening:
 - Guard approval management endpoints are active:
   - `GET /api/users/pending-approvals`
   - `PUT /api/users/:id/approval`
+- Pending approval routes now require guard-approval permission (`approve_guard_registration`) instead of user-creation permission so supervisors can access approval queues/updates under RBAC.
 - Guard login is blocked when `approval_status != approved`.
 - CORS accepts both `CORS_ORIGINS` (comma-separated, preferred) and `CORS_ORIGIN` (single-origin compatibility).
 - If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` is localhost/native-wrapper only (`http://localhost:*`, `127.0.0.1`, `https://localhost`, `capacitor://localhost`, `tauri://localhost`).

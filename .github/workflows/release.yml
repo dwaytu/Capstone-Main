@@ -246,20 +246,30 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Install required Android SDK components
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+          set +o pipefail
           yes | sdkmanager --licenses > /dev/null
+          set -o pipefail
 
       - name: Install frontend dependencies
         working-directory: DasiaAIO-Frontend
-        run: npm ci
+        run: npm install
 
       - name: Install android dependencies
         working-directory: apps/android-capacitor
-        run: npm ci
+        run: npm install
 
       - name: Sync release version across wrappers
         run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
@@ -286,7 +296,7 @@ jobs:
           echo "$SENTINEL_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/sentinel-release.keystore"
           echo "signed_release=true" >> "$GITHUB_OUTPUT"
 
-      - name: Build Android release artifacts
+      - name: Build Android debug and release artifacts
         shell: bash
         env:
           VITE_API_BASE_URL: ${{ needs.prepare.outputs.api_base_url }}
@@ -316,11 +326,13 @@ jobs:
           cd android
           chmod +x ./gradlew
 
+          ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
           if [ "${{ steps.signing.outputs.signed_release }}" = "true" ] && [ -n "$SENTINEL_UPLOAD_STORE_PASSWORD" ] && [ -n "$SENTINEL_UPLOAD_KEY_ALIAS" ] && [ -n "$SENTINEL_UPLOAD_KEY_PASSWORD" ]; then
-            ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
+            ./gradlew --no-daemon --stacktrace :app:assembleRelease :app:bundleRelease
           else
             echo "Signing secrets missing or keystore unavailable. Building unsigned APK artifact only."
-            SENTINEL_ALLOW_UNSIGNED_RELEASE=true ./gradlew --no-daemon :app:assembleRelease
+            SENTINEL_ALLOW_UNSIGNED_RELEASE=true ./gradlew --no-daemon --stacktrace :app:assembleRelease
           fi
           popd > /dev/null
 
