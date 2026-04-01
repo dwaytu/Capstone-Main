@@ -277,6 +277,8 @@ An additional reliability pass removed role-mismatch probe noise by switching si
 
 Android release automation was further hardened by adding Gradle cache initialization, explicit SDK package installation for both compatibility and target toolchains, and resilient SDK license acceptance behavior that avoids shell pipefail termination. The pipeline now performs debug APK validation before release assembly and emits full Gradle stack traces on failure, while preserving signed-release output when credentials are present and unsigned APK fallback when signing material is not configured.
 
+The Android workflow was additionally stabilized against runner-level executable permission drift by invoking the frontend mobile bundle build through a direct Node-based Vite entrypoint from the frontend workspace, preventing `vite: Permission denied` pre-Gradle failures and ensuring artifact generation can progress to APK assembly.
+
 Deployment pipeline hardening also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation is now centralized in a tag-driven workflow (`.github/workflows/release.yml`) with pinned `actions/checkout` and recursive submodule checkout for deterministic source resolution. Release preparation now applies a unified semantic version source across web, desktop, and Android wrappers, generates GitHub release notes from `CHANGELOG.md`, injects concise release highlights into frontend build metadata, and emits deterministic artifact names for all platforms. Android release packaging now prefers signed APK/AAB outputs when credentials are present, with unsigned APK-only fallback for CI validation when signing material is unavailable.
 
 

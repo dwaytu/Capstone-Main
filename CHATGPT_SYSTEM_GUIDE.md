@@ -190,6 +190,7 @@ Client access governance hardening:
 - Release workflow Android fallback behavior (`.github/workflows/release.yml`) now builds unsigned CI artifacts as APK-only when signing secrets are unavailable, while signed paths continue producing both APK and AAB outputs.
 - Android CI setup now includes Gradle dependency caching (`gradle/actions/setup-gradle@v4`), dual SDK package provisioning (`platforms;android-33` + `build-tools;33.0.2` and `platforms;android-35` + `build-tools;35.0.0`), and robust license acceptance handling that avoids `yes | sdkmanager --licenses` pipefail termination.
 - Android release job now validates with `:app:assembleDebug` first, then performs signed release build when keystore/secrets are present or unsigned `:app:assembleRelease` fallback when signing is unavailable; Gradle release commands run with `--stacktrace` for explicit failure diagnostics.
+- Android CI frontend prebuild now invokes Vite through Node from `DasiaAIO-Frontend` (`node node_modules/vite/bin/vite.js build --mode mobile`) to avoid intermittent Linux runner execute-bit issues (`vite: Permission denied`) before Gradle stages.
 
 ## 8. API and Security Notes
 

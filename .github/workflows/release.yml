@@ -319,7 +319,13 @@ jobs:
           export VITE_WHATS_NEW="$WHAT_NEW_TEXT"
 
           npm run release:check --prefix DasiaAIO-Frontend -- android
-          npm run build --prefix DasiaAIO-Frontend -- --mode mobile
+
+          # Some Linux runner/cache combinations can drop execute bit on the vite shim.
+          # Invoke Vite with node directly to avoid brittle shell permission failures.
+          if ! (cd DasiaAIO-Frontend && node node_modules/vite/bin/vite.js build --mode mobile); then
+            echo "::error::Frontend mobile build failed before Gradle. See logs above for exact Vite error."
+            exit 1
+          fi
 
           pushd apps/android-capacitor > /dev/null
           npx cap sync android
