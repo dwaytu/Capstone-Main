@@ -185,6 +185,8 @@ Client access governance hardening:
 - Shared shell components (`Sidebar`, `Header`, `SectionBadge`, `AccountManager`, `NotificationPanel`, `LoginPage`) were refactored to consume tokenized classes instead of hardcoded hex/rgba inline colors.
 - `DasiaAIO-Frontend/src/context/ThemeProvider.tsx` now initializes theme state synchronously from persisted preference/system fallback and applies root theme classes in a layout effect to reduce first-paint theme flicker.
 - A follow-up dashboard consistency pass normalized residual micro-typography and control spacing in `Sidebar`, `AuditDashboard`, `IncidentPanel`, and `IncidentSeverityClassifier`, aligning compact labels/chips and action control heights without changing module behavior.
+- Tracking telemetry hooks now enforce frontend role gating (`supervisor`/`guard`) before calling tracking APIs/websocket endpoints (`useOperationalMapData`, `useReplacementSuggestions`, and app-level heartbeat dispatch in `App.tsx`), preventing repeated `403` tracking calls for non-tracking roles.
+- Release workflow Android fallback behavior (`.github/workflows/release.yml`) now builds unsigned CI artifacts as APK-only when signing secrets are unavailable, while signed paths continue producing both APK and AAB outputs.
 
 ## 8. API and Security Notes
 
@@ -782,8 +784,8 @@ Current release behavior:
 - Desktop artifacts:
   - Windows MSI + NSIS installers are built and published with deterministic names (`sentinel-desktop-windows-v<version>.<ext>`).
 - Android artifact:
-  - CI publishes signed release APK and AAB artifacts with deterministic names (`sentinel-android-v<version>.apk/.aab`).
-  - Android release builds are now signed-only; builds fail if signing secrets/keystore are missing.
+  - CI publishes signed release APK and AAB artifacts with deterministic names (`sentinel-android-v<version>.apk/.aab`) when signing credentials are available.
+  - If signing credentials are unavailable, CI now falls back to unsigned APK-only output for validation and still publishes deterministic Android artifact naming.
 - Release guard behavior:
   - release jobs set production runtime flags (`NODE_ENV=production`, plus `CAPACITOR_ENV=production` for Android), run frontend env-policy validation, and propagate a unified semantic version across wrapper manifests/configs before building.
 - Release metadata generation:

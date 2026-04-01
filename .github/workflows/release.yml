@@ -286,7 +286,7 @@ jobs:
           echo "$SENTINEL_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/sentinel-release.keystore"
           echo "signed_release=true" >> "$GITHUB_OUTPUT"
 
-      - name: Build signed Android release artifacts
+      - name: Build Android release artifacts
         shell: bash
         env:
           VITE_API_BASE_URL: ${{ needs.prepare.outputs.api_base_url }}
@@ -319,8 +319,8 @@ jobs:
           if [ "${{ steps.signing.outputs.signed_release }}" = "true" ] && [ -n "$SENTINEL_UPLOAD_STORE_PASSWORD" ] && [ -n "$SENTINEL_UPLOAD_KEY_ALIAS" ] && [ -n "$SENTINEL_UPLOAD_KEY_PASSWORD" ]; then
             ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
           else
-            echo "Signing secrets missing or keystore unavailable. Building unsigned release artifacts."
-            ./gradlew --no-daemon -PSENTINEL_ALLOW_UNSIGNED_RELEASE=true :app:assembleRelease :app:bundleRelease
+            echo "Signing secrets missing or keystore unavailable. Building unsigned APK artifact only."
+            SENTINEL_ALLOW_UNSIGNED_RELEASE=true ./gradlew --no-daemon :app:assembleRelease
           fi
           popd > /dev/null
 
