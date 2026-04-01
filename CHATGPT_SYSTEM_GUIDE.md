@@ -191,6 +191,7 @@ Client access governance hardening:
 - Android CI setup now includes Gradle dependency caching (`gradle/actions/setup-gradle@v4`), dual SDK package provisioning (`platforms;android-33` + `build-tools;33.0.2` and `platforms;android-35` + `build-tools;35.0.0`), and robust license acceptance handling that avoids `yes | sdkmanager --licenses` pipefail termination.
 - Android release job now validates with `:app:assembleDebug` first, then performs signed release build when keystore/secrets are present or unsigned `:app:assembleRelease` fallback when signing is unavailable; Gradle release commands run with `--stacktrace` for explicit failure diagnostics.
 - Android CI frontend prebuild now invokes Vite through Node from `DasiaAIO-Frontend` (`node node_modules/vite/bin/vite.js build --mode mobile`) to avoid intermittent Linux runner execute-bit issues (`vite: Permission denied`) before Gradle stages.
+- Android CI now uses Temurin JDK 21 in the Android job to satisfy Capacitor Android Java compilation targets (`invalid source release: 21` mitigation).
 
 ## 8. API and Security Notes
 

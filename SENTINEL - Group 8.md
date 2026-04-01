@@ -279,6 +279,8 @@ Android release automation was further hardened by adding Gradle cache initializ
 
 The Android workflow was additionally stabilized against runner-level executable permission drift by invoking the frontend mobile bundle build through a direct Node-based Vite entrypoint from the frontend workspace, preventing `vite: Permission denied` pre-Gradle failures and ensuring artifact generation can progress to APK assembly.
 
+Pipeline runtime compatibility was also updated to Temurin JDK 21 for Android jobs to match current Capacitor Java source requirements and prevent `invalid source release: 21` build interruptions during CI release assembly.
+
 Deployment pipeline hardening also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation is now centralized in a tag-driven workflow (`.github/workflows/release.yml`) with pinned `actions/checkout` and recursive submodule checkout for deterministic source resolution. Release preparation now applies a unified semantic version source across web, desktop, and Android wrappers, generates GitHub release notes from `CHANGELOG.md`, injects concise release highlights into frontend build metadata, and emits deterministic artifact names for all platforms. Android release packaging now prefers signed APK/AAB outputs when credentials are present, with unsigned APK-only fallback for CI validation when signing material is unavailable.
 
 
