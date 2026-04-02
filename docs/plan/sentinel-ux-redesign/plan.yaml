@@ -1,0 +1,1186 @@
+plan_id: sentinel-ux-redesign
+objective: >
+  Implement a "Unified Role-Centric Action Inbox + Workflow Timeline" UI/UX
+  enhancement for the SENTINEL security operations system. Adds a prioritized
+  action inbox and workflow timeline view to each role's dashboard without
+  breaking existing functionality.
+created_at: "2026-04-03"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 3
+  total_dependencies: 14
+  risk_score: low
+
+tldr: |
+  Three-wave implementation: Wave 1 builds the two shared UI primitives
+  (ActionInbox + WorkflowTimeline components) and updates navigation config
+  in parallel — all three tasks have zero dependencies. Wave 2 builds four
+  role-specific InboxPanel wrappers (Guard, Supervisor, Admin, Superadmin)
+  that compose the primitives with role-filtered API data, all parallelizable.
+  Wave 3 wires the panels into UserDashboard (guard 6th bottom-nav tab,
+  first in order) and SuperadminDashboard (inbox section with role dispatch),
+  each a surgical edit to one existing file. Wave 4 runs a full security/quality
+  code review followed by Playwright E2E validation across all four role flows.
+  Total: 11 tasks, 0 removed features, all strict-mode TypeScript.
+
+open_questions:
+  - Should the inbox badge/unread count on navigation items be driven by the
+    existing NotificationPanel bell data or a dedicated count endpoint? (MVP
+    assumption: no badge count for v1; add in follow-up sprint.)
+  - Should 'inbox' in UserDashboard replace 'mission' as the default landing
+    tab after login, or remain opt-in? (MVP assumption: default stays 'mission';
+    inbox is opt-in first tab in nav order.)
+
+pre_mortem:
+  overall_risk_level: low
+  critical_failure_modes:
+    - scenario: >
+        GuardSection type in UserDashboard.tsx is a closed union. Adding
+        'inbox' without updating every switch/if-exhaustiveness check in the
+        950-line file causes TypeScript errors that cascade through the build.
+      likelihood: medium
+      impact: high
+      mitigation: >
+        Update GuardSection type and every consuming expression in a single
+        atomic replace_string_in_file call per location. Run get_errors
+        immediately after each edit; fix exhaustiveness gaps before proceeding.
+    - scenario: >
+        SuperadminDashboard viewToSection record omits 'inbox' mapping, so
+        clicking Inbox in the sidebar updates activeView but never transitions
+        activeSection — the panel silently never renders.
+      likelihood: medium
+      impact: high
+      mitigation: >
+        T09 modifies both the useState type union AND the viewToSection record
+        in the same edit pass. T11 E2E test explicitly navigates via sidebar
+        click and asserts the inbox panel DOM is present.
+    - scenario: >
+        Role-specific panel components fetch authenticated endpoints without
+        Authorization header, returning 401 that manifests as an empty/error
+        UI state with no visible indication of the root cause.
+      likelihood: low
+      impact: high
+      mitigation: >
+        All fetch calls must use getAuthHeaders() from utils/api.ts following
+        the exact pattern in GuardShiftSwapPanel.tsx. T10 reviewer explicitly
+        checks every fetch call for Authorization header presence.
+    - scenario: >
+        SuperadminDashboard content dispatch checks isAdminViewer before
+        isSuperadminViewer, causing superadmin users to receive AdminInboxPanel
+        instead of SuperadminInboxPanel.
+      likelihood: low
+      impact: medium
+      mitigation: >
+        Mirror the existing isSuperadminViewer-first if-else chain already
+        established in SuperadminDashboard. T10 reviewer checks branch order.
+  assumptions:
+    - All inbox component TypeScript interfaces are co-located in the same file
+      as the component (no separate src/types/inbox.ts for MVP).
+    - Guard inbox data is sourced from /api/guard-replacement/shifts and
+      /api/users/{id}/notifications only; no new backend endpoints required.
+    - InboxPanel components render CSS skeleton placeholder rows during fetch
+      using existing border/bg-surface utility classes from the design system.
+    - Lucide React is already installed and covers all required category icons
+      (Clock, UserCheck, ArrowLeftRight, AlertTriangle, Shield, Users).
+    - The 'inbox' tab in UserDashboard is inserted at index 0 of navItems
+      (before 'mission') per the objective "first in order" requirement.
+    - No badge/unread count on nav items in v1 (counted as future enhancement).
+
+implementation_specification:
+  code_structure: >
+    New directory src/components/inbox/ contains all six inbox feature files.
+    ActionInbox.tsx and WorkflowTimeline.tsx are shared primitives with
+    co-located TypeScript interfaces. The four role panel files
+    (GuardInboxPanel, SupervisorInboxPanel, AdminInboxPanel,
+    SuperadminInboxPanel) are thin data-fetching wrappers that compose the
+    primitives with role-scoped API data. All data fetching uses
+    fetchJsonOrThrow + getAuthHeaders pattern from utils/api.ts.
+    No new React context, no new state management library.
+  affected_areas:
+    - src/components/inbox/ (new directory — 6 new files)
+    - src/components/UserDashboard.tsx (GuardSection type + navItems + render branch)
+    - src/components/SuperadminDashboard.tsx (activeSection type + viewToSection + render branch)
+    - src/config/navigation.ts (GUARD_NAV and ELEVATED_NAV prepend)
+  component_details:
+    - component: ActionInbox
+      responsibility: >
+        Renders a scrollable role="list" of InboxItem entries. Each item
+        displays a priority badge (urgent→danger token, high→warning token,
+        normal→info token), Lucide category icon, title, truncated description,
+        action button or status chip (aria-label includes item title), and
+        relative timestamp. Shows 4-row skeleton when loading=true. Shows
+        emptyMessage string when items=[]. Styled exclusively with CSS
+        variable tokens; no hardcoded hex values.
+      interfaces:
+        - "export interface InboxItem { id: string; priority: 'urgent' | 'high' | 'normal'; category: string; categoryIcon: React.ElementType; title: string; description: string; actionLabel?: string; onAction?: () => void; statusChip?: string; timestamp: string }"
+        - "export interface ActionInboxProps { items: InboxItem[]; loading?: boolean; emptyMessage?: string; className?: string }"
+        - "export const ActionInbox: FC<ActionInboxProps>"
+    - component: WorkflowTimeline
+      responsibility: >
+        Renders a vertical timeline of WorkflowEntry items with colored status
+        markers and a connecting vertical line. Status color mapping: pending
+        → warning token, active → info token, resolved → success token,
+        cancelled → text-tertiary. Click an entry with a detail string to
+        toggle an inline aria-expanded detail row. Shows skeleton when
+        loading=true. Shows emptyMessage when entries=[].
+      interfaces:
+        - "export interface WorkflowEntry { id: string; status: 'pending' | 'active' | 'resolved' | 'cancelled'; title: string; participant?: string; timestamp: string; detail?: string }"
+        - "export interface WorkflowTimelineProps { entries: WorkflowEntry[]; loading?: boolean; emptyMessage?: string; className?: string }"
+        - "export const WorkflowTimeline: FC<WorkflowTimelineProps>"
+    - component: GuardInboxPanel
+      responsibility: >
+        Fetches guard shifts (/api/guard-replacement/shifts) and notifications
+        (/api/users/{id}/notifications) then maps to InboxItem[] and
+        WorkflowEntry[]. Shift priority derived from time delta: urgent
+        if <2 h, high if <24 h, normal otherwise. Renders ActionInbox +
+        WorkflowTimeline in a stacked layout inside a soc-dashboard-card
+        container. RBAC-guarded: can(user.role, 'view_guard_workspace').
+      interfaces:
+        - "export interface GuardInboxPanelProps { user: AppUser }"
+        - "export const GuardInboxPanel: FC<GuardInboxPanelProps>"
+    - component: SupervisorInboxPanel
+      responsibility: >
+        Fetches pending-approvals, swap-requests, and incidents in parallel
+        (Promise.allSettled). Maps approvals→urgent InboxItems, swaps→high
+        InboxItems, incidents→WorkflowEntries. RBAC-guarded:
+        can(user.role, 'approve_guards').
+      interfaces:
+        - "export interface SupervisorInboxPanelProps { user: AppUser }"
+        - "export const SupervisorInboxPanel: FC<SupervisorInboxPanelProps>"
+    - component: AdminInboxPanel
+      responsibility: >
+        Fetches pending-approvals, incidents, and analytics/metrics in parallel.
+        Renders approvals and incidents as InboxItems; incidents also populate
+        WorkflowTimeline. Includes a summary stats row from metrics (total
+        on-duty guards, total open incidents) with safe fallback on 4xx.
+        RBAC-guarded: can(user.role, 'manage_users').
+      interfaces:
+        - "export interface AdminInboxPanelProps { user: AppUser }"
+        - "export const AdminInboxPanel: FC<AdminInboxPanelProps>"
+    - component: SuperadminInboxPanel
+      responsibility: >
+        Superset of AdminInboxPanel: fetches same three endpoints plus renders
+        a "System Health" WorkflowEntry synthesized from metrics. Uses Shield
+        icon for governance category. Role-guarded by
+        normalizedRole === 'superadmin' check (not a permission, since
+        superadmin is the role itself).
+      interfaces:
+        - "export interface SuperadminInboxPanelProps { user: AppUser }"
+        - "export const SuperadminInboxPanel: FC<SuperadminInboxPanelProps>"
+  dependencies:
+    - component: GuardInboxPanel
+      relationship: composes ActionInbox + WorkflowTimeline
+    - component: SupervisorInboxPanel
+      relationship: composes ActionInbox + WorkflowTimeline
+    - component: AdminInboxPanel
+      relationship: composes ActionInbox + WorkflowTimeline
+    - component: SuperadminInboxPanel
+      relationship: composes ActionInbox + WorkflowTimeline
+    - component: UserDashboard
+      relationship: imports GuardInboxPanel; extends GuardSection type; prepends inbox to navItems
+    - component: SuperadminDashboard
+      relationship: imports 3 role panels; extends activeSection union; dispatches by isSuperadminViewer/isAdminViewer/isSupervisorViewer
+  integration_points:
+    - "UserDashboard.tsx ~line 66: extend GuardSection with 'inbox'"
+    - "UserDashboard.tsx resolveSectionFromView: add 'inbox' → 'inbox' branch"
+    - "UserDashboard.tsx ~line 748 navItems: prepend { key: 'inbox', label: 'Inbox' }"
+    - "UserDashboard.tsx content render block: add 'inbox' branch → GuardInboxPanel"
+    - "SuperadminDashboard.tsx ~line 192: extend activeSection union with 'inbox'"
+    - "SuperadminDashboard.tsx viewToSection: add inbox: 'inbox' entry"
+    - "SuperadminDashboard.tsx sectionTitle ternary: add 'inbox' → 'Action Inbox'"
+    - "SuperadminDashboard.tsx badgeLabel ternary: add 'inbox' → 'Inbox'"
+    - "SuperadminDashboard.tsx content render block: add 'inbox' branch with role dispatch"
+    - "navigation.ts GUARD_NAV: prepend { view: 'inbox', label: 'Inbox', group: 'MAIN MENU' }"
+    - "navigation.ts ELEVATED_NAV: prepend { view: 'inbox', label: 'Inbox', group: 'MAIN MENU' }"
+
+contracts:
+  - from_task: T01
+    to_task: T04
+    interface: ActionInbox FC component and InboxItem interface
+    format: Named TypeScript export from src/components/inbox/ActionInbox.tsx
+  - from_task: T01
+    to_task: T05
+    interface: ActionInbox FC component and InboxItem interface
+    format: Named TypeScript export from src/components/inbox/ActionInbox.tsx
+  - from_task: T01
+    to_task: T06
+    interface: ActionInbox FC component and InboxItem interface
+    format: Named TypeScript export from src/components/inbox/ActionInbox.tsx
+  - from_task: T01
+    to_task: T07
+    interface: ActionInbox FC component and InboxItem interface
+    format: Named TypeScript export from src/components/inbox/ActionInbox.tsx
+  - from_task: T02
+    to_task: T04
+    interface: WorkflowTimeline FC component and WorkflowEntry interface
+    format: Named TypeScript export from src/components/inbox/WorkflowTimeline.tsx
+  - from_task: T02
+    to_task: T05
+    interface: WorkflowTimeline FC component and WorkflowEntry interface
+    format: Named TypeScript export from src/components/inbox/WorkflowTimeline.tsx
+  - from_task: T02
+    to_task: T06
+    interface: WorkflowTimeline FC component and WorkflowEntry interface
+    format: Named TypeScript export from src/components/inbox/WorkflowTimeline.tsx
+  - from_task: T02
+    to_task: T07
+    interface: WorkflowTimeline FC component and WorkflowEntry interface
+    format: Named TypeScript export from src/components/inbox/WorkflowTimeline.tsx
+  - from_task: T03
+    to_task: T08
+    interface: "'inbox' NavItem present as first entry in GUARD_NAV"
+    format: "{ view: 'inbox', label: 'Inbox', group: 'MAIN MENU' } at GUARD_NAV[0]"
+  - from_task: T03
+    to_task: T09
+    interface: "'inbox' NavItem present as first entry in ELEVATED_NAV"
+    format: "{ view: 'inbox', label: 'Inbox', group: 'MAIN MENU' } at ELEVATED_NAV[0]"
+  - from_task: T04
+    to_task: T08
+    interface: GuardInboxPanel FC component
+    format: Named TypeScript export from src/components/inbox/GuardInboxPanel.tsx
+  - from_task: T05
+    to_task: T09
+    interface: SupervisorInboxPanel FC component
+    format: Named TypeScript export from src/components/inbox/SupervisorInboxPanel.tsx
+  - from_task: T06
+    to_task: T09
+    interface: AdminInboxPanel FC component
+    format: Named TypeScript export from src/components/inbox/AdminInboxPanel.tsx
+  - from_task: T07
+    to_task: T09
+    interface: SuperadminInboxPanel FC component
+    format: Named TypeScript export from src/components/inbox/SuperadminInboxPanel.tsx
+
+tasks:
+  # ─────────────────────────────────────────
+  # WAVE 1 — Shared primitives + nav config
+  # ─────────────────────────────────────────
+
+  - id: T01
+    title: Implement ActionInbox shared component
+    description: |
+      Create src/components/inbox/ActionInbox.tsx.
+
+      Exports:
+        - InboxItem interface: { id, priority ('urgent'|'high'|'normal'), category,
+          categoryIcon (React.ElementType), title, description, actionLabel?,
+          onAction?, statusChip?, timestamp }
+        - ActionInboxProps interface: { items, loading?, emptyMessage?, className? }
+        - ActionInbox FC
+
+      Rendering rules:
+        - Container: role="list" with soc-dashboard-card class
+        - Each item: role="listitem" — left priority badge + category icon column,
+          right title/description/timestamp column, far-right action button or
+          status chip
+        - Priority badge colors: urgent → danger CSS-var token, high → warning
+          token, normal → info token (no hardcoded hex)
+        - Action button: aria-label="[actionLabel] for [item.title]"
+        - Timestamp: rendered as relative string (e.g., "2 h ago")
+        - loading=true: render 4 placeholder skeleton rows using
+          bg-[var(--color-surface-elevated)] and animate-pulse
+        - items=[]: render emptyMessage (default "No items") centered in muted text
+        - TypeScript strict: no `any`, no non-null assertions
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/index.css
+        description: CSS variable tokens and named utility classes (soc-dashboard-card, tone-*, status-bar-*)
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+        description: Reference pattern for soc-dashboard-card layout, Lucide icon usage, and CSS-var-only styling
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 140
+        focus_area: src/components/inbox/ActionInbox.tsx
+        tech_stack:
+          - React 18 (FC)
+          - TypeScript strict
+          - Lucide React icons
+          - CSS custom properties (design system tokens)
+        test_coverage: null
+        verification:
+          - "TypeScript compiles without errors (npm run build or get_errors)"
+          - "No hardcoded hex colors — only CSS variable references"
+          - "role=list on container; role=listitem on each item"
+          - "aria-label on action buttons includes item title"
+          - "Loading skeleton renders exactly 4 placeholder rows"
+          - "Empty state displays emptyMessage prop"
+        acceptance_criteria:
+          - "ActionInbox renders prioritized list with badge, icon, title, description, action, timestamp"
+          - "Priority badge styling uses correct CSS-variable tokens per level"
+          - "Empty state displays emptyMessage when items=[]"
+          - "Loading prop shows animate-pulse skeleton placeholder"
+          - "No TypeScript errors in strict mode"
+          - "No hardcoded color values in JSX or inline styles"
+        failure_modes:
+          - scenario: >
+              Lucide icon typed as LucideIcon causes TS error when rendered
+              dynamically via <Icon /> pattern.
+            likelihood: low
+            impact: medium
+            mitigation: Type categoryIcon as React.ElementType; render as const Icon = item.categoryIcon; <Icon size={16} />
+
+  - id: T02
+    title: Implement WorkflowTimeline shared component
+    description: |
+      Create src/components/inbox/WorkflowTimeline.tsx.
+
+      Exports:
+        - WorkflowEntry interface: { id, status ('pending'|'active'|'resolved'|'cancelled'),
+          title, participant?, timestamp, detail? }
+        - WorkflowTimelineProps interface: { entries, loading?, emptyMessage?, className? }
+        - WorkflowTimeline FC
+
+      Rendering rules:
+        - Container: role="list"
+        - Each entry: role="listitem" — left column has a vertical connector line
+          and a colored status dot; right column has title, participant, timestamp
+        - Status dot color: pending → warning token, active → info token,
+          resolved → success token, cancelled → text-tertiary (all CSS vars)
+        - If entry.detail is present: render a disclosure toggle button with
+          aria-expanded and aria-controls pointing to a detail row element id
+        - Expand/collapse: conditional render (no CSS animation required for MVP)
+        - Keyboard: toggle button responds to Enter and Space (native button)
+        - loading=true: 3 skeleton placeholder rows
+        - entries=[]: emptyMessage (default "No activity")
+        - TypeScript strict: no `any`
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/index.css
+        description: CSS variable tokens (--color-success, --color-warning, --color-info, --color-text-tertiary)
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 120
+        focus_area: src/components/inbox/WorkflowTimeline.tsx
+        tech_stack:
+          - React 18 (FC)
+          - TypeScript strict
+          - CSS custom properties
+        test_coverage: null
+        verification:
+          - "TypeScript compiles without errors"
+          - "Vertical connector line renders as a thin left-border strip"
+          - "Click-to-expand toggles aria-expanded and shows detail row"
+          - "No hardcoded hex colors"
+          - "Keyboard: Enter/Space on toggle button expands/collapses"
+        acceptance_criteria:
+          - "WorkflowTimeline renders vertical timeline with status-colored dots"
+          - "Click-to-expand works keyboard-operably"
+          - "Loading and empty states render correctly"
+          - "Status dot colors exclusively use CSS-variable tokens"
+          - "No TypeScript errors in strict mode"
+        failure_modes:
+          - scenario: Expand toggling causes layout shift that displaces surrounding content
+            likelihood: low
+            impact: low
+            mitigation: >
+              Use conditional render (not height transition) so layout reflows
+              cleanly; no animation needed for MVP.
+
+  - id: T03
+    title: Update navigation config — add inbox view to GUARD_NAV and ELEVATED_NAV
+    description: |
+      Edit src/config/navigation.ts with two atomic changes:
+
+      1. Prepend to GUARD_NAV:
+           { view: 'inbox', label: 'Inbox', group: 'MAIN MENU' }
+
+      2. Prepend to ELEVATED_NAV:
+           { view: 'inbox', label: 'Inbox', group: 'MAIN MENU' }
+
+      No permission guard is needed — all authenticated roles can access the inbox.
+      Do NOT modify getSidebarNav() logic, existing nav items, or import statements.
+      The result: getSidebarNav() for any role will return inbox as the first item.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/config/navigation.ts
+        description: GUARD_NAV (line ~30) and ELEVATED_NAV (line ~8) arrays to update
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 4
+        focus_area: src/config/navigation.ts
+        tech_stack:
+          - TypeScript strict
+        test_coverage: null
+        verification:
+          - "GUARD_NAV[0].view === 'inbox'"
+          - "ELEVATED_NAV[0].view === 'inbox'"
+          - "All 15 original ELEVATED_NAV items still present"
+          - "All 6 original GUARD_NAV items still present"
+          - "TypeScript compiles without errors"
+        acceptance_criteria:
+          - "inbox view appears as first item in both GUARD_NAV and ELEVATED_NAV"
+          - "getSidebarNav returns inbox as first item for all roles"
+          - "No existing nav items removed, renamed, or reordered"
+        failure_modes: []
+
+  # ─────────────────────────────────────────
+  # WAVE 2 — Role-specific InboxPanel wrappers
+  # ─────────────────────────────────────────
+
+  - id: T04
+    title: Implement GuardInboxPanel component
+    description: |
+      Create src/components/inbox/GuardInboxPanel.tsx.
+
+      Props: { user: AppUser }
+
+      RBAC guard: if (!can(user.role, 'view_guard_workspace')) return null
+
+      Data fetching (useEffect on mount, getAuthHeaders() on all calls):
+        - GET /api/guard-replacement/shifts
+        - GET /api/users/{user.id}/notifications
+        Use Promise.allSettled; handle each result independently.
+
+      Mapping logic:
+        - shifts → InboxItem[]: categoryIcon=Clock, category='Shift'
+          Priority: urgent if start_time within 2 h, high if within 24 h, else normal
+          title = shift.client_site, description = formatted time window,
+          actionLabel = 'View Shift', timestamp = shift.start_time
+        - notifications → WorkflowEntry[]: status derived from notification.status
+          (map 'read'→'resolved', 'unread'→'pending', default→'active'),
+          title = notification.title or notification.subject,
+          timestamp = notification.created_at
+
+      Layout: two sections inside a soc-dashboard-card:
+        - <h2> "Action Items" + <ActionInbox items={shiftItems} loading={loading} />
+        - <h2> "Recent Activity" + <WorkflowTimeline entries={notifEntries} loading={loading} />
+
+      Error state: inline error message per section (no throw to ErrorBoundary).
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies:
+      - T01
+      - T02
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+        description: Reference fetch pattern with getAuthHeaders, error state, loading state
+      - path: DasiaAIO-Frontend/src/utils/api.ts
+        description: fetchJsonOrThrow and getAuthHeaders function signatures
+      - path: DasiaAIO-Frontend/src/utils/permissions.ts
+        description: can() with 'view_guard_workspace' permission
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 150
+        focus_area: src/components/inbox/GuardInboxPanel.tsx
+        tech_stack:
+          - React 18 (FC + useEffect + useState)
+          - TypeScript strict
+          - fetchJsonOrThrow + getAuthHeaders
+        test_coverage: null
+        verification:
+          - "Authorization header present in all fetch calls via getAuthHeaders()"
+          - "InboxItem priority derived correctly from shift start-time delta"
+          - "Loading and per-section error states handled"
+          - "can(role, 'view_guard_workspace') guard returns null if false"
+          - "TypeScript: no 'any', no non-null assertions"
+        acceptance_criteria:
+          - "Guard inbox shows upcoming shifts as prioritized action items"
+          - "Workflow timeline shows recent notification activity"
+          - "RBAC guard prevents rendering for non-guard user roles"
+          - "Fetch errors display inline error message (not thrown)"
+          - "No TypeScript errors in strict mode"
+        failure_modes:
+          - scenario: >
+              Notifications endpoint returns 401 because auth header is missing,
+              manifesting as a silent empty timeline with no error indicator.
+            likelihood: low
+            impact: high
+            mitigation: >
+              Follow GuardShiftSwapPanel.tsx fetch pattern exactly — getAuthHeaders()
+              called at request time, not captured at component creation.
+
+  - id: T05
+    title: Implement SupervisorInboxPanel component
+    description: |
+      Create src/components/inbox/SupervisorInboxPanel.tsx.
+
+      Props: { user: AppUser }
+
+      RBAC guard: if (!can(user.role, 'approve_guards')) return null
+
+      Data fetching (Promise.allSettled — all three in parallel):
+        - GET /api/guard-replacement/pending-approvals
+        - GET /api/shifts/swap-requests
+        - GET /api/incidents
+
+      Mapping logic:
+        - pending-approvals → InboxItem[]: priority='urgent', category='Approval',
+          categoryIcon=UserCheck, title=guard full_name or username,
+          description='Awaiting guard activation approval',
+          actionLabel='Review', timestamp=created_at
+        - swap-requests → InboxItem[]: priority='high', category='Shift Swap',
+          categoryIcon=ArrowLeftRight, title='Swap Request',
+          description=requester username + ' ↔ ' + target shift time,
+          actionLabel='Approve', timestamp=request timestamp
+        - incidents → WorkflowEntry[]: status from incident.status mapping
+          ('open'→'active', 'resolved'→'resolved', 'closed'→'cancelled',
+          default→'pending'), title=incident.title, participant=incident.reporter,
+          timestamp=incident.created_at
+
+      Layout: two-section layout inside soc-dashboard-card (same pattern as T04).
+      Error: per-section inline error message.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies:
+      - T01
+      - T02
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx
+        description: fetchPendingApprovals + getAuthHeaders pattern for the approvals endpoint
+      - path: DasiaAIO-Frontend/src/utils/permissions.ts
+        description: can() with 'approve_guards' permission guard
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 155
+        focus_area: src/components/inbox/SupervisorInboxPanel.tsx
+        tech_stack:
+          - React 18 (FC + useEffect + useState)
+          - TypeScript strict
+          - fetchJsonOrThrow + getAuthHeaders
+          - Promise.allSettled for parallel fetches
+        test_coverage: null
+        verification:
+          - "can(role, 'approve_guards') guard returns null for guard/unauthenticated"
+          - "All three endpoints fetched in parallel (Promise.allSettled)"
+          - "InboxItem priority set correctly per category (urgent/high)"
+          - "Partial results rendered if one endpoint fails"
+          - "TypeScript: no 'any'"
+        acceptance_criteria:
+          - "Pending approvals appear as urgent inbox items with Review action"
+          - "Shift swap requests appear as high-priority items with Approve action"
+          - "Incidents populate the workflow timeline with correct status mapping"
+          - "RBAC guard prevents rendering for guard role"
+          - "One endpoint failure does not blank the entire panel"
+        failure_modes:
+          - scenario: >
+              Promise.all rejection on one endpoint hides valid data from other
+              endpoints, resulting in a blank panel.
+            likelihood: low
+            impact: medium
+            mitigation: >
+              Use Promise.allSettled; check each result.status === 'fulfilled'
+              before mapping; log rejected reasons; render partial results.
+
+  - id: T06
+    title: Implement AdminInboxPanel component
+    description: |
+      Create src/components/inbox/AdminInboxPanel.tsx.
+
+      Props: { user: AppUser }
+
+      RBAC guard: if (!can(user.role, 'manage_users')) return null
+
+      Data fetching (Promise.allSettled — all three in parallel):
+        - GET /api/guard-replacement/pending-approvals
+        - GET /api/incidents
+        - GET /api/analytics/metrics
+
+      Mapping logic:
+        - pending-approvals → InboxItem[]: priority='urgent', categoryIcon=Users
+        - open incidents → InboxItem[]: priority='high', categoryIcon=AlertTriangle,
+          title=incident.title or 'Unresolved Incident',
+          actionLabel='Investigate'
+        - incidents → WorkflowEntry[] (same status mapping as T05)
+        - metrics: render a summary stats row above ActionInbox showing
+          total guards on duty (metrics.active_guards ?? 0) and
+          total open incidents (metrics.open_incidents ?? 0).
+          If metrics endpoint fails, stats row is hidden (not shown as error).
+
+      Layout: stats row + two-section layout (ActionInbox + WorkflowTimeline).
+      Error: per-section inline error.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies:
+      - T01
+      - T02
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx
+        description: canManageUsers guard, isAdminViewer pattern, analytics fetch reference
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 165
+        focus_area: src/components/inbox/AdminInboxPanel.tsx
+        tech_stack:
+          - React 18 (FC + useEffect + useState)
+          - TypeScript strict
+          - fetchJsonOrThrow + getAuthHeaders
+          - Promise.allSettled
+        test_coverage: null
+        verification:
+          - "can(role, 'manage_users') guard returns null for supervisor/guard"
+          - "Analytics metrics stats row renders with safe fallback (0/'N/A') on 4xx"
+          - "No TypeScript errors"
+          - "Stats row hidden (not errored) if metrics fetch fails"
+        acceptance_criteria:
+          - "Admin sees approvals, incidents, and metrics summary row in inbox"
+          - "RBAC guard limits rendering to admin and superadmin only"
+          - "Metrics summary degrades gracefully on 4xx (hidden, no error message)"
+          - "All InboxItems have required fields; no runtime key-access crashes"
+        failure_modes:
+          - scenario: >
+              analytics/metrics returns an unexpected shape causing runtime
+              property access crash (e.g., metrics.active_guards is undefined).
+            likelihood: low
+            impact: medium
+            mitigation: >
+              Destructure with optional chaining (?.) and nullish coalescing (??);
+              fallback all derived values to 0 or 'N/A'.
+
+  - id: T07
+    title: Implement SuperadminInboxPanel component
+    description: |
+      Create src/components/inbox/SuperadminInboxPanel.tsx.
+
+      Props: { user: AppUser }
+
+      Role guard: const norm = normalizeRole(user.role); if (norm !== 'superadmin') return null
+
+      Data fetching (Promise.allSettled — same three endpoints as AdminInboxPanel):
+        - GET /api/guard-replacement/pending-approvals
+        - GET /api/incidents
+        - GET /api/analytics/metrics
+
+      Mapping logic (superset of AdminInboxPanel):
+        - All pending approvals → urgent InboxItems with categoryIcon=Shield,
+          category='Governance'
+        - All open incidents → high InboxItems with categoryIcon=AlertTriangle
+        - A "System Health" WorkflowEntry synthesized from metrics:
+          status='active' if metrics loaded OK, status='pending' if fetch failed,
+          title='System Health', participant='SENTINEL Operations',
+          timestamp=new Date().toISOString()
+        - All incidents → WorkflowEntries (same status mapping)
+
+      Layout: stats row + two-section layout.
+      Note: If AdminInboxPanel and SuperadminInboxPanel have >40 lines of
+      duplicate fetch logic, extract a shared fetchInboxData(user) helper
+      into src/components/inbox/inboxUtils.ts to reduce duplication.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies:
+      - T01
+      - T02
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx
+        description: isSuperadminViewer check pattern and normalizeRole usage
+      - path: DasiaAIO-Frontend/src/types/auth.ts
+        description: normalizeRole function for role guard
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 160
+        focus_area: src/components/inbox/SuperadminInboxPanel.tsx
+        tech_stack:
+          - React 18 (FC + useEffect + useState)
+          - TypeScript strict
+          - fetchJsonOrThrow + getAuthHeaders
+          - Promise.allSettled
+        test_coverage: null
+        verification:
+          - "normalizeRole(user.role) === 'superadmin' guard returns null otherwise"
+          - "System Health WorkflowEntry reflects real metrics fetch result"
+          - "No TypeScript errors"
+          - "Shield icon used for governance-category InboxItems"
+        acceptance_criteria:
+          - "Superadmin inbox shows governance items and system health timeline entry"
+          - "All data sources fetched in parallel (Promise.allSettled)"
+          - "Role guard renders null for non-superadmin viewers"
+          - "System Health entry shows 'active' on metrics success, 'pending' on failure"
+        failure_modes:
+          - scenario: >
+              Superadmin and Admin panels duplicate 40+ lines of fetch logic, creating
+              a maintenance burden for any future API change.
+            likelihood: medium
+            impact: low
+            mitigation: >
+              If shared fetch logic exceeds 40 lines, extract into
+              src/components/inbox/inboxUtils.ts; otherwise inline is fine for MVP.
+
+  # ─────────────────────────────────────────
+  # WAVE 3 — Integration into existing dashboards
+  # ─────────────────────────────────────────
+
+  - id: T08
+    title: Integrate inbox tab into UserDashboard (guard role — 6th tab, first in order)
+    description: |
+      Edit src/components/UserDashboard.tsx with five targeted changes using
+      replace_string_in_file (one call per location; run get_errors after each):
+
+      Change 1 — Extend GuardSection type (~line 66):
+        FROM: type GuardSection = 'mission' | 'resources' | 'support' | 'map'
+        TO:   type GuardSection = 'inbox' | 'mission' | 'resources' | 'support' | 'map'
+
+      Change 2 — Update resolveSectionFromView (~line 85):
+        Add as first condition: if (activeView === 'inbox') return 'inbox'
+
+      Change 3 — Add import (~top of file, after existing local imports):
+        import GuardInboxPanel from './inbox/GuardInboxPanel'
+
+      Change 4 — Prepend to navItems array (~line 748):
+        { key: 'inbox', label: 'Inbox' }  as first element (before 'mission')
+
+      Change 5 — Add inbox render branch in main content block, before the
+        existing mission section:
+        if (activeSection === 'inbox') { return <GuardInboxPanel user={user} /> }
+
+      DO NOT remove or modify any existing branches, types, nav items, or UI.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies:
+      - T03
+      - T04
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        description: >
+          GuardSection type (~line 66), resolveSectionFromView (~line 85),
+          navItems array (~line 748), content render block (section with
+          activeSection switch/if chain)
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 20
+        focus_area: src/components/UserDashboard.tsx
+        tech_stack:
+          - TypeScript strict
+          - React 18
+        test_coverage: null
+        verification:
+          - "GuardSection union includes 'inbox'"
+          - "resolveSectionFromView('inbox') returns 'inbox'"
+          - "navItems[0].key === 'inbox'"
+          - "Inbox tab click renders GuardInboxPanel"
+          - "All existing 5 tabs (mission/resources/support/map/profile) still render"
+          - "get_errors returns 0 errors after all 5 changes"
+        acceptance_criteria:
+          - "Guard user sees Inbox as first bottom-nav tab after login"
+          - "Selecting Inbox tab renders GuardInboxPanel in the main content area"
+          - "All existing mission/resources/support/map/profile tabs fully intact"
+          - "TypeScript strict mode: 0 errors"
+        failure_modes:
+          - scenario: >
+              Large multi-hunk edit to 950-line file causes apply_patch mis-merge,
+              corrupting JSX branch structure or duplicating closing JSX tags.
+            likelihood: medium
+            impact: high
+            mitigation: >
+              Use one replace_string_in_file call per discrete change location
+              (5 separate calls total). Run get_errors after each call.
+              If structure corruption is detected, rewrite the full file cleanly
+              (per repo testing-notes.md guidance).
+
+  - id: T09
+    title: Integrate inbox section into SuperadminDashboard (elevated roles)
+    description: |
+      Edit src/components/SuperadminDashboard.tsx with six targeted changes using
+      replace_string_in_file (one per location; run get_errors after each):
+
+      Change 1 — Extend activeSection union (~line 192):
+        Add 'inbox' as first union member in the useState type annotation.
+
+      Change 2 — Add to viewToSection record (~line 315):
+        Add entry: inbox: 'inbox'
+
+      Change 3 — Add to sectionTitle ternary (~line 258):
+        Prepend: activeSection === 'inbox' ? 'Action Inbox' :
+
+      Change 4 — Add to badgeLabel ternary (~line 266):
+        Prepend: activeSection === 'inbox' ? 'Inbox' :
+
+      Change 5 — Add three imports after existing local imports:
+        import SupervisorInboxPanel from './inbox/SupervisorInboxPanel'
+        import AdminInboxPanel from './inbox/AdminInboxPanel'
+        import SuperadminInboxPanel from './inbox/SuperadminInboxPanel'
+
+      Change 6 — Add inbox render branch in content render block, checking
+        isSuperadminViewer first (mirrors existing branch order):
+        if (activeSection === 'inbox') {
+          if (isSuperadminViewer) return <SuperadminInboxPanel user={user} />
+          if (isAdminViewer) return <AdminInboxPanel user={user} />
+          if (isSupervisorViewer) return <SupervisorInboxPanel user={user} />
+        }
+
+      DO NOT remove or modify any existing branches, types, or UI.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies:
+      - T03
+      - T05
+      - T06
+      - T07
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx
+        description: >
+          activeSection useState (~line 192), viewToSection map (~line 315),
+          sectionTitle ternary (~line 258), badgeLabel ternary (~line 266),
+          isSuperadminViewer/isAdminViewer/isSupervisorViewer booleans (~line 238),
+          content render block branch pattern
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 25
+        focus_area: src/components/SuperadminDashboard.tsx
+        tech_stack:
+          - TypeScript strict
+          - React 18
+        test_coverage: null
+        verification:
+          - "activeSection union includes 'inbox'"
+          - "viewToSection['inbox'] === 'inbox'"
+          - "Sidebar Inbox click sets activeSection to 'inbox'"
+          - "isSuperadminViewer checked first in dispatch chain"
+          - "sectionTitle returns 'Action Inbox' when activeSection === 'inbox'"
+          - "All 7 existing sections (dashboard/approvals/schedule/missions/analytics/trips/audit-log) unchanged"
+          - "get_errors returns 0 errors after all 6 changes"
+        acceptance_criteria:
+          - "Elevated role users see Inbox as first item in sidebar navigation"
+          - "Clicking Inbox in sidebar renders the correct role-appropriate panel"
+          - "superadmin → SuperadminInboxPanel; admin → AdminInboxPanel; supervisor → SupervisorInboxPanel"
+          - "Header area displays 'Action Inbox' title when inbox section active"
+          - "TypeScript strict mode: 0 errors"
+        failure_modes:
+          - scenario: >
+              Role dispatch branch checks isAdminViewer before isSuperadminViewer;
+              superadmin user receives AdminInboxPanel instead of SuperadminInboxPanel.
+            likelihood: low
+            impact: high
+            mitigation: >
+              Implement isSuperadminViewer first in the if-else chain, mirroring the
+              existing pattern already used elsewhere in SuperadminDashboard.
+
+  # ─────────────────────────────────────────
+  # WAVE 4 — Review and validation
+  # ─────────────────────────────────────────
+
+  - id: T10
+    title: Code review of all inbox feature files
+    description: |
+      Review all files introduced or modified by T01–T09:
+        - src/components/inbox/ActionInbox.tsx          (new)
+        - src/components/inbox/WorkflowTimeline.tsx     (new)
+        - src/components/inbox/GuardInboxPanel.tsx      (new)
+        - src/components/inbox/SupervisorInboxPanel.tsx (new)
+        - src/components/inbox/AdminInboxPanel.tsx      (new)
+        - src/components/inbox/SuperadminInboxPanel.tsx (new)
+        - src/components/inbox/inboxUtils.ts            (new, if created by T07)
+        - src/components/UserDashboard.tsx              (diff only — 5 change locations)
+        - src/components/SuperadminDashboard.tsx        (diff only — 6 change locations)
+        - src/config/navigation.ts                      (diff only — 2 prepends)
+
+      Review checklist (flag each as BLOCKER or ADVISORY):
+        Security:
+          - All fetch calls include Authorization header via getAuthHeaders()
+          - No secrets, tokens, or credentials in client-side code
+          - All user-supplied data rendered via text content (not innerHTML)
+        RBAC:
+          - can() guards present and use correct permission per panel
+          - SuperadminInboxPanel uses role check (not permission)
+          - Role dispatch in SuperadminDashboard checks isSuperadminViewer first
+        Accessibility:
+          - role=list on ActionInbox and WorkflowTimeline containers
+          - aria-expanded on WorkflowTimeline disclosure buttons
+          - aria-label on all action buttons includes item title
+          - Focus order is logical; no keyboard traps
+        TypeScript:
+          - No `any` type, no non-null assertions without comment
+          - All component props fully typed
+        Performance:
+          - No inline object/array literals as default props (prevents re-renders)
+          - useEffect dependency arrays complete and correct
+        Design system:
+          - Only CSS variable tokens used for colors (no hardcoded hex)
+          - Layout uses soc-dashboard-card and existing utility classes
+    wave: 4
+    agent: gem-reviewer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies:
+      - T08
+      - T09
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/inbox/
+        description: All new inbox feature files to review
+      - path: DasiaAIO-Frontend/src/utils/permissions.ts
+        description: RBAC reference for verifying correct permission guards
+    requires_review: true
+    review_depth: standard
+    review_security_sensitive: true
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 0
+        estimated_lines: 0
+        focus_area: All inbox feature files (review only — no file modifications)
+        verification:
+          - "No BLOCKER issues remain after review"
+          - "All fetch calls verified to use getAuthHeaders()"
+          - "All interactive elements verified to be keyboard-operable"
+          - "No 'any' types in any new file"
+        acceptance_criteria:
+          - "Review produces written findings with BLOCKER/ADVISORY classification"
+          - "All BLOCKER items resolved before T11 executes"
+          - "Security checklist fully covered (auth headers, RBAC, no innerHTML)"
+        failure_modes:
+          - scenario: >
+              Review finds a missing auth header on one panel's fetch call that was
+              not caught during implementation.
+            likelihood: low
+            impact: high
+            mitigation: >
+              Implementer applies targeted fix immediately; reviewer re-checks
+              the single file before T11 proceeds.
+
+  - id: T11
+    title: Playwright E2E tests — inbox flows for all four roles
+    description: |
+      Create DasiaAIO-Frontend/tests/inbox.spec.ts covering four role scenarios.
+
+      Use Playwright route interception (page.route()) to mock API responses for
+      inbox endpoints so tests are not dependent on a running backend instance:
+        - /api/guard-replacement/shifts → mock array of 2 shifts
+        - /api/users/*/notifications → mock array of 2 notifications
+        - /api/guard-replacement/pending-approvals → mock array of 1 approval
+        - /api/shifts/swap-requests → mock array of 1 swap request
+        - /api/incidents → mock array of 2 incidents
+        - /api/analytics/metrics → mock metrics object
+
+      Test scenarios:
+        1. Guard inbox tab:
+           - Authenticate as guard (mock login + localStorage token)
+           - Assert bottom nav contains text "Inbox"
+           - Click Inbox tab
+           - Assert role=list element visible in main content
+           - Assert no unhandled console errors
+
+        2. Supervisor inbox:
+           - Authenticate as supervisor
+           - Assert sidebar nav item "Inbox" is present
+           - Click Inbox nav item
+           - Assert role=list element visible
+           - Assert "Approval" category item visible (from mocked pending-approvals)
+
+        3. Admin inbox:
+           - Authenticate as admin
+           - Click Inbox in sidebar
+           - Assert role=list element visible
+           - Assert soc-dashboard-card class visible in inbox pane
+
+        4. Superadmin inbox:
+           - Authenticate as superadmin
+           - Click Inbox in sidebar
+           - Assert SuperadminInboxPanel rendered (presence of "Governance" category
+             or "System Health" timeline entry)
+
+      Follow patterns from existing tests in DasiaAIO-Frontend/tests/.
+      Use existing playwright.config.ts (Chromium, baseURL from env).
+    wave: 4
+    agent: gem-browser-tester
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies:
+      - T10
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/playwright.config.ts
+        description: Playwright config, baseURL, browser settings, test timeout
+      - path: DasiaAIO-Frontend/tests/
+        description: Existing E2E test files to use as pattern reference
+    validation_matrix:
+      - scenario: Guard inbox tab navigation
+        steps:
+          - Mock auth session (guard role) in localStorage
+          - Navigate to baseURL (app root, renders UserDashboard)
+          - Assert bottom nav bar contains text "Inbox"
+          - Click the Inbox nav item
+          - Wait for main content to update
+        expected_result: >
+          GuardInboxPanel renders; an element with role=list is visible in the
+          main content area; no unhandled console errors during the flow.
+      - scenario: Supervisor inbox sidebar navigation
+        steps:
+          - Mock auth session (supervisor role) in localStorage
+          - Navigate to baseURL (app root, renders SuperadminDashboard)
+          - Assert sidebar contains text "Inbox"
+          - Click the Inbox sidebar item
+          - Wait for content pane to update
+        expected_result: >
+          SupervisorInboxPanel renders; role=list element visible;
+          a pending-approval item (from mocked data) appears in the action list.
+      - scenario: Admin inbox section
+        steps:
+          - Mock auth session (admin role) in localStorage
+          - Navigate to app root
+          - Click Inbox in sidebar
+        expected_result: >
+          AdminInboxPanel renders; soc-dashboard-card class present in inbox pane;
+          role=list element visible.
+      - scenario: Superadmin inbox section
+        steps:
+          - Mock auth session (superadmin role) in localStorage
+          - Navigate to app root
+          - Click Inbox in sidebar
+        expected_result: >
+          SuperadminInboxPanel renders; "System Health" text or "Governance"
+          category text visible in the content area.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan creation
+        timestamp: "2026-04-03"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 130
+        focus_area: DasiaAIO-Frontend/tests/inbox.spec.ts
+        tech_stack:
+          - Playwright (TypeScript)
+          - page.route() for API mocking
+        test_coverage: "4 role scenarios × inbox navigation + content assertion"
+        verification:
+          - "All 4 scenarios pass on Chromium"
+          - "No unhandled Promise rejections in browser console"
+          - "Tests are not reliant on live backend (all endpoints mocked)"
+        acceptance_criteria:
+          - "All 4 role scenario tests pass without failures"
+          - "ARIA role=list present in all rendered inbox views"
+          - "No unhandled console errors during any inbox navigation flow"
+          - "Tests complete in under 30 s on local Chromium"
+        failure_modes:
+          - scenario: >
+              Tests fail intermittently because localStorage mock is set after
+              React has already rendered the login gate.
+            likelihood: medium
+            impact: medium
+            mitigation: >
+              Set localStorage token before page.goto() using page.addInitScript
+              or addInitScript({ content: "localStorage.setItem(...)" }) to
+              ensure auth state is present before any app code runs.
+
+planning_pass: 1
+planning_history:
+  - pass: 1
+    reason: Initial plan creation — full 11-task DAG for sentinel-ux-redesign
+    timestamp: "2026-04-03"
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 275
+    focus_area: >
+      src/components/inbox/ (6 new files), UserDashboard.tsx,
+      SuperadminDashboard.tsx, config/navigation.ts
+    verification:
+      - "All 11 tasks have valid agent assignments from allowed agent list"
+      - "DAG has no circular dependencies"
+      - "All contracts have valid from_task/to_task IDs that exist in tasks"
+      - "Wave 1 has 3 tasks with 0 dependencies"
+      - "Wave 2 has 4 tasks each depending only on Wave 1 tasks"
+      - "Wave 3 has 2 tasks depending on Wave 2 outputs + T03"
+      - "Wave 4 has 2 tasks: T10 depends on T08+T09; T11 depends on T10"
+      - "estimated_files <= 3 per task"
+      - "estimated_lines <= 300 per task"
+    acceptance_criteria:
+      - "plan.yaml is valid YAML with all required top-level fields"
+      - "All 11 task IDs are unique"
+      - "No task has a dependency on a task in a later wave"
+      - "All high-priority tasks have at least one failure_mode defined"
+      - "All 14 contracts have valid from_task and to_task IDs"

@@ -1,0 +1,546 @@
+plan_id: frontend-codebase-audit-20260403
+objective: Analyze the DasiaAIO-Frontend codebase for guard profile routing, support-section API failures, theme implementation, settings/profile architecture, and git remote state.
+focus_area: frontend-routing-support-theme-profile-git
+created_at: 2026-04-03T00:00:00Z
+created_by: GitHub Copilot
+status: completed
+
+tldr: |
+  - The new guard dashboard profile button in UserDashboard dispatches onViewChange('profile'), and App.tsx globally special-cases that state to render the standalone ProfileDashboard instead of keeping the user inside the new guard dashboard flow.
+  - Support tickets in UserDashboard use fetchJsonOrThrow with Promise.allSettled and surfaced status text, but GuardShiftSwapPanel uses raw fetch calls with thinner error handling, no shared timeout/auth-refresh path, and one swallowed PATCH failure path.
+  - Theme state is implemented globally through ThemeProvider and CSS custom properties in index.css, but the toggle UI lives in Header; the new guard dashboard uses a custom header and therefore does not expose the toggle control there.
+  - There is no dedicated Settings page component. ProfileDashboard is the effective settings surface, with role-aware navigation via getSidebarNav and guard-only availability controls; the profile route itself is not permission-gated beyond authentication.
+  - Git remote origin points to dwaytu/Capstone-Main, while the local git user.name is cloudyrowdyyy; the remote is not pointing at a cloudyrowdyyy-owned repository.
+
+research_metadata:
+  methodology: Hybrid retrieval using search_subagent, grep_search, file_search, targeted read_file passes, repository memory review, PRD review, and direct git config inspection.
+  scope: Focused audit of guard dashboard routing, support-related frontend components, theme system, settings/profile surface, and git remote metadata, with backend route existence checks for support and swap APIs.
+  confidence: high
+  coverage: 92
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: App.tsx
+    path: DasiaAIO-Frontend/src/App.tsx
+    purpose: Top-level app state router and role-aware view dispatcher.
+    key_elements:
+      - element: getHomeView
+        type: function
+        location: App.tsx:773
+        description: Returns 'overview' for guards and 'dashboard' for elevated roles.
+      - element: renderHome
+        type: function
+        location: App.tsx:813
+        description: Renders UserDashboard for guard users and SuperadminDashboard for elevated roles.
+      - element: profile route branch
+        type: pattern
+        location: App.tsx:903
+        description: Special-cases activeView === 'profile' and renders ProfileDashboard before the generic routed view registry.
+      - element: ProfileDashboard render
+        type: pattern
+        location: App.tsx:906
+        description: Passes onBack as setActiveView(getHomeView(normalizedRole)), sending guards back to overview.
+    language: TypeScript
+    lines: 1098
+  - file: UserDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+    purpose: New guard mission-first dashboard with local section navigation and support workspace.
+    key_elements:
+      - element: resolveSectionFromView
+        type: function
+        location: UserDashboard.tsx:89
+        description: Maps a subset of global views into local guard sections; unknown views fall back to mission.
+      - element: refreshData
+        type: function
+        location: UserDashboard.tsx:232
+        description: Loads attendance, shifts, allocations, permits, and support tickets via fetchJsonOrThrow and Promise.allSettled.
+      - element: navItems
+        type: variable
+        location: UserDashboard.tsx:763
+        description: Defines bottom navigation items including profile.
+      - element: support section
+        type: pattern
+        location: UserDashboard.tsx:1020
+        description: Renders instructions, schedule-change request, support tickets, and the GuardShiftSwapPanel.
+      - element: GuardShiftSwapPanel usage
+        type: pattern
+        location: UserDashboard.tsx:1159
+        description: Embeds the shift swap workflow inside the support section.
+      - element: profile button handler
+        type: pattern
+        location: UserDashboard.tsx:1229
+        description: Calls onViewChange?.('profile') when the profile nav item is activated.
+    language: TypeScript
+    lines: 1214
+  - file: ProfileDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+    purpose: Standalone account/profile management screen used across roles.
+    key_elements:
+      - element: ProfileDashboard
+        type: component
+        location: ProfileDashboard.tsx:22
+        description: Stateful profile editor with photo, contact, license, push, and guard availability controls.
+      - element: guard availability fetch
+        type: pattern
+        location: ProfileDashboard.tsx:47
+        description: Fetches guard availability with raw fetch and silently ignores errors.
+      - element: navItems
+        type: variable
+        location: ProfileDashboard.tsx:236
+        description: Builds role-aware sidebar items via getSidebarNav.
+      - element: account settings header
+        type: pattern
+        location: ProfileDashboard.tsx:253
+        description: Uses Header plus Sidebar, matching the elevated dashboard shell rather than the new guard bottom-nav shell.
+      - element: guard-only availability section
+        type: pattern
+        location: ProfileDashboard.tsx:364
+        description: Renders guard availability toggle only for guard users.
+    language: TypeScript
+    lines: 528
+  - file: GuardShiftSwapPanel.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+    purpose: Shift swap request and response workflow rendered inside the guard support section.
+    key_elements:
+      - element: fetchRequests
+        type: function
+        location: GuardShiftSwapPanel.tsx:38
+        description: GETs /api/shifts/swap-requests with raw fetch and basic status checking.
+      - element: handleSubmitRequest
+        type: function
+        location: GuardShiftSwapPanel.tsx:58
+        description: POSTs /api/shifts/swap-request with raw fetch and submitStatus messaging.
+      - element: handleRespond
+        type: function
+        location: GuardShiftSwapPanel.tsx:98
+        description: PATCHes /api/shifts/swap-requests/:id/respond and swallows any thrown error.
+    language: TypeScript
+    lines: 269
+  - file: ThemeProvider.tsx
+    path: DasiaAIO-Frontend/src/context/ThemeProvider.tsx
+    purpose: Global light/dark theme state, persistence, and theme toggle component.
+    key_elements:
+      - element: storageKey
+        type: variable
+        location: ThemeProvider.tsx:60
+        description: Persists theme under localStorage key sentinel-theme.
+      - element: root class application
+        type: pattern
+        location: ThemeProvider.tsx:90
+        description: Removes light/dark classes and adds the active theme class to documentElement.
+      - element: system preference listener
+        type: pattern
+        location: ThemeProvider.tsx:111
+        description: Stops reacting to system theme changes when a manual preference exists in storage.
+      - element: ThemeToggleButton
+        type: component
+        location: ThemeProvider.tsx:183
+        description: Reusable toggle UI that flips the theme state.
+    language: TypeScript
+    lines: 223
+  - file: Header.tsx
+    path: DasiaAIO-Frontend/src/components/Header.tsx
+    purpose: Shared elevated-dashboard header that surfaces theme toggle, notifications, and account navigation.
+    key_elements:
+      - element: ThemeToggleButton usage
+        type: pattern
+        location: Header.tsx:67
+        description: Exposes the global theme toggle in screens that use the shared Header.
+      - element: AccountManager usage
+        type: pattern
+        location: Header.tsx:70
+        description: Routes profile navigation through AccountManager.
+    language: TypeScript
+    lines: 72
+  - file: AccountManager.tsx
+    path: DasiaAIO-Frontend/src/components/AccountManager.tsx
+    purpose: Account dropdown menu with profile navigation and logout.
+    key_elements:
+      - element: onNavigateToProfile prop
+        type: pattern
+        location: AccountManager.tsx:7
+        description: Optional profile navigation callback.
+      - element: My Profile action
+        type: pattern
+        location: AccountManager.tsx:152
+        description: Invokes onNavigateToProfile() from the dropdown menu.
+    language: TypeScript
+    lines: 175
+  - file: index.css
+    path: DasiaAIO-Frontend/src/index.css
+    purpose: Global semantic design tokens and dark-theme overrides.
+    key_elements:
+      - element: :root token block
+        type: pattern
+        location: index.css:4
+        description: Defines the default light-theme semantic token set.
+      - element: .dark token override block
+        type: pattern
+        location: index.css:161
+        description: Overrides the semantic tokens for dark mode.
+    language: CSS
+    lines: 1391
+  - file: navigation.ts
+    path: DasiaAIO-Frontend/src/config/navigation.ts
+    purpose: Role-aware sidebar navigation definitions.
+    key_elements:
+      - element: ELEVATED_NAV
+        type: variable
+        location: navigation.ts:10
+        description: Permission-gated sidebar items for elevated roles.
+      - element: GUARD_NAV
+        type: variable
+        location: navigation.ts:28
+        description: Simpler sidebar items for guard-role pages such as ProfileDashboard.
+      - element: getSidebarNav
+        type: function
+        location: navigation.ts:42
+        description: Filters nav items by role and permission and rewrites dashboard to homeView.
+    language: TypeScript
+    lines: 53
+  - file: permissions.ts
+    path: DasiaAIO-Frontend/src/utils/permissions.ts
+    purpose: Role-to-permission mapping used by app-level and sidebar-level access checks.
+    key_elements:
+      - element: rolePermissions
+        type: variable
+        location: permissions.ts:13
+        description: Maps superadmin, admin, supervisor, and guard roles to permission sets.
+      - element: can
+        type: function
+        location: permissions.ts:52
+        description: Normalizes role and checks if a permission is granted.
+    language: TypeScript
+    lines: 58
+  - file: main.tsx
+    path: DasiaAIO-Frontend/src/main.tsx
+    purpose: Frontend bootstrap that wraps the app with ThemeProvider.
+    key_elements:
+      - element: ThemeProvider wrapper
+        type: pattern
+        location: main.tsx:11
+        description: Enables global theme context for the whole React tree.
+    language: TypeScript
+    lines: 15
+  - file: shift_swap.rs
+    path: DasiaAIO-Backend/src/handlers/shift_swap.rs
+    purpose: Backend handler definitions for shift swap list, create, and respond routes.
+    key_elements:
+      - element: request swap handler
+        type: function
+        location: shift_swap.rs:32
+        description: POST handler backing /api/shifts/swap-request.
+      - element: list swap requests handler
+        type: function
+        location: shift_swap.rs:70
+        description: GET handler backing /api/shifts/swap-requests.
+      - element: respond handler
+        type: function
+        location: shift_swap.rs:119
+        description: PATCH handler backing /api/shifts/swap-requests/:id/respond.
+    language: Rust
+    lines: 140
+  - file: main.rs
+    path: DasiaAIO-Backend/src/main.rs
+    purpose: Axum route registration for frontend-consumed APIs.
+    key_elements:
+      - element: guard shifts route
+        type: pattern
+        location: main.rs:647
+        description: Registers /api/guard-replacement/guard/:guard_id/shifts.
+      - element: set availability route
+        type: pattern
+        location: main.rs:736
+        description: Registers /api/guard-replacement/set-availability.
+      - element: availability route
+        type: pattern
+        location: main.rs:747
+        description: Registers /api/guard-replacement/availability/:guard_id.
+      - element: swap request route
+        type: pattern
+        location: main.rs:836
+        description: Registers /api/shifts/swap-request.
+      - element: swap requests route
+        type: pattern
+        location: main.rs:842
+        description: Registers /api/shifts/swap-requests.
+      - element: swap respond route
+        type: pattern
+        location: main.rs:848
+        description: Registers /api/shifts/swap-requests/:id/respond.
+      - element: support ticket create route
+        type: pattern
+        location: main.rs:973
+        description: Registers /api/support-tickets.
+      - element: support ticket list route
+        type: pattern
+        location: main.rs:984
+        description: Registers /api/support-tickets/:guard_id.
+    language: Rust
+    lines: 1592
+  - file: config
+    path: .git/config
+    purpose: Git repository identity and remote configuration.
+    key_elements:
+      - element: user.name
+        type: variable
+        location: .git/config:9
+        description: Local git identity is set to cloudyrowdyyy.
+      - element: origin url
+        type: variable
+        location: .git/config:11
+        description: Remote origin points to https://github.com/dwaytu/Capstone-Main.git.
+    language: INI
+    lines: 21
+
+patterns_found:
+  - category: architecture
+    pattern: State-based top-level routing with special-case branches before generic view dispatch.
+    description: App.tsx uses activeView string state rather than a URL router and gives profile its own special-case render branch outside the normal guard section flow.
+    examples:
+      - file: DasiaAIO-Frontend/src/App.tsx
+        location: App.tsx:903
+        snippet: activeView === 'profile' renders ProfileDashboard directly.
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: UserDashboard.tsx:1229
+        snippet: onViewChange?.('profile') from the guard bottom nav.
+    prevalence: common
+  - category: structure
+    pattern: Guard dashboard mixes global view state with local section state.
+    description: UserDashboard owns local section state while still accepting activeView from App.tsx, creating a split navigation model.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: UserDashboard.tsx:89
+        snippet: resolveSectionFromView only maps support, firearms, permits, and map to local sections.
+      - file: DasiaAIO-Frontend/src/App.tsx
+        location: App.tsx:813
+        snippet: renderHome returns UserDashboard for guards while other activeView values may bypass it.
+    prevalence: common
+  - category: error_handling
+    pattern: Shared API helper used in UserDashboard, but raw fetch still appears in secondary panels.
+    description: Core guard data loads use fetchJsonOrThrow with retries, timeout handling, and auth refresh, while GuardShiftSwapPanel and parts of ProfileDashboard use raw fetch directly.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: UserDashboard.tsx:232
+        snippet: refreshData loads five guard datasets via fetchJsonOrThrow.
+      - file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+        location: GuardShiftSwapPanel.tsx:43
+        snippet: fetch(`${API_BASE_URL}/api/shifts/swap-requests`, ...) with manual response.ok handling.
+      - file: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+        location: ProfileDashboard.tsx:47
+        snippet: fetch availability and silently ignore failures.
+    prevalence: common
+  - category: error_handling
+    pattern: Partial failure resilience in support ticket loading.
+    description: UserDashboard degrades gracefully when support-related API calls fail by collecting failures and surfacing a syncError banner instead of crashing.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: UserDashboard.tsx:257
+        snippet: Promise.allSettled with failures.push(labels[index]).
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: UserDashboard.tsx:275
+        snippet: setSyncError(`Some data could not be loaded: ...`).
+    prevalence: occasional
+  - category: error_handling
+    pattern: Silent failure path in shift swap response action.
+    description: The shift swap response PATCH handler catches and swallows all errors, leaving console/network issues hard to diagnose from UI behavior.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+        location: GuardShiftSwapPanel.tsx:111
+        snippet: catch { // swallow — UI will reflect unchanged status on next fetch }
+    prevalence: occasional
+  - category: architecture
+    pattern: Theme state is global, but theme control exposure is shell-specific.
+    description: ThemeProvider wraps the whole app, but the actual toggle button is only rendered from the shared Header component.
+    examples:
+      - file: DasiaAIO-Frontend/src/main.tsx
+        location: main.tsx:11
+        snippet: <ThemeProvider><App /></ThemeProvider>
+      - file: DasiaAIO-Frontend/src/components/Header.tsx
+        location: Header.tsx:67
+        snippet: <ThemeToggleButton className="flex" />
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: UserDashboard.tsx:783
+        snippet: custom header with refresh/logout only and no ThemeToggleButton.
+    prevalence: common
+  - category: naming
+    pattern: Profile surface is labeled as Account Settings.
+    description: The routed profile page is implemented as ProfileDashboard but user-facing text and structure treat it as account settings.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+        location: ProfileDashboard.tsx:253
+        snippet: Header title="Account Settings"
+      - file: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+        location: ProfileDashboard.tsx:275
+        snippet: h1 Account Settings
+    prevalence: common
+  - category: access_control
+    pattern: Role-based access control is applied to view registry and sidebar navigation, but not to the profile route itself.
+    description: Permissions gate elevated views and navigation items, while profile is available to any authenticated role that can set activeView to profile.
+    examples:
+      - file: DasiaAIO-Frontend/src/App.tsx
+        location: App.tsx:780
+        snippet: can(role, route.permission)
+      - file: DasiaAIO-Frontend/src/config/navigation.ts
+        location: navigation.ts:49
+        snippet: ELEVATED_NAV.filter(item => !item.permission || can(role, item.permission))
+      - file: DasiaAIO-Frontend/src/App.tsx
+        location: App.tsx:903
+        snippet: profile branch is outside viewRegistry permission checks.
+    prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: App activeView router
+      responsibility: Chooses between auth pages, inbox, profile, routed dashboards, and role home screens.
+      location: DasiaAIO-Frontend/src/App.tsx
+      relationship_to_domain: domain depends on this
+    - component: UserDashboard
+      responsibility: Guard mission-first workspace with bottom nav and embedded support workflows.
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      relationship_to_domain: domain depends on this
+    - component: ProfileDashboard
+      responsibility: Standalone account/profile settings page.
+      location: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+      relationship_to_domain: domain depends on this
+    - component: GuardShiftSwapPanel
+      responsibility: Shift swap request workflow within the support area.
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      relationship_to_domain: domain depends on this
+    - component: ThemeProvider
+      responsibility: Theme state, persistence, and toggle logic.
+      location: DasiaAIO-Frontend/src/context/ThemeProvider.tsx
+      relationship_to_domain: domain depends on this
+    - component: Header and AccountManager
+      responsibility: Shared top chrome for elevated pages; expose profile and theme actions.
+      location: DasiaAIO-Frontend/src/components/Header.tsx and DasiaAIO-Frontend/src/components/AccountManager.tsx
+      relationship_to_domain: this uses domain outputs
+  interfaces_used_by_domain:
+    - interface: User
+      location: DasiaAIO-Frontend/src/App.tsx
+      usage_pattern: Shared user shape passed into UserDashboard, Header, AccountManager, and ProfileDashboard.
+    - interface: Permission
+      location: DasiaAIO-Frontend/src/utils/permissions.ts
+      usage_pattern: Used by App.tsx and navigation.ts for role gates.
+    - interface: SwapRequest
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      usage_pattern: Shapes shift swap list rendering in the support section.
+  data_flow_involving_domain: App.tsx owns activeView and user auth state; guard home renders UserDashboard; profile clicks from UserDashboard or AccountManager set activeView to profile; App.tsx then renders ProfileDashboard directly. Support section data loads in UserDashboard via fetchJsonOrThrow to attendance, shift, allocation, permit, and support ticket endpoints, while GuardShiftSwapPanel independently calls swap endpoints with raw fetch.
+  key_relationships_to_domain:
+    - from: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      to: DasiaAIO-Frontend/src/App.tsx
+      relationship: calls onViewChange('profile')
+    - from: DasiaAIO-Frontend/src/App.tsx
+      to: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+      relationship: renders directly when activeView is profile
+    - from: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+      to: DasiaAIO-Frontend/src/config/navigation.ts
+      relationship: imports getSidebarNav
+    - from: DasiaAIO-Frontend/src/components/Header.tsx
+      to: DasiaAIO-Frontend/src/components/AccountManager.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/AccountManager.tsx
+      to: DasiaAIO-Frontend/src/App.tsx
+      relationship: emits profile navigation callback supplied by routed screens
+    - from: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      to: DasiaAIO-Frontend/src/utils/api.ts
+      relationship: imports fetchJsonOrThrow and getAuthToken
+
+related_technology_stack:
+  languages_used_in_domain:
+    - TypeScript
+    - CSS
+    - Rust
+    - INI
+  frameworks_used_in_domain:
+    - name: React
+      usage_in_domain: State-driven frontend component composition and effect-based data loading.
+    - name: Tailwind CSS
+      usage_in_domain: Utility classes applied on top of semantic CSS variables in dashboard components.
+    - name: Axum
+      usage_in_domain: Backend API routing for support tickets, availability, and shift swap endpoints.
+  libraries_used_in_domain:
+    - name: localStorage
+      purpose_in_domain: Persists theme, auth session, tracking preferences, and other frontend state.
+    - name: browser Fetch API
+      purpose_in_domain: Performs support, profile, and shift swap HTTP requests.
+    - name: serviceWorker / PushManager
+      purpose_in_domain: Enables push subscription toggle in ProfileDashboard.
+  external_apis_used_in_domain: []
+
+related_conventions:
+  naming_patterns_in_domain: Dashboard-level screens use *Dashboard suffixes, while nested support modules use *Panel names. User-facing copy refers to the profile route as Account Settings.
+  structure_of_domain: App.tsx performs state-based routing; guard-specific workflows live in UserDashboard; shared chrome components are reused by elevated screens and ProfileDashboard but not by the new guard dashboard shell.
+  error_handling_in_domain: Shared fetchJsonOrThrow provides timeout, retry, and auth-expiry normalization, but several components still use raw fetch with ad hoc handling, including silent catches.
+  testing_in_domain: Existing plan artifacts and tests reference guard dashboard redesign coverage, including support and profile tab expectations.
+  documentation_in_domain: Architecture and system guide documents already describe UserDashboard as the new guard workspace and ProfileDashboard as the account/profile screen.
+
+related_dependencies:
+  internal:
+    - component: DasiaAIO-Frontend/src/utils/api.ts
+      relationship_to_domain: Provides auth token access and guarded fetch helper for UserDashboard.
+      direction: outbound
+    - component: DasiaAIO-Frontend/src/config/navigation.ts
+      relationship_to_domain: Supplies role-aware sidebar nav items to ProfileDashboard.
+      direction: outbound
+    - component: DasiaAIO-Frontend/src/utils/permissions.ts
+      relationship_to_domain: Supplies role/permission checks for App and navigation.
+      direction: outbound
+    - component: DasiaAIO-Backend/src/main.rs
+      relationship_to_domain: Registers API endpoints called from profile and support surfaces.
+      direction: outbound
+    - component: DasiaAIO-Backend/src/handlers/shift_swap.rs
+      relationship_to_domain: Implements swap endpoints used by GuardShiftSwapPanel.
+      direction: outbound
+  external:
+    - name: Browser DOM and Fetch APIs
+      purpose_for_domain: Theme class manipulation, local persistence, and network calls.
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: Profile update and photo endpoints
+      location: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+      concern: Uses bearer tokens from localStorage directly in raw fetch calls.
+    - area: Support tickets and shift swap requests
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx and DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      concern: Protected operational endpoints depend on bearer auth; inconsistent helper usage means inconsistent auth-expiry handling and retry behavior.
+  authentication_patterns_in_domain: Authenticated API calls use bearer tokens from getAuthToken or localStorage token values.
+  authorization_patterns_in_domain: App.tsx and navigation.ts use normalizeRole plus can(permission) checks for most elevated views; profile route is authenticated but not permission-gated.
+  data_validation_in_domain: Support and swap forms perform minimal required-field validation client-side before submitting JSON payloads.
+
+testing_patterns:
+  framework: Jest and plan-based Playwright coverage references
+  coverage_areas:
+    - Guard dashboard redesign includes support, map, and profile tab expectations in existing plan/test references.
+    - Support tickets heading presence is asserted in guardDashboardRedesign.test.tsx.
+  test_organization: Frontend unit and integration tests live under DasiaAIO-Frontend/src/__tests__ and tests-related folders.
+  mock_patterns:
+    - Existing repo testing notes call out explicit fetch stubbing and Response-like mocks for frontend tests.
+
+open_questions:
+  - question: Should the guard profile entry remain a global route to ProfileDashboard, or should it become a local section inside the new guard dashboard shell?
+    context: The PRD and redesign documentation describe a new guard workspace with its own navigation model, but the implementation still exits that shell for profile.
+    type: research
+    affects:
+      - frontend-codebase-audit-20260403
+  - question: Are the console errors observed in support tied to support-ticket requests timing out, or to shift-swap panel requests failing under expired or missing auth refresh?
+    context: Both flows exist in the same support screen, but only one uses the shared guarded API helper.
+    type: research
+    affects:
+      - frontend-codebase-audit-20260403
+
+gaps:
+  - area: Support error reproduction artifact
+    description: The code audit identifies likely failure paths but does not include captured browser console/network traces for the exact ERR_ABORTED event instance.
+    impact: research_blocker
+    affects:
+      - frontend-codebase-audit-20260403
+  - area: Dedicated settings surface
+    description: No standalone Settings page component or route exists; profile/settings behavior is consolidated in ProfileDashboard.
+    impact: nice_to_know
+    affects:
+      - frontend-codebase-audit-20260403

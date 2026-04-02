@@ -1,0 +1,1207 @@
+plan_id: sentinel-ux-redesign
+objective: >
+  Perform a thorough analysis of the SENTINEL frontend codebase to support
+  implementation of a "Unified Role-Centric Action Inbox + Workflow Timeline"
+  UI/UX redesign.
+focus_area: frontend-architecture
+created_at: "2025-07-21"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Auth state lives entirely in App.tsx (no AuthContext); roles are lowercase strings
+    ('guard','supervisor','admin','superadmin'); 'user' normalizes to 'guard'
+  - All routing is activeView string state — no React Router; viewRegistry maps 8 views to
+    components; dashboard sections (approvals, schedule, missions, analytics, trips, audit-log)
+    are handled INSIDE SuperadminDashboard via activeSection state
+  - Guard workspace = UserDashboard.tsx (5-tab bottom nav: mission|resources|support|map|profile);
+    GuardDashboard.tsx is a stub and should be ignored
+  - Elevated roles (superadmin/admin/supervisor) all render SuperadminDashboard which embeds
+    CommandCenterDashboard (6 SectionPanels) + User Management table in the 'dashboard' section
+  - Design system uses CSS-variable semantic tokens in index.css; Tailwind config maps tokens;
+    key named utilities: soc-dashboard-card, soc-scroll-area, soc-label, command-panel, etc.
+  - 14 hooks cover all data domains; NotificationCenter (toast), NotificationPanel (bell dropdown),
+    AlertsCenter (stub) are the three notification components; push notifications via
+    utils/pushNotifications.ts toggled from ProfileDashboard
+
+research_metadata:
+  methodology: >
+    Hybrid retrieval (semantic_search + grep_search) for initial discovery,
+    then targeted parallel read_file passes (3 passes) covering all dashboards,
+    hooks, types, config, styling, and layout components. Relationship discovery
+    via file imports. Approximately 65 files read across 2 conversations.
+  scope: >
+    Full DasiaAIO-Frontend/src/ tree: all dashboard components, hooks, types,
+    utilities, config, layout, rbac, context, and styling files. Backend
+    (Rust/Axum) read only for API endpoint reference; not analyzed architecturally.
+  confidence: high
+  coverage: 92
+  decision_blockers: 0
+  research_blockers: 0
+
+# ============================================================
+# FILES ANALYZED
+# ============================================================
+files_analyzed:
+  - file: App.tsx
+    path: DasiaAIO-Frontend/src/App.tsx
+    purpose: Root component; auth state manager; view-based router; role-to-dashboard dispatcher
+    key_elements:
+      - element: User
+        type: interface
+        location: App.tsx:~20
+        description: >
+          { id, email, username, role: Role, fullName?, full_name?, profilePhoto?,
+          legalConsentAccepted?, consentAcceptedAt?, consentVersion?,
+          phoneNumber?, address?, licenseNumber?, licenseIssuedDate?,
+          licenseExpiryDate?, [key: string]: any }
+      - element: isLoggedIn
+        type: variable
+        location: App.tsx:~60
+        description: Boolean auth gate
+      - element: activeView
+        type: variable
+        location: App.tsx:~62
+        description: String-based route state; drives renderProtectedView
+      - element: viewRegistry
+        type: variable
+        location: App.tsx:~200
+        description: >
+          Map<string, { component: ReactNode, permission?: Permission }> with 8 entries:
+          calendar, performance, merit, firearms, allocation, permits, maintenance, armored-cars
+      - element: renderHome
+        type: function
+        location: App.tsx:~500
+        description: >
+          Returns SuperadminDashboard for superadmin/admin/supervisor;
+          UserDashboard for guard
+      - element: handleLogin
+        type: function
+        location: App.tsx:~130
+        description: >
+          Calls normalizeRole, stores token+refreshToken+user in localStorage,
+          sets activeView to 'overview' (guard) or 'dashboard' (elevated)
+      - element: handleLogout
+        type: function
+        location: App.tsx:~160
+        description: Clears localStorage, resets all auth state
+    language: TypeScript
+    lines: 1100
+
+  - file: types/auth.ts
+    path: DasiaAIO-Frontend/src/types/auth.ts
+    purpose: Role type definitions and normalization utilities
+    key_elements:
+      - element: ROLES
+        type: variable
+        location: types/auth.ts:~5
+        description: "['superadmin','admin','supervisor','guard','user'] as const"
+      - element: Role
+        type: type
+        location: types/auth.ts:~12
+        description: "Exclude<LegacyRole, 'user'> — never includes 'user'"
+      - element: normalizeRole
+        type: function
+        location: types/auth.ts:~20
+        description: >
+          Coerces any input to lowercase Role; 'user' → 'guard';
+          unknown/null → 'guard'
+      - element: isElevatedRole
+        type: function
+        location: types/auth.ts:~35
+        description: "Returns true for superadmin | admin | supervisor"
+    language: TypeScript
+    lines: 50
+
+  - file: utils/permissions.ts
+    path: DasiaAIO-Frontend/src/utils/permissions.ts
+    purpose: RBAC permission map and utility functions
+    key_elements:
+      - element: Permission
+        type: type
+        location: utils/permissions.ts:~3
+        description: >
+          Union: 'manage_users' | 'view_audit_logs' | 'approve_guards' |
+          'view_analytics' | 'manage_firearms' | 'manage_allocations' |
+          'manage_permits' | 'manage_maintenance' | 'manage_armored_cars' |
+          'view_guard_workspace'
+      - element: rolePermissions
+        type: variable
+        location: utils/permissions.ts:~15
+        description: >
+          Map { superadmin: all 10, admin: 9 (no view_audit_logs),
+          supervisor: 8 (no manage_users, no view_audit_logs),
+          guard: ['view_guard_workspace'] }
+      - element: can
+        type: function
+        location: utils/permissions.ts:~45
+        description: "can(roleInput, permission): boolean"
+      - element: canAny
+        type: function
+        location: utils/permissions.ts:~50
+        description: "canAny(roleInput, permissions[]): boolean"
+    language: TypeScript
+    lines: 60
+
+  - file: config/navigation.ts
+    path: DasiaAIO-Frontend/src/config/navigation.ts
+    purpose: Generates sidebar navigation items per role
+    key_elements:
+      - element: ELEVATED_NAV
+        type: variable
+        location: config/navigation.ts:~5
+        description: >
+          15 nav items in 3 groups: MAIN MENU (dashboard, approvals, calendar,
+          analytics, audit-log), OPERATIONS (trips, schedule, missions,
+          performance, merit), RESOURCES (firearms, allocation, permits,
+          maintenance, armored-cars). Each item has optional permission guard.
+      - element: GUARD_NAV
+        type: variable
+        location: config/navigation.ts:~80
+        description: >
+          6 nav items: MAIN MENU (overview/dashboard, calendar, schedule),
+          RESOURCES (firearms, permits-"My Permits", support-"Contacts")
+      - element: getSidebarNav
+        type: function
+        location: config/navigation.ts:~120
+        description: >
+          getSidebarNav(role, { homeView? }): NavGroup[]
+          Filters ELEVATED_NAV by permission for elevated roles;
+          returns GUARD_NAV for guard
+    language: TypeScript
+    lines: 150
+
+  - file: components/UserDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+    purpose: Real guard dashboard (5-tab mobile-first experience)
+    key_elements:
+      - element: GuardSection
+        type: type
+        location: UserDashboard.tsx:~15
+        description: "'mission' | 'resources' | 'support' | 'map'"
+      - element: activeSection
+        type: variable
+        location: UserDashboard.tsx:~80
+        description: GuardSection state; defaults to 'mission'
+      - element: tabNav
+        type: variable
+        location: UserDashboard.tsx:~760
+        description: >
+          Array of 5 tab items: mission (Mission Screen), resources (Resources),
+          support (Support), map (Map), profile (Profile); bottom sticky bar
+      - element: attendance
+        type: variable
+        location: UserDashboard.tsx:~90
+        description: Array of attendance records from GET /api/guard/{id}/attendance
+      - element: scheduleItems
+        type: variable
+        location: UserDashboard.tsx:~92
+        description: Array of scheduled shifts
+      - element: checkInStatus
+        type: variable
+        location: UserDashboard.tsx:~100
+        description: null | 'checked-in' | 'checked-out'
+      - element: locationTrackingEnabled
+        type: variable
+        location: UserDashboard.tsx:~110
+        description: Boolean; toggles device geolocation reporting
+      - element: incidentModalOpen
+        type: variable
+        location: UserDashboard.tsx:~115
+        description: Boolean; shows IncidentReportForm modal
+    language: TypeScript
+    lines: 950
+
+  - file: components/SuperadminDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx
+    purpose: Dashboard for superadmin, admin, and supervisor roles
+    key_elements:
+      - element: activeSection
+        type: variable
+        location: SuperadminDashboard.tsx:~1450
+        description: >
+          'dashboard' | 'approvals' | 'schedule' | 'missions' |
+          'analytics' | 'trips' | 'audit-log'; defaults to 'dashboard'
+      - element: handleNavigate
+        type: function
+        location: SuperadminDashboard.tsx:~510
+        description: >
+          Routes internal sections (approvals/schedule/dashboard/missions/
+          analytics/trips/audit-log) to setActiveSection;
+          delegates external views to onViewChange prop
+      - element: canManageUsers
+        type: variable
+        location: SuperadminDashboard.tsx:~860
+        description: "true only for admin/superadmin (permission: 'manage_users')"
+      - element: canViewUserRow
+        type: function
+        location: SuperadminDashboard.tsx:~867
+        description: >
+          Scopes user table rows by viewer role:
+          superadmin=all, admin=no superadmins, supervisor=only guards
+      - element: filteredUsers
+        type: variable
+        location: SuperadminDashboard.tsx:~960
+        description: >
+          Derived from users[] through roleFilter, statusFilter, searchQuery;
+          sorted by rolePriority then alphabetical name
+      - element: UserDerivedStatus
+        type: type
+        location: SuperadminDashboard.tsx:~50
+        description: "'active' | 'inactive' | 'pending' | 'suspended'"
+    language: TypeScript
+    lines: 2500
+
+  - file: components/dashboard/CommandCenterDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    purpose: Main ops center; rendered inside SuperadminDashboard 'dashboard' section
+    key_elements:
+      - element: QuickActionItem
+        type: interface
+        location: CommandCenterDashboard.tsx:~5
+        description: "{ label, tone: 'indigo'|'emerald'|'blue'|'amber', onClick }"
+      - element: SectionPanel
+        type: component
+        location: CommandCenterDashboard.tsx:~220
+        description: >
+          Collapsible card wrapper used for 5 logical groups:
+          System Status, Tactical View, Live Operations,
+          Operations Management, Asset Monitoring
+      - element: systemStatus
+        type: variable
+        location: CommandCenterDashboard.tsx:~360
+        description: "'Operational' | 'Warning' | 'Critical' derived from alerts"
+      - element: threatLevel
+        type: variable
+        location: CommandCenterDashboard.tsx:~367
+        description: "'Low' | 'Medium' | 'High' derived from alerts + guardsAbsent"
+      - element: liveOperationsItems
+        type: variable
+        location: CommandCenterDashboard.tsx:~385
+        description: >
+          useMemo-derived array of LiveFeedItem (max 12); sources:
+          active/scheduled shifts, dispatched vehicles, incidents, issued firearms
+      - element: incidentAlerts
+        type: variable
+        location: CommandCenterDashboard.tsx:~415
+        description: "Merged array of incident-driven + predictive alerts (max 6)"
+      - element: lastRefreshAt
+        type: variable
+        location: CommandCenterDashboard.tsx:~100
+        description: Timestamp of last auto-refresh (every 15 seconds)
+    language: TypeScript
+    lines: 450
+
+  - file: components/ProfileDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/ProfileDashboard.tsx
+    purpose: User profile editing, push notification toggle, guard availability
+    key_elements:
+      - element: isPushEnabled
+        type: variable
+        location: ProfileDashboard.tsx:~50
+        description: Boolean state for Web Push subscription status
+      - element: subscribeToPush
+        type: function
+        location: ProfileDashboard.tsx:~100
+        description: >
+          Calls registerServiceWorker() → requestPushPermission() →
+          subscribeToPush(userId) from utils/pushNotifications.ts
+      - element: availabilityToggle
+        type: variable
+        location: ProfileDashboard.tsx:~150
+        description: >
+          Guard-only: POST /api/guard-replacement/set-availability {available: bool}
+      - element: profilePhotoUpload
+        type: function
+        location: ProfileDashboard.tsx:~200
+        description: >
+          Base64-encodes selected image; PUT /api/user/{id}/profile-photo;
+          calls onProfilePhotoUpdate callback
+    language: TypeScript
+    lines: 400
+
+  - file: components/NotificationPanel.tsx
+    path: DasiaAIO-Frontend/src/components/NotificationPanel.tsx
+    purpose: Bell-icon dropdown showing backend-persisted notifications
+    key_elements:
+      - element: Notification
+        type: interface
+        location: NotificationPanel.tsx:~10
+        description: >
+          { id, userId, title, message, type, relatedShiftId?, read: boolean,
+          createdAt, updatedAt }
+      - element: unreadCount
+        type: variable
+        location: NotificationPanel.tsx:~40
+        description: Polled every 30s from GET /api/users/{id}/notifications/unread-count
+      - element: markAllRead
+        type: function
+        location: NotificationPanel.tsx:~70
+        description: PUT /api/users/{id}/notifications/read-all
+    language: TypeScript
+    lines: 200
+
+  - file: components/NotificationCenter.tsx
+    path: DasiaAIO-Frontend/src/components/NotificationCenter.tsx
+    purpose: Fixed top-right toast stack for in-app ephemeral notifications
+    key_elements:
+      - element: createNotification
+        type: function
+        location: NotificationCenter.tsx:~5
+        description: >
+          Factory: createNotification(type, title, message) →
+          { id: uuid, type: 'success'|'error'|'info'|'warning', title, message, timestamp }
+      - element: auto-dismiss
+        type: pattern
+        location: NotificationCenter.tsx:~50
+        description: Each notification auto-dismissed after 5000ms via setTimeout
+      - element: position
+        type: pattern
+        location: NotificationCenter.tsx:~80
+        description: "fixed top-4 right-4 z-[80]; max 5 toasts stacked vertically"
+    language: TypeScript
+    lines: 120
+
+  - file: components/MeritScoreDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx
+    purpose: Merit and performance scoring visualization for guards
+    key_elements:
+      - element: RankedGuard
+        type: interface
+        location: MeritScoreDashboard.tsx:~8
+        description: "{ guardId, guardName, rank, meritScore: MeritScore }"
+      - element: MeritScore
+        type: interface
+        location: MeritScoreDashboard.tsx:~15
+        description: >
+          { overall, attendanceScore, punctualityScore, clientRating,
+          stats: { totalShifts, completedShifts, lateCheckins, absences } }
+      - element: RatingTrendChart
+        type: component
+        location: MeritScoreDashboard.tsx:~40
+        description: "SVG polyline chart; x=time points, y=clientRating (0-5 scale)"
+    language: TypeScript
+    lines: 300
+
+  - file: layout/OperationalShell.tsx
+    path: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+    purpose: Main layout wrapper providing Sidebar + Header + scrollable content area
+    key_elements:
+      - element: OperationalShellProps
+        type: interface
+        location: OperationalShell.tsx:~5
+        description: >
+          { user, title, badgeLabel?, navItems: NavGroup[], activeView,
+          onNavigate, onLogout, mobileMenuOpen, onMenuOpen, onMenuClose,
+          onLogoClick, rightSlot?: ReactNode, error?: string, children }
+      - element: layout structure
+        type: pattern
+        location: OperationalShell.tsx:~60
+        description: >
+          flex h-[100dvh] overflow-hidden → Sidebar (left, w-64) +
+          main (flex-1, flex-col) → Header (fixed top) + soc-scroll-area div
+    language: TypeScript
+    lines: 150
+
+  - file: components/rbac/Allowed.tsx
+    path: DasiaAIO-Frontend/src/components/rbac/Allowed.tsx
+    purpose: Declarative RBAC gate component
+    key_elements:
+      - element: Allowed
+        type: component
+        location: Allowed.tsx:~5
+        description: >
+          Props: { role: unknown, permission: Permission, fallback?: ReactNode, children }
+          Renders children if can(role, permission); else renders fallback
+    language: TypeScript
+    lines: 30
+
+  - file: context/OperationalEventContext.tsx
+    path: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+    purpose: Context for cross-panel selected-event coordination in CommandCenter
+    key_elements:
+      - element: OperationalEvent
+        type: interface
+        location: OperationalEventContext.tsx:~5
+        description: "{ id: string, type: 'incident'|'alert'|'guard'|'vehicle', title: string }"
+      - element: context value
+        type: variable
+        location: OperationalEventContext.tsx:~30
+        description: >
+          { selectedEventId: string|null, selectedEvent: OperationalEvent|null,
+          selectEvent(event|null): void, clearSelection(): void }
+    language: TypeScript
+    lines: 80
+
+  - file: index.css
+    path: DasiaAIO-Frontend/src/index.css
+    purpose: Full CSS design token system; light + dark mode; named utility classes
+    key_elements:
+      - element: CSS variables (light)
+        type: pattern
+        location: "index.css::root"
+        description: >
+          --color-background:#f5f7fb, --color-surface:#ffffff,
+          --color-surface-elevated:#f3f6fb, --color-text-primary:#111827,
+          --color-text-secondary:#6b7280, --color-primary:#0f4ccf,
+          --color-accent:#0891b2, success/warning/danger/info semantic groups
+      - element: CSS variables (dark)
+        type: pattern
+        location: "index.css:.dark"
+        description: >
+          --color-background:#0b1220, --color-surface:#111827,
+          --color-surface-elevated:#172133, --color-primary:#38bdf8
+      - element: z-index scale
+        type: pattern
+        location: "index.css::root"
+        description: >
+          --z-base:0, --z-map:5, --z-sticky:20, --z-header:30,
+          --z-drawer:48, --z-floating:60, --z-toast:80,
+          --z-overlay:100, --z-modal:110
+      - element: named utility classes
+        type: pattern
+        location: index.css:~200
+        description: >
+          soc-dashboard-card, soc-scroll-area, soc-label, soc-empty-state,
+          soc-modal-panel, soc-btn-primary, soc-warning-banner, command-panel,
+          skip-link, bento-card, table-glass, thead-glass, tone-*-surface,
+          status-bar-info/warning/critical
+    language: CSS
+    lines: 1200
+
+  - file: tailwind.config.ts
+    path: DasiaAIO-Frontend/tailwind.config.ts
+    purpose: Maps Tailwind semantic color names to CSS variables
+    key_elements:
+      - element: semantic colors
+        type: pattern
+        location: tailwind.config.ts:~20
+        description: >
+          background, surface, surface-elevated, surface-hover,
+          text-primary, text-secondary, text-tertiary, text-disabled,
+          border (DEFAULT/subtle/elevated), success/warning/danger/info
+          (DEFAULT/bg/border/text), primary (DEFAULT/hover/active/text),
+          accent (DEFAULT/secondary)
+    language: TypeScript
+    lines: 120
+
+  - file: components/Sidebar.tsx
+    path: DasiaAIO-Frontend/src/components/Sidebar.tsx
+    purpose: Left sidebar with grouped nav items and service health indicator
+    key_elements:
+      - element: SidebarItem
+        type: interface
+        location: Sidebar.tsx:~5
+        description: "{ key: string, label: string, icon?: ReactNode, badge?: number }"
+      - element: navGlyphs
+        type: variable
+        location: Sidebar.tsx:~30
+        description: Map of view-key → Lucide icon component
+      - element: useServiceHealth
+        type: hook
+        location: Sidebar.tsx:~80
+        description: Integrated for showing system health status in sidebar footer
+    language: TypeScript
+    lines: 250
+
+# ============================================================
+# PATTERNS FOUND
+# ============================================================
+patterns_found:
+  - category: architecture
+    pattern: String-based view routing without React Router
+    description: >
+      App.tsx holds activeView state (string). renderProtectedView checks viewRegistry
+      for the string key; falls through to renderHome for 'overview'/'dashboard'.
+      Dashboard components have their own activeSection state for sub-navigation.
+      Deep navigation requires coordinated prop callbacks (onViewChange).
+    examples:
+      - file: App.tsx
+        location: App.tsx:~500-600
+        snippet: "viewRegistry[activeView] ?? renderHome()"
+      - file: SuperadminDashboard.tsx
+        location: SuperadminDashboard.tsx:~510
+        snippet: "if (view === 'approvals' || ...) setActiveSection(view) else onViewChange?.(view)"
+    prevalence: common
+
+  - category: architecture
+    pattern: Monolithic dashboard components with co-located data fetching
+    description: >
+      UserDashboard (~950 lines) and SuperadminDashboard (~2500 lines) each own
+      their data-fetching logic (multiple fetchX() functions), form state,
+      filter state, and section navigation. No separation between container and
+      presentation layers.
+    examples:
+      - file: SuperadminDashboard.tsx
+        location: SuperadminDashboard.tsx:~200-800
+        snippet: "fetchData(), fetchShifts(), fetchMissions(), fetchPendingApprovals(), fetchGuardsAndFirearms()"
+      - file: UserDashboard.tsx
+        location: UserDashboard.tsx:~100-400
+        snippet: "useState for attendance, scheduleItems, firearmItems, ticketItems, checkInStatus"
+    prevalence: common
+
+  - category: architecture
+    pattern: Role-conditional rendering via normalizeRole + can() checks
+    description: >
+      Role checks always pipe through normalizeRole() before comparison.
+      can(role, permission) used inline in JSX for conditional rendering.
+      Allowed component provides declarative RBAC gate.
+    examples:
+      - file: SuperadminDashboard.tsx
+        location: SuperadminDashboard.tsx:~860
+        snippet: "const canManageUsers = can(normalizedViewerRole, 'manage_users')"
+      - file: components/rbac/Allowed.tsx
+        location: Allowed.tsx:~10
+        snippet: "if (!can(role, permission)) return fallback ?? null"
+    prevalence: common
+
+  - category: structure
+    pattern: SectionPanel as collapsible card container
+    description: >
+      CommandCenterDashboard uses a SectionPanel component to group related
+      sub-panels (title, subtitle, icon, collapsible, actions slot).
+      Five panels: System Status, Tactical View, Live Operations,
+      Operations Management, Asset Monitoring.
+    examples:
+      - file: CommandCenterDashboard.tsx
+        location: CommandCenterDashboard.tsx:~240
+        snippet: "<SectionPanel title=\"Tactical View\" subtitle=\"...\" collapsible>"
+    prevalence: occasional
+
+  - category: structure
+    pattern: Bottom tab navigation for mobile guard dashboard
+    description: >
+      UserDashboard renders a sticky bottom tab bar with 5 items
+      (mission, resources, support, map, profile). Conceptually similar to
+      mobile app tab bars. Desktop adapts same content layout.
+    examples:
+      - file: UserDashboard.tsx
+        location: UserDashboard.tsx:~760
+        snippet: "tabNav = [{key:'mission'},{key:'resources'},{key:'support'},{key:'map'},{key:'profile'}]"
+    prevalence: occasional
+
+  - category: naming
+    pattern: Tone-based StatCard coloring
+    description: >
+      StatCard accepts a tone prop ('guard'|'vehicle'|'mission'|'maintenance'|
+      'analytics'|'default') that maps to CSS utility classes (tone-guard-surface, etc.)
+    examples:
+      - file: dashboard/ui/StatCard.tsx
+        location: StatCard.tsx:~10
+        snippet: "tone-guard-surface, tone-vehicle-surface, tone-mission-surface"
+    prevalence: common
+
+  - category: error_handling
+    pattern: addNotification() as universal user feedback mechanism
+    description: >
+      Both SuperadminDashboard and UserDashboard define an addNotification()
+      function that wraps createNotification() and appends to local notifications state.
+      NotificationCenter renders the toast stack.
+    examples:
+      - file: SuperadminDashboard.tsx
+        location: SuperadminDashboard.tsx:~870
+        snippet: "addNotification('error', 'Validation Error', 'Please select a guard')"
+    prevalence: common
+
+  - category: architecture
+    pattern: Polling-based data freshness
+    description: >
+      Multiple hooks use setInterval for auto-refresh (useOpsSummary: 30s,
+      CommandCenterDashboard: 15s, NotificationPanel: 30s). No WebSocket for
+      live data; all updates are poll-based.
+    examples:
+      - file: CommandCenterDashboard.tsx
+        location: CommandCenterDashboard.tsx:~85
+        snippet: "setInterval(refresh, 15_000)"
+    prevalence: common
+
+  - category: testing
+    pattern: No test coverage for component files found
+    description: >
+      tests/ directory exists but contains only tracking_audit_integration.rs
+      (Rust integration test). No React component tests located.
+    examples:
+      - file: DasiaAIO-Backend/tests/tracking_audit_integration.rs
+        location: tracking_audit_integration.rs:1
+        snippet: "Rust integration test only"
+    prevalence: rare
+
+# ============================================================
+# RELATED ARCHITECTURE
+# ============================================================
+related_architecture:
+  components_relevant_to_domain:
+    - component: App.tsx
+      responsibility: Auth state owner + view router + role-to-dashboard dispatcher
+      location: src/App.tsx
+      relationship_to_domain: Root orchestrator; all routing passes through here
+
+    - component: SuperadminDashboard
+      responsibility: >
+        Full dashboard for elevated roles; owns 7 sections including dashboard,
+        approvals, schedule, missions, analytics, trips, audit-log; embeds
+        CommandCenterDashboard in dashboard section
+      location: src/components/SuperadminDashboard.tsx
+      relationship_to_domain: Primary elevated-role entry point
+
+    - component: UserDashboard
+      responsibility: Guard workspace with 5-tab experience (mission, resources, support, map, profile)
+      location: src/components/UserDashboard.tsx
+      relationship_to_domain: Primary guard entry point
+
+    - component: CommandCenterDashboard
+      responsibility: >
+        Ops center with 5 SectionPanels: System Status, Tactical View,
+        Live Operations, Operations Management, Asset Monitoring
+      location: src/components/dashboard/CommandCenterDashboard.tsx
+      relationship_to_domain: Nested ops hub inside SuperadminDashboard
+
+    - component: OperationalShell
+      responsibility: Layout wrapper (Sidebar + Header + scroll area)
+      location: src/components/layout/OperationalShell.tsx
+      relationship_to_domain: All elevated-role views render inside this shell
+
+    - component: NotificationCenter
+      responsibility: Fixed top-right ephemeral toast stack (in-app feedback)
+      location: src/components/NotificationCenter.tsx
+      relationship_to_domain: Used by SuperadminDashboard and UserDashboard for UX feedback
+
+    - component: NotificationPanel
+      responsibility: Bell-icon dropdown for backend-persisted user notifications
+      location: src/components/NotificationPanel.tsx
+      relationship_to_domain: User-facing notification history; used in Header
+
+    - component: Allowed
+      responsibility: Declarative RBAC gate; renders children if permission satisfied
+      location: src/components/rbac/Allowed.tsx
+      relationship_to_domain: Used throughout for role-based UI surfaces
+
+  interfaces_used_by_domain:
+    - interface: User (AppUser)
+      location: src/App.tsx
+      usage_pattern: >
+        Passed as prop to all dashboard components; source of truth for role,
+        id, profilePhoto, and all profile fields
+
+    - interface: Permission
+      location: src/utils/permissions.ts
+      usage_pattern: >
+        Used as argument to can(), canAny(), Allowed component, and viewRegistry
+        permission guards
+
+    - interface: NavGroup / NavItem
+      location: src/config/navigation.ts
+      usage_pattern: >
+        Returned by getSidebarNav(); passed to OperationalShell navItems prop;
+        consumed by Sidebar for rendering
+
+  data_flow_involving_domain: >
+    Login → App.tsx handleLogin → normalizeRole → stores in localStorage →
+    sets isLoggedIn=true → renders OperationalShell (elevated) or UserDashboard layout (guard) →
+    activeView prop drives view; DashboardComponent owns activeSection sub-routing →
+    each hook polls its API endpoint on mount + interval →
+    data passed as props to sub-panels → user actions call addNotification()
+    for feedback + API mutations
+
+  key_relationships_to_domain:
+    - from: SuperadminDashboard
+      to: CommandCenterDashboard
+      relationship: composes (renders as child in 'dashboard' section)
+
+    - from: SuperadminDashboard
+      to: AnalyticsDashboard
+      relationship: composes (renders in 'analytics' section)
+
+    - from: SuperadminDashboard
+      to: TripManagement
+      relationship: composes (renders in 'trips' section)
+
+    - from: SuperadminDashboard
+      to: AuditDashboard
+      relationship: composes (lazy-loaded in 'audit-log' section)
+
+    - from: App.tsx
+      to: SuperadminDashboard
+      relationship: composes (elevated roles renderHome)
+
+    - from: App.tsx
+      to: UserDashboard
+      relationship: composes (guard renderHome)
+
+    - from: OperationalShell
+      to: Sidebar
+      relationship: composes
+
+    - from: CommandCenterDashboard
+      to: OperationalEventContext
+      relationship: provides via OperationalEventProvider wrapper
+
+# ============================================================
+# TECHNOLOGY STACK
+# ============================================================
+related_technology_stack:
+  languages_used_in_domain:
+    - TypeScript
+    - CSS (CSS Custom Properties / Tailwind)
+
+  frameworks_used_in_domain:
+    - name: React 18
+      usage_in_domain: >
+        Component tree, hooks (useState/useEffect/useMemo/useCallback),
+        context (OperationalEventContext, ThemeProvider). No React Router.
+    - name: Tailwind CSS v4
+      usage_in_domain: >
+        Atomic utility classes mapped to CSS variables via tailwind.config.ts;
+        semantic color system; responsive grid; animations
+
+    - name: Vite
+      usage_in_domain: Build tool; no SSR; SPA build to app-dist/
+
+  libraries_used_in_domain:
+    - name: lucide-react
+      purpose_in_domain: Icon set throughout sidebar, dashboard panels, stat cards
+    - name: Web Push API
+      purpose_in_domain: Push notifications via utils/pushNotifications.ts in ProfileDashboard
+    - name: Leaflet (suspected)
+      purpose_in_domain: Map in OperationalMap / GuardMapTab (not confirmed in reads)
+
+  external_apis_used_in_domain:
+    - name: SENTINEL Backend (Rust/Axum)
+      integration_point: "http://localhost:5000 (dev) / Railway URL (prod)"
+
+# ============================================================
+# CONVENTIONS
+# ============================================================
+related_conventions:
+  naming_patterns_in_domain: >
+    Components: PascalCase files matching export name (UserDashboard.tsx).
+    Hooks: use* prefix in hooks/ directory.
+    CSS utilities: soc-* prefix for named utility classes.
+    Tone classes: tone-{name}-surface for semantic color variants.
+    View keys: kebab-case strings ('audit-log', 'armored-cars').
+    Section types: union string literals (GuardSection, activeSection type).
+
+  structure_of_domain: >
+    src/
+      App.tsx (root)
+      types/ (auth.ts, other types)
+      utils/ (permissions.ts, pushNotifications.ts, etc.)
+      config/ (navigation.ts)
+      context/ (OperationalEventContext, ThemeProvider)
+      hooks/ (14 hooks)
+      components/
+        layout/ (OperationalShell)
+        dashboard/ (CommandCenterDashboard + all sub-panels + ui/)
+        rbac/ (Allowed, DeniedFallback)
+        [feature components at root level]
+
+  error_handling_in_domain: >
+    API errors caught in try/catch inside fetch functions within dashboard components.
+    User feedback via addNotification() → toast via NotificationCenter.
+    Global error state in App.tsx for network/backend health issues.
+    ErrorBoundary component exists (src/components/ErrorBoundary.tsx) but usage scope unknown.
+
+  testing_in_domain: >
+    No frontend component tests found. Backend has Rust integration test.
+    Playwright config (playwright.config.ts) and jest.config.cjs exist but
+    test coverage status unknown.
+
+  documentation_in_domain: >
+    CHATGPT_SYSTEM_GUIDE.md and SENTINEL - Group 8.md are the primary documentation files
+    maintained in sync with implementation per system-guide-maintenance.instructions.md.
+    COPILOT.md provides architectural context for Copilot.
+
+# ============================================================
+# DEPENDENCIES
+# ============================================================
+related_dependencies:
+  internal:
+    - component: utils/permissions.ts
+      relationship_to_domain: Used by all components for RBAC checks
+      direction: outbound
+
+    - component: types/auth.ts
+      relationship_to_domain: Role type and normalizeRole used everywhere
+      direction: outbound
+
+    - component: config/navigation.ts
+      relationship_to_domain: Nav items consumed by OperationalShell/Sidebar
+      direction: outbound
+
+    - component: hooks/
+      relationship_to_domain: All 14 hooks consumed by dashboard sub-panels
+      direction: outbound
+
+    - component: context/OperationalEventContext
+      relationship_to_domain: Wraps CommandCenterDashboard for event coordination
+      direction: bidirectional
+
+  external:
+    - name: lucide-react
+      purpose_for_domain: Icons in nav, stat cards, dashboard panels
+
+    - name: tailwindcss
+      purpose_for_domain: Primary styling system
+
+# ============================================================
+# SECURITY CONSIDERATIONS
+# ============================================================
+domain_security_considerations:
+  sensitive_areas:
+    - area: Auth token storage
+      location: App.tsx handleLogin / handleLogout
+      concern: >
+        JWT + refreshToken stored in localStorage (no HttpOnly cookie).
+        Susceptible to XSS token theft. No CSRF protection needed for
+        token-based auth, but XSS hardening in user-provided content is critical.
+    - area: Role checking without server revalidation
+      location: utils/permissions.ts + renderProtectedView
+      concern: >
+        Client-side role checks gate view rendering only; backend must
+        independently validate on every API request. Confirmed backend
+        uses middleware auth layer (DasiaAIO-Backend/src/middleware/).
+    - area: window.confirm for destructive operations
+      location: SuperadminDashboard.tsx handleDeleteUser, handleBulkDeleteSelected
+      concern: >
+        Uses native window.confirm — not ARIA-role-correct dialog; easily
+        bypassed by automation. No additional confirmation for bulk delete.
+
+  authentication_patterns_in_domain: >
+    JWT stored in localStorage['token']; refreshToken in localStorage['refreshToken'];
+    getAuthHeaders() utility appends Authorization: Bearer token to all API calls.
+    handleLogin normalizes role on receipt. handleLogout clears all localStorage.
+
+  authorization_patterns_in_domain: >
+    Client: normalizeRole + can()/canAny() + Allowed component for UI gates.
+    canViewUserRow / canEditUserRow functions implement row-level scoping in user table.
+    Backend: middleware in DasiaAIO-Backend/src/middleware/ (assumed JWT verification).
+
+  data_validation_in_domain: >
+    Form inputs validated in submit handlers (mission form checks selectedGuards/
+    selectedFirearms/selectedVehicles before POST). No client-side schema
+    validation library detected (no Zod/Yup imports found).
+
+# ============================================================
+# HOOK INVENTORY
+# ============================================================
+# Documented here as a dedicated section for the redesign
+hooks_inventory:
+  - name: useIncidents
+    file: hooks/useIncidents.ts
+    returns: "{ incidents: Incident[], loading, error, lastUpdated, refresh, reportIncident }"
+    api: "GET /api/incidents/active?page=1&page_size=50"
+    incident_type: >
+      { id, title, description, location, reported_by, status: 'open'|'investigating'|'resolved',
+      priority: 'low'|'medium'|'high'|'critical', created_at, updated_at }
+
+  - name: useOpsShifts
+    file: hooks/useOpsShifts.ts
+    returns: "{ shifts[], loading, error, lastUpdated, refresh }"
+    api: "GET /api/guard-replacement/shifts"
+
+  - name: useOpsSummary
+    file: hooks/useOpsSummary.ts
+    returns: "{ summary: OpsSummary, loading, error, lastUpdated, refresh }"
+    ops_summary_type: >
+      { activeGuardsOnDuty, guardsAbsentToday, pendingGuardApprovals,
+      firearmsCurrentlyIssued, overdueFirearmReturns, activeArmoredCarTrips,
+      vehiclesInMaintenance, expiringGuardPermits }
+    api: "7 parallel endpoints (shifts, approvals, allocations, overdue, trips, vehicles, permits)"
+
+  - name: usePredictiveAlerts
+    file: hooks/usePredictiveAlerts.ts
+    returns: "{ alerts: PredictiveAlert[], loading, error, lastUpdated, refresh }"
+    predictive_alert_type: >
+      { id, category, severity: 'info'|'warning'|'critical', message, detectedAt, context? }
+    api: "GET /api/alerts/predictive"
+
+  - name: useGuardReliability
+    file: hooks/useGuardReliability.ts
+    returns: "{ leaders: GuardReliability[], loading, error, lastUpdated, refresh }"
+    api: "GET /api/analytics/guard-reliability"
+
+  - name: useGuardAbsencePrediction
+    file: hooks/useGuardAbsencePrediction.ts
+    returns: "{ predictions: GuardAbsencePrediction[], loading, error, lastUpdated, refresh }"
+    prediction_type: >
+      { guardId, guardName, riskScore, riskLevel: 'LOW'|'MEDIUM'|'HIGH',
+      previousAbsences, lateCheckins, recentLeaveRequests, formula, calculatedAt }
+    api: "GET /api/ai/guard-absence-risk"
+
+  - name: useReplacementSuggestions
+    file: hooks/useReplacementSuggestions.ts
+    returns: "{ postId, postName, suggestions: ReplacementSuggestion[], loading, error, lastUpdated, refresh }"
+    suggestion_type: >
+      { guardId, guardName, reliabilityScore, distanceKm, availability,
+      permitValid, distanceScore, replacementScore, formula, generatedAt }
+    api: "GET /api/ai/replacement-suggestions"
+
+  - name: useVehicleMaintenancePrediction
+    file: hooks/useVehicleMaintenancePrediction.ts
+    returns: "{ predictions: VehicleMaintenancePrediction[], loading, error, lastUpdated, refresh }"
+    prediction_type: >
+      { vehicleId, licensePlate, riskScore, riskLevel: 'LOW'|'MEDIUM'|'HIGH',
+      mileageSinceService, daysSinceService, recommendedAction, formula }
+    api: "GET /api/ai/vehicle-maintenance-risk"
+
+  - name: useOpsAssets
+    file: hooks/useOpsAssets.ts
+    returns: "{ firearms[], vehicles[], loading, error, lastUpdated, refresh }"
+    api: "GET /api/firearms + GET /api/armored-cars"
+
+  - name: useOpsAlerts
+    file: hooks/useOpsAlerts.ts
+    returns: "getOpsAlerts(summary): OpsAlert[] — pure function, NOT a hook"
+    api: "Derived from OpsSummary (no API call)"
+
+  - name: useServiceHealth
+    file: hooks/useServiceHealth.ts
+    returns: "{ services: ServiceHealthResult, refresh }"
+    api: "GET /api/health/system"
+
+  - name: useOperationalMapData
+    file: hooks/useOperationalMapData.ts
+    returns: "{ clientSites, trackingPoints, geofenceAlerts, activeGuards, guardHistory, ... }"
+    api: "Multiple tracking endpoints"
+
+  - name: useAuditLogs
+    file: hooks/useAuditLogs.ts
+    returns: "{ logs, meta, loading, error, filters, setFilters, fetchPage }"
+    api: "GET /api/audit-logs (paginated)"
+
+  - name: useAuditIntelligence
+    file: hooks/useAuditIntelligence.ts
+    returns: "{ loading, error, fetchAnomalies, fetchUserActivity }"
+    api: "GET /api/audit/anomalies, GET /api/audit/user-activity/{id}"
+
+# ============================================================
+# ROUTE STRUCTURE REFERENCE
+# ============================================================
+route_structure:
+  top_level_views:
+    - key: "overview / dashboard"
+      component: renderHome()
+      access: all authenticated users
+      renders: UserDashboard (guard) OR SuperadminDashboard (elevated)
+
+    - key: profile
+      component: ProfileDashboard
+      access: all authenticated users
+      renders: User profile + push notification toggle + guard availability
+
+    - key: calendar
+      component: CalendarDashboard
+      access: all (no permission guard)
+
+    - key: performance
+      component: PerformanceDashboard
+      permission: view_analytics
+      access: superadmin, admin, supervisor
+
+    - key: merit
+      component: MeritScoreDashboard
+      permission: view_analytics
+      access: superadmin, admin, supervisor
+
+    - key: firearms
+      component: FirearmInventory
+      permission: manage_firearms
+      access: superadmin, admin, supervisor
+
+    - key: allocation
+      component: FirearmAllocation
+      permission: manage_allocations
+      access: superadmin, admin, supervisor
+
+    - key: permits
+      component: GuardFirearmPermits
+      permission: manage_permits
+      access: superadmin, admin, supervisor
+
+    - key: maintenance
+      component: FirearmMaintenance
+      permission: manage_maintenance
+      access: superadmin, admin, supervisor
+
+    - key: armored-cars
+      component: ArmoredCarDashboard
+      permission: manage_armored_cars
+      access: superadmin, admin, supervisor
+
+  superadmin_dashboard_sections:
+    - key: dashboard
+      title: Dashboard
+      badge: Overview
+      content: CommandCenterDashboard + User Management table
+    - key: approvals
+      title: Guard Approvals
+      badge: Approvals
+      content: Pending guard registration table with approve/reject actions
+    - key: schedule
+      title: Guard Schedules
+      badge: schedule
+      content: Shifts table + Add Schedule form
+    - key: missions
+      title: Mission Assignment
+      badge: missions
+      content: Mission assign form + missions list
+    - key: analytics
+      title: Analytics & Reports
+      badge: analytics
+      content: AnalyticsDashboard component
+    - key: trips
+      title: Trip Management
+      badge: Trips
+      content: TripManagement component
+    - key: audit-log
+      title: System Audit Log
+      badge: Audit Log
+      content: AuditDashboard (lazy-loaded)
+
+  guard_dashboard_sections:
+    - key: mission
+      label: Mission Screen
+      content: Duty status, field tracking toggle, shift check-in/out, incident modal
+    - key: resources
+      label: Resources
+      content: GuardResourcesTab (firearms + permits sub-tabs)
+    - key: support
+      label: Support
+      content: Support tickets list + create ticket form
+    - key: map
+      label: Map
+      content: GuardMapTab (expandable map view)
+    - key: profile
+      label: Profile
+      content: Navigate to ProfileDashboard via onViewChange('profile')
+
+# ============================================================
+# COMMAND CENTER PANELS
+# ============================================================
+command_center_panels:
+  - section: System Status
+    collapsible: true
+    sub_panels:
+      - OperationalSummaryStrip (6 metric cards)
+      - QuickActionsPanel (7 quick action buttons)
+  - section: Tactical View
+    collapsible: false
+    sub_panels:
+      - OperationalMap
+      - GuardDeploymentOverview
+  - section: Live Operations
+    collapsible: false
+    sub_panels:
+      - LiveOperationsFeed
+      - IncidentAlertFeed
+      - IncidentSeverityMonitoringPanel
+      - PredictiveAlertsPanel (title: AI Operational Insights)
+      - IncidentSeverityClassifier
+      - IncidentSummaryGenerator
+  - section: Operations Management
+    collapsible: false
+    sub_panels:
+      - TodaysShiftOperations
+      - GuardAbsencePredictionPanel
+      - ReplacementSuggestionPanel
+  - section: Asset Monitoring
+    collapsible: false
+    sub_panels:
+      - VehicleMaintenancePredictionPanel
+      - FirearmsStatusPanel
+
+# ============================================================
+# OPEN QUESTIONS
+# ============================================================
+open_questions:
+  - question: >
+      Does utils/pushNotifications.ts export registerServiceWorker,
+      requestPushPermission, subscribeToPush, unsubscribeFromPush as standalone
+      functions, or is it a class/object?
+    context: >
+      ProfileDashboard imports and calls these functions; file not directly read.
+      Relevant for implementing notification preferences in the redesign.
+    type: nice_to_know
+    affects: []
+
+  - question: >
+      What does GuardSchedule.tsx render and what props does it accept?
+    context: >
+      Referenced in GUARD_NAV but not read. May be distinct from the schedule
+      table inside SuperadminDashboard.
+    type: nice_to_know
+    affects: []
+
+  - question: >
+      What is the exact shape of the shift object returned by /api/guard-replacement/shifts?
+      Specifically: does it include check-in time, check-out time, location data?
+    context: >
+      UserDashboard uses check-in/check-out buttons and elapsed time display.
+      Critical for designing the Workflow Timeline component.
+    type: decision_blocker
+    affects: [workflow-timeline-implementation]
+
+  - question: >
+      Are there any guard-side API endpoints for retrieving pending approval status
+      or workflow events (leave requests, permit renewals, swap requests)?
+    context: >
+      The redesign targets a "Unified Action Inbox" — need to know what
+      backend endpoints exist for guard-facing workflow events.
+    type: decision_blocker
+    affects: [action-inbox-implementation]
+
+  - question: >
+      What does AccountManager.tsx render? Is it used or superseded?
+    context: >
+      File exists in components/ but was not read. May contain reusable
+      account management patterns.
+    type: nice_to_know
+    affects: []
+
+# ============================================================
+# GAPS
+# ============================================================
+gaps:
+  - area: Guard workflow endpoints
+    description: >
+      Backend API endpoints for guard-side workflow actions (leave requests,
+      permit renewals, swap requests, approval status) were not enumerated.
+      routes.rs in Rust backend should be read to enumerate all /api/* endpoints.
+    impact: decision_blocker
+    affects: [action-inbox-implementation]
+
+  - area: GuardSchedule.tsx component
+    description: >
+      Not read. Unknown if it duplicates schedule table from SuperadminDashboard
+      or is a guard-only schedule viewer.
+    impact: research_blocker
+    affects: []
+
+  - area: Header.tsx internals
+    description: >
+      Header component not read beyond OperationalShell prop passing.
+      NotificationPanel is expected to be rendered inside Header;
+      exact slot structure not confirmed.
+    impact: nice_to_know
+    affects: []
+
+  - area: ActiveIncidentsWidget.tsx
+    description: >
+      ActiveIncidentsPanel wraps this widget but the widget implementation
+      was not read. May contain reusable incident display patterns.
+    impact: nice_to_know
+    affects: []
+
+  - area: ThemeProvider.tsx
+    description: >
+      Dark mode toggle mechanism not read. Only know .dark CSS class exists.
+    impact: nice_to_know
+    affects: []
+
+  - area: Playwright / Jest test coverage
+    description: >
+      Both playwright.config.ts and jest.config.cjs exist. No test files
+      confirmed in DasiaAIO-Frontend/tests/ for component coverage.
+      Test status unknown.
+    impact: nice_to_know
+    affects: []

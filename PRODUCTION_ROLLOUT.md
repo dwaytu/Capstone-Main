@@ -105,7 +105,7 @@ When triggered by a tag push matching `v*`, the workflow also publishes both fil
 
 Download location after release job finishes:
 
-- `https://github.com/Cloudyrowdyyy/Capstone-Main/releases`
+- `https://github.com/dwaytu/Capstone-Main/releases`
 
 ## 7. Final Production Checklist
 

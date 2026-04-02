@@ -1,0 +1,185 @@
+prd_id: PRD-MULTI-SETTINGS-CODEQUALITY-20260403
+version: 1.0.0
+description: Multi-issue fix batch - Profile routing, theme toggle, role-specific settings, error handling, and code organization
+
+user_stories:
+  - as_a: guard
+    i_want: to see my profile inline in the guard dashboard without navigating away
+    so_that: I can quickly manage account details without leaving my mission context
+  
+  - as_a: guard_admin_or_supervisor
+    i_want: a light/dark mode toggle visible in all dashboards
+    so_that: I can switch themes without navigating to settings
+  
+  - as_a: user_of_any_role
+    i_want: role-specific settings accessible from my dashboard
+    so_that: I see only the toggles and options relevant to my responsibilities
+  
+  - as_a: user_of_any_role
+    i_want: console errors during support workflows to be surfaced clearly
+    so_that: I know when something failed instead of silent failures
+  
+  - as_a: developer
+    i_want: codebase organized logically with clear naming patterns
+    so_that: navigation and maintenance is faster and less confusing
+
+scope:
+  in_scope:
+    - Profile modal/inline view in guard dashboard (prevent navigation away)
+    - Light/dark theme toggle in all dashboard headers
+    - Notifications settings panel (role-specific preferences)
+    - Infrastructure for role-specific settings pages (guard, supervisor, admin, superadmin variants)
+    - Fix GuardShiftSwapPanel fetch error handling and surface errors to UI
+    - Fix support workflow console errors (ERR_ABORTED investigation)
+    - Reorganize frontend components by domain/feature
+    - Fix git local user config (cloudyrowdyyy → current account)
+  
+  out_of_scope:
+    - Full settings backend implementation (assume API endpoints exist)
+    - 2FA, device management, or advanced security settings (future)
+    - Email/SMS provider integration (future)
+    - Analytics or usage tracking dashboard
+    - Guard directory lookup endpoint
+
+acceptance_criteria:
+  - criterion: AC-1 Guard profile button opens inline modal, not separate page
+    verification: Click profile in guard dashboard, verify modal overlays mission screen, clicking back returns to mission
+  
+  - criterion: AC-2 Light/dark mode toggle visible in all dashboard headers
+    verification: Toggle appears in header of UserDashboard, SuperadminDashboard, and other top-level dashboards
+  
+  - criterion: AC-3 Settings accessible by role from home dashboard
+    verification: Guard sees "Notifications" settings button; Admin/Supervisor see settings with appropriate options
+  
+  - criterion: AC-4 GuardShiftSwapPanel errors visible to users (not silent failures)
+    verification: Invalid request shows error toast/message; no swallowed exceptions in console
+  
+  - criterion: AC-5 Zero console errors on support workflows
+    verification: Open DevTools, trigger support workflows, zero ERR_ABORTED or unhandled errors
+  
+  - criterion: AC-6 Frontend organized by domain (guards/, admin/, shared/, etc.)
+    verification: Components grouped by feature; no 300+ line monolithic files without clear subdomain
+
+needs_clarification:
+  - question: Should notification settings be persisted to backend or local storage?
+    context: Affects API integration; MVP assumes local storage
+    impact: Determines sync behavior across devices
+    status: deferred
+    owner: backend_team
+
+  - question: What notification types should guards receive? (Incident alerts, shift changes, etc.)
+    context: Need to know categories for notification settings UI
+    impact: Determines UI labels and backend subscriptions
+    status: open
+    owner: product_owner
+
+features:
+  - name: Guard Profile Modal
+    overview: Inline profile view in guard dashboard (same modal used on separate ProfileDashboard)
+    status: completed
+
+  - name: Theme Toggle in All Headers
+    overview: Light/dark mode button shared across dashboards
+    status: completed
+
+  - name: Role-Specific Settings Framework
+    overview: Generic infrastructure supporting guard/supervisor/admin/superadmin preference pages
+    status: completed
+
+  - name: Notifications Settings Panel
+    overview: MVP settings: notification type toggles for each role
+    status: completed
+
+  - name: Enhanced Error Handling (Support Workflow)
+    overview: Surface GuardShiftSwapPanel errors to UI instead of silent failures
+    status: completed
+
+  - name: Codebase Organization
+    overview: Restructure components by domain for clarity and maintainability
+    status: completed
+    completion_note: >
+      Wave 4 executed 2026-04-03. Header moved to shared/, UserDashboard to guards/,
+      SuperadminDashboard to admin/. Compatibility shims at original paths. Primary
+      consumers (App.tsx, OperationalShell.tsx) updated to domain paths. Build PASS,
+      20/20 unit tests PASS.
+
+continuation_status:
+  reconciled_on: 2026-04-03
+  completed_on: 2026-04-03
+  completed_baseline:
+    - AC-1
+    - AC-2
+    - AC-3
+    - AC-4
+    - AC-5
+  completed_continuation:
+    - AC-6 (Wave 4 domain reorganization with compatibility shims — DONE)
+  identity_remediation_wave_1:
+    status: completed
+    policy: operational_and_configurable_only
+    historical_or_audit_edits: forbidden
+  residual_deferred:
+    - .gitmodules submodule remote URL update (requires GitHub repo governance coordination)
+
+state_machines:
+  - name: Profile Access
+    states: [dashboard, profile_modal_open, profile_editing, profile_saved, dismiss]
+    transitions:
+      - from: dashboard
+        to: profile_modal_open
+        trigger: click_profile_button
+      - from: profile_modal_open
+        to: profile_editing
+        trigger: edit_field
+      - from: profile_editing
+        to: profile_saved
+        trigger: save_button_click
+      - from: profile_modal_open
+        to: dismiss
+        trigger: close_or_escape
+      - from: dismiss
+        to: dashboard
+        trigger: modal_closed
+
+  - name: Settings Navigation
+    states: [dashboard, settings_modal_open, notifications_view, settings_saved]
+    transitions:
+      - from: dashboard
+        to: settings_modal_open
+        trigger: open_settings
+      - from: settings_modal_open
+        to: notifications_view
+        trigger: select_notifications
+      - from: notifications_view
+        to: settings_saved
+        trigger: save_preferences
+      - from: settings_modal_open
+        to: dashboard
+        trigger: close_or_escape
+
+errors:
+  - code: ERR_SUPPORT_WORKFLOW
+    message: Support workflow failed. Please check your internet connection and try again.
+
+  - code: ERR_SHIFT_SWAP_FAILED
+    message: Unable to submit shift swap request. Verify your input and try again.
+
+  - code: ERR_PROFILE_UPDATE
+    message: Profile update failed. Please ensure internet connection and try again.
+
+decisions:
+  - decision: Keep profile as modal/inline in UserDashboard instead of separate page navigation
+    rationale: Maintains guard context; prevents context switching; improves workflow speed
+
+  - decision: Theme toggle in header bar (all dashboards) instead of settings-only
+    rationale: Global preference; should be easily accessible; improves UX
+
+  - decision: Notifications is the MVP settings category (security, advanced options defer to future)
+    rationale: Reduces complexity; focuses on core need; allows future expansion
+
+  - decision: Role-specific settings infrastructure as generic framework
+    rationale: Scalable; prevents duplication; enables future role additions
+
+changes:
+  - version: 1.0.0
+    change: Initial PRD for multi-issue redesign batch - profile routing, theme, settings, error handling, code quality

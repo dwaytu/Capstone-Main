@@ -1,0 +1,148 @@
+prd_id: PRD-GUARD-DASHBOARD-UIUX-20260403
+version: 1.0.0
+
+user_stories:
+  - as_a: Guard
+    i_want: A mission-first dashboard landing view that surfaces my current duty context and primary actions immediately
+    so_that: I can execute shift-critical tasks quickly without scanning through dense content
+  - as_a: Guard
+    i_want: One sticky bottom action and navigation region instead of stacked fixed bars
+    so_that: Mobile interaction stays clear, reachable, and less cluttered
+  - as_a: Guard
+    i_want: Resources and map sections that show summary signals before detailed content
+    so_that: I can assess readiness and location status at a glance
+  - as_a: Guard
+    i_want: A decompressed support workspace with clearly separated workflows
+    so_that: I can find instructions, submit tickets, and request shift swaps with less cognitive load
+  - as_a: QA Engineer
+    i_want: Guard-role browser regression coverage for the redesigned dashboard
+    so_that: UX regressions are detected early without backend coupling
+
+scope:
+  in_scope:
+    - Frontend-only redesign of the guard dashboard in existing React and TypeScript architecture
+    - Mission-first hierarchy for the guard landing surface in UserDashboard
+    - Consolidation to a single sticky bottom region for guard actions and section navigation
+    - Summary-first information architecture for guard resources and map sections
+    - Decompressed support workspace layout with grouped instruction, ticket, schedule-change, and shift-swap areas
+    - Shift swap UX improvement using contextual shift selection from existing schedule data when available
+    - Guard-role Playwright regression coverage for redesigned mission, resources, support, and map flows
+  out_of_scope:
+    - Backend, API, database, and contract changes
+    - New endpoints for guard directory or scheduling
+    - Migration of guards to full sidebar shell or OperationalShell routing changes
+    - New auth, RBAC, or permission model changes
+    - Redesign of non-guard dashboards
+    - Net-new design system or token overhaul
+
+acceptance_criteria:
+  - criterion: AC-001 Mission-first hierarchy is visible in first viewport
+    verification: In the guard mission landing view at common mobile widths, duty status, current shift context, and primary actions are visible before lower-priority content
+  - criterion: AC-002 Only one persistent sticky bottom region is present
+    verification: Guard dashboard renders at most one persistent bottom-fixed layer across mission interactions and section navigation states
+  - criterion: AC-003 Resources, map, and support are summary-first and grouped
+    verification: Resources and map expose summary status before deep detail, and support workflows are visually separated into distinct groups
+  - criterion: AC-004 Redesign remains frontend-bounded and implementation-realistic
+    verification: No backend/API contract changes are introduced and existing handlers and payload shapes remain valid
+  - criterion: AC-005 Guard-role regression coverage protects the UX tranche
+    verification: Browser tests validate mission hierarchy, single sticky bottom region, resources summary behavior, support grouping, and map expansion using mocked frontend data
+
+needs_clarification:
+  - question: Should guard experience remain bottom-navigation based for this tranche?
+    context: Plan assumes no migration to OperationalShell or full sidebar shell.
+    impact: Determines whether navigation behavior stays section-based in UserDashboard.
+    status: deferred
+    owner: Product + Frontend
+  - question: Is a guard directory source available for target-guard lookup in shift swap?
+    context: Current scope avoids new backend endpoints and keeps manual fallback input.
+    impact: Determines whether target guard selection can be upgraded beyond manual entry.
+    status: open
+    owner: Backend + Product
+  - question: Which guard-role fixture is canonical for Playwright regression coverage?
+    context: Existing smoke coverage appears admin-oriented.
+    impact: Affects deterministic test data and long-term reliability of guard UX regression checks.
+    status: open
+    owner: QA + Frontend
+
+features:
+  - name: Mission-first Guard Landing
+    overview: Recompose guard landing surface to prioritize duty state, active shift context, and immediate actions in first screen.
+    status: planned
+  - name: Single Sticky Bottom Interaction Region
+    overview: Replace stacked fixed chrome with one safe-area-aware sticky action and section navigation region.
+    status: planned
+  - name: Summary-first Resources and Map
+    overview: Surface readiness and location summaries before detailed rows and embedded map expansion.
+    status: planned
+  - name: Decompressed Support Workspace
+    overview: Organize support workflows into clear groups while preserving existing form behavior and handler contracts.
+    status: planned
+  - name: Guard Dashboard Regression Coverage
+    overview: Add guard-role browser tests to validate redesigned UX flows under mocked frontend data.
+    status: planned
+
+state_machines:
+  - name: GuardDashboardSectionNavigation
+    states:
+      - mission
+      - resources
+      - support
+      - map
+    transitions:
+      - from: mission
+        to: resources
+        trigger: Guard selects Resources in bottom region
+      - from: mission
+        to: support
+        trigger: Guard selects Support in bottom region
+      - from: mission
+        to: map
+        trigger: Guard selects Map in bottom region
+      - from: resources
+        to: mission
+        trigger: Guard selects Mission in bottom region
+      - from: support
+        to: mission
+        trigger: Guard selects Mission in bottom region
+      - from: map
+        to: mission
+        trigger: Guard selects Mission in bottom region
+  - name: GuardMapExpansion
+    states:
+      - collapsed
+      - expanded
+    transitions:
+      - from: collapsed
+        to: expanded
+        trigger: Guard activates Expand map action
+      - from: expanded
+        to: collapsed
+        trigger: Guard activates Collapse map action
+
+errors:
+  - code: ERR_GUARD_UI_001
+    message: Guard mission view could not load required shift summary details.
+  - code: ERR_GUARD_UI_002
+    message: Support request form submission failed. Please retry.
+  - code: ERR_GUARD_UI_003
+    message: Live map is temporarily unavailable. Use external map link if needed.
+  - code: ERR_GUARD_UI_004
+    message: Shift swap request requires a valid shift selection.
+
+decisions:
+  - decision: Scope is strictly frontend-only for this redesign tranche.
+    rationale: The approved plan explicitly avoids backend/API changes and focuses on bounded UX improvements.
+  - decision: Guard workflow remains section-based within UserDashboard rather than full shell migration.
+    rationale: Reduces risk and preserves existing architecture while targeting highest-impact guard usability issues.
+  - decision: One sticky bottom region is the interaction model for this tranche.
+    rationale: Removes stacked chrome clutter and improves mobile ergonomics without introducing routing changes.
+  - decision: Summary-first hierarchy is mandatory for resources and map.
+    rationale: Guards need high-signal status cues before detail-heavy lists and embeds.
+  - decision: Support workspace is decompressed using grouped cards while preserving existing handlers.
+    rationale: Improves scanability and task completion speed without changing request payload contracts.
+  - decision: Guard-role Playwright coverage is required before completion.
+    rationale: Existing coverage is insufficient for this specific guard UX redesign and must prevent regressions.
+
+changes:
+  - version: 1.0.0
+    change: Initial PRD created for bounded SENTINEL guard dashboard frontend redesign aligned to plan guard-dashboard-uiux-20260403.

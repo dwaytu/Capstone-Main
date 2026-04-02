@@ -1,0 +1,547 @@
+plan_id: guard-dashboard-uiux-20260403
+objective: Research the current SENTINEL guard dashboard frontend implementation and document implementation-aware UI/UX improvement findings.
+focus_area: guard-dashboard-frontend
+created_at: 2026-04-03
+created_by: GitHub Copilot
+status: completed
+
+tldr: |
+  - The current guard dashboard is centered on one large component, [DasiaAIO-Frontend/src/components/UserDashboard.tsx](DasiaAIO-Frontend/src/components/UserDashboard.tsx), which mixes data loading, location state, action handling, modal flows, and all major guard screens in a single file.
+  - The frontend already has stronger reusable structure than the guard view currently uses: [DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx](DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx), [DasiaAIO-Frontend/src/components/Header.tsx](DasiaAIO-Frontend/src/components/Header.tsx), [DasiaAIO-Frontend/src/components/Sidebar.tsx](DasiaAIO-Frontend/src/components/Sidebar.tsx), [DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx](DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx), and [DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx](DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx).
+  - The design system is tokenized and relatively mature in [DasiaAIO-Frontend/src/index.css](DasiaAIO-Frontend/src/index.css) and [DasiaAIO-Frontend/tailwind.config.ts](DasiaAIO-Frontend/tailwind.config.ts), but the guard dashboard mostly uses ad hoc utility stacks instead of the shared cards, bento layout, and shell patterns.
+  - The highest-leverage UX gains are concentrated in hierarchy and mobile ergonomics: reducing double-fixed chrome, clarifying navigation, and decomposing support and mission flows into clearer card groups.
+
+requested_report:
+  structural_weaknesses:
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:1
+      finding: The guard dashboard is a 1352-line component that owns fetching, online/offline handling, location consent/tracking, attendance, tickets, incident reporting, map state, modal state, and all major guard views.
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:86
+      finding: Internal information architecture is split between app-level view routing and local section routing. resolveSectionFromView only maps a few app views into guard sections, while the local nav defines its own inbox/mission/resources/support/map/profile model.
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:790
+      finding: The main scroll region uses large bottom padding to make room for a fixed action tray and a separate fixed bottom navigation, which reduces visible content height and increases scroll friction on mobile.
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:1160
+      finding: A persistent primary-action tray is fixed above a second persistent navigation bar, creating stacked chrome at the bottom of the viewport and compressing content for every guard section, including sections that do not need urgent actions.
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:997
+      finding: The support section currently combines protocol access, schedule-change request form, contact directory, support ticket form and ticket history, plus shift swaps in one long vertical stack, which weakens task separation and density control.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:129
+      finding: Shift swap submission depends on raw Shift ID and Target Guard ID input instead of guided selection or contextual data from the current guard workload.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx:21
+      finding: Resources are presented as simple stacked lists without summary hierarchy, status emphasis, or quick-glance metadata grouping.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx:15
+      finding: The map experience is isolated behind a separate tab and an explicit expand/collapse step, which keeps it safe from interfering with mission controls but also makes live location awareness secondary.
+  visual_constraints_and_reusable_patterns:
+    - file: DasiaAIO-Frontend/src/index.css
+      location: DasiaAIO-Frontend/src/index.css:521
+      finding: The codebase already has a shared card primitive, soc-dashboard-card, for elevated dashboard surfaces.
+    - file: DasiaAIO-Frontend/src/index.css
+      location: DasiaAIO-Frontend/src/index.css:536
+      finding: The codebase also exposes bento-card and bento-grid style patterns for denser dashboard composition with consistent padding and hover behavior.
+    - file: DasiaAIO-Frontend/src/index.css
+      location: DasiaAIO-Frontend/src/index.css:865
+      finding: Guard-specific tonal treatment already exists through tone-guard-surface and related role chip tokens, so the guard experience can be differentiated without inventing a separate palette.
+    - file: DasiaAIO-Frontend/src/index.css
+      location: DasiaAIO-Frontend/src/index.css:1133
+      finding: Shared warning banner styling already exists and is reused by inbox and global connectivity/location notices.
+    - file: DasiaAIO-Frontend/src/index.css
+      location: DasiaAIO-Frontend/src/index.css:1398
+      finding: The stylesheet includes mobile-specific padding/radius adjustments and forced-colors/reduced-motion support, which provides a solid accessibility baseline for future guard UI refinements.
+    - file: DasiaAIO-Frontend/tailwind.config.ts
+      location: DasiaAIO-Frontend/tailwind.config.ts:1
+      finding: Tailwind is extended with semantic color tokens, custom spacing, rounded corners, bento utilities, and subtle animation primitives rather than relying on raw default Tailwind values alone.
+    - file: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+      location: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx:23
+      finding: A reusable shell already exists with skip link, fixed header integration, sidebar support, consistent scroll area padding, and error placement.
+    - file: DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx:12
+      finding: DashboardCard provides a consistent title/action/content frame for sectioned panels.
+    - file: DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx:22
+      finding: StatCard already supports tone-specific KPI surfaces, including a guard tone, and is used elsewhere for fast-scanning metric rows.
+    - file: DasiaAIO-Frontend/src/components/inbox/ActionInbox.tsx
+      location: DasiaAIO-Frontend/src/components/inbox/ActionInbox.tsx:98
+      finding: The guard inbox already uses the shared dashboard card surface and presents a stronger list hierarchy than most of the mission/resources/support panels.
+    - file: DasiaAIO-Frontend/src/components/inbox/WorkflowTimeline.tsx
+      location: DasiaAIO-Frontend/src/components/inbox/WorkflowTimeline.tsx:79
+      finding: The workflow timeline already shows a reusable, compact vertical event pattern that the rest of the guard experience does not currently echo.
+  improvement_opportunities:
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:847
+      finding: The mission screen already has a clear duty-status banner; turning the rest of the mission content into a smaller set of card-based groups around that banner would make the page hierarchy more legible and reduce the current list-of-sections feel.
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:790
+      finding: Removing or consolidating one of the two fixed bottom layers would immediately improve visible content depth, reduce safe-area padding requirements, and lower thumb travel between content and actions.
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:749
+      finding: The current guard navigation is simple but flat. The existing screen structure suggests a clearer split between immediate work (Inbox, Mission) and secondary utilities (Resources, Support, Map, Profile).
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:997
+      finding: The support area is currently the densest screen in the guard dashboard; it would benefit most from being broken into smaller card groups or progressive disclosure because it mixes unrelated workflows in one vertical pass.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx:21
+      finding: Resources can adopt the existing StatCard and DashboardCard patterns to surface assignment count, permit status, and expiry emphasis before the detailed lists.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx:15
+      finding: The map tab already separates high-risk map interaction from mission controls; the missing layer is a lightweight mission-level location summary or preview so map awareness is not hidden behind a secondary tab.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:129
+      finding: Replacing freeform IDs with contextual selectors or current-shift-derived options would reduce cognitive load and error potential more than cosmetic styling changes alone.
+    - file: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+      location: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx:23
+      finding: Adopting the shared shell would align guard navigation, header behavior, and scroll mechanics with the stronger patterns already used by admin and superadmin experiences.
+  highest_leverage_files:
+    - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      reason: This is the current orchestration point for guard IA, section hierarchy, bottom chrome, mission density, support sprawl, and modal placement.
+    - file: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+      reason: This is the strongest existing structure for consistent header/sidebar/scroll behavior and would determine whether the guard experience joins the shared operational shell.
+    - file: DasiaAIO-Frontend/src/components/Header.tsx
+      reason: If the guard dashboard adopts the shared shell, header behavior and the balance between title, actions, notifications, and account controls become central.
+    - file: DasiaAIO-Frontend/src/components/Sidebar.tsx
+      reason: This controls the existing sidebar navigation model and would shape any shift away from the current guard-only bottom-tab approach.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+      reason: This is a small, low-risk surface where stronger hierarchy and density patterns can be introduced quickly.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+      reason: This owns the current map affordance and determines whether map remains secondary, preview-based, or expanded.
+    - file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      reason: This is the most workflow-heavy support subpanel and currently exposes the highest-input-friction interaction.
+
+research_metadata:
+  methodology: Hybrid retrieval using grep_search, file_search, targeted read_file passes across guard dashboard files, shared shell/layout primitives, shared CSS tokens/utilities, and app-level routing context; terminal was used once to collect exact file lengths for metadata.
+  scope: Guard-specific frontend only, centered on UserDashboard, guard subpanels, shell/layout primitives, shared style tokens, and app-level routing relevant to the guard entry flow.
+  confidence: high
+  coverage: 91
+  decision_blockers: 0
+  research_blockers: 1
+
+files_analyzed:
+  - file: UserDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+    purpose: Main guard dashboard container and current source of guard mission, support, resources, map, nav, and action chrome.
+    key_elements:
+      - element: resolveSectionFromView
+        type: function
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:86
+        description: Maps app-level active views into internal guard sections.
+      - element: activeSection state
+        type: variable
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:110
+        description: Controls which major guard screen renders inside the dashboard.
+      - element: navItems
+        type: variable
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:749
+        description: Defines local guard navigation labels and section keys.
+      - element: main scroll container
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:790
+        description: Applies viewport-height scrolling and large bottom padding to account for fixed action and nav layers.
+      - element: primary guard actions tray
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:1160
+        description: Fixed bottom action tray containing check in/out and emergency/protocol actions.
+      - element: bottom navigation
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:1203
+        description: Fixed bottom navigation bar used only by the guard dashboard.
+    language: typescriptreact
+    lines: 1352
+  - file: GuardResourcesTab.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+    purpose: Guard resources screen for firearm assignments and permit records.
+    key_elements:
+      - element: assigned firearms section
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx:21
+        description: Renders firearm assignment list or empty state.
+      - element: permit records section
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx:45
+        description: Renders permit list or empty state.
+    language: typescriptreact
+    lines: 77
+  - file: GuardMapTab.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+    purpose: Guard map screen, including expand/collapse action and last-known-location summary.
+    key_elements:
+      - element: mapExpanded prop flow
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx:10
+        description: Decides whether the embedded map iframe is visible.
+      - element: map screen panel
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx:15
+        description: Wraps the map messaging, iframe surface, and external map link.
+    language: typescriptreact
+    lines: 87
+  - file: GuardShiftSwapPanel.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+    purpose: Guard shift-swap workflow, including fetch, submission, request list, and response actions.
+    key_elements:
+      - element: shift swap request form
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:129
+        description: Collects raw shift ID, target guard ID, and optional reason.
+      - element: request list
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:218
+        description: Renders visible swap requests and response controls.
+    language: typescriptreact
+    lines: 279
+  - file: GuardInboxPanel.tsx
+    path: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx
+    purpose: Guard inbox composition for action items and workflow timeline.
+    key_elements:
+      - element: GuardInboxPanel
+        type: function
+        location: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx:132
+        description: Fetches shift, notification, and swap data and renders a two-panel inbox layout.
+      - element: offline banner
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx:210
+        description: Reuses the shared warning banner style for degraded connectivity state.
+    language: typescriptreact
+    lines: 236
+  - file: OperationalShell.tsx
+    path: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+    purpose: Shared shell for operational pages with sidebar, header, and scroll area.
+    key_elements:
+      - element: OperationalShell
+        type: function
+        location: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx:23
+        description: Standardizes layout structure used by non-guard operational dashboards.
+    language: typescriptreact
+    lines: 74
+  - file: Header.tsx
+    path: DasiaAIO-Frontend/src/components/Header.tsx
+    purpose: Shared top bar with title, badge, menu toggle, notifications, account management, and refresh action.
+    key_elements:
+      - element: Header
+        type: function
+        location: DasiaAIO-Frontend/src/components/Header.tsx:19
+        description: Provides a consistent page title and global action region.
+      - element: mobile hamburger button
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/Header.tsx:49
+        description: Opens shared sidebar navigation on smaller screens.
+    language: typescriptreact
+    lines: 77
+  - file: Sidebar.tsx
+    path: DasiaAIO-Frontend/src/components/Sidebar.tsx
+    purpose: Shared grouped sidebar navigation with mobile drawer behavior and persistent status branding.
+    key_elements:
+      - element: Sidebar
+        type: function
+        location: DasiaAIO-Frontend/src/components/Sidebar.tsx:31
+        description: Renders grouped nav items, mobile overlay, and logout action.
+    language: typescriptreact
+    lines: 204
+  - file: DashboardCard.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx
+    purpose: Generic dashboard section card.
+    key_elements:
+      - element: soc-dashboard-card wrapper
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx:12
+        description: Shared section surface with optional title and action row.
+    language: typescriptreact
+    lines: 24
+  - file: StatCard.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx
+    purpose: Shared KPI card with tone variants.
+    key_elements:
+      - element: guard toneClass
+        type: variable
+        location: DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx:13
+        description: Applies guard-specific surface treatment to KPI cards.
+      - element: StatCard
+        type: function
+        location: DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx:20
+        description: Renders high-signal metric summary content.
+    language: typescriptreact
+    lines: 35
+  - file: App.tsx
+    path: DasiaAIO-Frontend/src/App.tsx
+    purpose: App-level route switching, guard entry flow, overlays, and global mobile quick-nav configuration.
+    key_elements:
+      - element: renderHome
+        type: function
+        location: DasiaAIO-Frontend/src/App.tsx:826
+        description: Routes guards to UserDashboard and non-guards to superadmin dashboard.
+      - element: mobileNavItems
+        type: variable
+        location: DasiaAIO-Frontend/src/App.tsx:866
+        description: Defines a separate app-level quick-nav concept for guards, currently disabled.
+      - element: showMobileQuickNav
+        type: variable
+        location: DasiaAIO-Frontend/src/App.tsx:878
+        description: Indicates that the app-wide mobile quick navigation exists but is turned off.
+      - element: global warning banner
+        type: pattern
+        location: DasiaAIO-Frontend/src/App.tsx:964
+        description: Places shared warning banners above page content.
+    language: typescriptreact
+    lines: 1242
+  - file: index.css
+    path: DasiaAIO-Frontend/src/index.css
+    purpose: Global design tokens, shared component surfaces, accessibility support, and mobile adjustments.
+    key_elements:
+      - element: soc-dashboard-card
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:521
+        description: Shared elevated dashboard card surface.
+      - element: bento-card
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:536
+        description: Shared dense-card utility for dashboard layouts.
+      - element: tone-guard-surface
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:865
+        description: Guard-specific tonal surface treatment.
+      - element: soc-warning-banner
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:1133
+        description: Shared warning banner styling.
+      - element: platform-mobile overrides
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:1398
+        description: Mobile-specific card padding and radius adjustments.
+    language: css
+    lines: 1489
+  - file: tailwind.config.ts
+    path: DasiaAIO-Frontend/tailwind.config.ts
+    purpose: Tailwind theme extension with semantic colors, spacing, shadows, and custom dashboard utilities.
+    key_elements:
+      - element: extended semantic theme
+        type: pattern
+        location: DasiaAIO-Frontend/tailwind.config.ts:1
+        description: Maps CSS variables into Tailwind semantic tokens and custom utilities.
+    language: typescript
+    lines: 175
+
+patterns_found:
+  - category: architecture
+    pattern: Large role-specific page components own both orchestration and rendering.
+    description: The guard dashboard concentrates business logic, network calls, local view routing, and presentational layout in one component rather than composing a thinner shell plus smaller scene components.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:1
+        snippet: Guard dashboard state, fetch logic, modal control, fixed action tray, and bottom nav are all colocated.
+    prevalence: common
+  - category: structure
+    pattern: Shared shell exists for operational dashboards, but guard does not use it.
+    description: Admin and superadmin pages use OperationalShell while the guard dashboard defines its own sticky header and fixed bottom navigation model.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/AdminDashboard.tsx:517
+        snippet: AdminDashboard is wrapped in OperationalShell.
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:760
+        snippet: UserDashboard renders its own header, main container, action tray, and bottom nav.
+    prevalence: occasional
+  - category: design_system
+    pattern: Semantic tokens and shared surfaces are already established.
+    description: Cards, warning banners, tone surfaces, mobile overrides, and semantic colors are centralized in index.css and Tailwind config.
+    examples:
+      - file: DasiaAIO-Frontend/src/index.css
+        location: DasiaAIO-Frontend/src/index.css:521
+        snippet: soc-dashboard-card shared dashboard surface.
+      - file: DasiaAIO-Frontend/src/index.css
+        location: DasiaAIO-Frontend/src/index.css:865
+        snippet: tone-guard-surface shared guard accent treatment.
+    prevalence: common
+  - category: design_system
+    pattern: Guard inbox uses stronger reusable patterns than the rest of the guard dashboard.
+    description: The inbox composes shared card surfaces and compact list/timeline patterns, while mission/resources/support rely more on manual section styling.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/inbox/ActionInbox.tsx
+        location: DasiaAIO-Frontend/src/components/inbox/ActionInbox.tsx:98
+        snippet: Inbox list is rendered inside soc-dashboard-card.
+      - file: DasiaAIO-Frontend/src/components/inbox/WorkflowTimeline.tsx
+        location: DasiaAIO-Frontend/src/components/inbox/WorkflowTimeline.tsx:79
+        snippet: Timeline uses the same shared card surface.
+    prevalence: occasional
+  - category: mobile
+    pattern: Guard uses bottom-fixed interaction model instead of shared drawer navigation.
+    description: The guard dashboard keeps the primary action tray and the primary nav permanently docked at the bottom, with compensating padding in the main scroll area.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:790
+        snippet: main uses large bottom padding for fixed controls.
+      - file: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:1160
+        snippet: fixed action tray above fixed bottom navigation.
+    prevalence: rare
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: UserDashboard
+      responsibility: Guard-only dashboard orchestration and rendering.
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      relationship_to_domain: domain root
+    - component: GuardInboxPanel
+      responsibility: Aggregates action inbox and workflow timeline for guard tasks.
+      location: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx
+      relationship_to_domain: domain depends on this
+    - component: GuardResourcesTab
+      responsibility: Renders firearm assignment and permit records.
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+      relationship_to_domain: domain depends on this
+    - component: GuardMapTab
+      responsibility: Renders embedded map and last-known-location summary.
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+      relationship_to_domain: domain depends on this
+    - component: GuardShiftSwapPanel
+      responsibility: Shift swap request workflow within support area.
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      relationship_to_domain: domain depends on this
+    - component: OperationalShell
+      responsibility: Shared page chrome for operational views.
+      location: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+      relationship_to_domain: available but not currently used by the guard dashboard
+    - component: Header
+      responsibility: Shared top bar for operational pages.
+      location: DasiaAIO-Frontend/src/components/Header.tsx
+      relationship_to_domain: available but not currently used by the guard dashboard
+    - component: Sidebar
+      responsibility: Shared grouped operational navigation.
+      location: DasiaAIO-Frontend/src/components/Sidebar.tsx
+      relationship_to_domain: available but not currently used by the guard dashboard
+  interfaces_used_by_domain:
+    - interface: UserDashboardProps
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx:19
+      usage_pattern: App injects current user, logout handler, and optional view change function.
+    - interface: GuardInboxPanelProps
+      location: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx:32
+      usage_pattern: UserDashboard passes userId and optional action bridge into inbox.
+    - interface: GuardMapTabProps
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx:10
+      usage_pattern: UserDashboard computes map URLs and passes map state into a pure presentational panel.
+  data_flow_involving_domain: App.tsx resolves the guard entry point and passes user plus activeView into UserDashboard; UserDashboard loads attendance, shifts, allocations, permits, tickets, and tracking state, then conditionally renders mission, inbox, resources, support, or map subviews; shared CSS tokens and card utilities style these views globally.
+  key_relationships_to_domain:
+    - from: DasiaAIO-Frontend/src/App.tsx
+      to: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      relationship: imports
+    - from: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+      relationship: composes
+
+related_technology_stack:
+  languages_used_in_domain:
+    - TypeScript
+    - TSX
+    - CSS
+  frameworks_used_in_domain:
+    - name: React
+      usage_in_domain: Functional components, hooks, local state, conditional rendering.
+    - name: Tailwind CSS
+      usage_in_domain: Utility-first layout and spacing combined with semantic theme tokens.
+  libraries_used_in_domain:
+    - name: lucide-react
+      purpose_in_domain: Iconography in inbox and timeline patterns.
+  external_apis_used_in_domain:
+    - name: Browser Geolocation and Permissions APIs
+      integration_point: UserDashboard location tracking and consent flow.
+    - name: OpenStreetMap embed
+      integration_point: GuardMapTab iframe and external map link.
+
+related_conventions:
+  naming_patterns_in_domain: Role-specific screen components use descriptive names such as UserDashboard, GuardResourcesTab, GuardMapTab, GuardShiftSwapPanel, and GuardInboxPanel.
+  structure_of_domain: The current guard experience is section-based within one page component rather than route-based or shell-based; most subpanels are simple presentational slices under UserDashboard.
+  error_handling_in_domain: Async loading states and inline status banners/messages are favored over exception-heavy flows; multiple fetches use shared auth header helpers and user-facing fallback copy.
+  testing_in_domain: No guard-specific frontend test file was examined during this pass; existing frontend test tooling is present at repo level but guard dashboard-specific test coverage was not located in the inspected files.
+  documentation_in_domain: No dedicated guard dashboard design or UX specification was found during this pass; UI intent is inferred from implementation.
+
+related_dependencies:
+  internal:
+    - component: DasiaAIO-Frontend/src/App.tsx
+      relationship_to_domain: Provides entry routing and activeView state for guard UI.
+      direction: inbound
+    - component: DasiaAIO-Frontend/src/components/inbox/ActionInbox.tsx
+      relationship_to_domain: Shared inbox card/list renderer used by GuardInboxPanel.
+      direction: outbound
+    - component: DasiaAIO-Frontend/src/components/inbox/WorkflowTimeline.tsx
+      relationship_to_domain: Shared timeline renderer used by GuardInboxPanel.
+      direction: outbound
+    - component: DasiaAIO-Frontend/src/index.css
+      relationship_to_domain: Supplies tokens, card surfaces, banners, and mobile behavior.
+      direction: outbound
+  external:
+    - name: react
+      purpose_for_domain: Core component and state model.
+    - name: tailwindcss
+      purpose_for_domain: Utility styling layer over semantic tokens.
+    - name: lucide-react
+      purpose_for_domain: Inbox and timeline iconography.
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: guard location tracking
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      concern: UI is responsible for consent state, permission messaging, and live location visibility.
+    - area: authenticated guard data fetches
+      location: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      concern: Sections depend on bearer-authenticated fetches for duty, ticket, and resource data.
+  authentication_patterns_in_domain: Guard UI uses auth token helpers and bearer headers for backend reads and writes.
+  authorization_patterns_in_domain: App.tsx determines which top-level views a guard can enter before rendering UserDashboard or other protected views.
+  data_validation_in_domain: Most validation is form-level required-field enforcement and server-response-driven status messaging rather than rich client-side validation.
+
+testing_patterns:
+  framework: Frontend testing toolchain exists at project level, but no guard-dashboard-specific UI tests were directly analyzed in this research pass.
+  coverage_areas:
+    - App-level role routing and overlays were inspected in implementation only.
+    - Guard inbox, resources, map, and support flows were inspected in implementation only.
+  test_organization: No dedicated guard dashboard spec file was identified in the files examined for this task.
+  mock_patterns:
+    - Not established from the inspected files.
+
+open_questions:
+  - question: Should the guard dashboard remain a distinct bottom-tab/mobile-first experience, or should it converge on the shared OperationalShell used by other operational roles?
+    context: The current implementation already has both patterns in the frontend, and this choice determines navigation, spacing, and hierarchy strategy.
+    type: decision_blocker
+    affects:
+      - guard-dashboard-uiux-20260403
+  - question: Is the support screen intentionally designed as a single catch-all operational utilities stack, or is that only a consequence of incremental feature growth?
+    context: Multiple unrelated workflows currently live under one support section with no second-level grouping.
+    type: research
+    affects:
+      - guard-dashboard-uiux-20260403
+  - question: Is the separate map tab meant to reduce distraction during field work, or is it a temporary containment of the iframe-based map implementation?
+    context: The current design protects mission controls but reduces ambient location awareness.
+    type: research
+    affects:
+      - guard-dashboard-uiux-20260403
+
+gaps:
+  - area: product documentation
+    description: docs/PRD.yaml was not present in the workspace, so no product-level UX intent or in-scope/out-of-scope definition could be cross-checked.
+    impact: research_blocker
+    affects:
+      - guard-dashboard-uiux-20260403
+  - area: guard-specific UX specification
+    description: No dedicated guard dashboard wireframe, design spec, or interaction guideline was located in the inspected frontend files.
+    impact: nice_to_know
+    affects:
+      - guard-dashboard-uiux-20260403
+  - area: runtime visual verification
+    description: This pass inspected implementation structure and styling primitives but did not include a live browser screenshot review of the guard dashboard route.
+    impact: nice_to_know
+    affects:
+      - guard-dashboard-uiux-20260403

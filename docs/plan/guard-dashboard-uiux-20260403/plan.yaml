@@ -1,0 +1,407 @@
+﻿plan_id: guard-dashboard-uiux-20260403
+objective: Improve the SENTINEL guard dashboard UI/UX within the current frontend architecture by tightening first-screen hierarchy, reducing stacked bottom chrome, clarifying resources and support information architecture, and reusing shared dashboard patterns.
+created_at: 2026-04-03
+created_by: GitHub Copilot
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 1
+  total_dependencies: 6
+  risk_score: medium
+
+tldr: |
+  Deliver a bounded guard-dashboard refresh without moving guards onto the full sidebar shell or changing backend contracts.
+  Center the work in UserDashboard, GuardResourcesTab, GuardMapTab, GuardShiftSwapPanel, and a minimal shared CSS helper layer in src/index.css.
+  Prioritize one visible bottom action/navigation treatment, stronger mission-first hierarchy, clearer support grouping, and better reuse of existing DashboardCard, StatCard, and SectionHeader patterns.
+
+open_questions:
+  - Confirm that the current guard experience should remain bottom-nav based in this tranche. This plan assumes yes and avoids a full migration to OperationalShell and Sidebar.
+  - Confirm whether a guard directory endpoint already exists for target-guard lookup. This plan assumes no new endpoint and only replaces raw Shift ID entry with contextual shift selection.
+  - Confirm the preferred guard test fixture for Playwright coverage. Existing smoke coverage appears admin-oriented.
+
+pre_mortem:
+  overall_risk_level: medium
+  critical_failure_modes:
+    - scenario: Consolidating bottom chrome hides or delays access to check-in and incident actions on small screens.
+      likelihood: medium
+      impact: high
+      mitigation: Keep one sticky action region with explicit safe-area padding and verify reachability at 320px width and common Android viewport heights.
+    - scenario: Support-section cleanup breaks existing form submission flows because UserDashboard currently owns all support state and handlers.
+      likelihood: medium
+      impact: high
+      mitigation: Restructure support into presentation groups only, preserve existing handlers and payload shapes, and add guard-flow smoke coverage for instructions, ticket submission, and swap request entry.
+    - scenario: Shift swap improvements overreach current data availability and implicitly require new backend endpoints.
+      likelihood: medium
+      impact: medium
+      mitigation: Limit the tranche to current-shift-derived selection and stronger guidance, while preserving a manual target-guard fallback until a directory data source is confirmed.
+  assumptions:
+    - No backend or API contract changes are required for this tranche.
+    - Existing shared primitives DashboardCard, StatCard, and SectionHeader are stable and reusable for the guard experience.
+    - Mobile ergonomics are the primary optimization target, with desktop improvements following the same composition rules.
+    - App.tsx, Header.tsx, Sidebar.tsx, and OperationalShell.tsx remain reference patterns only and are not migrated in this tranche.
+
+implementation_specification:
+  code_structure: >
+    Keep the current guard dashboard architecture intact. Recompose the existing UserDashboard screen into clearer visual groups using imported shared primitives and a small guard-specific CSS helper layer in src/index.css. Limit structural changes to presentational hierarchy, sticky chrome behavior, and prop wiring into GuardResourcesTab, GuardMapTab, and GuardShiftSwapPanel.
+  affected_areas:
+    - DasiaAIO-Frontend/src/components/UserDashboard.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+    - DasiaAIO-Frontend/src/index.css
+    - DasiaAIO-Frontend/tests/guard-dashboard.spec.ts
+  component_details:
+    - component: guard dashboard mission frame
+      responsibility: Present the top-of-screen duty status, active shift context, primary actions, and first supporting cards in a single high-signal viewport without stacked fixed bars.
+      interfaces:
+        - UserDashboard local state continues to own attendance, shifts, incident modal, instructions modal, and location summary.
+        - Guard section navigation remains section-based and does not require route or API changes.
+    - component: guard support workspace
+      responsibility: Break support into smaller card groups for instructions, schedule change, support tickets, and shift swaps while preserving existing handlers and submit payloads.
+      interfaces:
+        - GuardShiftSwapPanel receives contextual shift option props from UserDashboard.
+        - Existing ticket and schedule submit handlers remain unchanged.
+    - component: guard resources workspace
+      responsibility: Add summary-first hierarchy for firearms and permits using existing StatCard and DashboardCard primitives before detailed rows.
+      interfaces:
+        - GuardResourcesTab continues to receive firearmItems and permitItems arrays.
+    - component: guard map workspace
+      responsibility: Expose a stronger map summary and location-status hierarchy before expansion, while preserving expand and external-link behavior.
+      interfaces:
+        - GuardMapTab continues to receive mapExpanded, onToggleExpand, mapEmbedUrl, mapExternalUrl, and lastKnownLocation.
+    - component: guard ui helper layer
+      responsibility: Provide minimal reusable classes for guard quick actions, section framing, and safe-area-aware sticky spacing without introducing a new design system.
+      interfaces:
+        - UserDashboard, GuardResourcesTab, GuardMapTab, and GuardShiftSwapPanel may consume new helper classes defined in src/index.css.
+  dependencies:
+    - component: shared dashboard UI primitives
+      relationship: UserDashboard and guard tabs should reuse DashboardCard, StatCard, and SectionHeader instead of ad hoc bordered sections.
+    - component: existing guard data loaders
+      relationship: Current fetch and form handlers remain source-of-truth; this plan changes presentation and prop composition only.
+    - component: existing role and theme tokens
+      relationship: Guard UI refinements must use existing semantic colors, tone-guard-surface, and safe-area patterns from src/index.css.
+  integration_points:
+    - UserDashboard mission section and bottom navigation and action region.
+    - UserDashboard support section composition and modal triggers.
+    - GuardResourcesTab list rendering.
+    - GuardMapTab summary block and expansion affordance.
+    - GuardShiftSwapPanel request form inputs.
+    - Playwright guard-role smoke coverage.
+
+contracts:
+  - from_task: TASK-GD-001
+    to_task: TASK-GD-002
+    interface: Guard-specific helper classes and sticky spacing rules for section framing and single-layer bottom chrome.
+    format: CSS class names plus spacing and safe-area usage notes in src/index.css.
+  - from_task: TASK-GD-001
+    to_task: TASK-GD-003
+    interface: Shared guard surface helpers and card spacing conventions.
+    format: CSS class names and utility usage contract.
+  - from_task: TASK-GD-002
+    to_task: TASK-GD-004
+    interface: Updated UserDashboard section composition plus shift and action context available for support cards.
+    format: UserDashboard layout structure and GuardShiftSwapPanel prop contract.
+  - from_task: TASK-GD-002
+    to_task: TASK-GD-005
+    interface: Final guard navigation and action behavior plus modal entry points.
+    format: Executable UI behavior scenarios.
+  - from_task: TASK-GD-003
+    to_task: TASK-GD-005
+    interface: Final resources and map hierarchy and expand states.
+    format: Executable UI behavior scenarios.
+  - from_task: TASK-GD-004
+    to_task: TASK-GD-005
+    interface: Final support grouping and shift swap form behavior.
+    format: Executable UI behavior scenarios.
+
+tasks:
+  - id: TASK-GD-001
+    title: Establish guard UI helper layer and bounded layout rules
+    description: |
+      Add the smallest shared CSS layer needed to support this tranche.
+      1. Define guard-specific helper classes in DasiaAIO-Frontend/src/index.css for section framing, compact KPI rows, and a single safe-area-aware sticky action and navigation region.
+      2. Reuse existing tokens and guard tone classes; do not add a new palette or redesign Tailwind config unless a missing semantic token blocks implementation.
+      3. Encode the rule that only one bottom-fixed layer is allowed for guard screens in this tranche.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: [AC-001, AC-002, AC-004]
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/index.css
+        description: Existing semantic tokens, shared card primitives, safe-area styles, and guard tone utilities.
+      - path: DasiaAIO-Frontend/tailwind.config.ts
+        description: Reference only; extend only if a semantic helper cannot be expressed in CSS.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Create a minimal reusable styling contract before touching multiple guard surfaces.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 90
+        focus_area: shared guard CSS helpers
+        verification:
+          - Inspect helper classes for safe-area padding, focus visibility, and forced-colors compatibility.
+          - Confirm no new hard-coded palette values bypass semantic tokens unless justified.
+        acceptance_criteria:
+          - Guard dashboard can use one sticky bottom region instead of two stacked fixed layers.
+          - New helper classes are reusable by UserDashboard and guard tabs.
+          - Accessibility support remains compatible with reduced-motion and forced-colors patterns already in src/index.css.
+        failure_modes:
+          - scenario: Helper classes duplicate or conflict with existing dashboard card utilities.
+            likelihood: medium
+            impact: medium
+            mitigation: Prefer composition of existing soc-dashboard-card and bento patterns over new standalone surface definitions.
+    tech_stack:
+      - React
+      - TypeScript
+      - Tailwind utility classes
+      - Shared CSS custom properties in src/index.css
+    test_coverage: null
+
+  - id: TASK-GD-002
+    title: Recompose UserDashboard mission hierarchy and reduce bottom chrome
+    description: |
+      Update DasiaAIO-Frontend/src/components/UserDashboard.tsx to deliver the highest-impact guard UX wins without changing routing or data loading.
+      1. Replace the current dual fixed bottom layers with one consolidated sticky region that combines primary guard actions with simplified section navigation.
+      2. Introduce a mission-first header block using existing shared primitives for duty status, current shift, elapsed time, and connectivity and location state.
+      3. Reframe the mission view into fewer, clearer card groups so the first viewport surfaces what the guard needs now rather than a long vertical list.
+      4. Preserve all current modal entry points, handlers, and guard-section names.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: [AC-001, AC-002, AC-004]
+    priority: high
+    status: pending
+    dependencies:
+      - TASK-GD-001
+    conflicts_with:
+      - TASK-GD-004
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        description: Current guard dashboard orchestration, mission section, bottom chrome, support section, and modal ownership.
+      - path: DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx
+        description: Shared card container to reuse for mission and support group framing.
+      - path: DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx
+        description: Shared KPI card for top-of-screen summary.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Concentrate the tranche on the largest UX issues inside the existing guard entry surface.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: medium
+        estimated_files: 2
+        estimated_lines: 260
+        focus_area: mission hierarchy and bottom chrome
+        verification:
+          - Validate at 320px width that primary actions and navigation remain visible without overlapping content.
+          - Validate on desktop that mission hierarchy still reads clearly and no empty dead space dominates the page.
+          - Validate keyboard access to incident and instructions actions after sticky-region consolidation.
+        acceptance_criteria:
+          - The first screen shows duty status, current shift context, and primary actions before support and detail sections.
+          - The guard dashboard has at most one persistent bottom-fixed layer.
+          - Mission, attendance, and location-supporting info are presented as distinct card groups using shared UI patterns.
+        failure_modes:
+          - scenario: Moving actions into one sticky region causes crowding or truncation in narrow mobile widths.
+            likelihood: medium
+            impact: high
+            mitigation: Limit the sticky region to essential actions plus concise navigation labels and rely on wrap-safe layout and safe-area padding.
+          - scenario: UserDashboard changes become too invasive because the file mixes layout and behavior.
+            likelihood: high
+            impact: medium
+            mitigation: Avoid behavioral refactors; keep state and handlers in place and change composition only.
+    tech_stack:
+      - React
+      - TypeScript
+      - Existing DashboardCard and StatCard primitives
+    test_coverage: Guard mobile navigation, primary action visibility, and mission-first rendering.
+
+  - id: TASK-GD-003
+    title: Upgrade resources and map tabs to summary-first card layouts
+    description: |
+      Update DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx and DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx to use the shared dashboard language.
+      1. Add summary-first hierarchy in GuardResourcesTab using shared KPI and card patterns for allocation count, permit state, and expiry emphasis before detailed records.
+      2. Add a location-status summary and clearer expand affordance in GuardMapTab so map awareness is visible before the full embed opens.
+      3. Preserve existing props and map expansion behavior.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: [AC-003, AC-004]
+    priority: medium
+    status: pending
+    dependencies:
+      - TASK-GD-001
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+        description: Current flat firearm and permit lists.
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+        description: Current map tab summary and expand flow.
+      - path: DasiaAIO-Frontend/src/components/dashboard/ui/SectionHeader.tsx
+        description: Shared section framing to match the stronger dashboard language already used elsewhere.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Resources and map are lower-risk, high-clarity wins that can be improved in parallel once the CSS helper contract exists.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 180
+        focus_area: resources and map hierarchy
+        verification:
+          - Check that firearm and permit summaries are visible before scrolling.
+          - Check that the map tab communicates last-known status even when collapsed.
+          - Check keyboard and screen-reader names for expand and external-map actions.
+        acceptance_criteria:
+          - GuardResourcesTab shows summary-first hierarchy instead of only stacked lists.
+          - GuardMapTab exposes status and context before expansion.
+          - Both tabs visually align with shared dashboard card treatment.
+        failure_modes:
+          - scenario: Summary cards duplicate information without improving scan speed.
+            likelihood: medium
+            impact: medium
+            mitigation: Limit summaries to counts, urgency, and freshness signals; leave detail rows unchanged below.
+    tech_stack:
+      - React
+      - TypeScript
+      - Existing DashboardCard, StatCard, and SectionHeader primitives
+    test_coverage: Resource summary visibility and map expand-collapse behavior.
+
+  - id: TASK-GD-004
+    title: Decompress the support workspace and streamline shift swap entry
+    description: |
+      Update DasiaAIO-Frontend/src/components/UserDashboard.tsx and DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx to reduce support overload.
+      1. Split support into smaller card groups for field instructions, schedule change request, support tickets, and shift swaps.
+      2. Keep the existing forms and handlers, but reduce visual density through clearer grouping and progressive disclosure where it lowers scanning cost.
+      3. Replace raw Shift ID entry in GuardShiftSwapPanel with a select built from the current guard schedule passed down from UserDashboard.
+      4. Preserve a manual target-guard input fallback unless a directory data source is confirmed.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers: [AC-003, AC-004]
+    priority: high
+    status: pending
+    dependencies:
+      - TASK-GD-002
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        description: Current support stack, schedule-change form, ticket form, and shift-swap insertion point.
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+        description: Current swap request form using raw Shift ID and Target Guard ID inputs.
+      - path: DasiaAIO-Frontend/src/components/inbox/WorkflowTimeline.tsx
+        description: Reference pattern for compact vertical event grouping if a small history block is needed.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Support overload is a major UX issue, but it should be addressed after mission layout changes settle the overall dashboard frame.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: medium
+        estimated_files: 2
+        estimated_lines: 220
+        focus_area: support grouping and shift swap input friction
+        verification:
+          - Confirm each support workflow remains reachable with visible labels and preserved submit behavior.
+          - Confirm the shift selector is populated from current schedule items and handles the no-shift case gracefully.
+          - Confirm the target-guard input remains labeled and keyboard-operable.
+        acceptance_criteria:
+          - Support is no longer one long undifferentiated vertical stack.
+          - Shift swap no longer requires raw Shift ID typing when current shifts are available.
+          - Instructions, ticketing, and schedule-change flows still work without backend changes.
+        failure_modes:
+          - scenario: Support re-grouping introduces hidden content or extra taps for urgent tasks.
+            likelihood: medium
+            impact: high
+            mitigation: Keep urgent actions visible by default and use progressive disclosure only for secondary history or guidance.
+          - scenario: Shift selector wiring couples too tightly to UserDashboard state shape.
+            likelihood: medium
+            impact: medium
+            mitigation: Pass a small normalized option list to GuardShiftSwapPanel instead of the full shift objects.
+    tech_stack:
+      - React
+      - TypeScript
+      - Existing modal and form handlers in UserDashboard
+    test_coverage: Support grouping, instructions modal access, and shift swap form usability.
+
+  - id: TASK-GD-005
+    title: Add guard dashboard regression validation for the UX tranche
+    description: |
+      Add focused browser coverage for the refreshed guard experience.
+      1. Create DasiaAIO-Frontend/tests/guard-dashboard.spec.ts with guard-role storage setup and API mocks suited to the guard dashboard.
+      2. Validate the mission landing hierarchy, single bottom sticky region, resources summary cards, support grouping, and map expand flow.
+      3. Keep the test scope bounded to the UX tranche and do not introduce backend dependencies.
+    wave: 4
+    agent: gem-browser-tester
+    prototype: false
+    covers: [AC-001, AC-002, AC-003, AC-004, AC-005]
+    priority: medium
+    status: pending
+    dependencies:
+      - TASK-GD-002
+      - TASK-GD-003
+      - TASK-GD-004
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/tests/inbox.spec.ts
+        description: Existing role-specific navigation and mocked-auth Playwright pattern.
+      - path: DasiaAIO-Frontend/tests/smoke.spec.ts
+        description: Existing smoke-style assertions and environment conventions.
+      - path: DasiaAIO-Frontend/playwright.config.ts
+        description: Existing Playwright configuration and base URL behavior.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: UI changes need a focused guard-role regression net because current coverage does not appear to validate the redesigned guard surface.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 180
+        focus_area: guard UI regression coverage
+        verification:
+          - Run the new guard dashboard Playwright spec in Chromium.
+          - Confirm tests use mocked API data and do not require backend availability.
+          - Confirm assertions target accessible names and stable structural cues instead of brittle CSS-only selectors.
+        acceptance_criteria:
+          - The new spec covers mission landing, resources, support, and map flows for a guard role.
+          - The UX tranche has automated regression coverage for the single sticky bottom region.
+          - Tests remain deterministic under mocked API responses.
+        failure_modes:
+          - scenario: Tests depend on unstable mocked state or hard-coded layout text and become brittle.
+            likelihood: medium
+            impact: medium
+            mitigation: Mock only the required payload slices and assert on roles, labels, and section headings.
+    tech_stack:
+      - Playwright
+      - TypeScript
+      - Mocked frontend auth and API responses
+    test_coverage: End-to-end UI regression coverage for the guard UX tranche.
+    validation_matrix:
+      - scenario: Guard lands on mission-first dashboard
+        steps:
+          - Seed local storage for a guard role and mock dashboard API responses.
+          - Open the frontend at the configured Playwright base URL.
+          - Observe the default guard landing screen without scrolling.
+        expected_result: Duty status, current shift context, and primary actions are visible in the first viewport and only one sticky bottom region is present.
+      - scenario: Guard opens Resources section
+        steps:
+          - Navigate to the resources section from the guard navigation.
+          - Observe the top of the resources view before scrolling.
+        expected_result: Summary cards or summary indicators appear before firearm and permit detail rows.
+      - scenario: Guard opens Support section and starts a swap request
+        steps:
+          - Navigate to the support section.
+          - Confirm instructions, schedule change, tickets, and shift swap areas are visually distinct.
+          - Open the shift swap form.
+        expected_result: Support workflows are grouped into separate cards and the shift swap form offers a contextual shift selector when schedule data exists.
+      - scenario: Guard opens Map section and expands live map
+        steps:
+          - Navigate to the map section.
+          - Observe the collapsed state.
+          - Activate the expand action.
+        expected_result: A status summary is visible before expansion, and the embedded map or empty-state guidance appears after expansion without breaking keyboard access.
+

@@ -170,7 +170,7 @@ Client access governance hardening:
 - Access is blocked by an application modal until users explicitly agree, and final acceptance is persisted server-side through `POST /api/legal/consent`.
 - Legal acceptance metadata (`consentAcceptedAt`, `consentVersion`, `legalConsentAccepted`) is now returned by login and used for restore-auth gating.
 - Consent recording now captures compliance trace metadata (`consent_ip`, `consent_user_agent`) in the `users` table.
-- `App.tsx` consent modal now links directly to repository legal documents (`TermsOfAgreement.md`, `PrivacyPolicy.md`, `AcceptableUsePolicy.md`) in the active `Cloudyrowdyyy/Capstone-Main` repository.
+- `App.tsx` consent modal now links directly to repository legal documents (`TermsOfAgreement.md`, `PrivacyPolicy.md`, `AcceptableUsePolicy.md`) in the active `dwaytu/Capstone-Main` repository.
 - `DasiaAIO-Frontend/src/App.tsx` now checks backend release metadata (`GET /api/system/version`) with GitHub fallback, then prompts users to update when a newer release than `VITE_APP_VERSION` is available.
 - `DasiaAIO-Frontend/src/App.tsx` now includes a manual "Check for Updates" action in addition to scheduled update checks.
 - `DasiaAIO-Frontend/src/App.tsx` now renders a one-time per-version "What's New" dialog sourced from `VITE_WHATS_NEW`, persisted locally via version-scoped keys.
@@ -196,9 +196,9 @@ Client access governance hardening:
 - Guard resilience UX now includes explicit loading/sync states, offline and partial-sync banners with retry, and protected action feedback messages for field-critical workflows.
 - Tracking telemetry hooks now enforce frontend role gating (`supervisor`/`guard`) before calling tracking APIs/websocket endpoints (`useOperationalMapData`, `useReplacementSuggestions`, and app-level heartbeat dispatch in `App.tsx`), preventing repeated `403` tracking calls for non-tracking roles.
 - Sidebar service-health polling (`DasiaAIO-Frontend/src/hooks/useServiceHealth.ts`) now uses `/api/health/system` payloads instead of probing role-restricted operational routes, eliminating expected-but-noisy `403` console spam for lower-privilege sessions.
-- Release workflow Android fallback behavior (`.github/workflows/release.yml`) now builds unsigned CI artifacts as APK-only when signing secrets are unavailable, while signed paths continue producing both APK and AAB outputs.
-- Android CI setup now includes Gradle dependency caching (`gradle/actions/setup-gradle@v4`), dual SDK package provisioning (`platforms;android-33` + `build-tools;33.0.2` and `platforms;android-35` + `build-tools;35.0.0`), and robust license acceptance handling that avoids `yes | sdkmanager --licenses` pipefail termination.
-- Android release job now validates with `:app:assembleDebug` first, then performs signed release build when keystore/secrets are present or unsigned `:app:assembleRelease` fallback when signing is unavailable; Gradle release commands run with `--stacktrace` for explicit failure diagnostics.
+- Release workflow Android governance (`.github/workflows/release.yml`) now requires signing material for release execution and fails fast when signing secrets are missing.
+- Android CI setup now includes Gradle dependency caching (`gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a`), dual SDK package provisioning (`platforms;android-33` + `build-tools;33.0.2` and `platforms;android-35` + `build-tools;35.0.0`), and robust license acceptance handling that avoids `yes | sdkmanager --licenses` pipefail termination.
+- Android release job now validates with `:app:assembleDebug` before enforced signed `:app:assembleRelease :app:bundleRelease` outputs, with Gradle `--stacktrace` diagnostics on failure.
 - Android CI frontend prebuild now invokes Vite through Node from `DasiaAIO-Frontend` (`node node_modules/vite/bin/vite.js build --mode mobile`) to avoid intermittent Linux runner execute-bit issues (`vite: Permission denied`) before Gradle stages.
 - Android CI now uses Temurin JDK 21 in the Android job to satisfy Capacitor Android Java compilation targets (`invalid source release: 21` mitigation).
 
@@ -247,7 +247,7 @@ All AI/prediction panels upgraded from static text output to actionable call-to-
   - `GET /api/audit/user-activity/:id`
   - `GET /api/audit/anomalies`
   The handler (`DasiaAIO-Backend/src/handlers/audit.rs`) supports pagination, multi-field filtering, user-activity timelines, and anomaly group extraction for high-fidelity SOC review.
-- A new global authorization-failure audit middleware now persists non-write `401/403` API denials into `audit_logs` (`action_key` prefixed with `AUTHZ_DENIED`), while existing write-audit middleware continues to capture write outcomes.
+- A new global authorization-failure audit middleware now persists API-wide `401/403` denials (including write requests) into `audit_logs` (`action_key` prefixed with `AUTHZ_DENIED`), while existing write-audit middleware continues to capture write outcomes.
 - Managed user creation endpoint (`POST /api/users`) enforces role hierarchy:
   - `superadmin` can create `admin`, `supervisor`, and `guard`
   - `admin` can create `supervisor` and `guard`
@@ -280,8 +280,10 @@ All AI/prediction panels upgraded from static text output to actionable call-to-
 - Release packaging is now centralized in `.github/workflows/release.yml` with tag-driven orchestration, unified version synchronization (`scripts/release-version.js`, `scripts/sync-release-version.js`), and deterministic artifact renaming (`scripts/rename-artifacts.js`).
 - Backend config now enforces production startup guards (`DasiaAIO-Backend/src/config.rs`) when `APP_ENV=production` or `NODE_ENV=production`:
   - requires strong non-default `JWT_SECRET`,
-  - rejects default `ADMIN_CODE=122601`,
+  - requires explicitly configured non-default `ADMIN_CODE` (startup fails when missing/empty/default),
+  - validates DB pool config via `DB_POOL_MAX_CONNECTIONS` and `DB_POOL_ACQUIRE_TIMEOUT_SECS`,
   - requires explicit `CORS_ORIGINS` or `CORS_ORIGIN`.
+- JWT secret fallback in token utilities was removed; token issue/verify flows now fail when `JWT_SECRET` is missing or empty (`DasiaAIO-Backend/src/utils.rs`).
 - Legacy high-privilege routes were hardened with centralized middleware, including:
   - permits + firearm maintenance + training record endpoints
   - car allocation + car maintenance + driver assignment endpoints
@@ -418,6 +420,7 @@ Primary frontend files that must be rechecked when roles/auth/dashboards change:
 - `DasiaAIO-Frontend/src/App.tsx`: role-based top-level dashboard routing
 - `DasiaAIO-Frontend/src/components/AdminDashboard.tsx`: admin/supervisor dashboard shell + approvals UI
 - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`: superadmin shell + approvals UI
+- `DasiaAIO-Frontend/src/components/ErrorBoundary.tsx`: shared render-failure containment for dashboard sections
 - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: role-aware event aggregation and guarded API calls
 - `DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx`: merit API calls and auth headers
 - `DasiaAIO-Frontend/src/utils/api.ts`: fetch wrapper behavior, timeout, and parsing safety
@@ -483,6 +486,9 @@ Current frontend reality:
     - `DasiaAIO-Frontend/src/utils/logger.ts`: new shared logger utility with `isExpectedAuthNoise(...)` and `logError(...)` to suppress expected invalid-token/session-expiry fetch noise while preserving unexpected-error logging.
     - `DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx`, `DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx`, and `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx` now route noisy fetch logs through `logError(...)`.
     - Rollout expanded to additional operational surfaces: `FirearmInventory.tsx`, `FirearmAllocation.tsx`, `EditScheduleModal.tsx`, `FirearmMaintenance.tsx`, `GuardFirearmPermits.tsx`, `MeritScoreDashboard.tsx`, `PerformanceDashboard.tsx`, `NotificationPanel.tsx`, `ProfileDashboard.tsx`, and `UserDashboard.tsx`.
+  - Dashboard render containment:
+    - `DasiaAIO-Frontend/src/components/ErrorBoundary.tsx` now provides a reusable section-level fallback surface with retry action.
+    - `DasiaAIO-Frontend/src/App.tsx` now wraps profile, routed elevated views, and home rendering through this boundary (`renderProtectedView(...)`) so runtime render faults degrade to bounded recovery UI instead of collapsing the entire app shell.
 - Guard/profile/support flows were hardened to include bearer headers on protected endpoints (attendance, allocations, tickets, profile update/photo actions)
 - UI permission gates in shared elevated shell:
   - `superadmin`: full management actions
@@ -613,7 +619,7 @@ Current frontend reality:
   - SOC dashboard realism refinement (latest):
     - Added reusable live-freshness UI primitive:
       - `DasiaAIO-Frontend/src/components/dashboard/ui/LiveFreshnessPill.tsx` renders consistent live/delayed/offline status with relative age text.
-    - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now shows `SOC stream` freshness in the command header and keeps sync state aligned with the 15-second refresh cycle.
+    - `DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx` now runs its 15-second refresh cycle in staged sequence instead of one burst, reducing concurrent request spikes while preserving freshness indicators.
     - `DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx` now includes:
       - analytics-feed freshness indicator,
       - KPI deltas versus command targets,
@@ -708,7 +714,7 @@ Current frontend reality:
     - `DasiaAIO-Backend/src/handlers/incidents.rs`: `GET /api/incidents` and `GET /api/incidents/active` now return paginated metadata with list payload.
     - `DasiaAIO-Backend/src/handlers/ai.rs`: incident AI endpoints now return standardized fields including `riskLevel`, `confidence`, `explanation`, and `suggestedActions`.
   - Frontend runtime and AI presentation updates:
-    - `DasiaAIO-Frontend/src/utils/api.ts`: fetch wrapper now supports retry/backoff for retryable failures and offline-aware messaging.
+    - `DasiaAIO-Frontend/src/utils/api.ts`: fetch wrapper now uses status-aware retry/backoff (including `408/425/429/5xx`) with exponential delay for safe/idempotent calls and offline-aware messaging.
     - `DasiaAIO-Frontend/src/config.ts`: platform-aware API host resolution now supports web/desktop/mobile-specific overrides and safer Capacitor fallback behavior.
     - `DasiaAIO-Frontend/src/hooks/useIncidents.ts`: now supports paginated incident responses while retaining array compatibility.
     - AI panels now surface standardized AI fields (risk, confidence, explanation, suggested actions):
@@ -823,13 +829,18 @@ npm run build:desktop --prefix DasiaAIO-Frontend
 
 Current release behavior:
 
+- Quality gate:
+  - A dedicated `quality-gate` job now runs frontend tests and backend tests before web/desktop/android artifact jobs execute.
+- Workflow permissions:
+  - Global workflow permission is now least-privilege `contents: read`, with `contents: write` scoped only to the publish job.
+
 - Web artifact:
   - CI builds a production web bundle and publishes a versioned archive (`sentinel-web-v<version>.tar.gz`).
 - Desktop artifacts:
   - Windows MSI + NSIS installers are built and published with deterministic names (`sentinel-desktop-windows-v<version>.<ext>`).
 - Android artifact:
-  - CI publishes signed release APK and AAB artifacts with deterministic names (`sentinel-android-v<version>.apk/.aab`) when signing credentials are available.
-  - If signing credentials are unavailable, CI now falls back to unsigned APK-only output for validation and still publishes deterministic Android artifact naming.
+  - CI requires Android signing material and publishes signed APK and AAB artifacts with deterministic names (`sentinel-android-v<version>.apk/.aab`).
+  - Release execution fails when signing secrets are missing, removing unsigned fallback behavior from release runs.
 - Release guard behavior:
   - release jobs set production runtime flags (`NODE_ENV=production`, plus `CAPACITOR_ENV=production` for Android), run frontend env-policy validation, and propagate a unified semantic version across wrapper manifests/configs before building.
 - Release metadata generation:
@@ -841,9 +852,10 @@ Current release behavior:
 Checkout/build stability updates applied:
 
 - Release workflow now uses pinned `actions/checkout` with `submodules: recursive` in all release jobs, so web/desktop/android artifacts build from the exact repository-pinned frontend snapshot instead of an external moving-target checkout.
+- Release workflow now pins immutable SHAs for `setup-node`, `setup-java`, `setup-android`, `setup-gradle`, and `upload/download-artifact` alongside checkout for deterministic CI execution.
 - Repository submodule metadata is now explicitly declared in `.gitmodules` for `DasiaAIO-Backend` and `DasiaAIO-Frontend`, preventing checkout-time `No url found for submodule path` failures.
 - Web artifact validation now relies on `ensure-production-env.mjs` (required HTTPS/public `VITE_API_BASE_URL`) instead of broad static-string grep checks to avoid false-positive release failures from non-runtime localhost text in bundled assets.
-- Build runtime updated to Node.js 24 in both jobs.
+- Build runtime uses Node.js 22 across release jobs (prepare/quality-gate/web/desktop/android).
 
 Documentation and licensing distribution updates:
 
@@ -865,13 +877,13 @@ Warning interpretation (important):
 
 ## 14. Release Validation Update (March 2026)
 
-- Release workflow run now validates four stages (`prepare`, `web`, `desktop`, `android`) and publishes deterministic artifacts:
+- Release workflow now validates `prepare -> quality-gate -> {web,desktop,android}` before publish and publishes deterministic artifacts:
   - `sentinel-web-v<version>.tar.gz`
   - `sentinel-desktop-windows-v<version>.msi`
   - `sentinel-desktop-windows-v<version>.exe`
   - `sentinel-android-v<version>.apk`
   - `sentinel-android-v<version>.aab`
-- Android release packaging now requires signing secrets and no longer uses fallback ephemeral signing.
+- Android release packaging requires signing secrets and no longer allows unsigned fallback artifacts in release workflow execution.
 - Remaining warnings were deprecation notices from upstream GitHub actions runtime and did not block artifact output.
 
 Latest compliance/docs pass (March 28, 2026):
@@ -1298,7 +1310,7 @@ Verified in this session (Docker runtime):
       - `/api/audit-logs`, `/api/audit/logs`, `/api/audit/logs/filter`, `/api/audit/user-activity/:id`, `/api/audit/anomalies` now require superadmin route and handler gates.
       - Tracking routes now require supervisor/guard role middleware; websocket upgrades reject non-supervisor/non-guard roles.
       - Incident reads are role-scoped: guard sees self-reported incidents only; elevated roles retain full incident feed.
-      - Global authz-failure audit middleware records API read denials (`401/403`) into `audit_logs`.
+      - Global authz-failure audit middleware records API-wide denials (`401/403`, including write-route denials) into `audit_logs`.
     - Frontend authorization/layout updates:
       - `audit-log` navigation permission moved to `view_audit_logs` (superadmin only).
       - Restricted views now render explicit Access Denied fallback instead of silently falling through to dashboard.
@@ -1363,3 +1375,327 @@ Do not leave this file stale after role/auth/dashboard work.
 ## 16. Maintainer Notes
 
 If you change roles, auth, or major endpoints, update this file immediately so future AI sessions stay accurate.
+
+## 17. April 2026 Implementation Completion
+
+Latest implemented and verified additions in this cycle:
+
+- Push notifications:
+  - Frontend service worker registration + permission + subscription helpers at `DasiaAIO-Frontend/src/utils/pushNotifications.ts`.
+  - Profile opt-in toggle UI in `DasiaAIO-Frontend/src/components/ProfileDashboard.tsx`.
+  - Backend subscription endpoint `POST /api/notifications/push-subscribe` in `DasiaAIO-Backend/src/handlers/notifications.rs` with route wiring in `DasiaAIO-Backend/src/main.rs`.
+  - DB persistence table/index for push subscriptions in `DasiaAIO-Backend/src/db.rs` (`push_subscriptions`, `idx_push_subscriptions_user_id`).
+
+- Offline support:
+  - Service-worker cache and background replay queue in `DasiaAIO-Frontend/public/sw.js`.
+  - IndexedDB queue utility in `DasiaAIO-Frontend/src/utils/offlineQueue.ts`.
+
+- E2E smoke testing:
+  - Playwright config/scripts/tests added:
+    - `DasiaAIO-Frontend/playwright.config.ts`
+    - `DasiaAIO-Frontend/tsconfig.playwright.json`
+    - `DasiaAIO-Frontend/tests/smoke.spec.ts`
+    - `DasiaAIO-Frontend/package.json` scripts: `test:e2e`, `test:e2e:ui`
+
+- Validation status for this cycle:
+  - Backend `cargo check`: passes (warnings only).
+  - Frontend smoke tests: running and passing core coverage, with role-dependent routes marked as skip-safe in scenarios where a role cannot access a target view.
+
+## 18. Unified Role-Centric Action Inbox + Workflow Timeline Implementation
+
+### UI/UX Architecture Overview
+
+A new unified inbox system provides role-scoped action prioritization and workflow status timelines within a cohesive operational dashboard. The system uses two reusable shared UI primitives (`ActionInbox`, `WorkflowTimeline`) composed into four role-specific dashboard panels, integrated into both Guardian (`UserDashboard`) and Elevated (`SuperadminDashboard`) shells.
+
+### Shared UI Primitives
+
+**ActionInbox.tsx** (`src/components/inbox/ActionInbox.tsx`, 155 lines)
+- **Purpose**: Render prioritized inbox items sorted by urgency with visual feedback
+- **Type Definitions**:
+  - `InboxPriority`: `'urgent' | 'high' | 'normal'`
+  - `InboxCategory`: `'mission' | 'incident' | 'shift' | 'approval' | 'firearm' | 'compliance' | 'notification'`
+  - `InboxItem`: interface with `id`, `priority`, `category`, `title`, `description`, `timestamp`, `actionLabel`, `statusChip`, `onAction` callback
+- **Features**:
+  - Priority color bar on left edge (red/orange/muted per urgency)
+  - Category-specific Lucide icon (Clock, AlertTriangle, ArrowLeftRight, UserCheck, Shield, FileText, Bell)
+  - Priority-based sorting (urgent → high → normal)
+  - Skeleton loading state during fetch
+  - Empty state with centered messaging
+  - Keyboard navigation (`onKeyDown` Enter/Space on items)
+  - ARIA labels and semantic `<section>` wrapper
+- **Design Compliance**: Uses SOC token classes (`.soc-dashboard-card`, responsive grid) and CSS variables; no arbitrary Tailwind colors
+
+**WorkflowTimeline.tsx** (`src/components/inbox/WorkflowTimeline.tsx`, 153 lines)
+- **Purpose**: Render vertical workflow/status progression timeline with milestone markers
+- **Type Definitions**:
+  - `TimelineStatus`: `'pending' | 'active' | 'resolved' | 'cancelled'`
+  - `TimelineEntry`: interface with `id`, `status`, `title`, `participant`, `timestamp`, `detail`, `category`
+- **Features**:
+  - Vertical layout with status-colored icon circles (Clock pending, Zap active, CheckCircle resolved, XCircle cancelled)
+  - Connecting vertical border on left side
+  - Title + participant + relative timestamp display
+  - Optional expandable detail section
+  - "Show more" pagination (first 8 entries, then expand button)
+  - Empty state and loading skeleton
+  - Keyboard focus support on expandable items
+  - Accessible heading with `aria-label`
+- **Design Compliance**: Responsive width, SOC token styling, no arbitrary colors
+
+### Role-Specific Inbox Panels
+
+**GuardInboxPanel.tsx** (`src/components/inbox/GuardInboxPanel.tsx`, 193 lines)
+- **Purpose**: Guard field operations inbox focused on mission execution
+- **Data Fetched** (Promise.allSettled for resilience):
+  - `GET /api/guard-replacement/guard/{userId}/shifts` → upcoming assignments
+  - `GET /api/users/{userId}/notifications` → system notifications
+  - `GET /api/shifts/swap-requests` → pending peer shift swaps
+- **InboxItem Mapping**:
+  - Shifts within 24h → `(urgent, mission, "Upcoming Shift: location/time")`
+  - Swap requests → `(high, shift, "Swap Request: from peer name")`
+  - Notifications (unread) → priority varies by type (high for shift-type, normal for others)
+- **TimelineEntry Mapping**: Shifts mapped with status (pending → pending, active → active, etc.), category "Mission Shift"
+- **Features**: Offline banner (navigator.onLine check), error state on all-fail, responsive grid layout
+- **Authorization**: Guard can only access own shifts/notifications; self-service check
+
+**SupervisorInboxPanel.tsx** (`src/components/inbox/SupervisorInboxPanel.tsx`, 215 lines)
+- **Purpose**: Supervisor field-control inbox for shift oversight and incident response
+- **Data Fetched** (Promise.allSettled):
+  - `GET /api/guard-replacement/pending-approvals` → pending shift replacements
+  - `GET /api/incidents` → unresolved incidents
+  - `GET /api/guard-replacement/shifts` → unassigned shifts
+  - `GET /api/users/{userId}/notifications` → system notifications
+- **InboxItem Mapping**:
+  - Pending approvals → `(urgent, approval, "Guard name: replacement request")`
+  - Unresolved incidents → `(high, incident, incident title)`
+  - Unassigned shifts → `(high, shift, "Unassigned: location/time")`
+  - Notifications → `(normal, notification, ...)`
+- **Key Feature**: All fetches use shared `getAuthHeaders()` utility for consistent authorization
+- **Authorization**: Supervisor sees global unassigned/incident views; approvals already filtered server-side
+
+**AdminInboxPanel.tsx** (`src/components/inbox/AdminInboxPanel.tsx`, 228 lines)
+- **Purpose**: Admin operations orchestration inbox with real-time metrics
+- **Data Fetched** (Promise.allSettled):
+  - `GET /api/guard-replacement/pending-approvals` → pending approvals
+  - `GET /api/firearms/allocations` → firearm inventory
+  - `GET /api/users/{userId}/notifications` → notes
+  - `GET /api/analytics/metrics` → operational stats
+- **Metrics Banner**: 3 stat chips above grid (active guards count, pending approvals count, incidents count)
+- **InboxItem Mapping**: Approvals → urgent, firearms needing attention → high, notifications → normal
+- **Layout**: Responsive 2-column grid on desktop (ActionInbox + WorkflowTimeline side-by-side), 1-column on mobile
+- **Authorization**: Admin scoped to visible organizational units; metrics represent organization-wide view
+
+**SuperadminInboxPanel.tsx** (`src/components/inbox/SuperadminInboxPanel.tsx`, 220 lines)
+- **Purpose**: Superadmin governance/compliance inbox with system-wide visibility
+- **Data Fetched** (Promise.allSettled):
+  - `GET /api/users/{userId}/notifications` → global notifications
+  - `GET /api/guard-replacement/pending-approvals` → all pending approvals
+  - `GET /api/incidents` → all incidents
+  - `GET /api/analytics/metrics` → system metrics
+- **Security Fix Applied**: Added useEffect cleanup guard (`let cancelled = false` flag, cleanup return) to prevent stale setState on unmount during async fetch
+- **Governance Banner**: 3 stat chips (incidents this month, pending approvals, unread notifications)
+- **InboxItem Mapping**: Unresolved critical incidents → urgent/compliance, >48h approvals → urgent, <48h → high, notifications → normal
+- **TimelineEntry Mapping**: Incidents sorted newest-first, closed incidents → resolved status, others → active
+- **Authorization**: Superadmin sees system-wide data; organization filtering handled as a follow-up governance control
+
+### Dashboard Integration
+
+**UserDashboard.tsx** (modified `src/components/UserDashboard.tsx`)
+- **Type Change**: `GuardSection` union extended to include `'inbox'` as first item
+- **Import**: Added `import { GuardInboxPanel } from './inbox/GuardInboxPanel'`
+- **Tab Navigation**: Added `{ key: 'inbox', label: 'Inbox' }` at index 0 (first tab position)
+- **Render Block**:
+  ```tsx
+  if (activeSection === 'inbox') {
+    return <div className="p-4"><GuardInboxPanel userId={user.id} onAction={(type, id) => { if (type === 'mission') setActiveSection('mission'); }} /></div>
+  }
+  ```
+- **Impact**: Guards now see "Inbox" as first tab in mission-first workspace, with optional action callback for inline navigation
+
+**SuperadminDashboard.tsx** (modified `src/components/SuperadminDashboard.tsx`)
+- **Type Change**: `activeSection` union extended to include `'inbox'` at front
+- **Imports**: Added 3 role panel components (SupervisorInboxPanel, AdminInboxPanel, SuperadminInboxPanel)
+- **Navigation**: `handleNavigate` now routes `'inbox'` view to `setActiveSection('inbox')`
+- **Render Block** (critical role dispatch order):
+  ```tsx
+  {activeSection === 'inbox' && (
+    <div className="p-6">
+      {isSuperadminViewer ? (
+        <SuperadminInboxPanel userId={user.id} />
+      ) : isAdminViewer ? (
+        <AdminInboxPanel userId={user.id} />
+      ) : (
+        <SupervisorInboxPanel userId={user.id} />
+      )}
+    </div>
+  )}
+  ```
+  **Critical Detail**: Superadmin check first (prevents admin catch-all bug; ensures correct panel renders per role)
+- **Impact**: Elevated roles see "Inbox" in sidebar navigation; dashboard routing determines which panel renders based on JWT role
+
+### Navigation Configuration
+
+**navigation.ts** (modified `src/config/navigation.ts`)
+- **Changes**: Added `'inbox'` as first NavItem in both ELEVATED_NAV and GUARD_NAV arrays
+- **Structure**: `{ view: 'inbox', label: 'Inbox', group: 'MAIN MENU' }`
+- **Result**: Sidebar and guard bottom-nav now show "Inbox" as the first/primary navigation item
+
+### Playwright E2E Tests
+
+**inbox.spec.ts** (new `tests/inbox.spec.ts`, ~110 lines)
+- **Purpose**: Verify inbox navigation is visible and accessible for all 4 roles
+- **Tests (4 passing)**:
+  1. **Guard sees Inbox tab**: Verifies "Inbox" appears in bottom navigation tabs for guard sessions
+  2. **Admin sees Inbox in sidebar**: Confirms "Inbox" nav item in sidebar for admin sessions
+  3. **Supervisor sees Inbox in sidebar**: Confirms "Inbox" nav item in sidebar for supervisor sessions
+  4. **Superadmin sees Inbox in sidebar**: Confirms "Inbox" nav item in sidebar for superadmin sessions
+- **Test Pattern**:
+  - Auth injection via `page.addInitScript()` (localStorage token injection)
+  - API route mocking via `page.route()` to prevent backend dependency
+  - DOM assertion via `page.getByRole('navigation')` selectors
+  - Graceful skip on not-found (role-safe, doesn't fail entire suite)
+- **Execution**: All 4 tests passed (6.9s total run)
+- **Integration**: Runs alongside existing smoke tests; full suite remains 7 passed + 3 skipped (10 total, role-dependent)
+
+### Code Review & Security Audit Results
+
+**gem-reviewer performed full security/quality audit** with 4 issues identified and auto-fixed:
+
+| Issue | Severity | Files | Fix Applied |
+|-------|----------|-------|-------------|
+| Missing useEffect cleanup guard | HIGH | SuperadminInboxPanel | Added `let cancelled` flag, cleanup return, void cast |
+| Duplicated auth token retrieval | MEDIUM | 3 panels (Supervisor, Admin, Superadmin) | Replaced manual `localStorage.getItem('token')` with shared `getAuthHeaders()` utility |
+| Missing URL path encoding | MEDIUM | 2 panels (Guard, Superadmin) | Added `encodeURIComponent(userId)` to all `/api/*` URLs |
+| Unnecessary tabindex on static content | MEDIUM | WorkflowTimeline | Removed `tabIndex={0}`, redundant `role="listitem"`, moved `aria-label` to parent |
+
+**Result**: PASS — All 4 issues resolved; TypeScript strict mode zero errors project-wide after fixes
+
+### Validation & Testing Results
+
+**Wave 1 (Primitives, 3 tasks)**
+- ✅ ActionInbox.tsx: 155 lines, zero errors
+- ✅ WorkflowTimeline.tsx: 153 lines, zero errors
+- ✅ Navigation config: 2 lines added, zero errors
+
+**Wave 2 (Role Panels, 4 tasks)**
+- ✅ GuardInboxPanel.tsx: 193 lines, zero errors
+- ✅ SupervisorInboxPanel.tsx: 215 lines, zero errors
+- ✅ AdminInboxPanel.tsx: 228 lines, zero errors
+- ✅ SuperadminInboxPanel.tsx: 220 lines, zero errors (+ 1 security fix applied)
+
+**Wave 3 (Dashboard Integration, 2 tasks)**
+- ✅ UserDashboard.tsx: Integration successful, zero errors
+- ✅ SuperadminDashboard.tsx: Integration successful, zero errors (+ 1 pre-existing dead code cleanup)
+
+**Wave 4 (Security Review & E2E Tests, 2 tasks)**
+- ✅ Security audit: 4 issues found + auto-fixed, PASS status
+- ✅ E2E tests: 4 new tests (inbox.spec.ts), all 4 PASSED (6.9s)
+
+**Final TypeScript Validation**
+- `npx tsc --noEmit` → **ZERO errors** (full project-wide validation)
+
+**Full E2E Suite**
+- `npx playwright test --reporter=line` → **7 passed (8.1s), 3 skipped** (10 total tests)
+  - 4 new inbox tests: all passed
+  - 3 existing smoke tests: passed
+  - 3 existing role-dependent tests: skipped gracefully
+
+### Feature Completion Status
+
+**Completed & Integrated**:
+- ✅ 2 reusable UI primitives (ActionInbox, WorkflowTimeline)
+- ✅ 4 role-specific panels (Guard, Supervisor, Admin, Superadmin)
+- ✅ Dashboard shell integration (UserDashboard, SuperadminDashboard)
+- ✅ Navigation configuration (sidebar + guard bottom-nav)
+- ✅ Security audit (4 issues found & fixed)
+- ✅ E2E test coverage (4 new tests, all passing)
+- ✅ TypeScript strict compliance (zero errors)
+- ✅ Full regression validation (existing tests passing)
+
+**Design Compliance**:
+- ✅ CSS design tokens (Tailwind + index.css variables)
+- ✅ No arbitrary colors (SOC token classes only)
+- ✅ Accessibility (ARIA labels, keyboard nav, WCAG 2.2)
+- ✅ Responsive layout (mobile + desktop)
+- ✅ Error resilience (Promise.allSettled, graceful degradation)
+
+## 19. Frontend Multi-Issue Wave 1-3 Completion
+
+Latest frontend dashboard and route behavior changes completed in this session:
+
+- Guard profile continuity:
+  - `DasiaAIO-Frontend/src/components/profile/ProfileModalContent.tsx` now owns the reusable account-settings surface used by both inline and routed profile experiences.
+  - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` now opens profile management inside an inline modal (`role="dialog"`, accessible name `Guard profile settings`) instead of sending guards out of the mission shell.
+  - `DasiaAIO-Frontend/src/components/ProfileDashboard.tsx` now acts as the full-page wrapper around the same shared profile content, preserving non-guard and direct-profile flows without duplicating save/photo/push/availability logic.
+
+- Theme and settings routing:
+  - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` now exposes the existing `ThemeToggleButton`, closing the last top-level dashboard gap in theme-toggle coverage.
+  - `DasiaAIO-Frontend/src/components/settings/` now contains the settings MVP surface (`SettingsView`, `GuardSettings`, `SupervisorSettings`, `AdminSettings`, `SuperadminSettings`, shared notifications panel, storage helpers, and role resolver hook).
+  - `DasiaAIO-Frontend/src/App.tsx` now registers a protected `settings` view in the main view registry.
+  - `DasiaAIO-Frontend/src/config/navigation.ts` now exposes `settings` in both elevated and guard navigation definitions.
+  - Settings remain frontend-only in this MVP and persist through role-scoped localStorage keys such as `settings.guard.notifications` and `settings.supervisor.supervisor`.
+
+- Support and shift-swap hardening:
+  - `DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx` now routes list, submit, and respond flows through `fetchJsonOrThrow(...)` and `getAuthHeaders(...)`, removing the previous swallowed PATCH failure path.
+  - `DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx` now uses the shared authenticated API helper path and surfaces complete inbox-load failures with explicit UI feedback.
+
+- Validation performed in this session:
+  - `npm test -- --runInBand src/__tests__/guardDashboardRedesign.test.tsx src/__tests__/settings.test.tsx` passed: 15/15 tests.
+  - `npm run build` in `DasiaAIO-Frontend` passed.
+  - `npx playwright test tests/guard-dashboard.spec.ts --project=chromium` passed: 5/5 tests.
+
+- Residual risk:
+  - Editor diagnostics still show a pre-existing `process` name-resolution warning in `DasiaAIO-Frontend/tests/smoke.spec.ts`, although Playwright execution remains functional through `tsconfig.playwright.json`.
+
+### Known Limitations & Future Enhancements
+
+- **Unread counts**: Badge indicators on nav items (intentionally skipped for v1; easy add-on)
+- **Detail modal**: Full inbox item detail view opens in modal (phase 2 feature)
+- **Filters/search**: Current panels show all items; filter UI deferred to v1.1
+- **Real-time push**: WebSocket-driven inbox updates (deferred; polling refresh suffices for v1)
+- **Action completion**: Some action callbacks (e.g., "Assign Now" for replacement) trigger navigation instead of inline completion (phase 2 enhancement)
+
+## 20. Wave 4 Domain Reorganization and Continuation Outcomes (2026-04-03)
+
+### Frontend Component Domain Organization (Wave 4)
+
+Three top-level components were moved to domain subdirectories under `DasiaAIO-Frontend/src/components/` with backward-compatible shims retained at original paths:
+
+| Original path | New domain path | Domain |
+|---|---|---|
+| `src/components/Header.tsx` | `src/components/shared/Header.tsx` | `shared/` |
+| `src/components/UserDashboard.tsx` | `src/components/guards/UserDashboard.tsx` | `guards/` |
+| `src/components/SuperadminDashboard.tsx` | `src/components/admin/SuperadminDashboard.tsx` | `admin/` |
+
+Compatibility shims at the original paths re-export the default export from the new domain paths. All secondary consumers (e.g., `CalendarDashboard`, `FirearmInventory`, `PerformanceDashboard`) continue resolved via shims. Primary consumers were updated to import directly from domain paths:
+- `src/App.tsx` now imports `UserDashboard` from `./components/guards/UserDashboard` and `SuperadminDashboard` from `./components/admin/SuperadminDashboard`.
+- `src/components/layout/OperationalShell.tsx` now imports `Header` from `../shared/Header`.
+
+Future shim retirement: shims at original paths can be deleted once all secondary consumers have migrated to domain paths in a subsequent release.
+
+### Identity Drift Remediation (Continuation Scope)
+
+Continuation-scoped `Cloudyrowdyyy/Capstone-Main` remediation is limited to active runtime surfaces plus active frontend documentation and the published docs artifact:
+- `.github/workflows/release.yml`: `VITE_LATEST_RELEASE_API_URL` and `VITE_RELEASE_DOWNLOAD_URL` in the web, desktop, and Android build jobs now reference `dwaytu/Capstone-Main`.
+- `PRODUCTION_ROLLOUT.md`: Release download link updated to `https://github.com/dwaytu/Capstone-Main/releases`.
+- `DasiaAIO-Frontend/src/App.tsx`: consent modal legal-document links (Terms, Privacy, Acceptable Use) now reference `https://github.com/dwaytu/Capstone-Main/...`.
+- `DasiaAIO-Frontend/README.md`, `DasiaAIO-Frontend/docs/**`, and `docs/index.html`: active frontend documentation links now reference `dwaytu/Capstone-Main` and `https://dwaytu.github.io/Capstone-Main`.
+- `CHATGPT_SYSTEM_GUIDE.md` (this document): Wave 4 continuation narrative reconciled to match runtime implementation.
+
+Notes:
+- `.gitmodules` submodule remote URLs (`Cloudyrowdyyy/DasiaAIO-Backend`, `Cloudyrowdyyy/DasiaAIO-Frontend`) are excluded from automated replacement — these are repository-governance items requiring GitHub remote coordination before update.
+- Historical git log records are explicitly preserved as immutable provenance.
+
+### Verification Evidence (plan: frontend-multi-issue-20260403)
+
+- `npm run build` in `DasiaAIO-Frontend`: **PASS** — 1880 modules transformed, built in 3.33s, zero errors.
+- `npm test -- --runInBand`: **PASS** — 20/20 tests across 3 suites (guardDashboardRedesign, api, settings).
+- Continuation closeout validation (2026-04-03): `npm run build` **PASS** — 1880 modules transformed, built in 3.36s.
+- Continuation closeout validation (2026-04-03): `npm test -- --runInBand guardDashboardRedesign` **PASS** — 12/12 tests.
+- Import integrity check: primary consumers verified on domain paths; secondary consumers verified via shims; `AuditDashboard` lazy-import depth corrected in `admin/SuperadminDashboard.tsx`.
+- Identity drift check: zero remaining `Cloudyrowdyyy` references in release.yml.
+
+### Residual Risks
+
+- Shims at original component paths must be retired after all secondary consumers migrate to domain paths to avoid long-term import ambiguity.
+- `.gitmodules` submodule remote URLs still reference `Cloudyrowdyyy` owner; update requires GitHub repo transfer/fork coordination and is deferred to repository governance.
+- Pre-existing `process` name-resolution warning in `DasiaAIO-Frontend/tests/smoke.spec.ts` (Playwright tsconfig scope) remains; does not affect runtime test execution.

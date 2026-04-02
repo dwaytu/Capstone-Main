@@ -1,0 +1,564 @@
+plan_id: frontend-multi-issue-20260403
+objective: Complete deferred post-Wave-3 work by reconciling plan and PRD drift, safely fixing legacy identity references, executing Wave 4 frontend domain professionalization with compatibility shims, and finishing verification plus documentation sync.
+created_at: 2026-04-03T00:00:00Z
+created_by: GitHub Copilot
+status: completed
+completed_at: 2026-04-03T00:00:00Z
+research_confidence: high
+prd_governance:
+  continuation_execution_source: docs/PRD-MULTI-ISSUE-20260403.yaml
+  historical_canonical_reference: docs/PRD.yaml
+  note: docs/PRD.yaml is a separate historical or canonical document for another scope and is not used for this continuation execution.
+
+plan_metrics:
+  wave_1_task_count: 2
+  total_dependencies: 9
+  risk_score: medium
+
+continuation_scope_matrix:
+  completed_waves:
+    - wave_1_status_reconciliation_and_identity_safety_baseline
+    - wave_2_identity_alignment_and_scoped_reference_updates
+    - wave_3_preexisting_implementation_baseline_from_prior_execution
+  pending_waves:
+    - wave_4_domain_move_manifest_and_component_reorganization
+    - wave_5_final_verification_and_documentation_sync
+
+identity_safety_matrix:
+  editable_operational:
+    - .git/config
+    - DasiaAIO-Backend/.git/config
+    - DasiaAIO-Frontend/src/config.ts
+    - DasiaAIO-Frontend/.env.example
+  editable_configurable:
+    - README.md
+  excluded_historical_or_audit:
+    - .git/logs/**
+    - DasiaAIO-Backend/.git/logs/**
+  replacement_baseline:
+    legacy_name: cloudyrowdyyy
+    target_name: dwaytu
+    legacy_email: dkgagaamain@gmail.com
+    target_email: dkbgagaa@icloud.com
+    legacy_owner: Cloudyrowdyyy
+    target_owner: dwaytu
+    repository: Capstone-Main
+
+tldr: |
+  This continuation plan is intentionally bounded to remaining work only.
+  Waves 1-3 are treated as completed implementation baseline and are excluded from re-execution.
+  The execution path is: establish source-of-truth status (plan/PRD/docs), classify and fix legacy cloudyrowdyyy references safely, execute Wave 4 domain reorganization in frontend using compatibility shims, then run final regression verification and synchronize system documentation.
+
+open_questions:
+  - Should references inside git history files (.git/logs) remain untouched as immutable historical records? This plan assumes yes.
+  - Should submodule remote URLs in .gitmodules be updated in this continuation or deferred to repository governance? This plan treats it as optional and risk-reviewed in identity classification.
+
+pre_mortem:
+  overall_risk_level: medium
+  critical_failure_modes:
+    - scenario: Status reconciliation updates only one artifact (plan or PRD or system docs), leaving contradictory project state and reopening completed waves.
+      likelihood: medium
+      impact: high
+      mitigation: Require a drift matrix and synchronized updates to plan file plus documentation references with explicit "completed vs pending" mapping before Wave 4 execution starts.
+    - scenario: Bulk replacement of cloudyrowdyyy touches historical evidence or non-operational records, causing audit-data corruption or misleading provenance.
+      likelihood: medium
+      impact: high
+      mitigation: Classify references by safety class (operational, configurable, historical, archival) and permit automated edits only for operational and configurable classes.
+    - scenario: Wave 4 file moves break imports at runtime because shims exist but primary consumers still resolve legacy paths inconsistently.
+      likelihood: medium
+      impact: high
+      mitigation: Move touched components incrementally with explicit primary-consumer import updates and verify unresolved import scan plus smoke test before doc closure.
+    - scenario: Final documentation sync claims full completion without verification evidence from build and targeted tests.
+      likelihood: low
+      impact: critical
+      mitigation: Gate documentation updates behind a verification evidence bundle (build result, targeted tests, and residual-risk notes).
+  assumptions:
+    - Frontend Waves 1-3 implementation is already complete and should not be reworked.
+    - Wave 4 target folders (guards/shared/admin/dashboards) are not yet established in current frontend component tree.
+    - Repo-local git identity still contains legacy values and needs correction in active git configs only.
+    - System documentation must be synchronized in both CHATGPT_SYSTEM_GUIDE.md and SENTINEL - Group 8.md for any behavior or structure changes.
+
+implementation_specification:
+  code_structure: >
+    Use a continuation-first architecture: first reconcile planning and requirements status, then apply a safety-classified identity remediation pass, then perform bounded frontend domain reorganization with compatibility re-export shims and primary import migration, and finally execute verification and documentation closure. Do not reopen completed Waves 1-3 feature work.
+  affected_areas:
+    - docs/plan/frontend-multi-issue-20260403/plan.yaml
+    - docs/PRD-MULTI-ISSUE-20260403.yaml
+    - .git/config
+    - DasiaAIO-Backend/.git/config
+    - DasiaAIO-Frontend/src/components/
+    - DasiaAIO-Frontend/src/App.tsx
+    - DasiaAIO-Frontend/src/config.ts
+    - DasiaAIO-Frontend/.env.example
+    - CHATGPT_SYSTEM_GUIDE.md
+    - SENTINEL - Group 8.md
+  component_details:
+    - component: status reconciliation layer
+      responsibility: Align plan, PRD, and implementation notes so completed Waves 1-3 are closed and only deferred work remains active.
+      interfaces:
+        - Canonical status map of completed, pending, and deferred items.
+        - Updated continuation task boundary consumed by execution tasks.
+    - component: identity remediation layer
+      responsibility: Replace legacy cloudyrowdyyy references in active operational/configurable surfaces while preserving historical records and audit trails.
+      interfaces:
+        - Safety-classified reference inventory.
+        - Approved replacement matrix for each editable file.
+    - component: Wave 4 domain reorganization layer
+      responsibility: Rehome selected frontend components into guards/shared/admin/dashboards with compatibility shims and minimal import churn.
+      interfaces:
+        - Move manifest (old path -> new path).
+        - Shim contract (legacy path re-exports new module).
+        - Primary consumer import update list.
+    - component: verification and documentation closure layer
+      responsibility: Validate runtime/build integrity post-reorganization and synchronize technical plus capstone documentation.
+      interfaces:
+        - Verification evidence bundle.
+        - Documentation delta checklist tied to implemented changes.
+  dependencies:
+    - component: continuation status map
+      relationship: Required by all downstream execution tasks to avoid redoing completed work.
+    - component: identity safety matrix
+      relationship: Required by identity edits so only safe references are changed.
+    - component: Wave 4 move manifest
+      relationship: Required before file moves to keep shim strategy deterministic.
+    - component: verification evidence bundle
+      relationship: Required before documentation closure and final status transition.
+  integration_points:
+    - Frontend entry routing and imports in DasiaAIO-Frontend/src/App.tsx.
+    - Frontend component organization under DasiaAIO-Frontend/src/components.
+    - Runtime release/link configuration in DasiaAIO-Frontend/src/config.ts and DasiaAIO-Frontend/.env.example.
+    - Repository-local git identity in .git/config and DasiaAIO-Backend/.git/config.
+    - System documentation in CHATGPT_SYSTEM_GUIDE.md and SENTINEL - Group 8.md.
+
+contracts:
+  - from_task: TASK-CONT-001
+    to_task: TASK-CONT-005
+    interface: Continuation scope boundary marking Waves 1-3 as completed and Wave 4+ as pending.
+    format: Drift matrix with completed or pending flags per objective.
+  - from_task: TASK-CONT-002
+    to_task: TASK-CONT-003
+    interface: Safe edit list for git identity correction targets.
+    format: File-level safety classification (operational, configurable, historical, archival).
+  - from_task: TASK-CONT-002
+    to_task: TASK-CONT-004
+    interface: Safe edit list for legacy owner/reference replacement in runtime configs and active docs.
+    format: Replacement matrix with approved before/after values.
+  - from_task: TASK-CONT-005
+    to_task: TASK-CONT-006
+    interface: Wave 4 move manifest and compatibility shim contract for each approved move.
+    format: Ordered manifest entries with source_path, shim_path, canonical_path, and primary_consumers.
+  - from_task: TASK-CONT-003
+    to_task: TASK-CONT-007
+    interface: Verified git identity state.
+    format: Command output assertions for local user.name and user.email.
+  - from_task: TASK-CONT-004
+    to_task: TASK-CONT-007
+    interface: Final edited reference list.
+    format: Diff summary grouped by runtime/config/document scope.
+  - from_task: TASK-CONT-006
+    to_task: TASK-CONT-007
+    interface: Post-move import map and shim presence report.
+    format: Buildable import graph checklist.
+  - from_task: TASK-CONT-007
+    to_task: TASK-CONT-008
+    interface: Verification evidence required for doc synchronization.
+    format: Build/test result summary plus residual risk notes.
+
+tasks:
+  - id: TASK-CONT-001
+    title: Reconcile plan and PRD execution-status drift
+    description: |
+      Establish a single source of truth for completion state before executing deferred work.
+      1. Compare current plan statuses, PRD feature statuses, and implementation evidence that Waves 1-3 are complete.
+      2. Update planning artifacts so completed Waves 1-3 are closed and only deferred Wave 4+ work remains pending.
+      3. Produce a continuation scope matrix used by all downstream tasks.
+    wave: 1
+    agent: gem-reviewer
+    prototype: false
+    covers: [AC-1, AC-2, AC-3, AC-4, AC-5]
+    priority: high
+    status: completed
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: docs/plan/frontend-multi-issue-20260403/plan.yaml
+        description: Current plan marks all tasks pending and needs continuation realignment.
+      - path: docs/PRD-MULTI-ISSUE-20260403.yaml
+        description: Requirements baseline for accepted scope and criteria.
+      - path: CHATGPT_SYSTEM_GUIDE.md
+        description: Contains explicit evidence that Waves 1-3 were completed.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Continuation planning requires drift reconciliation first to prevent duplicate execution.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 180
+        focus_area: status governance
+        verification:
+          - Completed Waves 1-3 are explicitly marked completed in plan/PRD-facing artifacts.
+          - Deferred scope list contains only remaining objectives from this continuation request.
+        acceptance_criteria:
+          - No Wave 1-3 implementation task remains in pending state.
+          - Deferred scope is explicitly bounded to objectives 1-4 in this request.
+        failure_modes:
+          - scenario: Drift update leaves contradictory states across documents.
+            likelihood: medium
+            impact: high
+            mitigation: Use side-by-side status matrix and update all referenced artifacts in one pass.
+    requires_review: true
+    review_depth: full
+    review_security_sensitive: false
+
+  - id: TASK-CONT-002
+    title: Classify cloudyrowdyyy legacy references by safe-edit policy
+    description: |
+      Build a safety-scoped replacement inventory before making identity changes.
+      1. Inventory all cloudyrowdyyy references in git config, runtime config, frontend code, workflows, and docs.
+      2. Classify each occurrence as operational, configurable, historical, or archival.
+      3. Approve edit scope: update operational/configurable references only; keep historical/audit records unchanged.
+    wave: 1
+    agent: gem-researcher
+    prototype: false
+    covers: []
+    priority: high
+    status: completed
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: .git/config
+        description: Active repo-local identity override.
+      - path: DasiaAIO-Frontend/src/config.ts
+        description: Runtime defaults for release URLs.
+      - path: README.md
+        description: Public-facing repository and release references.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Safety classification avoids accidental edits to immutable historical records.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 220
+        focus_area: identity safety policy
+        verification:
+          - Every found reference is assigned a safety class.
+          - Replacement target values are documented for each editable class.
+        acceptance_criteria:
+          - A complete safe-edit matrix exists before identity modifications begin.
+          - Historical/audit references are explicitly excluded from automated edits.
+        failure_modes:
+          - scenario: Misclassification marks historical references as editable.
+            likelihood: medium
+            impact: high
+            mitigation: Require reviewer sign-off on the classified inventory before implementation.
+
+  - id: TASK-CONT-003
+    title: Correct repository-local git identity overrides safely
+    description: |
+      Apply identity correction only to active local git configuration.
+      1. Update root repo local git identity to current account values.
+      2. Update nested backend repo local git identity if explicitly configured.
+      3. Verify final local identity values and record outputs for closure evidence.
+    wave: 2
+    agent: gem-devops
+    prototype: false
+    covers: []
+    priority: medium
+    status: completed
+    dependencies:
+      - TASK-CONT-002
+    conflicts_with:
+      - TASK-CONT-004
+    context_files:
+      - path: .git/config
+        description: Root repository local identity source.
+      - path: DasiaAIO-Backend/.git/config
+        description: Nested backend repository local identity source.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Identity change should be isolated from content-level reference edits.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 20
+        focus_area: git identity alignment
+        verification:
+          - git config user.name resolves to current account name in root and backend repos.
+          - git config user.email resolves to current account email in root and backend repos.
+        acceptance_criteria:
+          - No stale cloudyrowdyyy local git identity override remains in active repo configs.
+        failure_modes:
+          - scenario: Root identity is updated but nested repo remains stale.
+            likelihood: medium
+            impact: medium
+            mitigation: Validate both repositories explicitly before marking task complete.
+    environment: development
+    requires_approval: false
+    devops_security_sensitive: false
+
+  - id: TASK-CONT-004
+    title: Replace operational legacy owner references in active runtime/config surfaces
+    description: |
+      Update legacy owner/repo references where they drive current runtime behavior or active documentation.
+      1. Apply approved replacements in runtime config, env examples, and active user-facing links.
+      2. Skip historical logs, archived records, and immutable provenance files.
+      3. Keep replacements bounded to approved matrix from safety classification.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: completed
+    dependencies:
+      - TASK-CONT-002
+    conflicts_with:
+      - TASK-CONT-003
+      - TASK-CONT-006
+    context_files:
+      - path: DasiaAIO-Frontend/src/config.ts
+        description: Release endpoint defaults tied to repository ownership.
+      - path: DasiaAIO-Frontend/.env.example
+        description: Deployment-facing release URL defaults.
+      - path: README.md
+        description: Primary user-facing release and documentation links.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Runtime and active docs should be corrected before final verification and doc sync.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 240
+        focus_area: safe legacy reference remediation
+        verification:
+          - All edited references match approved target owner/repo values.
+          - No historical/audit files were modified.
+        acceptance_criteria:
+          - Active runtime/config/document references are aligned to current account/repo context.
+          - Edit scope remains strictly within approved safety classes.
+        failure_modes:
+          - scenario: Over-broad replacement modifies legacy evidence files.
+            likelihood: low
+            impact: high
+            mitigation: Constrain file allow-list from safety matrix and review changed files list before commit.
+    tech_stack:
+      - TypeScript frontend config
+      - Markdown/docs link management
+      - GitHub release URL conventions
+    test_coverage: URL and configuration smoke verification.
+
+  - id: TASK-CONT-005
+    title: Finalize Wave 4 domain move manifest and compatibility strategy
+    description: |
+      Prepare an execution-ready Wave 4 move plan for frontend professionalization.
+      1. Confirm target domains and touched component set for this tranche only.
+      2. Produce ordered move manifest with source path, shim path, canonical path, and primary consumers.
+      3. Define compatibility strategy: temporary re-exports, no broad import rewrite, bounded blast radius.
+    wave: 2
+    agent: gem-code-simplifier
+    prototype: false
+    covers: []
+    priority: medium
+    status: completed
+    dependencies:
+      - TASK-CONT-001
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        description: Legacy guard entry path retained as the Wave 4 compatibility shim.
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: Canonical Wave 4 guard implementation moved under the guards domain.
+      - path: DasiaAIO-Frontend/src/components/Header.tsx
+        description: Shared chrome component targeted for domain move.
+      - path: DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx
+        description: Admin orchestration component targeted for domain move.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Wave 4 should run from a deterministic manifest to avoid ad hoc file churn.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 180
+        focus_area: wave 4 professionalization contract
+        verification:
+          - Manifest declares source_path, shim_path, canonical_path, and primary_consumers for each moved file.
+          - Guard move explicitly records src/components/UserDashboard.tsx as shim and src/components/guards/UserDashboard.tsx as canonical path.
+        acceptance_criteria:
+          - Move manifest is complete for the pending Wave 4 component tranche and includes the guard shim/canonical pair.
+          - Compatibility strategy is approved before file moves.
+        failure_modes:
+          - scenario: Manifest omits a primary consumer and causes hidden import drift.
+            likelihood: medium
+            impact: medium
+            mitigation: Require consumer mapping for every moved file entry.
+    verification_evidence:
+      - type: file_exists
+        target: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+      - type: file_exists
+        target: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+      - type: file_exists
+        target: DasiaAIO-Frontend/src/components/Header.tsx
+      - type: file_exists
+        target: DasiaAIO-Frontend/src/components/SuperadminDashboard.tsx
+      - type: file_contains
+        target: DasiaAIO-Frontend/src/components/UserDashboard.tsx
+        pattern: export { default } from './guards/UserDashboard'
+      - type: command_result
+        command: npm test -- --runInBand guardDashboardRedesign
+        working_directory: DasiaAIO-Frontend
+        exit_code: 0
+    tech_stack:
+      - TypeScript module path planning
+      - React component dependency mapping
+    test_coverage: Move-manifest validation via shim/canonical file checks and targeted guard dashboard regression.
+
+  - id: TASK-CONT-006
+    title: Execute Wave 4 frontend domain reorganization with compatibility shims
+    description: |
+      Implement the approved Wave 4 component reorganization.
+      1. Create target folders (guards/shared/admin/dashboards) and move approved components.
+      2. Add minimal legacy-path shim exports for compatibility.
+      3. Update primary consumers to import from new domain paths.
+    wave: 3
+    agent: gem-code-simplifier
+    status: completed
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/
+        description: Source and destination component domains for Wave 4 moves.
+      - path: DasiaAIO-Frontend/src/App.tsx
+        description: Primary route-level consumer imports.
+      - path: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+        description: Shared shell consuming moved header chrome.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: This is the core deferred Wave 4 implementation work requested.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 300
+        focus_area: domain reorganization with backward compatibility
+        verification:
+          - Target domain folders exist and contain moved tranche files.
+          - Legacy-path shims compile and re-export correctly.
+          - Primary consumers import new paths instead of shims.
+        acceptance_criteria:
+          - Frontend touched components are domain-organized under guards/shared/admin/dashboards.
+          - No runtime regression is introduced by file relocation.
+        failure_modes:
+          - scenario: Shims mask incomplete migration and keep critical consumers on legacy paths.
+            likelihood: medium
+            impact: high
+            mitigation: Enforce primary-consumer migration in same task and verify via import checks.
+    tech_stack:
+      - TypeScript module re-exports
+      - React component composition
+    test_coverage: Build and targeted route/component smoke after moves.
+    todo:
+      - Create follow-up shim retirement task after one stable release and remove legacy re-export files once all consumers are on domain paths.
+
+  - id: TASK-CONT-007
+    title: Run final continuation verification gate
+    description: |
+      Validate all deferred objectives before documentation closure.
+      1. Run frontend build and targeted tests covering guard profile/theme/settings/support flows.
+      2. Validate Wave 4 import integrity and shim compatibility.
+      3. Validate identity-reference updates and confirm no unsafe historical edits.
+    wave: 4
+    agent: gem-browser-tester
+    status: completed
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/package.json
+        description: Build/test scripts for validation.
+      - path: DasiaAIO-Frontend/tests/
+        description: Browser regression checks.
+      - path: DasiaAIO-Frontend/src/__tests__/
+        description: Unit/integration coverage for dashboard and settings flows.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Deferred work spans config, file moves, and UX surfaces and needs a single closure gate.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 220
+        focus_area: final regression and integrity verification
+        verification:
+          - Frontend build succeeds after all continuation changes.
+          - Targeted guard/elevated flows pass regression checks.
+          - No unresolved-import/runtime-path regressions are detected.
+        acceptance_criteria:
+          - Deferred objectives 1-3 are technically validated.
+          - Verification evidence is complete and ready for documentation sync.
+        failure_modes:
+          - scenario: Tests pass but import drift remains hidden due shim fallbacks.
+            likelihood: medium
+            impact: medium
+            mitigation: Add explicit check that primary consumers point to new domain paths.
+    validation_matrix:
+      - scenario: Wave 4 moved components resolve in guard workflows
+        steps:
+          - Build frontend.
+          - Open guard dashboard.
+          - Exercise profile, support, and settings flows.
+        expected_result: Guard workflows function with new domain imports and no runtime import errors.
+      - scenario: Elevated workflows resolve moved admin/dashboard/shared components
+        steps:
+          - Open elevated dashboard view.
+          - Exercise header theme toggle and settings navigation.
+        expected_result: Elevated flows remain stable with new shared/admin/dashboard paths.
+      - scenario: Identity remediation stayed within safe bounds
+        steps:
+          - Review changed files list.
+          - Confirm no .git/logs or historical evidence files were edited.
+        expected_result: Only approved operational/configurable targets were changed.
+
+  - id: TASK-CONT-008
+    title: Synchronize technical and capstone documentation with continuation outcomes
+    description: |
+      Finalize documentation parity after successful verification.
+      1. Update CHATGPT_SYSTEM_GUIDE.md with Wave 4 completion details and identity-remediation outcomes.
+      2. Update SENTINEL - Group 8.md in-place sections to reflect implemented frontend reorganization and final verification evidence.
+      3. Align plan/PRD status fields to continuation completion state and capture residual risks.
+    wave: 5
+    agent: gem-documentation-writer
+    status: completed
+    conflicts_with: []
+    context_files:
+      - path: CHATGPT_SYSTEM_GUIDE.md
+        description: Technical system reference that must reflect implemented behavior.
+      - path: SENTINEL - Group 8.md
+        description: Capstone document requiring synchronized content updates only.
+      - path: docs/PRD-MULTI-ISSUE-20260403.yaml
+        description: PRD status and change-log alignment after continuation execution.
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Repository rules require doc synchronization in the same change lifecycle as behavior updates.
+        timestamp: 2026-04-03T00:00:00Z
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 260
+        focus_area: implementation-documentation parity
+        verification:
+          - Both required documents are updated and consistent with verified implementation state.
+          - Residual risks and known limitations are explicitly documented.
+        acceptance_criteria:
+          - Documentation accurately reflects continuation outcomes without inventing features.
+          - Plan/PRD status drift is fully closed.
+        failure_modes:
+          - scenario: One required document is updated while the other remains stale.
+            likelihood: medium
+            impact: high
+            mitigation: Use a mandatory two-document checklist with explicit completion sign-off.
+    task_type: update
+    audience: stakeholders
+    coverage_matrix:
+      - System behavior updates
+      - Frontend structure changes
+      - Verification evidence and residual risk notes

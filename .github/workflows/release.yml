@@ -1,7 +1,7 @@
 name: Release
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   push:
@@ -37,14 +37,14 @@ jobs:
       api_base_url: ${{ steps.config.outputs.api_base_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
@@ -86,27 +86,61 @@ jobs:
             --summary-output whats-new.txt
 
       - name: Upload release metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-metadata
           path: |
             release-notes.md
             whats-new.txt
 
-  web:
-    name: Build Web Artifact
+  quality-gate:
+    name: Quality Gate
     needs: prepare
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: DasiaAIO-Frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: DasiaAIO-Frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm test --prefix DasiaAIO-Frontend -- --runInBand
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+
+      - name: Run backend tests
+        run: cargo test --manifest-path DasiaAIO-Backend/Cargo.toml --locked
+
+  web:
+    name: Build Web Artifact
+    needs:
+      - prepare
+      - quality-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -120,7 +154,7 @@ jobs:
         run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Download release metadata
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-metadata
           path: .release
@@ -130,8 +164,8 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ needs.prepare.outputs.api_base_url }}
           VITE_APP_VERSION: ${{ needs.prepare.outputs.release_tag }}
-          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest
-          VITE_RELEASE_DOWNLOAD_URL: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/dwaytu/Capstone-Main/releases/latest
+          VITE_RELEASE_DOWNLOAD_URL: https://github.com/dwaytu/Capstone-Main/releases/latest
           NODE_ENV: production
         run: |
           set -euo pipefail
@@ -142,25 +176,27 @@ jobs:
           node scripts/rename-artifacts.js --platform web --version "${{ needs.prepare.outputs.release_tag }}" --input sentinel-web-dist.tar.gz --output-dir release-files
 
       - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-web
           path: release-files/*
 
   desktop:
     name: Build Desktop Artifacts
-    needs: prepare
+    needs:
+      - prepare
+      - quality-gate
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -183,7 +219,7 @@ jobs:
         run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Download release metadata
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-metadata
           path: .release
@@ -193,8 +229,8 @@ jobs:
         run: |
           $env:VITE_API_BASE_URL = "${{ needs.prepare.outputs.api_base_url }}"
           $env:VITE_APP_VERSION = "${{ needs.prepare.outputs.release_tag }}"
-          $env:VITE_LATEST_RELEASE_API_URL = "https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest"
-          $env:VITE_RELEASE_DOWNLOAD_URL = "https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest"
+          $env:VITE_LATEST_RELEASE_API_URL = "https://api.github.com/repos/dwaytu/Capstone-Main/releases/latest"
+          $env:VITE_RELEASE_DOWNLOAD_URL = "https://github.com/dwaytu/Capstone-Main/releases/latest"
           $env:VITE_WHATS_NEW = (Get-Content .release/whats-new.txt -Raw).Trim()
           $env:NODE_ENV = "production"
           npm run release:desktop --prefix DasiaAIO-Frontend
@@ -211,25 +247,27 @@ jobs:
           }
 
       - name: Upload desktop artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-desktop
           path: release-files/*
 
   android:
     name: Build Android Artifacts
-    needs: prepare
+    needs:
+      - prepare
+      - quality-gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -238,16 +276,16 @@ jobs:
             apps/android-capacitor/package-lock.json
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.7.1
         with:
           distribution: temurin
           java-version: 21
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
 
       - name: Setup Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.2
 
       - name: Install required Android SDK components
         shell: bash
@@ -265,44 +303,44 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: DasiaAIO-Frontend
-        run: npm install
+        run: npm ci
 
       - name: Install android dependencies
         working-directory: apps/android-capacitor
-        run: npm install
+        run: npm ci
 
       - name: Sync release version across wrappers
         run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Download release metadata
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-metadata
           path: .release
 
       - name: Materialize Android signing keystore
-        id: signing
         shell: bash
         env:
           SENTINEL_ANDROID_KEYSTORE_BASE64: ${{ secrets.SENTINEL_ANDROID_KEYSTORE_BASE64 }}
+          SENTINEL_UPLOAD_STORE_PASSWORD: ${{ secrets.SENTINEL_UPLOAD_STORE_PASSWORD }}
+          SENTINEL_UPLOAD_KEY_ALIAS: ${{ secrets.SENTINEL_UPLOAD_KEY_ALIAS }}
+          SENTINEL_UPLOAD_KEY_PASSWORD: ${{ secrets.SENTINEL_UPLOAD_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "$SENTINEL_ANDROID_KEYSTORE_BASE64" ]; then
-            echo "signed_release=false" >> "$GITHUB_OUTPUT"
-            echo "No keystore configured. Falling back to unsigned Android release for CI validation."
-            exit 0
+          if [ -z "$SENTINEL_ANDROID_KEYSTORE_BASE64" ] || [ -z "$SENTINEL_UPLOAD_STORE_PASSWORD" ] || [ -z "$SENTINEL_UPLOAD_KEY_ALIAS" ] || [ -z "$SENTINEL_UPLOAD_KEY_PASSWORD" ]; then
+            echo "::error::Android release signing secrets are required for release builds."
+            exit 1
           fi
 
           echo "$SENTINEL_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/sentinel-release.keystore"
-          echo "signed_release=true" >> "$GITHUB_OUTPUT"
 
       - name: Build Android debug and release artifacts
         shell: bash
         env:
           VITE_API_BASE_URL: ${{ needs.prepare.outputs.api_base_url }}
           VITE_APP_VERSION: ${{ needs.prepare.outputs.release_tag }}
-          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/Cloudyrowdyyy/Capstone-Main/releases/latest
-          VITE_RELEASE_DOWNLOAD_URL: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+          VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/dwaytu/Capstone-Main/releases/latest
+          VITE_RELEASE_DOWNLOAD_URL: https://github.com/dwaytu/Capstone-Main/releases/latest
           NODE_ENV: production
           CAPACITOR_ENV: production
           SENTINEL_APP_VERSION: ${{ needs.prepare.outputs.app_version }}
@@ -334,31 +372,26 @@ jobs:
 
           ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
-          if [ "${{ steps.signing.outputs.signed_release }}" = "true" ] && [ -n "$SENTINEL_UPLOAD_STORE_PASSWORD" ] && [ -n "$SENTINEL_UPLOAD_KEY_ALIAS" ] && [ -n "$SENTINEL_UPLOAD_KEY_PASSWORD" ]; then
-            ./gradlew --no-daemon --stacktrace :app:assembleRelease :app:bundleRelease
-          else
-            echo "Signing secrets missing or keystore unavailable. Building unsigned APK artifact only."
-            SENTINEL_ALLOW_UNSIGNED_RELEASE=true ./gradlew --no-daemon --stacktrace :app:assembleRelease
-          fi
+          ./gradlew --no-daemon --stacktrace :app:assembleRelease :app:bundleRelease
           popd > /dev/null
 
           APK_PATH="apps/android-capacitor/android/app/build/outputs/apk/release/app-release.apk"
           if [ ! -f "$APK_PATH" ]; then
-            APK_PATH="apps/android-capacitor/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+            echo "::error::Signed APK artifact not found at $APK_PATH"
+            exit 1
           fi
 
           AAB_PATH="apps/android-capacitor/android/app/build/outputs/bundle/release/app-release.aab"
-
-          node scripts/rename-artifacts.js --platform android --version "${{ needs.prepare.outputs.release_tag }}" --input "$APK_PATH" --output-dir release-files
-
-          if [ -f "$AAB_PATH" ]; then
-            node scripts/rename-artifacts.js --platform android --version "${{ needs.prepare.outputs.release_tag }}" --input "$AAB_PATH" --output-dir release-files
-          else
-            echo "AAB artifact not found at $AAB_PATH; continuing with APK artifact."
+          if [ ! -f "$AAB_PATH" ]; then
+            echo "::error::Signed AAB artifact not found at $AAB_PATH"
+            exit 1
           fi
 
+          node scripts/rename-artifacts.js --platform android --version "${{ needs.prepare.outputs.release_tag }}" --input "$APK_PATH" --output-dir release-files
+          node scripts/rename-artifacts.js --platform android --version "${{ needs.prepare.outputs.release_tag }}" --input "$AAB_PATH" --output-dir release-files
+
       - name: Upload Android artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-android
           path: release-files/*
@@ -372,27 +405,29 @@ jobs:
       - desktop
       - android
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download web artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-web
           path: release-files
 
       - name: Download desktop artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-desktop
           path: release-files
 
       - name: Download Android artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-android
           path: release-files
 
       - name: Download release metadata
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: release-metadata
           path: release-meta

@@ -1,16 +1,16 @@
 # SENTINEL Capstone Main
 
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://cloudyrowdyyy.github.io/Capstone-Main/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://dwaytu.github.io/Capstone-Main/)
 
-**📖 Documentation:** https://cloudyrowdyyy.github.io/Capstone-Main/
+**📖 Documentation:** https://dwaytu.github.io/Capstone-Main/
 
 SENTINEL is a full-stack security operations and asset management platform with a shared React frontend and platform wrappers for web, desktop, and Android.
 
 ## Downloads
 
 - Web (latest): https://dasiasentinel.xyz/
-- Desktop installer (MSI/EXE): https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
-- Android APK: https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+- Desktop installer (MSI/EXE): https://github.com/dwaytu/Capstone-Main/releases/latest
+- Android APK: https://github.com/dwaytu/Capstone-Main/releases/latest
 
 ## Installation Guide
 
@@ -19,12 +19,12 @@ SENTINEL is a full-stack security operations and asset management platform with 
 - Sign in with your provisioned SENTINEL account
 
 2. Desktop (Tauri)
-- Go to https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+- Go to https://github.com/dwaytu/Capstone-Main/releases/latest
 - Download either the `.msi` or `.exe` installer
 - Run installer and launch SENTINEL
 
 3. Android (Capacitor)
-- Go to https://github.com/Cloudyrowdyyy/Capstone-Main/releases/latest
+- Go to https://github.com/dwaytu/Capstone-Main/releases/latest
 - Download the latest release APK
 - Install on device (enable sideloading if required)
 
@@ -88,4 +88,4 @@ Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0
 
 ## Documentation
 
-- Main docs: https://cloudyrowdyyy.github.io/Capstone-Main/
+- Main docs: https://dwaytu.github.io/Capstone-Main/
