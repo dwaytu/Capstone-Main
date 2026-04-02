@@ -202,6 +202,33 @@ Client access governance hardening:
 - Android CI frontend prebuild now invokes Vite through Node from `DasiaAIO-Frontend` (`node node_modules/vite/bin/vite.js build --mode mobile`) to avoid intermittent Linux runner execute-bit issues (`vite: Permission denied`) before Gradle stages.
 - Android CI now uses Temurin JDK 21 in the Android job to satisfy Capacitor Android Java compilation targets (`invalid source release: 21` mitigation).
 
+## v1.2.0 Palantir-Style Platform Transformation
+
+### Shared Event Context (OperationalEventContext)
+- New: `src/context/OperationalEventContext.tsx`
+- Exports `OperationalEvent { id, type, title }` interface and `OperationalEventContextValue { selectedEventId, selectedEvent, selectEvent, clearSelection }` shape.
+- `OperationalEventProvider` wraps `CommandCenterDashboard`; any child panel can call `useOperationalEvent()` to read or set `selectedEventId`.
+- Cross-panel selection: clicking an alert in `IncidentAlertFeed` or a feed item in `LiveOperationsFeed` calls `selectEvent()`, which highlights the matching row across all consuming panels via ring CSS.
+- `OpsAlert.incidentId?: string` field added to `OpsAlertFeed` so alert records can be linked back to the originating incident for unified selection.
+- `incidentAlerts` useMemo in `CommandCenterDashboard` now threads `incidentId` through each resolved alert object.
+
+### AI Action Layer
+All AI/prediction panels upgraded from static text output to actionable call-to-action buttons:
+- `IncidentSeverityClassifier`: `suggestedActions[]` now rendered as individual clickable buttons rather than joined display text.
+- `IncidentSummaryGenerator`: same action-button pattern applied.
+- `GuardAbsencePredictionPanel`: HIGH risk rows render "Deploy Replacement" + "Notify Guard" buttons; MEDIUM rows render "Send Confirmation".
+- `VehicleMaintenancePredictionPanel`: HIGH risk rows render "Flag for Inspection" + "Remove from Dispatch" buttons; MEDIUM rows render "Book Maintenance".
+- `ReplacementSuggestionPanel`: Rank-1 available guard with a valid permit gets "Assign Now" + "Contact Guard" CTAs.
+
+### UI Discipline and Scrolling
+- `PredictiveAlertsPanel`: `max-h-80 overflow-y-auto` scroll bounds added.
+- `ActiveIncidentsWidget`: `max-h-64 overflow-y-auto` scroll bounds; priority-based row emphasis via `incident-row-critical`, `incident-row-high`, `incident-row-medium` CSS classes with danger/warning border-tint and hover transitions.
+- `OperationalMapPanel`: map container height expanded from `h-72` to `h-80 md:h-96`.
+- `TodaysShiftOperations`: shift row hover transitions added.
+- `IncidentAlertFeed`: max-h-64 scroll bounds; ring highlight on selected alert.
+- `LiveOperationsFeed`: ring highlight on selected feed item; keyboard support (`onKeyDown`) added.
+- `DasiaAIO-Frontend/src/index.css`: new utility classes `.soc-feed-item`, `.incident-row-critical`, `.incident-row-high`, `.incident-row-medium`, `.ai-action-btn` added.
+
 ## 8. API and Security Notes
 
 - JWT generation and verification are active and used in managed user creation.
