@@ -1682,7 +1682,7 @@ Continuation-scoped `Cloudyrowdyyy/Capstone-Main` remediation is limited to acti
 - `CHATGPT_SYSTEM_GUIDE.md` (this document): Wave 4 continuation narrative reconciled to match runtime implementation.
 
 Notes:
-- `.gitmodules` submodule remote URLs (`Cloudyrowdyyy/DasiaAIO-Backend`, `Cloudyrowdyyy/DasiaAIO-Frontend`) are excluded from automated replacement — these are repository-governance items requiring GitHub remote coordination before update.
+- `.gitmodules` submodule remote URLs are now aligned to the active owner (`dwaytu/DasiaAIO-Backend`, `dwaytu/DasiaAIO-Frontend`) so release checkout with `submodules: recursive` resolves correctly.
 - Historical git log records are explicitly preserved as immutable provenance.
 
 ### Verification Evidence (plan: frontend-multi-issue-20260403)
@@ -1697,5 +1697,4 @@ Notes:
 ### Residual Risks
 
 - Shims at original component paths must be retired after all secondary consumers migrate to domain paths to avoid long-term import ambiguity.
-- `.gitmodules` submodule remote URLs still reference `Cloudyrowdyyy` owner; update requires GitHub repo transfer/fork coordination and is deferred to repository governance.
 - Pre-existing `process` name-resolution warning in `DasiaAIO-Frontend/tests/smoke.spec.ts` (Playwright tsconfig scope) remains; does not affect runtime test execution.

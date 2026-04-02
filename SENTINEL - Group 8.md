@@ -111,93 +111,19 @@ INTRODUCTION
 
 Project Context
 
-The  private  security  global  industry  is  transitioning  toward  automated,  high-
+This section presents the big-picture context of the study by describing who is affected, what operational problem exists, where it occurs, and why the project is necessary for current agency conditions.
 
-integrity digital ecosystems to address the discovery lag inherent in human-led monitoring.
+The global private security industry is transitioning toward automated, high-integrity digital ecosystems to address the discovery lag inherent in human-led monitoring. Workforce-capacity research shows that manual, reactive responses to personnel gaps increase vacancy time, which remains a major contributor to security breaches in critical infrastructure environments (Shiyanbola et al., 2023). This transition is also supported by modern performance-management theory, which emphasizes transparent, data-driven tracking as a prerequisite for accountability and for reducing social loafing, where individual reliability declines when oversight is weak or delayed (Aguinis, 2022).
 
-Global  research  in  workforce  capacity  indicates  that  manual,  reactive  responses  to
-
-personnel  gaps  significantly  increase  vacancy  time,  which  remains  a  primary  driver  of
-
-security  breaches  in  critical  infrastructure  (Shiyanbola  et  al.,  2023).  This  movement  is
-
-supported  by  modern  performance  management  theories  which  emphasize  that
-
-transparent, data-driven tracking is essential to maintaining accountability and preventing
-
-social  loafing,  a  phenomenon  where  individual  reliability  decreases  in  the  absence  of
-
-structured, real-time monitoring (Aguinis, 2022).
-
-The necessity for these technological advancements is echoed in recent Philippine
-
-legislation through the Private Security Services Industry Act, also known as Republic Act
-
-No. 11917 (2022). This law introduced a regime of professionalized accountability where
-
-agencies face strict liability for administrative negligence. Under the lawâ€™s Implementing
-
-Rules and Regulations, agencies can be fined up to P5,000,000 or face license revocation
-
-for  deploying  personnel  with  expired  licenses  or  unauthorized  firearms  (Jur.ph,  2025).
-
-Furthermore, national studies on the effectiveness of Philippine security guards identify
-
-that absenteeism and the abandonment of posts are most prevalent in agencies that lack
-
-advanced patrol monitoring and digital reporting systems (Abad, 2025).
+The need for these technological controls is reinforced by Philippine legislation through the Private Security Services Industry Act, or Republic Act No. 11917 (2022). The law formalizes a professional accountability regime in which agencies face strict liability for administrative negligence. Under the law's Implementing Rules and Regulations, agencies may be fined up to P5,000,000 or face license revocation for deploying personnel with expired licenses or unauthorized firearms (Jur.ph, 2025). National studies likewise indicate that absenteeism and post abandonment are more prevalent in agencies that still rely on weak patrol monitoring and manual reporting mechanisms (Abad, 2025).
 
 
 
 ---
 
-In the specific context of the Davao Region, the Davao Security and Investigation
+In the Davao Region, Davao Security and Investigation Agency, Inc. operates within a policy environment that actively prioritizes public safety to sustain the city's standing as a regional safe haven (PIA, 2025). The Davao Regional Development Plan 2023-2028 further notes that accelerated economic activity has increased demand for technology-enabled peace-and-order operations, particularly in high-traffic logistics and commercial areas such as Tagum City (NEDA XI, 2024). Local evidence also indicates that compensation, punctuality, and alertness are key determinants of guard performance, yet many agencies continue to experience inattentiveness and post abandonment due to inconsistent manual oversight (Ondos and Origines, 2025). For DASIA Tagum, this creates a direct operational vulnerability: coverage gaps can remain undetected long enough to compromise client safety.
 
-Agency, Inc. operates in a landscape that has prioritized a culture of security to sustain its
-
-position as a leading safe haven in Southeast Asia (PIA, 2025). According to the Davao
-
-Regional  Development  Plan  2023  to  2028,  the  region's  rapid  economic  growth  has
-
-increased  the  demand  for  advanced  technology  and  innovation  to  ensure  peace  and
-
-security in high-traffic logistics and commercial hubs like Tagum City (NEDA XI, 2024).
-
-Recent  local  research  conducted  in  the  Davao  Region  specifically  highlights  that
-
-compensation,  punctuality,  and  alertness  are  the  primary  determinants  of  guard
-
-performance,  yet  many  regional  agencies  still  struggle  with  inattentiveness  and
-
-abandonment of posts due to inconsistent manual oversight (Ondos and Origines, 2025).
-
-For DASIA Tagum, this represents a critical vulnerability where site vacancies may go
-
-undetected for hours, directly compromising the safety of local clients.
-
-SENTINEL is an integrated digital ecosystem designed to resolve these cumulative
-
-vulnerabilities by centralizing personnel profiles, firearm telemetry, and shift logs into a
-
-high-performance  single  source  of  truth.  The  system  works  by  embedding  real-time
-
-compliance checks into the daily operational workflow. Before a guard can be deployed,
-
-the system automatically verifies their license validity and firearm authorization against
-
-central  records.  To  manage  high-concurrency  requests  from  hundreds  of  guards,
-
-SENTINEL utilizes the Rust programming language and the Axum framework, providing
-
-native memory safety and asynchronous performance that prevents the data races typical
-
-of legacy systems (Scofield, 2025). When an operational gap such as a missed check-in is
-
-detected,  the  system  immediately  flags  the  vacancy  and  identifies  the  nearest  qualified
-
-replacement, ensuring that the agency moves from a reactive stance to a proactive, legally
-
-defensible model of security management.
+SENTINEL is positioned as an integrated digital ecosystem that addresses these cumulative vulnerabilities by consolidating personnel profiles, firearm telemetry, and shift records into a single operational source of truth. It embeds real-time compliance checks directly into daily workflows. Before deployment, the system verifies license validity and firearm authorization against centralized records. To handle high-concurrency request volume across active personnel, SENTINEL uses Rust and Axum, combining memory safety with asynchronous throughput suitable for mission-critical operations (Scofield, 2025). When an operational gap, such as a missed check-in, is detected, the system flags the vacancy and identifies qualified replacements, enabling a shift from reactive response to proactive, legally defensible security operations.
 
 
 
@@ -205,25 +131,11 @@ defensible model of security management.
 
 Purpose and Description
 
-The primary purpose of this capstone project is to deliver a fully functional, production-
+This section states the project purpose and describes key capabilities in clear, implementation-aligned language so stakeholders can understand system value without changing the approved chapter structure.
 
-ready  Integrated  Security  Operations  Management  Platform  that  consolidates  guard
+The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into one unified system for Davao Security and Investigation Agency, Inc.
 
-personnel management, equipment allocation, vehicle operations, and access control into
-
-a unified system for Davao Security & Investigation Agency, Inc.
-
-SENTINEL is a web-based system that integrates operational data and workflows using
-
-a  Rust/Axum  backend  API,  a  PostgreSQL  relational  database,  and  a  React/TypeScript
-
-frontend  deployed  through  Docker,  with  desktop  and  mobile  wrappers  for  broader
-
-operational access. The system is designed as an integrated operations
-
-platform  that  aligns  with  ERP  and  WFM  principles  by  centralizing  data,  enforcing
-
-consistent workflows, and providing real-time operational visibility.
+SENTINEL is a web-based system that integrates operational data and workflows through a Rust/Axum backend API, a PostgreSQL relational database, and a React/TypeScript frontend deployed through Docker, with desktop and mobile wrappers for broader operational access. The platform aligns with ERP and workforce management principles by centralizing records, enforcing consistent process rules, and providing real-time operational visibility.
 
 The  platform  implements  four  core  modules.  Guard  Management  covers  personnel
 
@@ -289,7 +201,7 @@ The Android workflow was additionally stabilized against runner-level executable
 
 Pipeline runtime compatibility was also updated to Temurin JDK 21 for Android jobs to match current Capacitor Java source requirements and prevent `invalid source release: 21` build interruptions during CI release assembly.
 
-Deployment pipeline hardening also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation is now centralized in a tag-driven workflow (`.github/workflows/release.yml`) with immutable SHA-pinned actions and recursive submodule checkout for deterministic source resolution. Release preparation now applies a unified semantic version source across web, desktop, and Android wrappers, generates GitHub release notes from `CHANGELOG.md`, injects concise release highlights into frontend build metadata, and emits deterministic artifact names for all platforms. Release governance now includes a dedicated quality-gate stage (frontend and backend tests) and least-privilege workflow permissions (`contents: read` globally with publish-only write scope).
+Deployment pipeline hardening also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation is now centralized in a tag-driven workflow (`.github/workflows/release.yml`) with immutable SHA-pinned actions and recursive submodule checkout for deterministic source resolution. Submodule remote metadata is now aligned to the active repository owner (`dwaytu`) so release checkouts no longer fail on suspended-owner repository URLs. Release preparation now applies a unified semantic version source across web, desktop, and Android wrappers, generates GitHub release notes from `CHANGELOG.md`, injects concise release highlights into frontend build metadata, and emits deterministic artifact names for all platforms. Release governance now includes a dedicated quality-gate stage (frontend and backend tests) and least-privilege workflow permissions (`contents: read` globally with publish-only write scope).
 
 A subsequent Command Center platform transformation (v1.2.0) elevated the SENTINEL frontend from a collection of independently rendered panels into a unified, intelligence-driven SOC surface. A shared operational event context (`OperationalEventContext`) was introduced so that any panel within the Command Center — including incident alert feeds, live operations feeds, AI prediction modules, and operational status widgets — can participate in a common selection model without direct prop coupling. Selecting an incident alert or feed item propagates `selectedEventId` across all consuming panels, enabling cross-panel ring highlighting and coordinated focus without requiring additional API calls. All AI and predictive intelligence modules were simultaneously upgraded from static text output to actionable interfaces: incident severity classifiers and summary generators now render each suggested action as an individual call-to-action button, while guard absence and vehicle maintenance prediction panels present role-appropriate operational responses (deployment, replacement notification, maintenance booking, or dispatch removal) directly against high- and medium-risk rows. The replacement suggestion panel surfaces direct assignment and contact controls for the highest-ranked available candidate. UI discipline was also enforced throughout the Command Center: individual feed and prediction panels are now scroll-bounded with explicit maximum heights to prevent layout overflow in high-density operational states, the operational map container was enlarged to reflect its primary command-surface function, a priority-based incident severity emphasis scheme applies distinct visual treatment to critical, high, and medium incident rows, and a set of shared utility classes (`soc-feed-item`, `incident-row-critical`, `incident-row-high`, `incident-row-medium`, `ai-action-btn`) was introduced in the global stylesheet to enforce consistent styling of actionable SOC feed elements across all modules.
 
@@ -494,6 +406,8 @@ Limitation of the Study
 
 Review of Related Literature/Studies/Systems
 
+This review synthesizes published evidence and related systems to establish the study foundation, with emphasis on recent and relevant sources that directly support the implemented SENTINEL scope.
+
 Related Literature
 
 The Philippine private security sector is currently navigating its most significant legal
@@ -512,7 +426,7 @@ the lawâ€™s Implementing Rules and Regulations (IRR) mandate that Private S
 
 administrative negligence, such as deploying an unlicensed guard, can result in fines ranging
 
-from â‚±50,000 to â‚±100,000 per violation, or up to â‚±5,000,000 for agency-wide license failures.
+from P50,000 to P100,000 per violation, or up to P5,000,000 for agency-wide license failures.
 
 This  regulatory  pressure  has  necessitated  a  move  toward  Automated  Regulatory
 
@@ -604,7 +518,7 @@ Cybersecurity Plan 2022-2028 (DICT, 2024; PNP-SOSIA, 2022).
 
 The selection of the backend technical stack is a core security decision for mission-
 
-critical systems. Scofield, M. B. (2025) argues that Rustâ€™s "ownership and borrowing" model
+critical systems. Scofield, M. B. (2025) argues that Rust's "ownership and borrowing" model
 
 provides a fundamental architectural advantage: Memory Safety without a Garbage Collector.
 
@@ -638,7 +552,7 @@ In  an  Integrated  Operations  Platform,  the  database  must  serve  as  the  
 
 RDBMS for enterprise planning due to its strict adherence to ACID (Atomicity, Consistency,
 
-Isolation,  Durability)  properties.  Nguyen,  R.  (2025)  emphasizes  that  PostgreSQLâ€™s
+Isolation,  Durability)  properties.  Nguyen,  R.  (2025)  emphasizes  that  PostgreSQL's
 
 implementation of Foreign Key Constraints and Unique Exclusion Constraints is the primary
 
@@ -710,7 +624,7 @@ Trackforce 2025 Physical Security Operations Benchmark Report, the industry is c
 
 facing an "AI adoption paradox" where the value of predictive scheduling is recognized, but
 
-cost  remains a barrier for mid-sized firms.  TrackTikâ€™s success  is  anchored in  its  ability to
+cost  remains a barrier for mid-sized firms.  TrackTik's success  is  anchored in  its  ability to
 
 consolidate alarm monitoring, guard dispatch, and business administration into a single 24/7
 
@@ -758,7 +672,7 @@ MySecuritas
 
 Figure 3. MySecuritas
 
-Securitas  "MySecuritas"  (2026)  represents  the  industryâ€™s  shift  toward  "Situational
+Securitas  "MySecuritas"  (2026)  represents  the  industry's  shift  toward  "Situational
 
 Understanding"  and  proactive  risk  management.  The  Securitas  2026  Global  Technology
 
@@ -772,7 +686,7 @@ transforms  disparate  incident  reports  into  actionable  statistics  and  tre
 
 allows  supervisors  to  identify  risk  patterns  before  they  escalate,  a  core  design  principle
 
-mirrored in SENTINELâ€™s Performance Analytics Dashboard (Securitas, 2026).
+mirrored in SENTINEL's Performance Analytics Dashboard (Securitas, 2026).
 
 
 
@@ -806,45 +720,11 @@ ecosystem.
 
 ---
 
-Across  the  reviewed  literature,  several  consistent  themes  emerge.  Researchers
+Across the reviewed literature, several recurring themes are evident. First, researchers consistently identify data integration as the foundation of operational visibility and faster decision cycles. Second, both Philippine and international studies report that fragmented tools and manual monitoring produce avoidable delays, compliance blind spots, and weak accountability. Third, while contemporary platforms now incorporate automated scheduling, attendance analytics, and command dashboards, most systems remain domain-limited and do not fully integrate workforce continuity, high-risk asset custody, and regulatory traceability in one architecture.
 
-emphasize the importance of integrating operational data to improve organizational visibility
+Global solutions such as TrackTik and Guardhouse demonstrate the value of real-time accountability and centralized data ownership. However, these systems are not always aligned with the procedural and documentary specificity required under Philippine regulatory implementation.
 
-and decision-making. Studies from both Philippine and international contexts highlight the
-
-limitations of fragmented monitoring tools and manual processes.
-
-Technological trends such as automated scheduling algorithms, attendance tracking,
-
-and  operational  dashboards  are  increasingly  adopted  across  industries.  However,  existing
-
-systems often address only a single domain of operations, such as workforce scheduling or
-
-surveillance monitoring. Global systems like TrackTik and Guardhouse demonstrate that the
-
-industry standard is defined by Real-Time Accountability and Centralized Data Ownership.
-
-However, these systems  often fail to  accommodate the granular administrative nuances of
-
-Philippine law.
-
-The reviewed literature therefore reveals a clear research gap in integrated systems
-
-that  combine  workforce  management,  compliance  monitoring,  and  operational  oversight
-
-within a unified platform tailored to security agencies. The SENTINEL system addresses this
-
-void by combining high-concurrency Rust/Axum architecture with modules specifically for
-
-Philippine-specific  licensing  (RA  11917),  Firearm  Custody,  and  Armored  Car  Fleet
-
-Management,  allowing  local  agencies  to  achieve  multinational  levels  of  visibility  and
-
-compliance.  It  provides  a  centralized  solution  that  integrates  scheduling  automation,
-
-regulatory  compliance  verification,  and  real-time  operational  dashboards  within  a  single
-
-enterprise system.
+Accordingly, the literature establishes a clear gap: an integrated, security-agency platform that combines workforce management, compliance monitoring, and command-level operational oversight with local legal alignment. SENTINEL addresses this gap by combining high-concurrency Rust/Axum services with modules for RA 11917-aligned licensing checks, firearm custody governance, and armored fleet operations. In doing so, it provides a unified enterprise workflow that links scheduling automation, regulatory verification, and real-time command visibility.
 
 
 
@@ -1064,7 +944,9 @@ CHAPTER 2
 
 METHODOLOGY
 
-The development methodology used for SENTINEL is iterative and Agile-inspired, structured around feature-based increments rather than a single linear build. Each increment combined planning, implementation, integration, and review so that operational modules could be delivered and validated in usable slices. This approach was selected because SENTINEL includes tightly coupled operational domains (personnel, assets, tracking, incidents, and analytics) that require frequent cross-module verification.
+Methodology in this study is defined as the structured set of approaches, methods, tools, and execution procedures used to plan, build, integrate, validate, and harden the implemented system.
+
+The development methodology used for SENTINEL is iterative and Agile-inspired, organized through feature-based increments rather than a single linear build. Each increment combined planning, implementation, integration, and review so that operational modules were delivered and validated in usable slices. This approach was selected because SENTINEL contains tightly coupled domains, including personnel, assets, tracking, incidents, and analytics, that require frequent cross-module verification.
 
 Planning activities began with requirements consolidation, role-mapping, and module prioritization. The team translated these into implementation batches covering authentication and approvals, scheduling and attendance, firearms and fleet operations, incident/support workflows, analytics dashboards, tracking, and AI-assisted operational intelligence. Platform targets (web, desktop, and mobile) were included in planning to prevent late-stage portability redesign.
 
@@ -1072,7 +954,7 @@ Development was executed through frontend-backend parallel work with recurring i
 
 Recent iterations specifically expanded two intelligence-driven capability streams: (1) guard movement intelligence through guard-history/path and active-roster APIs with geofence enter/exit persistence; and (2) forensic audit intelligence through timeline filtering, per-user activity reconstruction, and anomaly grouping endpoints. These increments were further extended with dedicated geofence-management APIs (configurable radius/polygon zones per site) and validated using endpoint-level integration tests that exercised role-based access scenarios across guard, supervisor, and admin roles.
 
-Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario tests, API contract verification, and runtime build validation for web, desktop, and Android outputs. Security and reliability refinements (for example lockout persistence, refresh-session revocation, authorization enforcement, and rate-limiting controls) were integrated as iterative hardening tasks. Current validation includes passing Rust integration tests for tracking/audit role gates and geofence CRUD paths, successful backend health checks on localhost, and successful frontend production builds after route-level lazy loading and chunk splitting for the audit dashboard surface. The latest verified execution pass prior to the current hardening cycle confirmed successful full backend test execution (`cargo test`), successful frontend unit tests (`5/5`), and healthy containerized backend/database startup through Docker Compose; the current cycle added implementation updates for dashboard render-containment and release/security policy alignment, with runtime command verification pending the same toolchain availability constraints documented in this report.
+Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario testing, API-contract verification, and runtime build validation for web, desktop, and Android targets. Security and reliability refinements, including lockout persistence, refresh-session revocation, authorization enforcement, and rate limiting, were integrated as iterative hardening tasks. Current validation includes passing Rust integration tests for tracking and audit role gates, successful geofence CRUD path checks, healthy backend localhost health responses, and successful frontend production builds after audit-route lazy loading and chunk splitting. The latest verified execution pass before the current hardening cycle confirmed successful full backend test execution (`cargo test`), successful frontend unit tests (`5/5`), and healthy backend/database container startup through Docker Compose. The current cycle then added dashboard render-containment and release-policy alignment, with remaining runtime command verification bounded by the same toolchain-availability constraints documented in this report.
 
 The most recent hardening increment added backend-enforced legal consent compliance. Consent acceptance now calls dedicated API endpoints, persists acceptance evidence in PostgreSQL, propagates consent state through JWT claims, and is enforced by authenticated middleware prior to protected route access. This prevented local-only consent drift and aligned legal gating with server-side authority.
 
@@ -1086,7 +968,7 @@ Technical Background
 
 Technologies to be Used in the System
 
-SENTINEL is implemented as a web-first integrated security operations platform with desktop and mobile runtime wrappers. Technology selection was based on concrete implementation requirements: role-based dashboards, secure API contracts, high-concurrency backend operations, traceable relational data, real-time tracking, and cross-platform delivery without codebase duplication. The proponents used the following technologies in the current implementation:
+SENTINEL is implemented as a web-first integrated security operations platform with desktop and mobile runtime wrappers. Technology selection was treated as an architectural decision anchored in implementation requirements: role-based dashboards, secure API contracts, high-concurrency backend execution, traceable relational data, real-time tracking, and cross-platform delivery without codebase duplication. The proponents used the following technologies in the current implementation:
 
 1. React + TypeScript: Used to build reusable, role-aware UI components and dashboard modules with strict typing. Compared with plain JavaScript React, TypeScript was selected because it reduces integration defects in API contracts and role-based state handling.
 
@@ -1120,7 +1002,7 @@ SENTINEL is implemented as a web-first integrated security operations platform w
 
 Figure 5. Work Breakdown Structure
 
-The Work Breakdown Structure (WBS) will model the project into major deliverables and sub-deliverables for tracking and control.
+The Work Breakdown Structure (WBS) models the project into major deliverables and sub-deliverables to support schedule control, ownership clarity, and progress tracking.
 
 WBS Diagram (Mermaid Model)
 
@@ -1238,7 +1120,7 @@ WBS Diagram (Text Model)
 
 Gantt Chart of Activities
 
-The project timeline will be organized into phased milestones covering initiation, planning, requirements gathering, sprint-based development, integration, testing, documentation, and defense preparation. Activities will be sequenced chronologically to ensure that each output becomes input for the next development phase.
+The project timeline is organized into phased milestones covering initiation, planning, requirements gathering, sprint-based development, integration, testing, documentation, and defense preparation. Activities are sequenced chronologically so that each completed output becomes an input to the subsequent phase.
 
 Figure 6. Gantt Chart of Activities
 
@@ -1305,7 +1187,7 @@ Activity: Final review, defense preparation, and turnover
 
 Calendar of Activities
 
-The calendar of activities summarizes the same phased sequence defined in the WBS and Gantt schedule, including objectives, involved personnel, and required resources.
+The calendar of activities operationalizes the same phase sequence defined in the WBS and Gantt plan by specifying each period's objective, involved personnel, and required resources.
 
 1. February - Project initiation and problem definition.
 Purpose: Define project boundaries, objectives, and target operational issues.
@@ -1420,7 +1302,9 @@ Runtime Requirements
 
 Requirements Analysis
 
-The requirements baseline for SENTINEL was defined from actual private-security operational pain points: fragmented coordination, delayed visibility, compliance exposure, and weak traceability of sensitive asset workflows. Based on current implementation, the requirements analysis prioritizes role-governed access, real-time operational awareness, and auditable process execution across personnel, equipment, vehicle, incident, and analytics domains.
+Requirement analysis in this project follows a client-problem lens that clarifies who is affected, what business activity is disrupted, where the workflow operates, when failures typically occur, and how existing procedures behave under real operational conditions.
+
+The requirements baseline for SENTINEL was defined from observed private-security pain points: fragmented coordination, delayed visibility, compliance exposure, and weak traceability for sensitive asset workflows. Based on current implementation, the analysis prioritizes role-governed access, real-time operational awareness, and auditable process execution across personnel, equipment, vehicle, incident, and analytics domains.
 
 As implementation matured, requirements depth was extended from basic monitoring to decision-grade intelligence outputs. This introduced explicit contracts for guard movement reconstruction (active roster, path replay, geofence transitions) and forensic audit interpretation (filtered timeline, actor activity history, anomaly grouping), while preserving backward compatibility with existing dashboard and API behavior.
 
@@ -1444,7 +1328,9 @@ For operational tooling, Docker/Compose, managed runtime deployment, and version
 
 Requirements Documentation
 
-The documented requirements below reflect implemented system behavior and verified module coverage.
+This requirements documentation establishes the implementation baseline of what the software currently does and enumerates functional and non-functional behavior together with storyboard-driven interface-flow references.
+
+The documented requirements below reflect implemented behavior and verified module coverage.
 
 Functional Requirements
 
@@ -1500,7 +1386,7 @@ NFR-06. Compliance Traceability: Legal acceptance and policy governance events s
 
 Storyboard (Proposed Interface Flow)
 
-The storyboard will present how the software will appear and function once designed and coded. The sequence below defines the expected flow of major screens and user actions.
+The storyboard presents how the software appears and behaves in user-facing operation. The sequence below defines the expected flow of major screens and role actions.
 
 1. Login and Account Verification Screen
 
@@ -1631,9 +1517,9 @@ flowchart LR
 
 Development
 
-SENTINEL implementation was executed as a feature-driven integration program in which frontend, backend, database, and platform packaging evolved in coordinated iterations. The web application served as the baseline delivery target, while desktop and mobile wrappers extended the same operational surface to additional runtime environments.
+SENTINEL implementation was executed as a feature-driven integration program in which frontend, backend, database, and platform packaging evolved through coordinated iterations. The web application served as the baseline delivery target, while desktop and mobile wrappers extended the same operational surface to additional runtime environments.
 
-Frontend development focused on role-aware dashboard experiences and modular operational components. React + TypeScript components were organized around command-center views, approvals, scheduling, assets, incidents, analytics, and audit-log workspaces, with shared hooks for API access, polling, and real-time state updates. This structure allowed consistent behavior across superadmin, admin, supervisor, and guard interfaces while preserving role constraints.
+Frontend development focused on role-aware dashboard experiences and modular operational components. React and TypeScript components were organized around command-center views, approvals, scheduling, assets, incidents, analytics, and audit-log workspaces, supported by shared hooks for API access, polling, and real-time state updates. This structure enabled consistent behavior across superadmin, admin, supervisor, and guard interfaces while preserving role constraints.
 
 A later interface-delivery pass introduced a Unified Role-Centric Action Inbox + Workflow Timeline experience. Two reusable primitives, `ActionInbox` and `WorkflowTimeline`, were implemented first, then composed into four role-specific panels: `GuardInboxPanel`, `SupervisorInboxPanel`, `AdminInboxPanel`, and `SuperadminInboxPanel`. Each panel consumes authenticated API data and maps it into a shared priority contract (`urgent`, `high`, `normal`) and a shared workflow-status contract (`pending`, `active`, `resolved`, `cancelled`), allowing a common interface language while preserving role-specific content.
 
@@ -1651,7 +1537,7 @@ Backend development was organized around Axum route handlers, middleware, and se
 
 Legal-compliance development added a dedicated backend consent module with `POST /api/legal/consent` and `GET /api/legal/consent/status`, startup schema guards for consent columns, and JWT claim propagation for consent state. Auth middleware now evaluates legal-consent state before allowing protected-route execution, with controlled bypass for consent/bootstrap-safe paths.
 
-Integration development connected frontend workflows to secured backend APIs using JWT-authenticated requests, refresh-session handling, and role-scoped endpoint access. Frontend request reliability was further hardened through status-aware retry policy updates (`408/425/429/5xx`) with exponential backoff for safe/idempotent calls and guarded mutation retry scope. Real-time monitoring capabilities were integrated through websocket snapshot streaming and polling fallback, ensuring operational continuity when network conditions vary.
+Integration development connected frontend workflows to secured backend APIs through JWT-authenticated requests, refresh-session handling, and role-scoped endpoint access. Frontend request reliability was further hardened through status-aware retry policy updates (`408/425/429/5xx`) with exponential backoff for safe or idempotent calls and guarded mutation-retry scope. Real-time monitoring was integrated through websocket snapshot streaming with polling fallback to preserve operational continuity under variable network conditions.
 
 Recent polishing refinements improved runtime stability and accessibility without changing core feature scope: websocket tracking clients now stop reconnecting on authentication-expired close codes and trigger the existing session-expiry flow, mobile floating banners and shell content now respect safe-area offsets to avoid overlap/clipping on small screens, and high-frequency controls (header menu, sidebar close actions, notification dismiss, and map interaction buttons) were adjusted to larger touch targets with explicit keyboard focus visibility. A second-pass audit then hardened subtle interaction gaps by making quick-navigation column density adaptive on mobile, surfacing token-expiry event messages before forced session reset, upgrading notification drawer interactions (Escape/outside close, semantic control labeling, inline failure feedback), and enforcing minimum touch-target sizing across administrative action clusters, section collapse controls, modal consent/update actions, and map zoom controls. The same hardening cycle added startup token-freshness validation with refresh-token recovery before restoring persisted sessions, pre-submit session checks on legal-consent acceptance to prevent stale-token submissions, version-scoped "What's New" release messaging to communicate deployed improvements, explicit header/account layering priority over map panes so profile controls remain operable while live map widgets are active, and section-level render containment in the application shell through a reusable frontend error-boundary wrapper so isolated dashboard render faults degrade to recoverable fallback panels rather than full-shell failure. Backend hardening in the same cycle tightened production CORS behavior by limiting localhost origin auto-allowances to non-production mode, added legal-consent enforcement to websocket tracking upgrades to prevent consent-bypass data streams, expanded authorization-failure audit capture to API-wide `401/403` denials (including write requests), and updated release orchestration to a deterministic tag-driven workflow with unified version propagation, SHA-pinned actions, and mandatory signed Android release outputs.
 

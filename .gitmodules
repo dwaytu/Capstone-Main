@@ -1,6 +1,6 @@
 [submodule "DasiaAIO-Backend"]
 	path = DasiaAIO-Backend
-	url = https://github.com/Cloudyrowdyyy/DasiaAIO-Backend.git
+	url = https://github.com/dwaytu/DasiaAIO-Backend.git
 [submodule "DasiaAIO-Frontend"]
 	path = DasiaAIO-Frontend
-	url = https://github.com/Cloudyrowdyyy/DasiaAIO-Frontend.git
+	url = https://github.com/dwaytu/DasiaAIO-Frontend.git
