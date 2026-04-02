@@ -47,28 +47,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    .skip-link {
-      position: absolute;
-      left: 16px;
-      top: 8px;
-      z-index: 120;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text-1);
-      padding: 8px 12px;
-      text-decoration: none;
-      font-size: 13px;
-      transform: translateY(-180%);
-      transition: transform .2s ease;
-    }
-
-    .skip-link:focus {
-      transform: translateY(0);
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-
     /* ─── Scrollbar ─────────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg-base); }
@@ -510,14 +488,12 @@
 </head>
 <body>
 
-<a href="#main-content" class="skip-link">Skip to main content</a>
-
 <!-- ═══════════════════════════ TOP NAV ═══════════════════════════ -->
 <nav id="top-nav" aria-label="Main navigation">
   <a href="#hero" class="nav-brand">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     SENTINEL
-    <span class="badge">v1.1.5</span>
+    <span class="badge">v1.0</span>
   </a>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
@@ -533,7 +509,7 @@
   </a>
 </nav>
 
-<main id="main-content" class="page-wrapper" tabindex="-1">
+<div class="page-wrapper">
 
 <!-- ═══════════════════════════ HERO ══════════════════════════════ -->
 <section id="hero">
@@ -715,7 +691,6 @@
     <p class="section-intro">
       Role-specific dashboards give each user exactly the tools they need,
       from the superadmin command center to the guard daily operations workspace.
-      Module screenshots below are refreshed for release v1.1.5.
     </p>
 
     <div class="screenshots-grid">
@@ -1468,7 +1443,7 @@ npm run release:all
   </div>
 </section>
 
-</main>
+</div><!-- end .page-wrapper -->
 
 <!-- ═══════════════════════════ FOOTER ════════════════════════════ -->
 <footer>

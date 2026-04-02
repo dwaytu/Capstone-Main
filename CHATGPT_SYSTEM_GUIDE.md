@@ -162,6 +162,7 @@ API utility hardening:
 - `fetchJsonOrThrow` supports timeout-based abort
 - `fetchJsonOrThrow` now blocks protected `/api/*` requests when no session token exists and emits a normalized session-expired event instead of sending unauthenticated dashboard calls.
 - `fetchJsonOrThrow` now auto-attaches `Authorization: Bearer <token>` on protected API calls when caller headers omit it, reducing silent auth-header drift between dashboard modules.
+- `fetchJsonOrThrow` auth-expiry classification now treats permission-denied `403` responses as non-expiry errors unless token-expiry indicators are present, preventing valid sessions from being force-logged out on role-based access denials.
 
 Client access governance hardening:
 
@@ -177,9 +178,9 @@ Client access governance hardening:
 - Runtime API fallback paths were removed to prevent cross-platform drift between web, desktop, and mobile clients.
 - Frontend release scripts now enforce production env safety via `DasiaAIO-Frontend/scripts/ensure-production-env.mjs`, blocking unsafe releases when `VITE_API_BASE_URL` is missing/non-HTTPS/private-host or when `VITE_APP_VERSION` is not a semantic release value.
 - `DasiaAIO-Frontend/src/utils/location.ts` now uses CORS-compatible IP geolocation providers (`ipinfo.io` with `geolocation-db.com` fallback) plus short-lived caching to avoid repeated blocked external requests when precise GPS is unavailable.
-- Dashboard layout now uses a fixed-shell contract: sidebar is fixed, app shell is viewport-locked (`h-[100dvh]`), and only main content regions own vertical scrolling.
+- Elevated dashboard layout uses a fixed-shell contract: sidebar is fixed, app shell is viewport-locked (`h-[100dvh]`), and only main content regions own vertical scrolling.
 - `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now enforces `main` as a `min-h-0 overflow-hidden` container with a dedicated `overflow-y-auto` content pane, preventing nested body/document scroll drift.
-- Shared dashboard roots (`UserDashboard`, `FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, `PerformanceDashboard`, `MeritScoreDashboard`, `ArmoredCarDashboard`, `CalendarDashboard`, `ProfileDashboard`) now use `h-[100dvh]` + `overflow-hidden` shells and `min-h-0` main columns to eliminate overlap/clipping between fixed sidebar and content.
+- Shared elevated dashboard roots (`FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, `PerformanceDashboard`, `MeritScoreDashboard`, `ArmoredCarDashboard`, `CalendarDashboard`, `ProfileDashboard`) now use `h-[100dvh]` + `overflow-hidden` shells and `min-h-0` main columns to eliminate overlap/clipping between fixed sidebar and content.
 - Global shell styling in `DasiaAIO-Frontend/src/index.css` now locks `html/body/#root` to full height with hidden document overflow and moves atmospheric gradient rendering to a fixed background layer (`body::before`) so decorative layers no longer interfere with scrollable content.
 - Frontend theming now uses an expanded semantic token contract in `DasiaAIO-Frontend/src/index.css` covering dual light/dark palettes, component surfaces, interactive states, role badges, overlays, and status tones (`.soc-*` utility classes) for consistent SOC visual behavior.
 - Shared shell components (`Sidebar`, `Header`, `SectionBadge`, `AccountManager`, `NotificationPanel`, `LoginPage`) were refactored to consume tokenized classes instead of hardcoded hex/rgba inline colors.
@@ -190,7 +191,9 @@ Client access governance hardening:
 - Modal behavior was normalized with reusable overlay/panel patterns (`.soc-modal-backdrop`, `.soc-modal-panel`) and applied across schedule/user edit dialogs, trip details, calendar event details, bug report dialog, and approval drawers so dialogs consistently appear above dashboard chrome.
 - Scroll and safe-area handling were tightened by applying `soc-scroll-area` plus bottom safe-area padding in shared content panes (`OperationalShell`, `ProfileDashboard`) to keep profile/account forms fully visible and scrollable on mobile devices.
 - Operational map presentation was refined to avoid UI obstruction: Leaflet pane z-order was constrained in `index.css`, map containers now isolate stacking contexts, and loading overlays are non-interactive (`pointer-events-none`) so map feedback no longer blocks surrounding dashboard interactions.
-- Mobile quick navigation in `App.tsx` is now constrained to guard sessions and disabled while blocking overlays are active, preventing redundant navigation controls and reducing bottom-area overlap during consent/update dialogs.
+- Global mobile quick navigation in `App.tsx` is disabled for guard routing, and guard navigation is now single-sourced inside `UserDashboard.tsx` through a dedicated bottom-nav field shell to avoid redundant controls.
+- `DasiaAIO-Frontend/src/components/UserDashboard.tsx` was redesigned to a mission-first guard workspace with a single-column mobile layout, persistent field action dock (`Report Incident`, `Check In/Check Out`, `View Instructions`), assignment-focused top summary cards, and a separate map screen with explicit expand/collapse behavior.
+- Guard resilience UX now includes explicit loading/sync states, offline and partial-sync banners with retry, and protected action feedback messages for field-critical workflows.
 - Tracking telemetry hooks now enforce frontend role gating (`supervisor`/`guard`) before calling tracking APIs/websocket endpoints (`useOperationalMapData`, `useReplacementSuggestions`, and app-level heartbeat dispatch in `App.tsx`), preventing repeated `403` tracking calls for non-tracking roles.
 - Sidebar service-health polling (`DasiaAIO-Frontend/src/hooks/useServiceHealth.ts`) now uses `/api/health/system` payloads instead of probing role-restricted operational routes, eliminating expected-but-noisy `403` console spam for lower-privilege sessions.
 - Release workflow Android fallback behavior (`.github/workflows/release.yml`) now builds unsigned CI artifacts as APK-only when signing secrets are unavailable, while signed paths continue producing both APK and AAB outputs.
@@ -225,6 +228,7 @@ Client access governance hardening:
   - `GET /api/users/pending-approvals`
   - `PUT /api/users/:id/approval`
 - Pending approval routes now require guard-approval permission (`approve_guard_registration`) instead of user-creation permission so supervisors can access approval queues/updates under RBAC.
+- Guard permit retrieval route (`GET /api/guard-firearm-permits/:guard_id`) now uses authenticated-route middleware and relies on handler-level `require_self_or_min_role(..., "supervisor")` checks, preventing false `403 Missing required permission: manage_firearms` responses for valid guard self-access.
 - Guard login is blocked when `approval_status != approved`.
 - CORS accepts both `CORS_ORIGINS` (comma-separated, preferred) and `CORS_ORIGIN` (single-origin compatibility).
 - If neither env var is set to a valid value, fallback allow-list behavior in `DasiaAIO-Backend/src/main.rs` is localhost/native-wrapper only (`http://localhost:*`, `127.0.0.1`, `https://localhost`, `capacitor://localhost`, `tauri://localhost`).
@@ -434,7 +438,8 @@ Current frontend reality:
     - Tauri desktop -> in-app one-click updater (`@tauri-apps/plugin-updater`) with relaunch.
   - `DasiaAIO-Frontend/src/App.tsx` now shows a version-scoped "What's New" dialog after release upgrades, populated from `VITE_WHATS_NEW` and persisted so each version is shown once.
   - `DasiaAIO-Frontend/src/App.tsx` now includes connectivity resilience UX: online/offline listeners, recurring backend health probe, and a persistent disconnected banner when backend/network is unavailable.
-  - Mobile bottom quick-navigation in `App.tsx` is currently disabled to avoid duplicated navigation surfaces with the fixed sidebar shell and to keep role routing single-sourced.
+  - Mobile bottom quick-navigation in `App.tsx` is currently disabled for guard routing so guard navigation remains single-sourced in `UserDashboard.tsx`.
+  - `UserDashboard.tsx` now uses a mission-first guard shell with no sidebar, persistent action buttons, and a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`, `Profile`).
   - Floating runtime notices in `App.tsx` (update/location/error banners) account for safe-area offsets without depending on bottom quick-nav spacing.
   - Core shell touch-target tuning:
     - `Header.tsx`, `Sidebar.tsx`, `NotificationCenter.tsx`, and `OperationalMapPanel.tsx` now use larger interactive target sizing and focus-visible affordances for mobile/tablet usability and keyboard access.
