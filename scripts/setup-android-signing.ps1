@@ -54,17 +54,17 @@ $ErrorActionPreference = 'Stop'
 
 function Write-Header([string]$text) {
     Write-Host ""
-    Write-Host "══════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host "======================================================" -ForegroundColor Cyan
     Write-Host "  $text" -ForegroundColor Cyan
-    Write-Host "══════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host "======================================================" -ForegroundColor Cyan
 }
 
 function Write-Step([string]$text) {
-    Write-Host "  ▶  $text" -ForegroundColor Yellow
+    Write-Host "  -> $text" -ForegroundColor Yellow
 }
 
 function Write-Success([string]$text) {
-    Write-Host "  ✔  $text" -ForegroundColor Green
+    Write-Host "  OK $text" -ForegroundColor Green
 }
 
 function Write-Secret([string]$name, [string]$value) {
@@ -123,9 +123,9 @@ if ($KeyPassword.Length -lt 6) {
 
 Write-Step "Generating keystore at: $KeystoreFile"
 
-$keystorePath = (Resolve-Path -LiteralPath (Split-Path $KeystoreFile -Parent) -ErrorAction SilentlyContinue)?.Path
-if (-not $keystorePath) {
-    New-Item -ItemType Directory -Force -Path (Split-Path $KeystoreFile -Parent) | Out-Null
+$keystoreParent = Split-Path -Path $KeystoreFile -Parent
+if ($keystoreParent -and -not (Test-Path -LiteralPath $keystoreParent)) {
+    New-Item -ItemType Directory -Force -Path $keystoreParent | Out-Null
 }
 
 $dname = "CN=SENTINEL App, OU=Mobile, O=DASIA, L=Tagum, ST=Davao del Norte, C=PH"
@@ -143,10 +143,16 @@ $keytoolArgs = @(
     "-storetype"      , "JKS"
 )
 
-& keytool @keytoolArgs 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+ $previousErrorActionPreference = $ErrorActionPreference
+ $ErrorActionPreference = 'Continue'
+ $keytoolOutput = & keytool @keytoolArgs 2>&1
+ $keytoolExitCode = $LASTEXITCODE
+ $ErrorActionPreference = $previousErrorActionPreference
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "  ERROR: keytool failed (exit $LASTEXITCODE)." -ForegroundColor Red
+ $keytoolOutput | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+
+if ($keytoolExitCode -ne 0) {
+    Write-Host "  ERROR: keytool failed (exit $keytoolExitCode)." -ForegroundColor Red
     exit 1
 }
 
@@ -159,7 +165,7 @@ Write-Step "Base64-encoding keystore for GitHub Secret..."
 $keystoreBytes  = [System.IO.File]::ReadAllBytes((Resolve-Path $KeystoreFile).Path)
 $keystoreBase64 = [System.Convert]::ToBase64String($keystoreBytes)
 
-Write-Success "Base64 encoding complete (${$keystoreBase64.Length} chars)"
+Write-Success "Base64 encoding complete ($($keystoreBase64.Length) chars)"
 
 # ─── output GitHub Secrets ───────────────────────────────────────────────────
 
@@ -178,7 +184,7 @@ Write-Secret "SENTINEL_UPLOAD_KEY_PASSWORD"      $KeyPassword
 
 $secretsFile = ".\sentinel-android-secrets.txt"
 Write-Host ""
-Write-Step "Writing secrets to $secretsFile (KEEP SECURE — add to .gitignore)"
+Write-Step "Writing secrets to $secretsFile (KEEP SECURE - add to .gitignore)"
 
 @"
 # ============================================================
@@ -186,7 +192,7 @@ Write-Step "Writing secrets to $secretsFile (KEEP SECURE — add to .gitignore)"
 # Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 #
 # ADD TO GITHUB: Settings > Secrets and variables > Actions
-# DO NOT COMMIT THIS FILE — it contains signing credentials.
+# DO NOT COMMIT THIS FILE - it contains signing credentials.
 # ============================================================
 
 SENTINEL_ANDROID_KEYSTORE_BASE64=$keystoreBase64
@@ -201,14 +207,14 @@ Write-Success "Secrets saved to: $secretsFile"
 
 Write-Header "Security Reminders"
 Write-Host ""
-Write-Host "  ⚠  Add these to .gitignore (never commit):" -ForegroundColor Yellow
+Write-Host "  WARNING: Add these to .gitignore (never commit):" -ForegroundColor Yellow
 Write-Host "     *.keystore" -ForegroundColor White
 Write-Host "     *.jks" -ForegroundColor White
 Write-Host "     sentinel-android-secrets.txt" -ForegroundColor White
 Write-Host ""
-Write-Host "  ⚠  Store your keystore file in a secure location." -ForegroundColor Yellow
+Write-Host "  WARNING: Store your keystore file in a secure location." -ForegroundColor Yellow
 Write-Host "     If it is lost, you CANNOT update your Play Store app." -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  ✔  Once GitHub Secrets are set, re-run the release workflow." -ForegroundColor Green
+Write-Host "  OK Once GitHub Secrets are set, re-run the release workflow." -ForegroundColor Green
 Write-Host "     The 'Android release signing secrets are required' error will be resolved." -ForegroundColor DarkGray
 Write-Host ""
