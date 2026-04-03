@@ -11,6 +11,11 @@ __pycache__/
 *.swp
 *.swo
 
+# Android release signing — never commit these
+*.keystore
+*.jks
+sentinel-android-secrets.txt
+
 # Generated app dependencies/build outputs
 apps/android-capacitor/node_modules/
 apps/desktop-tauri/node_modules/

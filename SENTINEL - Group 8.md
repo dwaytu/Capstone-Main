@@ -46,21 +46,20 @@ has been examined and is recommended for Outline Defense.
 
 ENDORSED BY:
 
-<Capstone Project Adviser's Given Name MI. Family
-Name>
+Capstone Project Adviser Name
 Capstone Project Adviser
 
 APPROVED FOR PROPOSAL DEFENSE:
 
-<Capstone Project Coordinator's Given Name MI. Family Name>
+Capstone Project Coordinator Name
 Capstone Project Coordinator
 
 NOTED BY:
 
-<Program Head's Given Name MI. Family Name>
+Program Head Name
 Program Head
 
-<DATE OF PROPOSAL DEFENSE>
+Date of Proposal Defense
 
 
 
@@ -68,40 +67,36 @@ Program Head
 
 APPROVAL SHEET
 
-This capstone project proposal titled: <Research Title> prepared and submitted by
-<Researcher's  Given  Name  MI.  Family  Name>,  <Researcher's  Given  Name  MI.
-Family Name>, <Researcher's Given Name MI. Family Name>, and <Researcher's
-Given  Name  MI.  Family  Name>,  in  partial  fulfillment  of  the  requirements  for  the
-degree of Bachelor of Science in <Program>, has been examined and is recommended
+This capstone project proposal titled: SENTINEL: An Integrated Security Operations Management System prepared and submitted by
+Dwight Karl B. Gaga-a, Gad Abraham M. Jose, Apple John D. Lumingkit, Hector Phillip P. Lacierda, and Hanz Lourenz Frank J. Ribu, in partial fulfillment of the requirements for the
+degree of Bachelor of Science in Information Systems, has been examined and is recommended
 for acceptance and approval.
 
-<Capstone Project Adviser's Given Name MI. Family Name>
+Capstone Project Adviser Name
 Capstone Project Adviser
 
 Accepted and approved by the Capstone Project Review
 Panel in partial fulfillment of the requirements for the degree
-of Bachelor of Science in <Program>
+of Bachelor of Science in Information Systems
 
-<Panelist's Given Name MI. Family Name>  <Panelist's Given Name MI. Family Name>
-
-Panel Member
+Panel Member Name  Panel Member Name
 
 Panel Member
 
-<Panelist's Given Name MI. Family Name>
+Panel Member
+
+Lead Panelist Name
 Lead Panelist
 
 Noted:
 
-<Capstone Project Coordinator's Given
-Name MI. Family Name>
+Capstone Project Coordinator Name
 Capstone Project Coordinator
 
-<Program Head's Given Name MI. Family
-Name>
+Program Head Name
 Program Head
 
-<Date of Proposal Defense>
+Date of Proposal Defense
 
 
 
@@ -131,79 +126,19 @@ SENTINEL is positioned as an integrated digital ecosystem that addresses these c
 
 Purpose and Description
 
-This section states the project purpose and describes key capabilities in clear, implementation-aligned language so stakeholders can understand system value without changing the approved chapter structure.
+This section presents the project purpose and implemented system capabilities.
 
-The primary purpose of this capstone project is to deliver a fully functional, production-ready Integrated Security Operations Management Platform that consolidates guard personnel management, equipment allocation, vehicle operations, and access control into one unified system for Davao Security and Investigation Agency, Inc.
+The primary purpose of this capstone project is to design and deliver an integrated security operations management system that improves service reliability, accountability, and decision support for Davao Security and Investigation Agency, Inc. The study addresses fragmented manual oversight by consolidating core operational processes into a role-governed platform.
 
-SENTINEL is a web-based system that integrates operational data and workflows through a Rust/Axum backend API, a PostgreSQL relational database, and a React/TypeScript frontend deployed through Docker, with desktop and mobile wrappers for broader operational access. The platform aligns with ERP and workforce management principles by centralizing records, enforcing consistent process rules, and providing real-time operational visibility.
+SENTINEL provides unified support for identity and access governance, workforce operations, asset compliance, incident coordination, and real-time situational awareness. Role-based and policy-based controls restrict sensitive functions to authorized users and preserve traceable records for institutional review.
 
-The  platform  implements  four  core  modules.  Guard  Management  covers  personnel
+Operationally, the system supports scheduling, attendance, no-show detection, and replacement handling to sustain deployment continuity. It also manages firearm and vehicle lifecycles, including issuance, return, maintenance, and permit-sensitive checks, to strengthen asset accountability and reduce service disruption.
 
-profiles,  scheduling,  attendance  tracking,  performance  analytics,  and  replacement
+At the command level, the platform integrates live tracking signals with structured operational records to provide timely visibility of personnel movement, incident status, and site conditions. Geofence monitoring, notifications, and incident workflows support faster coordination across command and field roles.
 
-coordination  to  ensure  uninterrupted  site  coverage.  Equipment  Management  maintains
+SENTINEL further includes analytics and deterministic AI decision support for staffing risk, maintenance risk, and incident triage. These outputs are assistive and preserve human authority for final operational decisions.
 
-firearm  inventory,  allocation  workflows,  permit  records,  and  maintenance  history  to
-
-support regulatory compliance and accountability. Vehicle Operations manages armored
-
-vehicle  assets,  driver  assignments,  and  trip  tracking  to  improve  deployment  oversight.
-
-Access  Control  enforces  role-based  permissions,  authentication,  and  audit  logging  to
-
-ensure that only authorized roles can access sensitive operations and data. The system has
-
-been  validated  through  a  24-day  operational  simulation  covering  24  distinct  business
-
-scenarios and resolving 15 or more production issues. Recent production-hardening updates
-
-also implemented distributed login lockout persistence, refresh-token rotation and revocation,
-
-global and endpoint-level abuse protection, explicit production-origin CORS allow-listing in
-
-the Axum backend, map viewport synchronization safeguards for Leaflet runtime stability, and
-
-cross-platform client security reinforcement, including a first-use Terms of Agreement gate
-
-that blocks access until the user explicitly accepts policy terms on Web, Desktop, and Mobile runtimes. Additional runtime hardening includes wrapper-origin CORS support for
-
-`capacitor://localhost`, `tauri://localhost`, and secure localhost WebView origins to prevent mobile login fetch failures, with these wrapper origins now enforced even when explicit web CORS origin environment variables are configured. Release hardening also added fail-fast environment validation for frontend production packaging (HTTPS production API target plus semantic app version requirement), while the runtime includes an in-app update availability prompt that compares deployed app version metadata against GitHub latest-release tags and guides users to download newer builds.
-
-For browser-based local development against a deployed backend, explicit CORS configuration now also preserves `http://localhost:5173` and `http://127.0.0.1:5173` so preflight checks for authentication and protected API calls do not fail during SOC workflow validation.
-
-To eliminate cross-dashboard communication failures, backend middleware execution now keeps CORS as the outermost layer so even early middleware responses (authorization/rate-limit) still return browser-valid CORS headers, while API rate-limit guards bypass `OPTIONS` preflight probes. On the frontend, protected API calls are now blocked when no token is present, and the live operational map websocket path uses bounded exponential-retry with polling fallback continuity to preserve command-center availability during transient socket disruptions.
-
-Further stabilization now ensures API throttling responses (`429`) also include CORS headers and that rate-limit identity keys can derive from verified bearer-token user IDs when proxy IP headers are unavailable, reducing false-positive throttling collisions in containerized local runs. The global API limiter key also now includes request path segmentation (`api:<requester>:<path>`) to prevent one dashboard module from consuming another module's burst budget during startup. Location fallback behavior was also updated to use CORS-compatible IP providers with short-lived caching so denied GPS sessions do not flood the console with blocked external geolocation requests.
-
-The production-hardening pass now applies dual-dimension abuse protection (per-IP and per-user buckets), structured timeout protection for long-running requests, and standardized backend error payloads that preserve stable client contracts while suppressing raw internal diagnostics from user-facing responses. Backend response hardening also now includes explicit security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`, and production HSTS), expanded health telemetry (`/api/health`, `/api/health/system`) with database/websocket/uptime visibility, and a centralized release metadata endpoint (`GET /api/system/version`) that powers unified update checks across platform runtimes.
-
-Frontend session handling was additionally refined so permission-based `403` responses are no longer treated as token-expiry events unless explicit token-expiry indicators are present. This prevents unintended guard logout behavior during role-scoped access denials while keeping true expired-token handling intact.
-
-Backend route authorization was also corrected for guard permit retrieval so authenticated guards can access their own permit records through handler-level self-or-supervisor checks, removing false permission-denied responses that previously surfaced as guard-console `403` noise. Additional configuration hardening now requires explicit non-default `ADMIN_CODE` and removes JWT-secret fallback behavior from token generation/verification paths, while introducing validated DB pool sizing controls (`DB_POOL_MAX_CONNECTIONS`, `DB_POOL_ACQUIRE_TIMEOUT_SECS`) for predictable backend connection governance.
-
-Cross-platform release behavior was refined so Web, Desktop, and Mobile clients query the same backend version source before prompting updates. Desktop builds support in-app one-click update and relaunch through the Tauri updater plugin, while mobile and web builds route users to release download channels. Runtime release UX was extended with a version-scoped in-app "What's New" dialog so each deployed version can present condensed release highlights exactly once per client installation.
-
-Frontend presentation consistency was also standardized through a dual-theme SOC design system: light and dark modes now share a centralized semantic token contract for surface, text, status, interaction, and focus states, while shared shell components (navigation, profile controls, notification panel, and authentication views) were refactored to consume tokenized styles rather than scattered hardcoded values. This update preserved existing page structure and workflows while improving readability, interaction predictability, and theme transition stability across desktop and mobile viewports.
-
-A second visual consistency pass was then applied across dashboard modules to remove residual micro-scale mismatches (small-font labels, compact chip paddings, and action-control height drift), producing a more uniform command-surface rhythm while preserving all existing workflows, role-based behavior, and API interactions.
-
-A third production-readiness refinement pass then focused on interaction quality and cross-device layout stability without adding any new features. This pass standardized stack-layer behavior across shared UI surfaces by introducing a consistent z-index contract for headers, drawers, dropdowns, map panes, floating notices, and modal dialogs; normalized modal presentation through reusable overlay/panel patterns; and improved mobile-safe scrolling with explicit safe-area bottom spacing in shared content regions. Dashboard shell typography and spacing were also tightened to follow a clearer visual hierarchy and an 8px rhythm, while guard-only quick navigation visibility was constrained to avoid redundant bottom navigation states during blocking overlays. Map rendering layers were additionally constrained so operational map controls and panes no longer interfere with higher-priority dialogs and command-surface interactions.
-
-A subsequent guard-experience redesign replaced the legacy guard dashboard presentation with a mission-first field interface while preserving existing guard capabilities (attendance check-in/out, incident reporting, schedule requests, permit/firearm visibility, location heartbeat, and support tickets). The guard runtime now prioritizes a mobile-first single-column structure with persistent action controls, simplified bottom navigation, dedicated map-screen isolation (expand/collapse, no overlay blocking of mission controls), and explicit resilience states for loading, offline operation, partial-sync errors, and retry workflows.
-
-Runtime tracking behavior was further aligned with backend authorization scopes by preventing non-field roles from issuing tracking map/site/heartbeat requests in the frontend, eliminating repeated `403` telemetry failures for unauthorized sessions while preserving full tracking behavior for supervisor and guard roles. Release automation was then hardened so Android release jobs now require signing material and fail when signing secrets are missing, producing signed APK and AAB outputs only for compliant release executions.
-
-An additional reliability pass removed role-mismatch probe noise by switching sidebar service-health checks to the backend health telemetry endpoint (`/api/health/system`) instead of role-restricted operational routes, and aligned pending-approval route authorization with approval-specific RBAC permissions so supervisors can access approval queues under the intended policy model.
-
-Android release automation was further hardened by adding Gradle cache initialization, explicit SDK package installation for both compatibility and target toolchains, and resilient SDK license acceptance behavior that avoids shell pipefail termination. The pipeline now performs debug APK validation before release assembly and emits full Gradle stack traces on failure, with signed-release output enforced as the only valid release path.
-
-The Android workflow was additionally stabilized against runner-level executable permission drift by invoking the frontend mobile bundle build through a direct Node-based Vite entrypoint from the frontend workspace, preventing `vite: Permission denied` pre-Gradle failures and ensuring artifact generation can progress to APK assembly.
-
-Pipeline runtime compatibility was also updated to Temurin JDK 21 for Android jobs to match current Capacitor Java source requirements and prevent `invalid source release: 21` build interruptions during CI release assembly.
-
-Deployment pipeline hardening also enforces lockfile-based backend image builds (`cargo build --locked`) and a non-root runtime user inside the backend container image, while release automation is now centralized in a tag-driven workflow (`.github/workflows/release.yml`) with immutable SHA-pinned actions and recursive submodule checkout for deterministic source resolution. Submodule remote metadata is now aligned to the active repository owner (`dwaytu`) so release checkouts no longer fail on suspended-owner repository URLs. Release preparation now applies a unified semantic version source across web, desktop, and Android wrappers, generates GitHub release notes from `CHANGELOG.md`, injects concise release highlights into frontend build metadata, and emits deterministic artifact names for all platforms. Release governance now includes a dedicated quality-gate stage (frontend and backend tests) and least-privilege workflow permissions (`contents: read` globally with publish-only write scope).
-
-A subsequent Command Center platform transformation (v1.2.0) elevated the SENTINEL frontend from a collection of independently rendered panels into a unified, intelligence-driven SOC surface. A shared operational event context (`OperationalEventContext`) was introduced so that any panel within the Command Center — including incident alert feeds, live operations feeds, AI prediction modules, and operational status widgets — can participate in a common selection model without direct prop coupling. Selecting an incident alert or feed item propagates `selectedEventId` across all consuming panels, enabling cross-panel ring highlighting and coordinated focus without requiring additional API calls. All AI and predictive intelligence modules were simultaneously upgraded from static text output to actionable interfaces: incident severity classifiers and summary generators now render each suggested action as an individual call-to-action button, while guard absence and vehicle maintenance prediction panels present role-appropriate operational responses (deployment, replacement notification, maintenance booking, or dispatch removal) directly against high- and medium-risk rows. The replacement suggestion panel surfaces direct assignment and contact controls for the highest-ranked available candidate. UI discipline was also enforced throughout the Command Center: individual feed and prediction panels are now scroll-bounded with explicit maximum heights to prevent layout overflow in high-density operational states, the operational map container was enlarged to reflect its primary command-surface function, a priority-based incident severity emphasis scheme applies distinct visual treatment to critical, high, and medium incident rows, and a set of shared utility classes (`soc-feed-item`, `incident-row-critical`, `incident-row-high`, `incident-row-medium`, `ai-action-btn`) was introduced in the global stylesheet to enforce consistent styling of actionable SOC feed elements across all modules.
+Security and governance controls are embedded as core functions, including secure session management, legal-policy acceptance gating, audit and forensic logging, rate limiting, and service-health monitoring. Cross-platform delivery across Web, Desktop, and Android maintains consistent behavior and policy enforcement across runtime environments.
 
 
 
@@ -213,174 +148,174 @@ Objectives
 
 General Objective
 
-To design, implement, and validate SENTINEL as a multi-platform Security Operations Center (SOC) platform that unifies personnel deployment, resource control, incident response, and command-level monitoring across Web, Desktop (Tauri), and Mobile (Capacitor Android) runtime targets.
+To design, implement, and validate SENTINEL as a multi-platform security operations platform that unifies personnel deployment, governance controls, incident response, and command monitoring across web, desktop, and mobile environments.
 
 Specific Objectives
 
-1. Implement a complete account and identity lifecycle module for all users.
+1. Establish a complete and secure account and identity lifecycle for all users.
 
-a. Provide user registration, email verification, resend verification, and secure login.
+a. Enable account registration, identity verification, and secure sign-in.
 
-b. Implement forgot password, reset code verification, password reset, and guard approval gating for controlled account activation.
+b. Support controlled account activation through recovery, verification, and approval checks.
 
-c. Support profile management, profile photo update/delete, and secure session continuity through refresh-token rotation and logout revocation flows.
+c. Maintain profile records and secure session continuity through managed renewal and sign-out controls.
 
-2. Implement centralized personnel administration and approval workflows.
+2. Operationalize centralized personnel administration and approval governance.
 
-a. Manage users by role: superadmin, administrator, supervisor, and guard.
+a. Manage personnel by role: superadmin, administrator, supervisor, and guard.
 
-b. Provide pending guard approval queues and approval status updates.
+b. Maintain guard approval queues and approval status tracking.
 
-c. Support user update, deactivation/delete, role/status filtering, and guard-specific listings.
+c. Support personnel record maintenance, status management, and role-based listings.
 
-3. Implement scheduling, attendance, and workforce continuity automation.
+3. Strengthen scheduling, attendance, and workforce continuity processes.
 
-a. Create, update, delete, and list shifts with conflict-aware assignment.
+a. Manage shift schedules with conflict-aware assignment.
 
-b. Enable guard check-in/check-out with attendance history tracking.
+b. Capture attendance events with traceable history.
 
-c. Detect no-shows, request replacements, accept replacements, and manage guard availability.
+c. Detect no-show events, coordinate replacements, and manage guard availability.
 
-4. Implement firearm inventory, issuance, and custody control.
+4. Enforce firearm inventory, issuance, and custody accountability.
 
-a. Provide full firearm CRUD with serial/model/caliber/status tracking.
+a. Maintain comprehensive firearm records, including identity and status attributes.
 
-b. Implement firearm issuance, return, active allocations, and overdue allocation monitoring.
+b. Record issuance and return activities, active allocations, and overdue custody cases.
 
-c. Maintain firearm maintenance schedules, pending maintenance, and completion records.
+c. Track firearm maintenance schedules, pending work, and completion records.
 
-5. Implement permit and training compliance management.
+5. Sustain permit and training compliance management.
 
-a. Create and retrieve guard permits, including expiring and revoked permits.
+a. Maintain permit records, including expiring and revoked credentials.
 
-b. Support auto-expire permit processing for compliance enforcement.
+b. Apply automated permit-expiry processing for compliance enforcement.
 
-c. Manage training records, guard training history, and expiring training alerts.
+c. Maintain training histories and alerts for expiring qualifications.
 
-6. Implement armored vehicle fleet and trip operations.
+6. Manage armored vehicle fleet and trip operations.
 
-a. Provide armored car CRUD, issuance/return, and active allocation monitoring.
+a. Maintain armored vehicle records, allocation, return, and active-use monitoring.
 
-b. Manage driver assignment/unassignment and driver-vehicle linkage.
+b. Manage driver assignment and driver-vehicle linkage.
 
-c. Support trip creation, trip status updates, trip completion, and trip detail/history views.
+c. Document trip lifecycles from assignment to completion with historical traceability.
 
-d. Manage vehicle maintenance scheduling, completion, and maintenance records.
+d. Track vehicle maintenance schedules, completion, and service records.
 
-7. Implement mission operations and merit-based performance evaluation.
+7. Support mission operations and merit-based performance evaluation.
 
-a. Enable mission assignment and mission retrieval for operational deployment.
+a. Support mission assignment and mission monitoring for deployment execution.
 
-b. Calculate guard merit scores and provide ranked guard outputs.
+b. Generate merit scores and ranked guard results for staffing decisions.
 
-c. Support client evaluation submission, guard evaluation retrieval, and overtime candidate identification.
+c. Capture client evaluations, review guard performance evidence, and identify overtime candidates.
 
-8. Implement support, communication, and notification services.
+8. Deliver support, communication, and notification services.
 
-a. Enable support ticket creation and guard ticket retrieval workflows.
+a. Provide support ticket submission and role-appropriate case review.
 
-b. Provide user notifications, unread counts, mark-read/mark-all-read, and delete actions.
+b. Provide user notifications with status tracking and message management controls.
 
-c. Support alerting for operational events and decision-critical updates.
+c. Issue timely alerts for operational events and decision-critical updates.
 
-d. Provide a unified role-centric action inbox and workflow timeline so each role can review prioritized work items and operational history from a single dashboard entry point.
+d. Provide a unified role-based action inbox and workflow timeline for prioritized tasks and operational history.
 
-9. Implement incident management and real-time tracking intelligence.
+9. Strengthen incident management and real-time movement intelligence.
 
-a. Provide incident creation, active incident retrieval, and incident status updates.
+a. Support incident recording, active incident monitoring, and status progression.
 
-b. Implement guard heartbeat, tracking point capture, and map data endpoints.
+b. Capture guard presence signals, location points, and map-linked operational context.
 
-c. Provide client site CRUD and shift proximity alert checks.
+c. Maintain client-site records and monitor shift proximity conditions.
 
-d. Enable real-time websocket tracking stream for live operational visibility.
+d. Provide live tracking updates for continuous operational visibility.
 
-e. Provide guard movement-intelligence endpoints for path replay, historical patrol reconstruction, and active guard roster extraction.
+e. Support movement analysis through path replay, patrol reconstruction, and active guard roster views.
 
-f. Detect geofence enter/exit transitions against client-site boundaries and surface leadership alerts for movement anomalies.
+f. Detect geofence entry and exit events at client-site boundaries and raise anomaly alerts for leadership.
 
-g. Provide dedicated geofence management endpoints so each site can maintain configurable radius or polygon zones.
+g. Support site-specific geofence configuration using radius or polygon boundaries.
 
-10. Implement analytics, predictive intelligence, and decision support.
+10. Provide analytics, predictive intelligence, and decision support.
 
-a. Provide analytics overview, trends, and guard reliability endpoints.
+a. Present operational overviews, trend indicators, and guard reliability insights.
 
-b. Implement predictive alerts for permit expiry, maintenance risk, no-show patterns, and guard capacity risk.
+b. Generate predictive alerts for permit expiry, maintenance risk, no-show patterns, and guard capacity risk.
 
-c. Provide AI (deterministic) services for guard absence risk, replacement suggestions, vehicle maintenance risk, incident classification, and incident summarization.
+c. Apply deterministic AI assistance for guard absence risk, replacement suggestions, maintenance risk, incident classification, and incident summarization.
 
-11. Implement real-time location monitoring and map-based operations.
+11. Enable real-time location monitoring and map-based operations.
 
-a. Provide OpenStreetMap-based visualization of guards, routes, and client sites.
+a. Visualize guards, routes, and client sites through map-based operational displays.
 
-b. Implement live tracking updates through websocket streaming.
+b. Provide continuous live-tracking updates for command monitoring.
 
-c. Support map data retrieval and proximity-based operational alerts.
+c. Support map-linked situational review and proximity-based operational alerts.
 
-12. Implement governance, security, and auditability mechanisms.
+12. Institutionalize governance, security, and auditability mechanisms.
 
-a. Maintain write-request audit logs for critical actions.
+a. Maintain audit logs for critical operational actions.
 
-b. Support session/token-based authenticated API access, presence/last-seen tracking, and refresh-session revocation controls.
+b. Enforce authenticated access, presence monitoring, and session revocation controls.
 
-c. Provide health-check endpoints, authentication throttling, and API rate-limiting controls for operational readiness and abuse protection.
+c. Sustain service readiness and abuse protection through health monitoring, authentication throttling, and rate controls.
 
-d. Persist authorization-failure audit records for API-wide denied requests (`401/403`), including write-route denials, to strengthen forensic accountability.
+d. Preserve authorization-failure records, including denied access events, to strengthen forensic accountability.
 
-e. Provide forensic audit intelligence endpoints for filtered timeline retrieval, per-user activity reconstruction, and anomaly detection (failed bursts, activity spikes, suspicious source-IP patterns).
+e. Provide forensic audit intelligence for filtered timelines, per-user activity reconstruction, and anomaly detection.
 
 13. Implement and validate cross-platform runtime delivery.
 
-a. Deliver the web runtime for browser-based command and operational access.
+a. Deliver a web runtime for browser-based command and operational access.
 
-b. Deliver the desktop runtime through Tauri packaging for command-center deployment.
+b. Deliver a desktop runtime through Tauri packaging for command-center deployment.
 
-c. Deliver the mobile runtime through Capacitor Android packaging for field operations.
+c. Deliver a mobile runtime through Capacitor Android packaging for field operations.
 
-d. Validate cross-platform API connectivity and authentication/session behavior across Web, Desktop, and Android targets.
+d. Validate consistent platform behavior, connectivity, and session governance across Web, Desktop, and Android targets.
 
-e. Enforce release-pipeline quality gates (frontend and backend tests), immutable action pinning, and signed-only Android release artifact generation.
+e. Enforce controlled release governance and verified mobile distribution.
 
-14. Implement legal and policy compliance enforcement.
+14. Enforce legal and policy compliance.
 
-a. Require first-use acceptance of Terms of Agreement, Privacy Policy, and Acceptable Use Policy before protected module access.
+a. Require first-use acceptance of Terms of Agreement, Privacy Policy, and Acceptable Use Policy before protected access.
 
-b. Persist legal acceptance metadata (timestamp, policy version, requester IP, and user agent) in the backend user record.
+b. Preserve legal acceptance metadata, including timestamp, policy version, requester IP, and user agent.
 
-c. Enforce legal-consent checks in backend authorization middleware while preserving bootstrap-safe paths for consent and logout.
+c. Enforce legal-consent checks while preserving safe access paths for consent and logout.
 ---
 
 Scope and Limitations
 
 Scope
 
-The SENTINEL system is a web-based platform intended to strengthen operational control and compliance for a private security agency. The system is scoped to security agency operations and the regulatory environment set by the Private Security Services Industry Act (Republic Act No. 11917, 2022).
+The SENTINEL system covers the implemented operational, compliance, and governance requirements of a private security agency within the regulatory context of Republic Act No. 11917 (2022). The scope includes web-first delivery with desktop and Android runtime support, role-governed workflows, and centralized operational records for command and field use.
 
 Data
 
-- Personnel profiles, role/approval data, licensing and permit records, training records, schedules, attendance logs, availability status, and performance/merit metrics.
-- Firearm inventory, firearm allocations, firearm maintenance records, and firearm permit compliance data.
-- Armored vehicle assets, car allocations, driver assignments, trip records, and vehicle maintenance history.
-- Missions, incidents, support tickets, notifications, predictive alerts, tracking/map points, and audit/access logs.
-- Geofence transition events, site geofence zone definitions (radius/polygon), movement-history path records, and anomaly-evidence metadata used for command investigation and post-incident review.
-- Authentication lockout records, refresh-session lifecycle records, and audit source-IP traces for security monitoring and accountability.
-- Legal-consent records including acceptance timestamp, policy version, requester IP, and user-agent evidence.
+- Personnel profiles, role and approval data, licensing and permit records, training records, schedules, attendance logs, availability status, and merit indicators.
+- Firearm inventory records, allocations, maintenance history, and permit-compliance data.
+- Armored vehicle assets, allocations, driver assignments, trip records, and maintenance history.
+- Missions, incidents, support tickets, notifications, predictive alerts, location records, and audit logs.
+- Geofence events, site geofence definitions, movement-history records, and anomaly evidence for post-incident review.
+- Authentication lockout records, session lifecycle records, and audit source-IP traces for security accountability.
+- Legal-consent records, including acceptance timestamp, policy version, requester IP, and user-agent evidence.
 
 Process
 
-- Account lifecycle workflows including registration, email verification, authentication, password reset, and profile management.
+- Account lifecycle workflows, including registration, verification, authentication, recovery, and profile maintenance.
 - Approval workflows for newly registered guards before operational access is granted.
-- Role-based dashboard workflows for command center, approvals, analytics, calendar operations, and audit-log monitoring.
-- Role-based action-inbox workflows that consolidate urgent tasks, approvals, incidents, shift issues, and workflow history into a shared dashboard entry point with role-specific data mappings.
-- Guard field workflows now use a mission-focused interface with persistent action controls (`Report Incident`, `Check In/Check Out`, `View Instructions`), bottom navigation, and isolated map access to reduce interaction friction under operational pressure.
-- Shift scheduling, attendance validation, no-show detection, replacement request/acceptance, and supervisor oversight.
-- Firearm issuance/return workflows with permit validation, maintenance scheduling, and custody traceability.
-- Vehicle allocation, driver assignment, trip lifecycle management, and preventive/corrective maintenance tracking.
-- Incident reporting, support ticket handling, notification delivery, and real-time operations tracking.
-- Guard movement reconstruction workflows including active-guard roster monitoring, historical trail replay, and geofence transition escalation.
-- Audit forensics workflows including timeline filtering, actor-specific activity reconstruction, anomaly signal review, and operational story sequencing.
-- Session hardening workflows including refresh-token rotation, logout revocation, and lockout persistence.
-- Legal confirmation workflows including policy review links, mandatory acceptance capture, and protected-route access gating until accepted.
+- Role-based dashboards for command monitoring, approvals, analytics, scheduling, and audit review.
+- Role-based action-inbox workflows for prioritized tasks, approvals, incidents, shift issues, and workflow history.
+- Mission-focused guard workflows for field reporting, attendance actions, instructions review, and map-supported navigation.
+- Shift scheduling, attendance validation, no-show detection, replacement coordination, and supervisor oversight.
+- Firearm issuance and return workflows with permit validation, maintenance scheduling, and custody traceability.
+- Vehicle allocation, driver assignment, trip lifecycle management, and preventive and corrective maintenance tracking.
+- Incident reporting, support ticket handling, notification delivery, and live operational monitoring.
+- Guard movement reconstruction, including active roster monitoring, historical trail replay, and geofence escalation.
+- Audit forensics workflows, including timeline filtering, actor-specific activity reconstruction, anomaly review, and case sequencing.
+- Session security workflows, including renewal control, sign-out revocation, and lockout persistence.
+- Legal confirmation workflows, including policy review, mandatory acceptance capture, and access gating until accepted.
 
 People
 
@@ -392,16 +327,16 @@ Technology
 - Cross-platform runtime deployment for Web, Desktop (Tauri), and Mobile Android (Capacitor).
 - React + TypeScript frontend and Rust + Axum backend services.
 - Centralized PostgreSQL database with relational integrity, auditability, and role-based data control.
-- Dockerized deployment and API-driven architecture with websocket streaming and polling fallback for tracking views.
+- Dockerized deployment and service-based architecture with real-time tracking synchronization.
 
 Limitation of the Study
 
-- The system does not integrate with external payroll, HR, or government licensing systems.
-- Dedicated hardware-grade vehicle telematics integration is not yet implemented; current tracking relies on application-provided location updates and available device/network conditions.
-- AI/predictive outputs are decision-support recommendations and do not autonomously execute final operational actions.
-- Direct integration with third-party hardware ecosystems (CCTV, IoT sensors, access control turnstiles) is not included.
-- Offline-first field operation is limited; core workflows depend on network/API availability.
-- Native wrapper scope is currently limited to Windows desktop and Android; iOS and macOS deployment targets are not included in the present implementation.
+- The implementation does not include direct integration with external payroll, HR, or government licensing systems.
+- Location intelligence is derived from application-generated updates; dedicated hardware telematics is outside the study scope.
+- AI and predictive outputs are assistive and do not replace human command decisions.
+- Direct interoperability with third-party security hardware ecosystems (for example CCTV, IoT sensors, and access-control turnstiles) is excluded.
+- Field operations remain dependent on network availability; full offline-first operation is beyond current coverage.
+- Native wrapper deployment in this study is limited to Windows desktop and Android; iOS and macOS are excluded.
 ---
 
 Review of Related Literature/Studies/Systems
@@ -418,7 +353,7 @@ transition  in  over  fifty  years.  The  enactment  of  the  Private  Security 
 
 industry toward a regime of "Professionalized Accountability." According to Jur.ph (2025),
 
-the lawâ€™s Implementing Rules and Regulations (IRR) mandate that Private Security Agencies
+the law's Implementing Rules and Regulations (IRR) mandate that Private Security Agencies
 
 (PSAs) maintain highly accurate, digitized records of License to Exercise Security Profession
 
@@ -569,7 +504,6 @@ legally defensible Audit Logs required by the National Cybersecurity Plan 2023-2
 2024), ensuring that every asset movement is tied to a verifiable digital identity.
 
 
-
 ---
 
 Related Studies and/or Systems
@@ -636,8 +570,6 @@ approximately  20%.  This  efficiency  is  primarily  attributed  to  the  reduc
 
 administrative  burdens  through  automated  compliance  tracking  and  real-time  intelligence
 
-feeds (TrackTik, 2025).
-
 
 
 ---
@@ -646,23 +578,27 @@ Guardhouse
 
 Figure 2. Guardhouse
 
-Guardhouse (2026) addresses the specific administrative "overload" that has become
+Guardhouse  (2026),  in  contrast,  is  engineered  around  a  model  of  "Administrative
 
-a  measurable  barrier  to  performance  in  the  mid-2020s.  Research  from  NODE  Magazine
+Compression," where the goal is to streamline repetitive workflow to minimize cognitive load
 
-(2026) indicates that security employees often lose an average of 15 hours per week to routine
+on  supervisors.  NODE  Magazine  (2026)  reports  that  this  platform  architecture  has  been
 
-administrative  tasks,  such  as  re-entering  data  across  fragmented  systems.  Guardhouse
+associated with a 17% reduction in daily administrative overhead for medium-sized security
 
-mitigates  this  by  unifying  scheduling,  GPS  tracking,  and  invoicing  into  a  streamlined
+firms. Its key differentiator lies in role-sensitive interface segmentation, where each user class
 
-workflow, reportedly reducing office-based administrative time by 40â€“60%. Its "Confidence
+(admin, supervisor, guard) is assigned a curated operational dashboard to avoid role confusion
 
-in  Compliance"  module  provides  a  specialized  framework  for  daily  license  verification,  a
+and cross-functional task spillover.
 
-logic that SENTINEL  adapts  to  specifically meet  the stringent  requirements  of RA 11917
+In a legal context, Guardhouse's verification workflows align with the compliance intent
 
-(GetApp, 2026).
+of Republic Act No. 11917 by reducing undocumented assignment overrides and unvalidated
+
+personnel deployment. According to GetApp (2026), agencies using this model reported better
+
+audit-readiness due to centralized event logging and role-bound authorization structures.
 
 
 
@@ -672,21 +608,27 @@ MySecuritas
 
 Figure 3. MySecuritas
 
-Securitas  "MySecuritas"  (2026)  represents  the  industry's  shift  toward  "Situational
+MySecuritas  (2026)  demonstrates  how  integrated  digital  supervision  can  influence
 
-Understanding"  and  proactive  risk  management.  The  Securitas  2026  Global  Technology
+human behavior in security operations. According to Securitas Technology (2025), platforms
 
-Outlook  Report  identifies  that  the  rapid  advancement  of  generative  AI  for  contextual
+with embedded patrol validation and incident transparency contribute to measurable increases
 
-understanding  is  now  a  top  priority  for  30%  of  security  decision-makers  (Securitas
+in guard punctuality and post adherence. This aligns with findings from Respicio (2023), cited
 
-Technology, 2025). MySecuritas operationalizes this by providing a unified dashboard that
+via ResearchGate (2025), where guards under digitally monitored deployment showed higher
 
-transforms  disparate  incident  reports  into  actionable  statistics  and  trend  highlights.  This
+behavioral discipline due to increased traceability.
 
-allows  supervisors  to  identify  risk  patterns  before  they  escalate,  a  core  design  principle
+From  an  operational  psychology  standpoint,  this  supports  Expectancy  Theory,  where
 
-mirrored in SENTINEL's Performance Analytics Dashboard (Securitas, 2026).
+employees increase effort when they perceive that performance outcomes are visible and fairly
+
+evaluated  (Aguinis,  2022).  For  SENTINEL,  this  principle  validates  the  inclusion  of
+
+attendance-led  merit  scoring  and  alert-based  accountability  as  core  mechanisms  for
+
+maintaining reliable field presence.
 
 
 
@@ -696,35 +638,49 @@ Silvertrac Software
 
 Figure 4. Silvertrac Software
 
-Silvertrac Software (2026) is widely utilized for "Proof of Performance" and on-site
+Silvertrac  Software  (2026)  is  recognized  for  strong  Incident-Centric  Reporting
 
-accountability,  particularly  in  parking  and  property  management  environments.  While  it
+frameworks,  particularly  in  mobile  guard  workflows  for  patrol  logs,  activity  reports,  and
 
-excels in field reporting and checkpoint verification via mobile applications, its architectural
+exception handling. While effective for event documentation, Hardcat (2025) notes that many
 
-focus remains on incident management and officer accountability (Silvertrac Software, 2026).
+incident-first systems underperform in complex asset governance, particularly for weapons and
 
-Technical evaluations of generic guard management systems suggest a persistent "visibility
+high-risk equipment requiring strict chain-of-custody controls.
 
-gap" in specialized asset tracking; most platforms lack the deep relational logic required for
+This gap is critical for Philippine PSAs operating under RA 11917, where legal exposure
 
-a Digital Chain of Custody for high-risk assets like firearms and armored car fleets (Hardcat,
+extends beyond incident response into pre-incident compliance, such as firearm eligibility and
 
-2025).  SENTINEL  fills  this  niche  by  integrating  these  high-stakes  logistics,  traditionally
+assignment validation. SENTINEL addresses this by integrating firearm permit compliance and
 
-managed  in  siloed  armory  or  fleet  software,  into  the  primary  workforce  management
+asset allocation controls directly into operational workflows rather than treating them as isolated
 
-ecosystem.
+back-office processes.
 
 
 
 ---
 
-Across the reviewed literature, several recurring themes are evident. First, researchers consistently identify data integration as the foundation of operational visibility and faster decision cycles. Second, both Philippine and international studies report that fragmented tools and manual monitoring produce avoidable delays, compliance blind spots, and weak accountability. Third, while contemporary platforms now incorporate automated scheduling, attendance analytics, and command dashboards, most systems remain domain-limited and do not fully integrate workforce continuity, high-risk asset custody, and regulatory traceability in one architecture.
+The  collective  literature  establishes  a  clear  strategic  pattern:  modern  security
 
-Global solutions such as TrackTik and Guardhouse demonstrate the value of real-time accountability and centralized data ownership. However, these systems are not always aligned with the procedural and documentary specificity required under Philippine regulatory implementation.
+operations require systems that fuse compliance intelligence, workforce continuity, and real-
 
-Accordingly, the literature establishes a clear gap: an integrated, security-agency platform that combines workforce management, compliance monitoring, and command-level operational oversight with local legal alignment. SENTINEL addresses this gap by combining high-concurrency Rust/Axum services with modules for RA 11917-aligned licensing checks, firearm custody governance, and armored fleet operations. In doing so, it provides a unified enterprise workflow that links scheduling automation, regulatory verification, and real-time command visibility.
+time decision support. Existing platforms provide valuable modular solutions, but most remain
+
+domain-specific and do not fully align with the legal, operational, and accountability demands
+
+faced by local PSAs under the current Philippine regulatory framework.
+
+Thus,  the  identified  gap  is  not  the  absence  of  digital  tools,  but  the  absence  of  an
+
+integrated, legally synchronized, and operationally predictive system that combines personnel
+
+management, high-risk asset governance, and responsive incident intelligence in one coherent
+
+architecture. SENTINEL is designed to fill this gap by consolidating these capabilities into a
+
+single compliance-aware operational platform tailored to DASIA Tagum's real-world context.
 
 
 
@@ -944,23 +900,17 @@ CHAPTER 2
 
 METHODOLOGY
 
-Methodology in this study is defined as the structured set of approaches, methods, tools, and execution procedures used to plan, build, integrate, validate, and harden the implemented system.
+This study adopted Agile methodology, specifically Scrum, to deliver SENTINEL through incremental and testable capability sets.
 
-The development methodology used for SENTINEL is iterative and Agile-inspired, organized through feature-based increments rather than a single linear build. Each increment combined planning, implementation, integration, and review so that operational modules were delivered and validated in usable slices. This approach was selected because SENTINEL contains tightly coupled domains, including personnel, assets, tracking, incidents, and analytics, that require frequent cross-module verification.
+Development was organized into successive sprints that covered planning, implementation, integration, review, and refinement. Each sprint used prioritized backlog items tied to operational risk and institutional requirements.
 
-Planning activities began with requirements consolidation, role-mapping, and module prioritization. The team translated these into implementation batches covering authentication and approvals, scheduling and attendance, firearms and fleet operations, incident/support workflows, analytics dashboards, tracking, and AI-assisted operational intelligence. Platform targets (web, desktop, and mobile) were included in planning to prevent late-stage portability redesign.
+Sprint planning and backlog refinement emphasized high-risk domains, including account governance, workforce continuity, asset compliance, incident coordination, movement monitoring, and decision-support features. Regular integration checkpoints ensured consistency of workflows, system rules, and data behavior.
 
-Development was executed through frontend-backend parallel work with recurring integration checkpoints. Frontend components and hooks were built alongside backend handlers, middleware, and service logic, then connected through authenticated API contracts. This feature-based integration pattern reduced interface drift and enabled earlier discovery of role-permission, payload, and workflow defects.
+Validation was embedded throughout the Scrum cycle through scenario-based testing, integration checks, role-permission verification, and cross-platform review. Sprint reviews documented completed increments, while acceptance checks verified that each increment satisfied defined criteria before carry-forward.
 
-Recent iterations specifically expanded two intelligence-driven capability streams: (1) guard movement intelligence through guard-history/path and active-roster APIs with geofence enter/exit persistence; and (2) forensic audit intelligence through timeline filtering, per-user activity reconstruction, and anomaly grouping endpoints. These increments were further extended with dedicated geofence-management APIs (configurable radius/polygon zones per site) and validated using endpoint-level integration tests that exercised role-based access scenarios across guard, supervisor, and admin roles.
+Release readiness was evaluated through structured quality checks before each major milestone to support controlled rollout decisions and reduce operational disruption.
 
-Testing and refinement were continuous throughout implementation. The team performed module-level checks, cross-role scenario testing, API-contract verification, and runtime build validation for web, desktop, and Android targets. Security and reliability refinements, including lockout persistence, refresh-session revocation, authorization enforcement, and rate limiting, were integrated as iterative hardening tasks. Current validation includes passing Rust integration tests for tracking and audit role gates, successful geofence CRUD path checks, healthy backend localhost health responses, and successful frontend production builds after audit-route lazy loading and chunk splitting. The latest verified execution pass before the current hardening cycle confirmed successful full backend test execution (`cargo test`), successful frontend unit tests (`5/5`), and healthy backend/database container startup through Docker Compose. The current cycle then added dashboard render-containment and release-policy alignment, with remaining runtime command verification bounded by the same toolchain-availability constraints documented in this report.
-
-The most recent hardening increment added backend-enforced legal consent compliance. Consent acceptance now calls dedicated API endpoints, persists acceptance evidence in PostgreSQL, propagates consent state through JWT claims, and is enforced by authenticated middleware prior to protected route access. This prevented local-only consent drift and aligned legal gating with server-side authority.
-
-Release-readiness refinement added unified build-time version propagation and release endpoint configuration so packaged desktop/mobile clients can detect newer published releases and notify users with controlled update prompts. The automated release pipeline now builds and publishes versioned web, desktop, and Android artifacts from a single semantic-version source, generates release notes directly from `CHANGELOG.md`, enforces signed Android packaging for release execution, and gates artifact jobs behind a dedicated frontend/backend quality stage.
-
-Deployment considerations were addressed through Dockerized service orchestration, PostgreSQL-backed persistence, and release-oriented build scripts for cross-platform distribution. This ensured that the methodology did not end at coding, but covered operational readiness and maintainability for real-world SOC usage.
+Overall, the methodology shows an Agile approach in which reliability, accountability, security, and usability were developed together with functional scope.
 
 Figure 4. Scrum Model
 
@@ -968,41 +918,43 @@ Technical Background
 
 Technologies to be Used in the System
 
-SENTINEL is implemented as a web-first integrated security operations platform with desktop and mobile runtime wrappers. Technology selection was treated as an architectural decision anchored in implementation requirements: role-based dashboards, secure API contracts, high-concurrency backend execution, traceable relational data, real-time tracking, and cross-platform delivery without codebase duplication. The proponents used the following technologies in the current implementation:
+SENTINEL is an integrated security operations platform delivered across web, desktop, and mobile environments. Technology selection was guided by the need for secure workflows, reliable records, real-time situational awareness, and cross-platform consistency. The following technologies were used in the implemented system:
 
-1. React + TypeScript: Used to build reusable, role-aware UI components and dashboard modules with strict typing. Compared with plain JavaScript React, TypeScript was selected because it reduces integration defects in API contracts and role-based state handling.
+1. React + TypeScript: Used to implement reusable, role-aware interface components and dashboard modules. Type safety improves consistency in data handling and interface behavior.
 
-	The latest interface refinement extends this approach through reusable inbox primitives (`ActionInbox` and `WorkflowTimeline`) that are composed into guard, supervisor, admin, and superadmin dashboard panels without duplicating presentation logic.
+	Reusable inbox and workflow-timeline patterns are applied across guard, supervisor, administrator, and superadmin views to preserve consistency and reduce duplicated logic.
 
-2. Vite: Used for fast local startup and production build pipelines. Compared with older Webpack-heavy defaults, Vite provides faster feedback for feature-by-feature iteration in dashboard-heavy development.
+2. Vite: Used for development startup and production build generation to support rapid iteration.
 
-3. Tailwind CSS: Used for utility-driven, responsive interface implementation across command center, operations, and resource modules. Compared with prebuilt component frameworks, Tailwind was selected to maintain tighter control over SOC-specific visual patterns and state-based styling.
+3. Tailwind CSS: Used for responsive, utility-based styling across command, operations, and resource modules.
 
-4. Leaflet + OpenStreetMap: Used for operational map rendering, live marker visualization, and client-site management. Compared with paid or quota-constrained map platforms, this combination supports implementation flexibility and cost control for tracking-intensive views.
+4. Leaflet + OpenStreetMap: Used for map rendering, live marker visualization, and client-site geospatial views.
 
-5. Rust + Axum: Used for backend API handlers, middleware, and service orchestration. Compared with dynamically typed backend stacks, Rust was selected for memory safety and predictable runtime behavior, while Axum supports asynchronous request handling and middleware-driven security enforcement.
+5. Rust + Axum: Used for backend services, middleware, and orchestration to support secure and reliable asynchronous processing.
 
-6. PostgreSQL: Used as the central transactional database for users, approvals, schedules, attendance, firearms, vehicles, incidents, notifications, tracking points, AI outputs, and audit logs. Compared with document-first databases, PostgreSQL was selected because relational constraints and SQL querying are necessary for compliance, reporting, and cross-module consistency.
+6. PostgreSQL: Used as the centralized transactional database for personnel, operations, asset, incident, movement, analytics, and audit records.
 
-7. Docker + Docker Compose: Used to standardize local backend/database orchestration and deployment parity. Compared with manual host setup, containerized orchestration reduces environment drift and improves reproducibility.
+7. Docker + Docker Compose: Used to standardize service orchestration and reduce environment inconsistency across development and deployment contexts.
 
-8. JWT Authentication with access and refresh tokens: Used for role-scoped API access, session continuity, refresh rotation, and logout revocation. Compared with short-lived token-only or purely server-session approaches, the implemented model provides stateless API interoperability with controlled refresh-session governance.
+8. Secure token-based authentication: Used to enforce protected access and stable session management across user roles.
 
-9. WebSocket + polling fallback: Used for real-time tracking snapshots with continuity under unstable transport conditions. Compared with polling-only, websocket streaming reduces latency; compared with websocket-only, polling fallback improves operational resilience.
+9. Real-time tracking transport: Used to maintain live operational updates, with continuity measures for unstable connectivity.
 
-10. Forensic audit intelligence endpoint design: Used to transform raw audit logs into timeline, user-activity, and anomaly-oriented command data. Compared with flat log listing only, this pattern improves investigation speed and supports command storytelling without changing underlying compliance records.
+10. Forensic audit intelligence services: Used to transform audit records into timeline and anomaly views for investigative review.
 
-11. Capacitor: Used to package the web frontend for Android field deployment. Compared with fully separate native Android codebases, Capacitor preserves feature parity with lower maintenance overhead.
+11. Capacitor: Used to package the web frontend for Android field deployment.
 
-12. Tauri: Used to package the same frontend for Windows desktop command-center deployment. Compared with heavier desktop wrappers, Tauri was selected for lighter runtime footprint and stronger security controls.
+12. Tauri: Used to package the web frontend for Windows desktop command-center deployment.
 
-13. Resend + managed deployment/tooling stack (Railway, GitHub): Resend is used for transactional account workflows (verification and reset flows), while Railway and GitHub pipelines support deployment and release operations. Compared with ad hoc SMTP and manual release processes, this stack improves delivery consistency and operational manageability.
+13. Resend with managed delivery tooling: Used for account-related messaging and controlled deployment workflows.
 
-14. GitHub Pages documentation portal + legal-policy artifacts: Documentation delivery now includes dedicated pages for download channels, feature coverage, security controls, and architecture references, plus repository-level legal policy documents (Terms of Agreement, Privacy Policy, Acceptable Use Policy). Compared with scattered notes, this provides a consistent release-ready operator and compliance reference.
+14. Web-based documentation portal: Used to publish release references, architecture summaries, and legal policy documents.
+
+15. Android release signing tooling: Used to generate, encode, and manage the release keystore required for signed APK and AAB distribution, supporting controlled and verifiable release governance for the Android deployment target.
 
 Figure 5. Work Breakdown Structure
 
-The Work Breakdown Structure (WBS) models the project into major deliverables and sub-deliverables to support schedule control, ownership clarity, and progress tracking.
+The Work Breakdown Structure (WBS) organizes the project into major deliverables and sub-deliverables to support schedule control, responsibility assignment, and progress monitoring.
 
 WBS Diagram (Mermaid Model)
 
@@ -1120,7 +1072,7 @@ WBS Diagram (Text Model)
 
 Gantt Chart of Activities
 
-The project timeline is organized into phased milestones covering initiation, planning, requirements gathering, sprint-based development, integration, testing, documentation, and defense preparation. Activities are sequenced chronologically so that each completed output becomes an input to the subsequent phase.
+The project timeline is organized into phased milestones covering initiation, planning, requirements consolidation, Agile sprint development, integration, testing, documentation, and defense preparation. Activities are sequenced so that each completed output serves as an input to the next phase.
 
 Figure 6. Gantt Chart of Activities
 
@@ -1187,7 +1139,7 @@ Activity: Final review, defense preparation, and turnover
 
 Calendar of Activities
 
-The calendar of activities operationalizes the same phase sequence defined in the WBS and Gantt plan by specifying each period's objective, involved personnel, and required resources.
+The calendar of activities operationalizes the WBS and Gantt sequence by specifying each period's objective, personnel involvement, and resource requirements.
 
 1. February - Project initiation and problem definition.
 Purpose: Define project boundaries, objectives, and target operational issues.
@@ -1200,17 +1152,17 @@ Persons involved: Proponents, operations users, adviser.
 Resources needed: Interview guides, requirement templates, process notes.
 
 3. April - System architecture and interface planning.
-Purpose: Define architecture, database model, API scope, and storyboard screens.
+Purpose: Define system architecture, data model, and storyboard screens.
 Persons involved: Proponents and adviser.
 Resources needed: ERD tools, wireframe tools, architecture notes.
 
-4. May - Sprint 1: Authentication, RBAC, and approvals.
-Purpose: Implement secure account lifecycle, role controls, and approval workflows.
+4. May - Sprint 1: Authentication, role governance, and approvals.
+Purpose: Implement secure account lifecycle, access governance, and approval workflows.
 Persons involved: Proponents.
 Resources needed: VS Code, Rust toolchain, Node.js, PostgreSQL, Docker.
 
 5. June - Sprint 2: Scheduling, attendance, and replacement.
-Purpose: Implement shift management, check-in/check-out, no-show detection, and replacement flows.
+Purpose: Implement shift management, attendance recording, no-show detection, and replacement workflows.
 Persons involved: Proponents.
 Resources needed: API test scripts, schedule datasets, integration logs.
 
@@ -1225,7 +1177,7 @@ Persons involved: Proponents.
 Resources needed: Fleet/trip datasets, incident scenarios, runtime logs.
 
 8. September - Sprint 5: Analytics, AI, tracking, and cross-platform packaging.
-Purpose: Implement dashboards, predictive modules, map tracking, websocket flows, and web/desktop/mobile build alignment.
+Purpose: Implement dashboards, predictive modules, map tracking, real-time monitoring, and cross-platform build alignment.
 Persons involved: Proponents.
 Resources needed: Analytics test data, AI validation scenarios, platform build toolchains.
 
@@ -1248,7 +1200,7 @@ Resources
 
 Hardware Requirements (Recommended)
 
-Table 1 presents practical hardware requirements for both development and operational deployment of the currently implemented SENTINEL system.
+Table 1 presents the recommended hardware requirements for development and operational deployment of the implemented SENTINEL system.
 
 Table 1: Hardware Requirements
 
@@ -1268,7 +1220,7 @@ Field Endpoints: Android smartphones/tablets with GPS and reliable mobile data/W
 
 Software Requirements
 
-The software stack is divided into development-time requirements and runtime requirements to reflect actual implementation and deployment behavior.
+The software stack is grouped into development-time and runtime requirements to reflect implementation and deployment conditions.
 
 Development Requirements
 
@@ -1288,6 +1240,8 @@ Development Requirements
 
 8. Playwright for browser-based smoke and role-navigation validation, including verification that Inbox navigation and role-specific dashboard entry points render correctly across supported operational roles.
 
+9. Android keystore management tooling (PowerShell-based) for generating, encoding, and securely distributing Android release signing credentials required for the Capacitor mobile deployment target.
+
 Runtime Requirements
 
 1. Modern web browser (Chromium-based or equivalent) for the web deployment target.
@@ -1298,39 +1252,27 @@ Runtime Requirements
 
 4. Network connectivity between client runtimes and backend API services, including websocket access for live tracking views.
 
-5. Stable API reachability for audit-intelligence endpoints (`/api/audit/logs`, `/api/audit/user-activity/:id`, `/api/audit/anomalies`) to support command-level forensic visualization.
+5. Stable connectivity to the system's audit and forensic services to support command-level investigation and operational review.
 
 Requirements Analysis
 
-Requirement analysis in this project follows a client-problem lens that clarifies who is affected, what business activity is disrupted, where the workflow operates, when failures typically occur, and how existing procedures behave under real operational conditions.
+Requirement analysis in this study used an operational risk lens to determine who is affected, which activities are vulnerable, and where existing procedures create delays, compliance gaps, or weak accountability.
 
-The requirements baseline for SENTINEL was defined from observed private-security pain points: fragmented coordination, delayed visibility, compliance exposure, and weak traceability for sensitive asset workflows. Based on current implementation, the analysis prioritizes role-governed access, real-time operational awareness, and auditable process execution across personnel, equipment, vehicle, incident, and analytics domains.
+The requirements baseline was derived from observed agency needs: role-governed access, workforce continuity, asset custody control, incident coordination, real-time monitoring, and command-level decision support. Emphasis was placed on requirements that strengthen traceability and reduce delayed intervention in field operations.
 
-As implementation matured, requirements depth was extended from basic monitoring to decision-grade intelligence outputs. This introduced explicit contracts for guard movement reconstruction (active roster, path replay, geofence transitions) and forensic audit interpretation (filtered timeline, actor activity history, anomaly grouping), while preserving backward compatibility with existing dashboard and API behavior.
+Beyond basic data recording, the analysis includes intelligence-oriented requirements such as movement-history reconstruction, geofence transition awareness, and forensic audit interpretation. These requirements support proactive supervision and evidence-based review.
 
-Dashboard requirements were also refined around action compression and decision speed. Instead of forcing users to traverse separate pages to discover urgent work, the implemented frontend now requires a dedicated Inbox entry that maps role-specific operational events into a common priority model and a workflow timeline model. This requirement produced reusable inbox components plus role-targeted dashboard panels for guard, supervisor, administrator, and superadmin users.
+Usability requirements focus on reducing decision friction by consolidating urgent tasks and workflow context in role-specific command surfaces. Compliance requirements similarly treat policy acceptance as an enforceable access condition, with recorded legal metadata for institutional accountability.
 
-Compliance requirements were further expanded into enforceable legal-governance controls. Rather than relying on client-local acceptance flags alone, requirements now mandate backend-persisted legal acceptance evidence and middleware-level route gating so protected modules remain inaccessible until legal consent is recorded through authenticated API contracts.
+Security and continuity requirements include authenticated access, authorization control, session integrity, abuse protection, and traceable denial events. Real-time monitoring requirements prioritize resilient field visibility under variable network conditions.
 
-Technology and software selection was treated as a requirements decision, not only an implementation preference. For the frontend layer, React + TypeScript + Vite was selected to satisfy modular dashboard composition, strict role-based rendering, and rapid iteration. Angular was considered because it provides a full framework with built-in dependency injection and strong conventions; however, its heavier project structure was less aligned with the team's component-by-component delivery pace. Vue was considered for its simpler learning curve and progressive adoption model, but the existing codebase and shared component strategy were already established around React patterns. Plain JavaScript React was also considered, but TypeScript was chosen to reduce contract errors in role logic, API payload mapping, and cross-module state handling.
-
-For backend processing, Rust + Axum was selected to meet concurrency, security, and reliability requirements for authentication, approvals, tracking, and analytics endpoints. Node.js + Express was considered because of rapid API prototyping and broad ecosystem support, but the project prioritized compile-time safety and stricter runtime guarantees for security-sensitive operations. Java + Spring Boot was considered for enterprise-grade structure and mature tooling, yet it introduces a larger operational footprint and greater configuration overhead for this capstone scope. Go + Gin/Fiber was also considered for performance and simplicity, but Rust + Axum better matched the team's objective of memory-safe, middleware-centric API enforcement with fine-grained control.
-
-For persistence, PostgreSQL was selected because SENTINEL requires relational integrity across users, approvals, shifts, attendance, firearms, vehicles, incidents, and audit records. MySQL/MariaDB were considered because they are widely used relational systems, but PostgreSQL was preferred for stronger advanced SQL features, robust JSONB support, and flexible indexing for mixed transactional and analytical workloads. MongoDB was considered because of schema flexibility and rapid document modeling; however, SENTINEL's compliance and cross-entity constraints require strong relational guarantees that are more naturally enforced in PostgreSQL.
-
-For mapping and geospatial visualization, OpenStreetMap + Leaflet was selected to satisfy real-time operational map requirements, client-site management, and location marker rendering while retaining implementation control. Google Maps Platform was considered because it provides high-quality basemaps, geocoding, and route services, but usage-based billing and API quota sensitivity are less favorable for continuous monitoring views. Mapbox was considered because it offers strong vector map tooling and customizable styles, yet recurring usage costs and token-governed access create additional operational dependency for long-running dashboards. ArcGIS was considered for enterprise GIS depth, but its platform complexity exceeds current implementation needs. OpenStreetMap + Leaflet was therefore chosen for cost efficiency, integration flexibility, and direct alignment with the implemented web map architecture.
-
-For real-time operational visibility, websocket streaming with polling fallback was selected as a hybrid requirement. Server-Sent Events (SSE) was considered because it simplifies one-way streaming, but websocket transport better supports bidirectional session handling and live snapshot exchange patterns used in tracking views. Polling-only models were considered for implementation simplicity, but they introduce higher latency and unnecessary repeated requests for active command-center monitoring. The implemented websocket-plus-polling model balances responsiveness with continuity when persistent connections are interrupted.
-
-For deployment targets, the system uses a web-first core with Tauri (desktop) and Capacitor (Android) wrappers to meet cross-platform access requirements without maintaining separate business logic per platform. Electron was considered for desktop packaging because of mature tooling, but Tauri was preferred for a lighter runtime footprint and tighter security posture. React Native and fully native Android/desktop tracks were considered for platform-specific delivery, but they would require duplicate UI and integration maintenance. The chosen wrapper strategy preserves feature parity across Web, Desktop, and Android while reducing implementation divergence.
-
-For operational tooling, Docker/Compose, managed runtime deployment, and version-controlled release workflows were selected to satisfy reproducibility and maintainability requirements. Manual host-based installation was considered but increases environment drift and onboarding inconsistency. Alternative orchestration-heavy stacks (for example, immediate Kubernetes adoption) were considered excessive for current scale and capstone constraints. The selected tooling stack provides repeatable setup, traceable change history, and controlled release validation that directly supports the implemented system lifecycle.
+Cross-platform requirements require behavior parity across Web, Desktop, and Android environments, while release and maintainability requirements prioritize controlled distribution and verifiable deployment integrity.
 
 Requirements Documentation
 
-This requirements documentation establishes the implementation baseline of what the software currently does and enumerates functional and non-functional behavior together with storyboard-driven interface-flow references.
+This section documents the implemented functional and non-functional requirements that define the current behavior of the system.
 
-The documented requirements below reflect implemented behavior and verified module coverage.
+The requirements listed below are aligned with verified module coverage and storyboard-based interface flow expectations.
 
 Functional Requirements
 
@@ -1344,9 +1286,9 @@ FR-04. The system shall support firearm lifecycle management including records, 
 
 FR-05. The system shall support armored vehicle lifecycle management including records, driver assignment, trip operations, and maintenance tracking.
 
-FR-06. The system shall provide real-time tracking capabilities through map data endpoints, heartbeat ingestion, client-site management, and live websocket updates with polling fallback, with tracking-surface access restricted to supervisor and guard roles.
+FR-06. The system shall provide real-time tracking through live location updates, attendance signaling, and site-aware monitoring, with access limited to authorized supervisory and guard roles.
 
-FR-06a. The system shall provide guard-history, guard-path, and active-guard intelligence endpoints to support replay-driven monitoring and command decisions.
+FR-06a. The system shall provide movement-history and active-deployment insights to support replay-based monitoring and command decisions.
 
 FR-06b. The system shall detect and persist geofence enter/exit transitions and expose these alerts in live map snapshots for supervisory awareness.
 
@@ -1362,23 +1304,23 @@ FR-10. The system shall support cross-platform runtime delivery for web, Windows
 
 FR-11. The system shall provide audit-log visibility for authorized superadmin users, with filterable and paginated audit records.
 
-FR-11a. The system shall provide forensic audit intelligence endpoints for user-activity timelines and anomaly extraction to support investigative workflows.
+FR-11a. The system shall provide forensic audit intelligence for user-activity timelines and anomaly identification to support investigative workflows.
 
-FR-12. The system shall enforce legal consent acceptance through authenticated backend contracts and deny protected-route access until Terms of Agreement, Privacy Policy, and Acceptable Use Policy acceptance is recorded.
+FR-12. The system shall require recorded acceptance of Terms of Agreement, Privacy Policy, and Acceptable Use Policy before users can access restricted operational functions.
 
 FR-13. The system shall provide a release-oriented documentation portal that includes download channels, security profile, architecture references, and legal-policy links for web, desktop, and Android distribution.
 
 Non-Functional Requirements
 
-NFR-01. Security: The system shall enforce JWT-based authentication, RBAC authorization, approval-gated guard access, audit logging, lockout controls, and rate limiting for abuse resistance.
+NFR-01. Security: The system shall enforce strong authentication, role-based authorization, approval-gated access, auditable security events, account-protection controls, and abuse resistance measures.
 
-NFR-02. Performance: The system shall maintain responsive dashboard behavior and near-real-time update delivery via websocket and timed polling refresh cycles.
+NFR-02. Performance: The system shall maintain responsive dashboards and timely operational updates suitable for near-real-time supervisory decision-making.
 
 NFR-03. Usability: The system shall provide role-centered dashboards and modular UI navigation that reduce operator context switching during active operations.
 
 NFR-03a. Workflow Focus: The system shall minimize dashboard navigation friction by placing urgent operational work and timeline context behind a single Inbox entry for each supported role.
 
-NFR-04. Reliability: The system shall support robust session continuity through refresh-token persistence, rotation, and explicit logout revocation.
+NFR-04. Reliability: The system shall maintain robust session continuity, secure session renewal, and explicit session termination to protect ongoing operations.
 
 NFR-05. Scalability: The system architecture shall remain API-driven and modular so additional modules, integrations, and platform targets can be added without redesigning the full stack.
 
@@ -1386,7 +1328,7 @@ NFR-06. Compliance Traceability: Legal acceptance and policy governance events s
 
 Storyboard (Proposed Interface Flow)
 
-The storyboard presents how the software appears and behaves in user-facing operation. The sequence below defines the expected flow of major screens and role actions.
+The storyboard describes the user-facing flow of major screens and role actions in the implemented system.
 
 1. Login and Account Verification Screen
 
@@ -1429,11 +1371,11 @@ The storyboard presents how the software appears and behaves in user-facing oper
 
 Activity Diagrams (Role-Based)
 
-The following activity diagrams present the expected process flow per user role in the proposed system.
+The following activity diagrams present the process flow for each user role in the proposed system.
 
 Figure 8. Guard Activity Diagram
 
-Figure 8 illustrates the workflow of a Guard within the proposed system, beginning with account login and credential validation. After successful authentication, the Guard will access the role-based dashboard to view assigned schedules and duty details. When a shift is active, the Guard will perform check-in, execute assigned responsibilities, and complete check-out. If no active shift is detected, the Guard can still review notifications, submit support concerns, and update profile details as needed. The process will end with secure logout, ensuring that daily field operations and account access are properly closed.
+Figure 8 illustrates the Guard workflow from authentication to shift execution and secure logout. After login, the guard reviews assigned duty details, performs check-in and check-out when a shift is active, and may review alerts, submit support tickets, and update profile information as needed.
 
 ```mermaid
 flowchart LR
@@ -1457,7 +1399,7 @@ flowchart LR
 
 Figure 9. Supervisor Activity Diagram
 
-Figure 9 presents the process flow for the Supervisor role, starting from login and access to the supervision dashboard. The Supervisor will review schedules and attendance to detect no-shows or staffing gaps. When operational gaps are identified, the system will guide the Supervisor through replacement assignment and deployment confirmation. If no gap is found, the Supervisor can continue monitoring alerts, incidents, and team performance indicators. The workflow emphasizes timely intervention, operational continuity, and controlled session closure through logout.
+Figure 9 presents the Supervisor workflow, beginning with dashboard access and continuing through attendance review, gap detection, and replacement coordination. When no immediate staffing issue exists, the supervisor proceeds with alert, incident, and team monitoring tasks before secure session closure.
 
 ```mermaid
 flowchart LR
@@ -1477,7 +1419,7 @@ flowchart LR
 
 Figure 10. Administrator Activity Diagram
 
-Figure 10 outlines the activities of the Administrator, who manages core operational modules after authentication. From the Admin dashboard, the Administrator can process user approvals, manage schedules, and maintain firearm and fleet records. The role also includes reviewing incidents, support tickets, notifications, and analytics outputs for decision support. When an operational issue is detected, corrective actions can be applied and revalidated through the same workflow loop. The sequence ends with logout to preserve account security and traceability.
+Figure 10 outlines the Administrator workflow for approvals, scheduling, asset records, incident and support review, and analytics-assisted monitoring. The process includes a corrective-action loop for detected issues and concludes with secure logout for traceable session closure.
 
 ```mermaid
 flowchart LR
@@ -1497,7 +1439,7 @@ flowchart LR
 
 Figure 11. Superadmin Activity Diagram
 
-Figure 11 describes the Superadmin workflow, which focuses on system-wide governance and strategic control. After login, the Superadmin will review global performance indicators, enforce role and permission policies, and inspect audit logs for security and compliance visibility. If policy or security concerns are detected, governance settings and access controls can be updated and validated across modules before resuming monitoring. If no issue is found, strategic approvals can proceed before session termination. This design supports high-level oversight, accountability, and secure administration across the entire platform.
+Figure 11 describes the Superadmin workflow for system-wide governance. After authentication, the superadmin reviews global indicators, role-permission policies, and audit records. When policy or security concerns are identified, governance updates are applied and validated before monitoring resumes.
 
 ```mermaid
 flowchart LR
@@ -1517,90 +1459,42 @@ flowchart LR
 
 Development
 
-SENTINEL implementation was executed as a feature-driven integration program in which frontend, backend, database, and platform packaging evolved through coordinated iterations. The web application served as the baseline delivery target, while desktop and mobile wrappers extended the same operational surface to additional runtime environments.
+SENTINEL was developed through iterative Agile delivery in which user workflows, governance controls, and operational data services progressed in parallel.
 
-Frontend development focused on role-aware dashboard experiences and modular operational components. React and TypeScript components were organized around command-center views, approvals, scheduling, assets, incidents, analytics, and audit-log workspaces, supported by shared hooks for API access, polling, and real-time state updates. This structure enabled consistent behavior across superadmin, admin, supervisor, and guard interfaces while preserving role constraints.
+Development outputs were organized around core agency functions: identity governance, workforce continuity, asset and compliance management, incident and support coordination, live tracking, and analytics-assisted decision support.
 
-A later interface-delivery pass introduced a Unified Role-Centric Action Inbox + Workflow Timeline experience. Two reusable primitives, `ActionInbox` and `WorkflowTimeline`, were implemented first, then composed into four role-specific panels: `GuardInboxPanel`, `SupervisorInboxPanel`, `AdminInboxPanel`, and `SuperadminInboxPanel`. Each panel consumes authenticated API data and maps it into a shared priority contract (`urgent`, `high`, `normal`) and a shared workflow-status contract (`pending`, `active`, `resolved`, `cancelled`), allowing a common interface language while preserving role-specific content.
+At the interface level, development emphasized role-appropriate command views and consolidated action context to reduce navigation overhead during active operations. At the service level, development implemented consistent protection logic for authentication, authorization, legal-consent enforcement, auditability, and resilience controls.
 
-This inbox feature was integrated directly into the existing dashboard shells. The guard dashboard now exposes Inbox as the first bottom-navigation view, while the elevated dashboard shell routes the same navigation entry to supervisor, admin, or superadmin inbox panels according to authenticated role state. The implementation used concurrent API loading with `Promise.allSettled`, shared authenticated request headers through the frontend auth utility, explicit URL encoding for path parameters, and unmount-safe effect cleanup in the superadmin panel to prevent stale state updates during rapid navigation.
+Real-time features integrated field telemetry, geofence signaling, and movement-history capabilities for both immediate supervision and post-incident reconstruction. Incident and support workflows were aligned with notifications and timeline context to improve communication quality and response follow-through.
 
-A later frontend remediation pass then addressed workflow continuity gaps inside the same dashboard architecture without changing backend contracts. The guard profile action no longer routes users away from the mission shell; instead, the same account-management surface is now reused inside an inline profile modal for guards and inside the existing routed profile page for direct profile access. This preserved profile editing, profile-photo updates, push-notification onboarding, and guard-availability controls while reducing context switching during field operations. The same pass also completed theme-toggle coverage by exposing the existing light or dark mode control from the guard header, aligning the guard entry point with the elevated dashboards that already used shared header chrome.
+Decision-support services provide risk-oriented insights while preserving human authority for final operational decisions. Cross-platform delivery preserved workflow and policy consistency across Web, Desktop, and Android targets.
 
-The frontend was also extended with a role-specific settings MVP centered on notification preferences. A shared settings shell now resolves to guard, supervisor, admin, and superadmin variants through the existing app-level view registry, while persisting preferences locally through role-scoped storage keys instead of introducing a new backend dependency. The MVP intentionally limits scope to notification transports (push, email, and in-app alerts), with supervisor-specific alert controls and admin or superadmin placeholder sections reserved for later expansion. In parallel, support-facing workflows were hardened by moving guard shift-swap and guard inbox data access onto the shared authenticated API helper path, replacing silent or weakly surfaced failures with explicit inline status feedback.
+Security hardening consolidation removed direct token-retrieval calls from twenty-three frontend modules, centralizing authentication header construction through a single utility function to eliminate authorization drift across dashboard components. This architectural constraint reduces the attack surface for credential exposure and simplifies future session-management changes to a single maintenance point.
 
-A dedicated layout-architecture refinement pass was implemented to standardize dashboard rendering and prevent overlapping scroll regions. The frontend now uses a fixed-shell model (`h-[100dvh]` root, fixed sidebar, `min-h-0` main columns), with only the content panel owning vertical scroll (`overflow-y-auto`). Global document scrolling is locked (`html/body/#root` fixed height with hidden overflow), and atmospheric gradient layers were moved to a fixed decorative background so visual layers no longer interfere with command-panel scrolling.
+Iterative interface refinement addressed responsive layout gaps, touch-target sizing, and high-contrast mode compatibility across the guard workspace and command-center dashboard. Compliance with WCAG 2.5.5 (Minimum Target Size) and WCAG 1.4.3 (Contrast Minimum) standards was applied where violations were identified. Semantic design token usage was expanded to replace raw color class references in alert banners, improving forced-colors mode support and visual maintainability. Unicode corruption artifacts affecting control labels were corrected to preserve display integrity.
 
-Production configuration was standardized so all runtimes (web, desktop, and Android) consume a single backend source of truth through `VITE_API_BASE_URL`. Client startup validates this value and rejects malformed, non-HTTPS production URLs and localhost/private-network targets. For production builds where the variable is accidentally omitted, the runtime now applies a controlled fallback to the designated production backend origin to prevent blank-screen boot failures while preserving secure-host validation rules.
+The Android mobile deployment target received a dedicated release-signing initialization, including keystore generation tooling and version-control safeguards to prevent accidental exposure of signing material in the repository.
 
-Backend development was organized around Axum route handlers, middleware, and service modules. Handlers implemented domain endpoints for authentication, approvals, guard workflows, firearms, armored vehicles, incidents, analytics, notifications, tracking, support tickets, and audit retrieval. Middleware layers enforced authentication, role authorization, audit capture, presence updates, and rate-limiting controls. Recent RBAC hardening tightened matrix enforcement by requiring superadmin for audit-log APIs, restricting tracking APIs/websocket access to supervisor and guard roles, and adding role-scoped incident reads (guards see only self-reported incidents while elevated roles retain full visibility). Service-layer logic encapsulated deterministic AI scoring and recommendation workflows.
-
-Legal-compliance development added a dedicated backend consent module with `POST /api/legal/consent` and `GET /api/legal/consent/status`, startup schema guards for consent columns, and JWT claim propagation for consent state. Auth middleware now evaluates legal-consent state before allowing protected-route execution, with controlled bypass for consent/bootstrap-safe paths.
-
-Integration development connected frontend workflows to secured backend APIs through JWT-authenticated requests, refresh-session handling, and role-scoped endpoint access. Frontend request reliability was further hardened through status-aware retry policy updates (`408/425/429/5xx`) with exponential backoff for safe or idempotent calls and guarded mutation-retry scope. Real-time monitoring was integrated through websocket snapshot streaming with polling fallback to preserve operational continuity under variable network conditions.
-
-Recent polishing refinements improved runtime stability and accessibility without changing core feature scope: websocket tracking clients now stop reconnecting on authentication-expired close codes and trigger the existing session-expiry flow, mobile floating banners and shell content now respect safe-area offsets to avoid overlap/clipping on small screens, and high-frequency controls (header menu, sidebar close actions, notification dismiss, and map interaction buttons) were adjusted to larger touch targets with explicit keyboard focus visibility. A second-pass audit then hardened subtle interaction gaps by making quick-navigation column density adaptive on mobile, surfacing token-expiry event messages before forced session reset, upgrading notification drawer interactions (Escape/outside close, semantic control labeling, inline failure feedback), and enforcing minimum touch-target sizing across administrative action clusters, section collapse controls, modal consent/update actions, and map zoom controls. The same hardening cycle added startup token-freshness validation with refresh-token recovery before restoring persisted sessions, pre-submit session checks on legal-consent acceptance to prevent stale-token submissions, version-scoped "What's New" release messaging to communicate deployed improvements, explicit header/account layering priority over map panes so profile controls remain operable while live map widgets are active, and section-level render containment in the application shell through a reusable frontend error-boundary wrapper so isolated dashboard render faults degrade to recoverable fallback panels rather than full-shell failure. Backend hardening in the same cycle tightened production CORS behavior by limiting localhost origin auto-allowances to non-production mode, added legal-consent enforcement to websocket tracking upgrades to prevent consent-bypass data streams, expanded authorization-failure audit capture to API-wide `401/403` denials (including write requests), and updated release orchestration to a deterministic tag-driven workflow with unified version propagation, SHA-pinned actions, and mandatory signed Android release outputs.
-
-The tracking layer now includes movement-intelligence contracts for active guard extraction, guard-history retrieval, and guard-path replay. Map workflows were extended with zoom-to-guard controls, route playback, clustered marker rendering at low zoom levels, and live geofence alert feeds sourced from persisted enter/exit transitions. Dedicated geofence-management endpoints now allow supervisors and above to define per-site radius or polygon zones, enabling configurable boundary logic instead of fixed-radius-only behavior.
-
-Audit governance was similarly expanded from static listing into investigative command visualization. The audit workspace now integrates timeline filters, anomaly indicators, activity heatmaps, and actor-level operational story reconstruction through dedicated backend endpoints. On the frontend, the audit route is now lazy-loaded and bundled into a dedicated chunk to reduce initial payload pressure and improve startup performance for non-audit workflows.
-
-Location workflows were hardened with explicit privacy consent before any heartbeat submission. If consent is not accepted, location tracking remains disabled. After consent, runtime-specific acquisition is applied: browser geolocation for web, Capacitor plugin geolocation for Android, and desktop secure-context geolocation when available; all flows degrade to IP-based fallback when precise coordinates are unavailable. This preserved cross-platform tracking continuity while keeping consent and safety controls explicit.
-
-Cross-platform expansion followed a staged model. The web build remained the canonical UI source; Capacitor packaged this build for Android field use; and Tauri packaged the same build for Windows desktop command-center use. This approach reduced duplication, preserved feature parity, and kept release validation aligned across all supported runtime targets.
-
-Android packaging governance was further hardened by standardizing the production `applicationId` to `com.sentinel.app`, enforcing release-signing credential requirements before release task execution, and deriving Android `versionCode` deterministically from semantic release version values to keep store-facing version progression consistent across automated builds. Supporting namespace consistency checks were also updated by aligning Android test package references to `com.sentinel.app` so wrapper validation reflects the current application identifier.
-
-A strict second-pass security remediation cycle then addressed residual high-risk authentication and transport exposure points. Password-reset codes are now generated at higher entropy (8-digit default), persisted as hashes instead of plaintext, validated with account/IP lockout controls, and redeemed through an atomic update path that prevents token replay races while revoking active refresh sessions after successful reset. Enumeration leakage was reduced by standardizing generic responses for resend-code and reset verification flows. Real-time map socket authentication was migrated from URL query-token transport to websocket subprotocol token transport (`sentinel-tracking-v1`, `bearer.<jwt>`) with controlled compatibility fallback during transition. Backend CORS fallback behavior was tightened to localhost/native-wrapper origins only when explicit origin configuration is absent or invalid.
-
-Release pipeline governance was also hardened by pinning third-party GitHub Actions in `.github/workflows/release.yml` to immutable commit SHAs, reducing mutable-tag supply-chain exposure in CI/CD execution.
-
-Documentation and governance development were also formalized into release workflow outputs. The GitHub Pages documentation site now includes dedicated download, features, security, and architecture pages, while repository-level legal policy files are maintained as versioned artifacts in the active Capstone Main repository. Licensing metadata and repository licenses were shifted to a proprietary All Rights Reserved posture for controlled distribution.
-
-Current validation status for this update cycle includes successful backend compilation and tests (`cargo test`, including tracking/audit integration cases), successful frontend production build (`npm run build --prefix DasiaAIO-Frontend`), and passing frontend unit tests (`npm test --prefix DasiaAIO-Frontend -- --runInBand`, 5/5 tests) after the second-pass security patches. A follow-up frontend verification after the latest layout-architecture pass also completed with a successful production build and no TypeScript diagnostics on updated dashboard shells, sidebar, and shared layout components. Operational runtime checks from the same cycle continue to show healthy backend/database containers and positive `/api/health` responses in local deployment. Verified hardening outcomes now include hashed reset-token persistence, reset replay-race mitigation, websocket token transport migration away from query strings, tightened CORS fallback behavior, immutable action-SHA pinning in release automation, superadmin-only audit-log API enforcement, supervisor/guard-only tracking API enforcement, role-scoped incident visibility, and fixed-shell single-scroll dashboard layout behavior.
-
-The current frontend multi-issue completion pass added a further validation layer specific to guard workflow continuity and settings behavior. Targeted Jest coverage for the guard dashboard and settings MVP passed 15 of 15 tests, including inline-profile behavior, theme persistence, role-scoped settings persistence, and visible error states for support-related workflows. A fresh frontend production build also completed successfully after the profile/settings refactor, and a dedicated Playwright guard-dashboard smoke suite passed all 5 browser scenarios covering mission-shell profile modal behavior, theme switching, settings navigation, and guard dashboard regression checks. The only remaining tooling gap observed during editor diagnostics was a pre-existing `process` name-resolution warning in one Playwright smoke file, but this did not block actual Playwright execution under the configured Playwright TypeScript project.
-
-The inbox implementation cycle added a further frontend verification pass: `npx tsc --noEmit` completed with zero TypeScript errors after integrating the new inbox panels into both dashboard shells, `npx playwright test tests/inbox.spec.ts --reporter=line` passed all four role-navigation scenarios, and the broader Playwright suite completed with 7 passed and 3 skip-safe scenarios. A targeted code-review pass also identified and corrected four implementation issues before closure: duplicated token retrieval in three inbox panels, missing path-parameter encoding in user-scoped requests, an unnecessary tabbable timeline element affecting WCAG behavior, and missing async cleanup protection in the superadmin inbox panel.
-
-Remaining verification risk is concentrated in staged/production smoke testing of websocket subprotocol authentication compatibility behind edge proxies, cross-device visual confirmation of fixed-shell long-form dashboard behavior (especially narrow mobile viewports), post-release channel validation to ensure workflow pin updates and signed Android artifacts behave consistently across all target environments, and additional role-matrix regression checks for newly tightened tracking-route access rules.
+Overall, development outcomes indicate a maintainable and governance-aligned platform for private security operations.
 
 Design of Software, System, Product, and/or Processes.
 
-The implemented SENTINEL architecture follows a frontend-backend separation model in which React clients consume secured Axum APIs over HTTP(S), while PostgreSQL serves as the transactional system of record. This separation supports maintainability, independent scaling of service layers, and clear contract boundaries between interface behavior and business logic.
+The SENTINEL design follows a layered architecture that separates user interaction, operational processing, and institutional records. This separation supports maintainability, scalability, and clear accountability boundaries.
 
-At the presentation layer, role-based UI rendering is applied so each authenticated role receives task-appropriate modules and controls. Dashboard surfaces are modularized into reusable panels and data widgets, enabling command-center composition without duplicating core business logic per role.
+The interaction layer applies role-scoped command interfaces so each user group receives context-appropriate controls. Reusable design patterns support interface consistency and reduce training overhead.
 
-The new inbox subsystem extends this presentation model by introducing two shared visual contracts: a prioritized action list and a workflow timeline. Rather than building separate bespoke inbox pages per role, the frontend uses common primitives that receive normalized item data from role-specific adapters. This design reduces duplication, keeps urgency semantics consistent across roles, and allows dashboard-level reuse in both guard and elevated shells.
+The process layer standardizes protected actions through a consistent sequence: identity verification, authorization checking, policy-state validation, operational rule execution, and traceable output generation. This sequence reinforces safety, compliance, and accountability for high-impact workflows.
 
-At the application layer, backend handlers and middleware process incoming requests through a consistent lifecycle: request reception, token validation, authorization checks, business-rule execution, database transaction/query, and structured response output. Security and governance are integrated into this lifecycle through authorization middleware, centralized write-audit middleware, authorization-failure audit capture for API-wide denied requests (`401/403`, including write-route denials), session controls, and rate-limit enforcement.
+Legal and policy governance are embedded in access control by requiring recorded policy acceptance before protected module use. At the data layer, structured records preserve traceability across workforce operations, asset custody, mobility, incidents, support activities, analytics, and governance events.
 
-Legal-consent enforcement is now an explicit part of the application lifecycle: after token validation, middleware checks consent claim state and blocks protected-module access until server-side consent records exist. This moves legal gating from UI-only behavior to backend-enforced policy control.
+The real-time subsystem is designed for continuity under variable network conditions through low-latency updates and fallback behavior. Geofence transitions and movement-history views support both active supervision and post-event reconstruction.
 
-At the data layer, PostgreSQL maintains normalized operational entities for users, schedules, attendance, assets, incidents, tickets, notifications, tracking telemetry, AI outputs, and audit records. This schema supports traceability and cross-module analytics while preserving relational consistency for compliance-sensitive workflows.
+Decision-support capabilities are assistive. Analytics and deterministic AI outputs provide risk indicators and recommendations, while final operational authority remains with human decision-makers.
 
-Tracking persistence now includes geofence transition records linked to client sites and guard identities, plus site geofence configuration records that store radius or polygon zone definitions per client location. Audit persistence includes richer request-origin context (for example user-agent) to improve forensic reconstruction quality.
+Cross-platform design maintains behavior parity across Web, Desktop, and Android runtimes so users operate under consistent workflow and governance assumptions.
 
-The data flow is API-centric: user actions from dashboards and module views are submitted as authenticated requests, evaluated by middleware, processed by domain handlers/services, persisted in PostgreSQL, and returned as structured responses to update frontend state. Tracking-specific flows additionally emit websocket snapshot updates so command views reflect location changes with reduced latency.
+Security design principles are reinforced through centralized authentication header management, ensuring that token handling is isolated to a single utility layer. This reduces the surface area for credential exposure and makes session-management changes predictable and auditable.
 
-For the inbox workflow, the frontend aggregates multiple authenticated API responses in parallel and then transforms those records into display-safe dashboard objects. For example, guard inbox views combine shifts, swap requests, and notifications; supervisor inbox views combine approvals, incidents, shifts, and notifications; admin and superadmin inbox views combine approvals, notifications, incidents, metrics, and firearm allocation signals. This preserves backend domain separation while giving each role a single decision-first workspace.
+Interface design decisions incorporate explicit compliance with WCAG 2.5.5 (Minimum Target Size) and WCAG 1.4.3 (Contrast Minimum) standards. Touch targets for critical interactive controls, including location tracking toggles and primary action buttons, meet the minimum 44-CSS-pixel guideline for reliable field operation on mobile devices. Support for Windows Forced Colors and High Contrast accessibility modes is embedded in active control styling to accommodate diverse accessibility requirements across command-center and field deployments.
 
-The later settings and profile refinement follows the same architectural principle. Rather than duplicating account-management logic, the frontend now separates reusable profile content from the routed page wrapper, allowing the guard mission shell to open account management inline while preserving the standalone profile route for other contexts. Likewise, settings behavior remains an app-level routed view resolved through the existing `activeView` registry, but the rendered content is selected by normalized role and persisted locally through role-scoped keys. This keeps dashboard-entry behavior consistent with the rest of the system while avoiding premature backend expansion.
-
-For command-intelligence workflows, additional API contracts provide derived operational views from persisted records: guard-history/path and active-guard extraction for movement replay, plus anomaly/timeline aggregation for audit investigations.
-
-The real-time architecture combines websocket broadcasting with polling-based refresh. Tracking and client-site updates are published through websocket snapshot streams for low-latency awareness, while polling remains an intentional fallback path to preserve dashboard usability when persistent socket channels are interrupted.
-
-Analytics and command-center surfaces were also aligned to production data contracts by removing simulated/mock fallback datasets from operational dashboards. Performance views now read backend reliability analytics directly, and command-center panels display only persisted API responses with loading/empty/error states.
-
-The AI services layer is integrated as deterministic decision-support logic connected to operational data rather than an isolated experimental component. AI endpoints produce explainable risk and recommendation outputs that supervisors and administrators use within existing workflows for staffing, incident triage, and proactive alerts.
-
-Overall, the resulting system design aligns with current implementation: API-driven, role-governed, auditable, and deployable across web, desktop, and Android runtime environments.
-
-Recent dashboard refinement also confirms that the system can evolve through reusable, role-governed frontend composition rather than page-by-page duplication. The inbox and workflow timeline implementation demonstrates that new operational experiences can be introduced by normalizing data contracts at the UI boundary while leaving backend domain handlers and persistence models intact.
-
-The latest implementation completion pass also operationalized user-device push alert onboarding and resilient offline behavior in the frontend runtime: profile-level push opt-in controls now register browser subscriptions through a dedicated backend persistence endpoint, while service-worker background replay and IndexedDB queueing provide continuity for delayed field actions during connectivity disruption. End-to-end smoke automation was concurrently formalized using Playwright configuration and role-aware scenario coverage, enabling repeatable login/navigation/incident-flow verification for release hardening.
-
-A subsequent professionalization pass reorganized the frontend component tree into named domain subdirectories. The `Header` component was relocated to `shared/`, aligning shared chrome with the shared-resource domain. The `UserDashboard` was relocated to `guards/`, consolidating guard-specific entry points under a single domain directory. The `SuperadminDashboard` was relocated to `admin/`, separating administrative orchestration from the components root. Backward-compatible re-export shims were retained at the original component paths so secondary consumers remain functional without immediate import churn, while primary consumers in `App.tsx` and `OperationalShell.tsx` were updated to reference the new domain paths directly. This reorganization reduces navigation overhead during maintenance and satisfies the requirement for domain-oriented component grouping without altering runtime behavior or requiring changes to existing tests.
-
-Wave 4 continuation closeout (evidence date: 2026-04-03) finalized this reorganization with targeted frontend hardening outcomes. Consent-modal legal-document links in the active runtime (`App.tsx`) were corrected to the current repository owner path (`dwaytu/Capstone-Main`), preserving legal-document traceability in deployed clients. Accessibility and UI validation fixes were applied with low implementation risk: decorative hamburger icon SVG markup is now explicitly hidden from assistive technology (`aria-hidden="true"`), guard primary navigation preserves active-tab semantics through `aria-current="page"`, and `OperationalShell` error banners now use the project tokenized danger classes instead of hard-coded red palette values. Continuation verification for the same date recorded a successful frontend production build (`npm run build`, 1880 modules transformed, build completed in 3.36s) and a passing targeted guard regression suite (`npm test -- --runInBand guardDashboardRedesign`, 12/12 tests).
+Overall, the design reflects a role-governed and auditable system aligned with current private security management requirements.

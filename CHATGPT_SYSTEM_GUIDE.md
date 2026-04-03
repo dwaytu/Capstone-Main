@@ -423,6 +423,7 @@ Primary frontend files that must be rechecked when roles/auth/dashboards change:
 - `DasiaAIO-Frontend/src/components/ErrorBoundary.tsx`: shared render-failure containment for dashboard sections
 - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: role-aware event aggregation and guarded API calls
 - `DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx`: merit API calls and auth headers
+- `DasiaAIO-Frontend/src/components/GuardDashboard.tsx`: now a 3-line re-export shell pointing to `guards/UserDashboard`; original standalone implementation removed as dead code
 - `DasiaAIO-Frontend/src/utils/api.ts`: fetch wrapper behavior, timeout, and parsing safety
 
 Current frontend reality:
@@ -897,6 +898,54 @@ Residual risks / follow-ups:
 
 - Runtime smoke of `/api/legal/consent` and `/api/legal/consent/status` should still be executed against deployed staging/production with real auth tokens.
 - License posture is now proprietary; downstream redistribution channels should confirm no stale cached MIT artifacts remain.
+
+## 15. Hardening and UI Improvement Waves (April 2026)
+
+### Wave 1 — Android Signing Setup
+
+- Added `scripts/setup-android-signing.ps1`: PowerShell script that generates a production-grade Android release keystore, Base64-encodes it, and emits the four values required as GitHub Secrets.
+- Root `.gitignore` updated to exclude `*.keystore`, `*.jks`, and `sentinel-android-secrets.txt` from version control.
+- `apps/android-capacitor/android/.gitignore` updated — keystore exclusion entries were uncommented to prevent accidental commit of signing material.
+- Four GitHub Secrets are required for Android CI signing in `.github/workflows/release.yml`:
+  - `ANDROID_KEYSTORE_BASE64` — Base64-encoded keystore file contents
+  - `ANDROID_KEY_ALIAS` — key alias within the keystore
+  - `ANDROID_KEYSTORE_PASSWORD` — keystore store password
+  - `ANDROID_KEY_PASSWORD` — key-entry password
+
+### Wave 2 — Dead Code Removal / Dashboard Consolidation
+
+- `DasiaAIO-Frontend/src/components/GuardDashboard.tsx` replaced with a 3-line re-export delegating to `guards/UserDashboard`. The previous standalone guard shell was superseded by the unified `UserDashboard` and had become dead code.
+- No behavioral change; all guard routing in `App.tsx` continues to resolve through the same import path.
+
+### Wave 3 — Auth Header Consistency (Security Hardening)
+
+- Eliminated all direct `localStorage.getItem('token')` calls across 23 frontend files (9 hooks + 14 components).
+- Every API fetch call in affected files now uses `getAuthHeaders()` from `src/utils/api.ts`, centralizing token retrieval and auth-header construction.
+- Affected hooks: all API-calling hooks in `src/hooks/`.
+- Affected components: `BugReportButton`, `CalendarDashboard`, `ArmoredCarDashboard`, `EditScheduleModal`, `TripManagement`, `FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, `MeritScoreDashboard`, `IncidentPanel`, `IncidentReportForm`, `IncidentSummaryGenerator`, `IncidentSeverityClassifier`.
+- Eliminates auth-header drift between modules; future token-management changes require edits in one place only (`api.ts`).
+
+### Wave 4 — UI/UX Improvements
+
+#### guards/UserDashboard.tsx
+
+- Inbox section now renders inside `guard-section-frame` container (was bare `p-4`).
+- KPI row: added `sm:grid-cols-2` responsive breakpoint for intermediate screen sizes.
+- Location tracking toggle: minimum touch target raised from `min-h-9` to `min-h-11` (WCAG 2.5.5 compliance); `aria-pressed` state attribute added; corrupted Unicode bullet characters (● ○) replaced with correct glyphs.
+- Accuracy pill: corrupted `·` separator character replaced with correct middle-dot.
+- Support ticket textarea: Tailwind height changed from `min-h-[110px]` to `min-h-28` (token-aligned).
+- Primary CTA button: corrupted `✓` and `—` characters replaced with correct Unicode.
+- Active nav button: added `outline outline-transparent` + `forced-colors:text-[ButtonText]` for Windows High Contrast mode support.
+- Incident description textarea: height changed from `min-h-[120px]` to `min-h-32`.
+
+#### dashboard/CommandCenterDashboard.tsx
+
+- Threat Level `StatusBadge`: tone changed from `analytics` to `success` for the Low threat state (semantic correctness).
+- `OperationalSummaryStrip`: removed duplicate System Status and Threat Level entries that were already rendered in the dashboard header.
+- System Status `SectionPanel`: removed `collapsible` prop so critical system-status information is always visible.
+- AI tools grid: added `sm:grid-cols-2` responsive breakpoint (column count was jumping directly from 1 to 4).
+- `PredictiveAlertsPanel`: wrapped in `sm:col-span-2` container to give the primary AI module visual prominence.
+- Error banner: replaced raw `amber-*` Tailwind color classes with `warning-*` design tokens; added `role="alert"` + `aria-live="assertive"` for screen-reader announcement.
 
 Verified in this session (Docker runtime):
 
