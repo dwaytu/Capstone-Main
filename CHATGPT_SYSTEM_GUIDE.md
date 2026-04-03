@@ -1747,3 +1747,53 @@ Notes:
 
 - Shims at original component paths must be retired after all secondary consumers migrate to domain paths to avoid long-term import ambiguity.
 - Pre-existing `process` name-resolution warning in `DasiaAIO-Frontend/tests/smoke.spec.ts` (Playwright tsconfig scope) remains; does not affect runtime test execution.
+
+## 21. Release Reliability and AI Signal Integrity Update (2026-04-03)
+
+### Android release signing remediation
+
+- `scripts/setup-android-signing.ps1` was hardened for Windows PowerShell 5.1 compatibility and operational reliability:
+  - Removed unsupported optional-chaining syntax (`?.Path`) and replaced with explicit path checks.
+  - Replaced non-ASCII console glyphs with ASCII-safe output to avoid encoding-related parser failures on legacy shells.
+  - Updated `keytool` invocation handling so stderr progress output no longer aborts execution when `$ErrorActionPreference` is strict.
+  - Fixed base64 length interpolation in status output.
+- Release secrets were applied to `dwaytu/Capstone-Main` repository Actions secrets:
+  - `SENTINEL_ANDROID_KEYSTORE_BASE64`
+  - `SENTINEL_UPLOAD_STORE_PASSWORD`
+  - `SENTINEL_UPLOAD_KEY_ALIAS`
+  - `SENTINEL_UPLOAD_KEY_PASSWORD`
+- `.github/workflows/release.yml` action references were upgraded to Node24-capable majors:
+  - `actions/checkout@v5`
+  - `actions/setup-node@v5`
+  - `actions/download-artifact@v5`
+
+### AI classifier and confidence reliability updates
+
+- `DasiaAIO-Backend/src/services/incident_ai_classifier.rs`:
+  - Added provider-aware LLM configuration with `AI_PROVIDER` (`groq` default) and automatic key resolution from `AI_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY`.
+  - Default Groq endpoint/model path is now first-class (`https://api.groq.com/openai/v1`, `llama-3.1-8b-instant`) while retaining OpenAI compatibility.
+  - Replaced fixed LLM confidence with output-structure-derived confidence logic.
+- `DasiaAIO-Backend/src/handlers/ai.rs`:
+  - Replaced decorative severity-to-confidence constants with signal-based confidence derived from summary content density and severity token alignment.
+
+### Legacy role-shim cleanup and offline continuity
+
+- Backend SQL role filters were normalized to canonical guard role only (`'guard'`), removing `'user'` alias handling across handlers/services.
+- Tracking entity filters were similarly normalized to guard-only entity semantics where legacy aliases were present.
+- `DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx` now queues critical field actions when offline/network-failing using IndexedDB-backed offline queue:
+  - Check-in
+  - Check-out
+  - Schedule request submission
+
+### Validation update
+
+- Backend validation: `cargo check` in `DasiaAIO-Backend` passed (warnings only, no build failures).
+- Frontend validation: `npm run build` in `DasiaAIO-Frontend` passed (Vite warnings only, no build failures).
+- Release pipeline validation:
+  - Workflow dispatch run `23929143321` started successfully after secret and workflow updates.
+  - `Prepare Release Metadata` completed successfully; `Quality Gate` proceeded in-progress at verification time.
+
+### Known risks and follow-up
+
+- Existing Vite dynamic-import chunking warnings for `config.ts`/`api.ts` remain non-blocking but should be refactored in a future bundling pass.
+- Canonical role cleanup assumes migration of legacy `'user'` records to `'guard'` at the data layer; deployments with stale role values should run a data normalization script before strict production enforcement.

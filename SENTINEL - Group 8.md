@@ -1475,6 +1475,14 @@ Iterative interface refinement addressed responsive layout gaps, touch-target si
 
 The Android mobile deployment target received a dedicated release-signing initialization, including keystore generation tooling and version-control safeguards to prevent accidental exposure of signing material in the repository.
 
+Recent hardening work improved release reliability by aligning Android signing secret names with workflow contract requirements and upgrading release-pipeline dependency actions to Node24-capable versions. This reduced CI fragility for tagged and dispatch-based release runs and addressed prior signing-gate failures caused by missing or mismatched secret configuration.
+
+The AI incident-classification module was strengthened from rigid keyword-only behavior to provider-configurable large-language-model classification with deterministic keyword fallback. Groq-compatible defaults were integrated for low-friction deployment, and confidence reporting was changed from decorative constants to signal-derived scoring based on textual evidence density and severity alignment.
+
+Field-continuity behavior was expanded through offline action queuing for safety-critical guard workflows, specifically check-in, check-out, and schedule request submission. When connectivity degrades, these actions are buffered and synchronized when network conditions recover, reducing operational loss in low-signal environments.
+
+Canonical role-governance cleanup removed legacy `'user'` aliases from guard role filters in backend query paths, establishing a stricter role model and reducing long-term authorization ambiguity.
+
 Overall, development outcomes indicate a maintainable and governance-aligned platform for private security operations.
 
 Design of Software, System, Product, and/or Processes.
@@ -1494,6 +1502,10 @@ Decision-support capabilities are assistive. Analytics and deterministic AI outp
 Cross-platform design maintains behavior parity across Web, Desktop, and Android runtimes so users operate under consistent workflow and governance assumptions.
 
 Security design principles are reinforced through centralized authentication header management, ensuring that token handling is isolated to a single utility layer. This reduces the surface area for credential exposure and makes session-management changes predictable and auditable.
+
+Release-process design includes explicit signing-contract enforcement for Android artifacts. Build execution now validates signing material presence before release assembly and uses standardized secret names across scripts and pipeline stages to prevent divergent configuration states.
+
+AI design now follows a hybrid strategy: model-driven classification for semantic incident interpretation and deterministic fallback scoring for continuity under provider unavailability. Confidence outputs are computed from observed language signals rather than static labels, improving interpretability and operational trust.
 
 Interface design decisions incorporate explicit compliance with WCAG 2.5.5 (Minimum Target Size) and WCAG 1.4.3 (Contrast Minimum) standards. Touch targets for critical interactive controls, including location tracking toggles and primary action buttons, meet the minimum 44-CSS-pixel guideline for reliable field operation on mobile devices. Support for Windows Forced Colors and High Contrast accessibility modes is embedded in active control styling to accommodate diverse accessibility requirements across command-center and field deployments.
 

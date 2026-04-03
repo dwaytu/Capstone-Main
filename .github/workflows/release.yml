@@ -1,4 +1,4 @@
-name: Release
+﻿name: Release
 
 permissions:
   contents: read
@@ -37,14 +37,14 @@ jobs:
       api_base_url: ${{ steps.config.outputs.api_base_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -99,14 +99,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -133,14 +133,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -154,7 +154,7 @@ jobs:
         run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Download release metadata
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v5
         with:
           name: release-metadata
           path: .release
@@ -189,14 +189,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -219,7 +219,7 @@ jobs:
         run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Download release metadata
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v5
         with:
           name: release-metadata
           path: .release
@@ -260,14 +260,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -313,7 +313,7 @@ jobs:
         run: node scripts/sync-release-version.js --version "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Download release metadata
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v5
         with:
           name: release-metadata
           path: .release
@@ -409,25 +409,25 @@ jobs:
       contents: write
     steps:
       - name: Download web artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v5
         with:
           name: release-web
           path: release-files
 
       - name: Download desktop artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v5
         with:
           name: release-desktop
           path: release-files
 
       - name: Download Android artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v5
         with:
           name: release-android
           path: release-files
 
       - name: Download release metadata
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v5
         with:
           name: release-metadata
           path: release-meta
@@ -440,3 +440,5 @@ jobs:
           body_path: release-meta/release-notes.md
           files: release-files/*
           fail_on_unmatched_files: true
+
+
