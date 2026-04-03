@@ -1784,6 +1784,7 @@ Notes:
   - Check-in
   - Check-out
   - Schedule request submission
+- `DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx` now owns the support-workflow UI slice previously embedded in `guards/UserDashboard.tsx`, reducing guard dashboard monolith complexity while preserving behavior.
 
 ### Validation update
 

@@ -1481,6 +1481,8 @@ The AI incident-classification module was strengthened from rigid keyword-only b
 
 Field-continuity behavior was expanded through offline action queuing for safety-critical guard workflows, specifically check-in, check-out, and schedule request submission. When connectivity degrades, these actions are buffered and synchronized when network conditions recover, reducing operational loss in low-signal environments.
 
+Maintainability improvements also decomposed the guard support workflow interface into a dedicated support-tab component, reducing monolithic dashboard complexity while preserving functional behavior and role-governed interaction flow.
+
 Canonical role-governance cleanup removed legacy `'user'` aliases from guard role filters in backend query paths, establishing a stricter role model and reducing long-term authorization ambiguity.
 
 Overall, development outcomes indicate a maintainable and governance-aligned platform for private security operations.
