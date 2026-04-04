@@ -1,0 +1,1055 @@
+plan_id: midnight-shift-hardening
+objective: |
+  Harden the SENTINEL guard-facing experience so a tired, underpaid security guard
+  at 2 AM under pressure can trust the system, report emergencies in one tap,
+  reach help instantly, and never lose data to network failures. Remove all
+  fake telemetry and self-registration flows that erode trust. Add a real panic
+  button, simplify incident reporting, surface emergency contacts, and improve
+  offline resilience. Extend the command center with an urgency-sorted priority
+  queue for supervisors/admins.
+created_at: "2026-04-04T00:00:00Z"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 5
+  total_dependencies: 18
+  risk_score: medium
+
+tldr: |
+  4-wave plan with 18 tasks across guard UX, login, offline, and command center.
+  Wave 1 removes trust-breaking theater (fake telemetry, self-registration) — pure deletions, lowest risk.
+  Wave 2 builds the big three: PanicButton, simplified incident form, always-visible emergency contacts.
+  Wave 3 hardens offline resilience (incident queue, pending badge, jargon cleanup, sync feedback).
+  Wave 4 adds command center priority queue + business-reality registration alignment.
+  Each wave ends with an integration check. Total estimated effort: ~14 implementation tasks + 4 review gates.
+
+open_questions: []
+
+pre_mortem:
+  overall_risk_level: medium
+  critical_failure_modes:
+    - scenario: "PanicButton GPS capture fails silently on Android WebView (Capacitor)"
+      likelihood: medium
+      impact: critical
+      mitigation: "Fallback to last-known location from tracking heartbeat; log GPS failure; still send SOS without coordinates rather than blocking"
+    - scenario: "Removing self-registration breaks existing guard onboarding flow if admins relied on it"
+      likelihood: low
+      impact: high
+      mitigation: "Backend /api/register endpoint stays intact — only the public-facing form is removed; admins still create accounts via admin dashboard"
+    - scenario: "Offline incident queue deduplication creates false negatives — real duplicate incidents suppressed"
+      likelihood: medium
+      impact: medium
+      mitigation: "Use incident-specific dedup key (description hash + timestamp window) rather than URL-only matching from existing offlineQueue"
+    - scenario: "Floating PanicButton z-index conflicts with modals or bottom navigation"
+      likelihood: medium
+      impact: medium
+      mitigation: "Use z-50 (Tailwind) and test against all modal states; PanicButton sits in layout wrapper above tab content but below modal overlay"
+    - scenario: "Emergency contacts constants file not referenced correctly after extraction from JSX"
+      likelihood: low
+      impact: low
+      mitigation: "Grep all hardcoded phone number strings across codebase to ensure zero remain after extraction"
+  assumptions:
+    - "Backend /api/incidents already accepts type field or can be extended trivially for PANIC/SOS"
+    - "navigator.vibrate() is available in Capacitor Android WebView (it is per Chromium spec)"
+    - "The existing offlineQueue.ts enqueueOfflineAction works for any POST endpoint, not just attendance"
+    - "CommandCenterDashboard's IncidentAlertFeed already receives alerts with severity field"
+    - "Backend /api/health endpoint exists for real system status check"
+
+implementation_specification:
+  code_structure: |
+    New components created alongside existing dashboard components.
+    PanicButton is a standalone component mounted in the guard layout (AppShell or UserDashboard wrapper).
+    Emergency contacts extracted to a constants file, rendered via a shared EmergencyContactsBar component.
+    Incident form simplified in-place within UserDashboard.tsx (no new component — reduce, don't add).
+    LoginPage changes are surgical deletions and text replacements.
+    Command center priority queue is an enhancement to existing IncidentAlertFeed.
+  affected_areas:
+    - DasiaAIO-Frontend/src/components/guards/  (PanicButton, UserDashboard incident form)
+    - DasiaAIO-Frontend/src/components/dashboard/  (GuardSupportTab, CommandCenterDashboard, IncidentAlertFeed)
+    - DasiaAIO-Frontend/src/components/LoginPage.tsx  (fake telemetry, registration removal)
+    - DasiaAIO-Frontend/src/components/layout/AppShell.tsx  (PanicButton mount point for guard role)
+    - DasiaAIO-Frontend/src/utils/offlineQueue.ts  (no changes — already supports generic actions)
+    - DasiaAIO-Frontend/src/constants/  (new emergencyContacts.ts)
+  component_details:
+    - component: PanicButton
+      responsibility: "Floating emergency button — one tap sends SOS with GPS to /api/incidents, vibrates, queues offline"
+      interfaces:
+        - "Props: userId (string), authHeaders (Record<string,string>)"
+        - "Emits POST to /api/incidents with type='PANIC', priority='critical'"
+        - "Uses enqueueOfflineAction for offline resilience"
+    - component: EmergencyContactsBar
+      responsibility: "Persistent mini-bar or expandable footer showing clickable tel: links for emergency contacts"
+      interfaces:
+        - "Props: none (reads from constants/emergencyContacts.ts)"
+        - "Renders tel: links for each contact"
+    - component: IncidentAlertFeed (enhanced)
+      responsibility: "Priority-sorted incident feed with PANIC-first ordering and overdue visual emphasis"
+      interfaces:
+        - "Props: alerts (OpsAlert[]), nowLabel (string) — same as current"
+        - "Internal sort: critical > warning > info, then by timestamp desc"
+  dependencies:
+    - component: PanicButton
+      relationship: "Imports enqueueOfflineAction from offlineQueue.ts, getAuthHeaders from utils"
+    - component: EmergencyContactsBar
+      relationship: "Imports EMERGENCY_CONTACTS from constants/emergencyContacts.ts"
+    - component: UserDashboard
+      relationship: "Mounts PanicButton and EmergencyContactsBar; simplified incident form uses enqueueOfflineAction"
+  integration_points:
+    - "PanicButton mounted in guard layout — visible across all tabs"
+    - "EmergencyContactsBar replaces hardcoded contacts in GuardSupportTab and UserDashboard instructions modal"
+    - "Offline incident queue uses same IndexedDB store as check-in/check-out"
+    - "Command center IncidentAlertFeed gets urgency sort without API changes"
+
+contracts:
+  - from_task: T1-1
+    to_task: T2-3
+    interface: "LoginPage fake telemetry removed — no sidebar status cards exist"
+    format: "LoginPage.tsx no longer imports/uses monitoringNodes state"
+  - from_task: T1-2
+    to_task: T2-3
+    interface: "LoginPage registration form removed — only login form remains"
+    format: "LoginPage.tsx isRegistering flow deleted; register link replaced with admin message"
+  - from_task: T2-1
+    to_task: T3-1
+    interface: "PanicButton component exists and accepts userId + auth context"
+    format: "PanicButton.tsx exported as default FC"
+  - from_task: T2-2
+    to_task: T3-1
+    interface: "Incident form has offline queue support via enqueueOfflineAction"
+    format: "handleIncidentSubmit catch block calls enqueueOfflineAction on network failure"
+  - from_task: T2-3
+    to_task: T3-2
+    interface: "Emergency contacts extracted to constants file"
+    format: "constants/emergencyContacts.ts exports EMERGENCY_CONTACTS array"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAVE 1: TRUST-BREAKING REMOVALS (deletions — safest first)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tasks:
+
+  - id: T1-1
+    title: "Remove fake monitoring nodes ticker and system status sidebar from LoginPage"
+    description: |
+      Delete the fake telemetry theater from LoginPage.tsx:
+      1. Remove monitoringNodes useState (line 73) and its useEffect ticker (lines 74-83)
+      2. Remove the entire "System Status" sidebar section (lines 731-780) that shows
+         hardcoded "Operational", "Secure Link", and fake node count
+      3. Replace the sidebar content with a clean brand statement or leave the aside
+         with just the SentinelLogo + description paragraph (lines 722-728 are fine to keep)
+      4. Remove the "Davao Security & Investigation Agency" footer text at line 782 is fine to keep
+      
+      The aside element itself can remain for layout balance — just strip the fake status cards.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: [T1-2]
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/LoginPage.tsx
+        description: "Full login page — fake telemetry at lines 73-83 (ticker), 731-780 (sidebar status cards)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Remove fake telemetry that erodes trust — pure deletion, lowest risk"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 60
+        focus_area: "LoginPage.tsx sidebar"
+        verification:
+          - "monitoringNodes state and ticker useEffect no longer exist in LoginPage.tsx"
+          - "No 'System Status: Operational' or 'Secure Link' text in LoginPage.tsx"
+          - "Login page still renders correctly with aside showing logo + description only"
+          - "No build errors"
+        acceptance_criteria:
+          - "LoginPage sidebar shows only SentinelLogo + description text — no fake status indicators"
+          - "No client-side setInterval for fake data remains in LoginPage.tsx"
+          - "Login and password reset flows still work"
+        failure_modes:
+          - scenario: "Sidebar layout breaks without the status cards"
+            likelihood: low
+            impact: low
+            mitigation: "Keep the aside structure, just empty the status card grid"
+        tech_stack:
+          - TypeScript
+          - React
+        test_coverage: "Verify login flow still works via existing tests"
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T1-2
+    title: "Remove public self-registration form from LoginPage"
+    description: |
+      Remove the public-facing guard registration form from LoginPage.tsx:
+      1. Remove the isRegistering state toggle and all registration-specific state variables
+         (fullName, phoneNumber, licenseNumber, licenseIssuedDate, licenseExpiryDate, address, role)
+      2. Remove the registration form JSX (the entire conditional rendering block when isRegistering=true)
+      3. Remove the registration validation logic in handleSubmit (lines 120-175 approximately)
+      4. Replace the "Don't have an account? Register" link with:
+         "Need an account? Contact your administrator for access."
+      5. Keep the handleSubmit login logic and forgot-password flow intact
+      
+      The backend /api/register endpoint stays — admins use it via admin dashboard.
+      This only removes the PUBLIC form that lets anyone register.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: [T1-1]
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/LoginPage.tsx
+        description: "Registration form with role dropdown (line 603), license fields (570-590), Gmail restriction (line 140)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Guards should not self-register — admin-only account creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 1
+        estimated_lines: 250
+        focus_area: "LoginPage.tsx registration flow"
+        verification:
+          - "No registration form visible on login page"
+          - "isRegistering state variable removed"
+          - "Register link replaced with 'Contact your administrator' message"
+          - "Login form still works normally"
+          - "Password reset flow still works"
+          - "Email verification flow for existing pending users still works"
+        acceptance_criteria:
+          - "Login page shows only login form + forgot password — no registration"
+          - "'Contact your administrator for access' message replaces register link"
+          - "No registration-specific state variables remain in LoginPage.tsx"
+          - "Backend /api/register endpoint is NOT modified"
+        failure_modes:
+          - scenario: "Email verification flow breaks because it shared state with registration"
+            likelihood: medium
+            impact: medium
+            mitigation: "Keep requiresVerification/verificationCode/verificationEmail states — they serve login verification too"
+        tech_stack:
+          - TypeScript
+          - React
+        test_coverage: "Verify login and forgot-password flows survive"
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T1-3
+    title: "Extract hardcoded emergency contacts to constants file"
+    description: |
+      Create a new constants file for emergency contacts:
+      1. Create DasiaAIO-Frontend/src/constants/emergencyContacts.ts
+      2. Export EMERGENCY_CONTACTS array with shape: { label: string, phone: string, role: string }[]
+      3. Populate with current hardcoded values:
+         - Operations Desk: +63 912 345 6789
+         - Site Supervisor: +63 901 234 5678
+         - HR / Compliance: +63 955 321 4567
+      4. Update GuardSupportTab.tsx (lines 73-89) to import and render from constants
+      5. Update UserDashboard.tsx field instructions modal (lines 1185-1187) to import from constants
+      6. Make phone numbers clickable tel: links in both locations
+      
+      This is extraction only — the EmergencyContactsBar component comes in Wave 2.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+        description: "Emergency contacts hardcoded at lines 73-89 — plain text, not clickable"
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Emergency contacts hardcoded at lines 1185-1187 in instructions modal"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Extract before building new components that depend on these"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 60
+        focus_area: "Emergency contact extraction"
+        verification:
+          - "constants/emergencyContacts.ts exists with typed EMERGENCY_CONTACTS export"
+          - "grep for '+63 912 345 6789' returns ONLY the constants file — no hardcoded JSX"
+          - "GuardSupportTab imports from constants and renders tel: links"
+          - "UserDashboard instructions modal imports from constants and renders tel: links"
+        acceptance_criteria:
+          - "Zero hardcoded phone numbers remain in JSX files"
+          - "All phone numbers are clickable tel: links on mobile"
+          - "Emergency contacts render identically in Support tab and Instructions modal"
+        failure_modes:
+          - scenario: "Missed a hardcoded phone number in another file"
+            likelihood: low
+            impact: low
+            mitigation: "Grep entire src/ for the phone number patterns after extraction"
+        tech_stack:
+          - TypeScript
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T1-4
+    title: "Simplify registration fields — remove Gmail restriction and make license optional"
+    description: |
+      In LoginPage.tsx, for the admin-facing registration flow (backend /api/register stays, 
+      but if any admin-side registration form exists, simplify it):
+      
+      Actually — since T1-2 removes the public form entirely, this task targets the BACKEND
+      validation and any admin-side create-user form:
+      
+      1. In LoginPage.tsx (before T1-2 removes it) or wherever admin creates users:
+         Remove the Gmail-only email validation (line 140: `!email.endsWith('@gmail.com')`)
+      2. Make license fields (licenseNumber, licenseIssuedDate, licenseExpiryDate) optional
+         in the frontend validation (line 134-138) — remove the "required for guard registration" error
+      3. Make address field optional
+      4. Core required fields should be: username, fullName, phoneNumber, email, password
+      
+      NOTE: This task must execute BEFORE T1-2 (which removes the form entirely) OR
+      it should target the backend validation if the backend enforces Gmail-only.
+      Check backend /api/register handler for email domain restrictions.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with: [T1-2]
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/LoginPage.tsx
+        description: "Gmail restriction at line 140, license required validation at lines 134-138"
+      - path: DasiaAIO-Backend/src/routes.rs
+        description: "Backend registration handler — check for email domain validation"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Business reality — not all guards have Gmail, license can be added later"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 40
+        focus_area: "Registration validation loosening"
+        verification:
+          - "No '@gmail.com' check exists in frontend or backend registration"
+          - "License fields are optional — registration succeeds without them"
+          - "Backend accepts registration with just username, fullName, phone, email, password"
+        acceptance_criteria:
+          - "Any valid email domain accepted for registration"
+          - "License number, dates, and address are optional fields"
+          - "Registration succeeds with minimum fields: username, fullName, phone, email, password"
+        failure_modes:
+          - scenario: "Backend has hardcoded Gmail check that frontend removal doesn't fix"
+            likelihood: medium
+            impact: medium
+            mitigation: "Check backend registration handler and remove Gmail validation there too"
+        tech_stack:
+          - TypeScript
+          - Rust
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T1-5
+    title: "Wave 1 integration check — trust removals verified"
+    description: |
+      Verify all Wave 1 changes integrate correctly:
+      1. Login page renders cleanly — no fake status indicators, no registration form
+      2. Login flow works end-to-end (login, forgot password)
+      3. Emergency contacts are imported from constants in all locations
+      4. All phone numbers are tel: links
+      5. No build errors, no console warnings from removed code
+      6. Guard dashboard still loads normally (no broken imports from changes)
+    wave: 1
+    agent: gem-reviewer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: [T1-1, T1-2, T1-3, T1-4]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/LoginPage.tsx
+        description: "Modified login page"
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+        description: "Modified to use constants"
+      - path: DasiaAIO-Frontend/src/constants/emergencyContacts.ts
+        description: "New constants file"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Gate check before building new features on cleaned foundation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 0
+        focus_area: null
+        verification:
+          - "npm run build succeeds with zero errors"
+          - "Login page visual inspection — clean, no fake elements"
+          - "Guard dashboard loads without errors"
+        acceptance_criteria:
+          - "Clean build with no TypeScript or lint errors"
+          - "All Wave 1 acceptance criteria met"
+        failure_modes: []
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAVE 2: CORE NEW FEATURES (panic button, incident simplification, contacts)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: T2-1
+    title: "Create PanicButton floating emergency component"
+    description: |
+      Build DasiaAIO-Frontend/src/components/guards/PanicButton.tsx:
+      
+      BEHAVIOR:
+      - Always-visible floating button (position: fixed, bottom-right, above tab nav)
+      - One tap — NO confirmation dialog, NO delay
+      - On tap:
+        1. navigator.vibrate([200, 100, 200]) if available (ignore if not)
+        2. Capture GPS via navigator.geolocation.getCurrentPosition (1s timeout)
+        3. POST to /api/incidents with: { title: "SOS EMERGENCY", description: "Emergency panic alert triggered by guard", 
+           location: GPS coords or "Location unavailable", priority: "critical", type: "PANIC" }
+        4. If network fails: enqueueOfflineAction with same payload
+        5. Visual feedback: button flashes green briefly on success, shows small "SOS Sent" text
+      
+      VISUAL:
+      - Large circle (min 64x64px), pulsing red glow animation (CSS keyframes)
+      - White "SOS" text or alert-triangle icon centered
+      - z-index above tab content, below modals (z-40)
+      - Touch target at least 48x48px (already covered by 64px size)
+      
+      ACCESSIBILITY:
+      - role="button", aria-label="Emergency SOS — tap to send distress signal"
+      - High contrast: white on red, meets 4.5:1 ratio
+      - Keyboard accessible: Enter/Space triggers
+      - aria-live="assertive" region for status feedback
+      
+      MOUNT POINT:
+      - Rendered inside UserDashboard component wrapper, OUTSIDE the tab content area
+      - Visible regardless of which tab (Mission/Resources/Support/Map) is active
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: ["Priority 1: PANIC BUTTON"]
+    priority: high
+    status: pending
+    dependencies: [T1-5]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Mount point — PanicButton should be rendered at the component root level, visible across all tabs"
+      - path: DasiaAIO-Frontend/src/utils/offlineQueue.ts
+        description: "enqueueOfflineAction for offline resilience"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Highest priority — 1-tap emergency signal for guards under duress"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 2
+        estimated_lines: 180
+        focus_area: "Guard emergency workflow"
+        verification:
+          - "PanicButton.tsx exists and exports a default FC"
+          - "Button is visible on all guard dashboard tabs"
+          - "Tapping sends POST to /api/incidents with type=PANIC"
+          - "Offline: action is queued to IndexedDB"
+          - "navigator.vibrate called on tap"
+          - "Accessible: role=button, aria-label present, keyboard operable"
+          - "Visual: pulsing red, at least 64px, z-40"
+        acceptance_criteria:
+          - "Guard can send SOS in exactly 1 tap from any tab"
+          - "SOS is queued offline if no network"
+          - "Visual feedback confirms SOS was sent or queued"
+          - "Button is always visible, never obscured by tab content"
+          - "Meets WCAG AA contrast requirements"
+        failure_modes:
+          - scenario: "GPS getCurrentPosition times out on slow devices"
+            likelihood: medium
+            impact: medium
+            mitigation: "1s timeout; fallback to 'Location unavailable' — never block the SOS send"
+          - scenario: "z-index conflict with modals"
+            likelihood: medium
+            impact: low
+            mitigation: "PanicButton at z-40, modals at z-50 — button hidden behind modal overlay is acceptable"
+        tech_stack:
+          - TypeScript
+          - React
+          - Tailwind CSS
+        test_coverage: "Unit test: renders, click handler fires, offline path queues action"
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T2-1b
+    title: "Design review — PanicButton UX and visual design"
+    description: |
+      Review the PanicButton component for:
+      1. Is it unmissable? Would a fatigued guard find it at 2 AM?
+      2. Is the pulsing animation distracting during normal use but noticeable in crisis?
+      3. Does it conflict with bottom nav touch targets?
+      4. Is the "SOS Sent" feedback clear enough?
+      5. Does it work in forced-colors / high-contrast mode?
+      6. Is the size appropriate for one-handed mobile use?
+    wave: 2
+    agent: gem-designer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: [T2-1]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/guards/PanicButton.tsx
+        description: "The panic button component to review"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Critical UX — must be validated by design review"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 30
+        focus_area: "PanicButton design validation"
+        verification:
+          - "Design review checklist completed"
+          - "Any issues documented with specific fix recommendations"
+        acceptance_criteria:
+          - "Button is visually prominent but not annoying during normal use"
+          - "Touch target is adequate for mobile one-handed use"
+          - "High contrast mode compatibility verified"
+        failure_modes: []
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T2-2
+    title: "Simplify incident report form to 2 required fields"
+    description: |
+      Modify the incident report modal in UserDashboard.tsx (handleIncidentSubmit ~line 662, 
+      modal JSX ~lines 1200-1280):
+      
+      REDUCE FORM:
+      1. Remove title field entirely — auto-generate from first 50 chars of description
+      2. Remove manual location field — auto-fill from current GPS position or last-known location
+      3. Keep: description (required, textarea), priority (keep dropdown, default "high")
+      4. Auto-fill on modal open:
+         - location: use missionLocation state (already tracked) or navigator.geolocation
+         - time: new Date().toISOString() added to POST body
+      5. Update handleIncidentSubmit:
+         - title = description.trim().substring(0, 50) + (description.length > 50 ? '...' : '')
+         - location = auto-resolved GPS or "Location pending"
+         - Add offline queue: wrap the fetch in try/catch, on network failure call enqueueOfflineAction
+      
+      KEEP modal structure — just fewer fields inside it.
+      Show a small "Location: [auto-detected coords]" label so guard sees it was captured.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: ["Priority 2: INCIDENT REPORT SIMPLIFICATION"]
+    priority: high
+    status: pending
+    dependencies: [T1-5]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Incident form handler at line 662, modal JSX at ~1200-1280, incidentForm state at line 149"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Reduce incident reporting from 6 interactions to 2 — critical for time-pressure scenarios"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 1
+        estimated_lines: 120
+        focus_area: "Incident form in UserDashboard.tsx"
+        verification:
+          - "Incident modal shows only description textarea and priority dropdown"
+          - "Title is auto-generated from description"
+          - "Location is auto-filled from GPS or last-known position"
+          - "Submit sends complete payload including auto-generated title and location"
+          - "Network failure queues to IndexedDB via enqueueOfflineAction"
+          - "Success feedback shown to guard"
+        acceptance_criteria:
+          - "Guard fills only description — 1 field + 1 tap to submit"
+          - "Incident report includes auto-generated title, GPS location, and timestamp"
+          - "Offline resilience: report is queued if network fails"
+          - "Form validation only requires non-empty description"
+        failure_modes:
+          - scenario: "GPS not available and no last-known location"
+            likelihood: medium
+            impact: low
+            mitigation: "Use 'Location unavailable' string — never block submission"
+        tech_stack:
+          - TypeScript
+          - React
+        test_coverage: "Test: submit with description only succeeds; offline fallback queues"
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T2-3
+    title: "Create EmergencyContactsBar — always-visible emergency contacts"
+    description: |
+      Build DasiaAIO-Frontend/src/components/guards/EmergencyContactsBar.tsx:
+      
+      1. Import EMERGENCY_CONTACTS from constants/emergencyContacts.ts (created in T1-3)
+      2. Render as a compact, always-visible bar at the bottom of the guard dashboard,
+         just above the tab navigation
+      3. Each contact: name label + clickable tel: link (phone icon + number)
+      4. Collapsible: small "Emergency Contacts ▼" toggle that expands to show all 3 numbers
+         Default state: collapsed (shows just the toggle label)
+         When expanded: shows 3 contacts as horizontal pills/chips with tel: links
+      5. Mount in UserDashboard.tsx — renders OUTSIDE tab content, BELOW PanicButton area,
+         ABOVE the bottom tab navigation bar
+      
+      ACCESSIBILITY:
+      - nav landmark with aria-label="Emergency contacts"
+      - Each link: aria-label="Call [contact name] at [number]"
+      - Toggle button: aria-expanded state
+      - High contrast: white text on dark surface
+      
+      Also: remove the emergency contacts card from GuardSupportTab.tsx (lines 73-89)
+      since they're now always visible. Replace with a note: "Emergency contacts are 
+      available at the bottom of every screen."
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: ["Priority 3: EMERGENCY CONTACT VISIBILITY"]
+    priority: high
+    status: pending
+    dependencies: [T1-3, T1-5]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/constants/emergencyContacts.ts
+        description: "Constants file created in T1-3"
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Mount point — below tab content, above nav"
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+        description: "Remove hardcoded emergency contacts card (lines 73-89)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Emergency contacts must be reachable from any tab, not buried in Support"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 120
+        focus_area: "Emergency contact accessibility"
+        verification:
+          - "EmergencyContactsBar.tsx exists"
+          - "Visible on all guard dashboard tabs"
+          - "Phone numbers are clickable tel: links"
+          - "GuardSupportTab no longer has hardcoded contact cards"
+          - "Toggle expand/collapse works"
+        acceptance_criteria:
+          - "Emergency contacts reachable from any tab in 1 tap (expand) + 1 tap (call)"
+          - "All numbers are clickable tel: links"
+          - "Contacts imported from constants — no hardcoded JSX"
+          - "Accessible: nav landmark, aria-labels, keyboard operable"
+        failure_modes:
+          - scenario: "Contacts bar takes too much vertical space on small screens"
+            likelihood: medium
+            impact: medium
+            mitigation: "Default collapsed; expanded state is 1 row of horizontal chips"
+        tech_stack:
+          - TypeScript
+          - React
+          - Tailwind CSS
+        test_coverage: "Test: renders contacts from constants, tel: links present"
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T2-4
+    title: "Wave 2 integration check — core features verified"
+    description: |
+      Verify all Wave 2 features work together:
+      1. PanicButton visible on all tabs, sends SOS on tap
+      2. Incident form reduced to description + priority, auto-fills location/title
+      3. EmergencyContactsBar visible on all tabs with clickable tel: links
+      4. No z-index conflicts between PanicButton, EmergencyContactsBar, and tab nav
+      5. Guard support tab still renders correctly without hardcoded contacts
+      6. Build succeeds, no console errors
+      7. Test on mobile viewport (375px width) — all elements reachable
+    wave: 2
+    agent: gem-reviewer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: [T2-1, T2-1b, T2-2, T2-3]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Main guard dashboard with all new components mounted"
+      - path: DasiaAIO-Frontend/src/components/guards/PanicButton.tsx
+        description: "Panic button component"
+      - path: DasiaAIO-Frontend/src/components/guards/EmergencyContactsBar.tsx
+        description: "Emergency contacts bar"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Gate check before offline resilience wave"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 0
+        focus_area: null
+        verification:
+          - "Visual inspection of guard dashboard with all new components"
+          - "Mobile viewport test at 375px"
+          - "npm run build succeeds"
+        acceptance_criteria:
+          - "All Wave 2 acceptance criteria met"
+          - "No visual overlap or z-index issues"
+          - "Mobile-friendly layout maintained"
+        failure_modes: []
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAVE 3: OFFLINE RESILIENCE IMPROVEMENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: T3-1
+    title: "Add offline pending actions badge and sync feedback"
+    description: |
+      Enhance offline visibility in the guard dashboard:
+      
+      1. Import getPendingCount from offlineQueue.ts (already exists, line 88)
+      2. In UserDashboard.tsx, add a small badge/indicator showing pending offline actions count:
+         - Poll getPendingCount() every 5 seconds (or on visibility change)
+         - Show as a small pill/badge near the offline banner or in the header area
+         - Text: "2 actions pending sync" (or "All synced ✓" when 0)
+         - Only visible when count > 0
+      3. Add success/failure feedback when offline actions sync:
+         - Listen for 'online' event → re-check pending count → if decreased, show "Synced successfully" toast
+         - If sync fails, show "Some actions failed to sync — will retry" message
+      4. Replace technical jargon in location tracking:
+         - "GPS stabilizing" → "Getting your location…"
+         - "Location heartbeat failed" → "Location update paused — will retry"
+         - Any "connectivity" language → plain "Online/Offline" 
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers: ["Priority 6: OFFLINE RESILIENCE IMPROVEMENTS"]
+    priority: medium
+    status: pending
+    dependencies: [T2-4]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/utils/offlineQueue.ts
+        description: "getPendingCount() at line 88 — exists but unused in UI"
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Offline banner at ~line 858, location tracking messages"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Guards need to know their actions are queued and will sync — builds trust"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 1
+        estimated_lines: 80
+        focus_area: "Offline UX in UserDashboard"
+        verification:
+          - "Pending count badge appears when offline actions exist"
+          - "Badge disappears when queue drains to 0"
+          - "Jargon-free language for all location/sync messages"
+          - "Success feedback when actions sync on reconnect"
+        acceptance_criteria:
+          - "Guard sees 'X actions pending sync' when offline actions are queued"
+          - "Guard sees 'Synced successfully' feedback when actions complete"
+          - "No technical jargon: no 'GPS stabilizing', no 'heartbeat', no 'connectivity'"
+          - "Sync status updates within 5 seconds of network change"
+        failure_modes:
+          - scenario: "getPendingCount polling causes performance issues"
+            likelihood: low
+            impact: low
+            mitigation: "5-second interval is negligible; IndexedDB count query is fast"
+        tech_stack:
+          - TypeScript
+          - React
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T3-2
+    title: "Wave 3 integration check — offline resilience verified"
+    description: |
+      Verify offline improvements:
+      1. Toggle browser offline mode → submit incident → verify it's queued
+      2. Check pending count badge appears
+      3. Toggle back online → verify badge updates
+      4. Verify all guard-facing text uses plain language (grep for technical terms)
+      5. Build succeeds
+    wave: 3
+    agent: gem-reviewer
+    prototype: false
+    priority: medium
+    status: pending
+    dependencies: [T3-1]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Guard dashboard with offline improvements"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Verify offline resilience before command center work"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 0
+        focus_area: null
+        verification:
+          - "Offline incident submission queues successfully"
+          - "Pending badge shows correct count"
+          - "No technical jargon in guard-facing text"
+        acceptance_criteria:
+          - "All Wave 3 acceptance criteria met"
+          - "Guard can understand every message without technical knowledge"
+        failure_modes: []
+        requires_review: true
+        review_depth: lightweight
+        review_security_sensitive: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAVE 4: COMMAND CENTER + FINAL VALIDATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+  - id: T4-1
+    title: "Add priority queue sorting to command center IncidentAlertFeed"
+    description: |
+      Enhance IncidentAlertFeed.tsx to add urgency-based priority sorting:
+      
+      1. Sort alerts by severity: critical first, then warning, then info
+      2. Within each severity level, sort by timestamp (most recent first)
+      3. Add a "NEEDS ATTENTION NOW" header section above the feed when critical alerts exist
+      4. Add visual emphasis for overdue alerts:
+         - If alert age > 15 minutes and severity=critical → add pulsing border animation
+         - If alert age > 30 minutes and severity=critical → add escalation text "OVERDUE — ESCALATE"
+      5. Keep the existing click-to-select interaction and OperationalEventContext integration
+      
+      Also update CommandCenterDashboard.tsx to pass a hint about PANIC-type incidents:
+      - If any alert has type="PANIC", it should always be at the top regardless of timestamp
+    wave: 4
+    agent: gem-implementer
+    prototype: false
+    covers: ["Priority 7: COMMAND CENTER PRIORITY QUEUE"]
+    priority: medium
+    status: pending
+    dependencies: [T3-2]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/IncidentAlertFeed.tsx
+        description: "Current alert feed — renders alerts with severity-based styling but no sorting"
+      - path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+        description: "Parent dashboard that passes alerts to IncidentAlertFeed"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Supervisors need PANIC alerts surfaced immediately — completes the panic workflow end-to-end"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 2
+        estimated_lines: 100
+        focus_area: "Command center incident prioritization"
+        verification:
+          - "Alerts sorted: PANIC first → critical → warning → info"
+          - "Within each level, sorted by timestamp desc"
+          - "NEEDS ATTENTION NOW header visible when critical alerts exist"
+          - "Overdue alerts (>15min critical) have pulsing border"
+          - "Escalation text shows for >30min critical alerts"
+        acceptance_criteria:
+          - "PANIC-type incidents always appear at top of feed"
+          - "Critical alerts sorted above warning and info"
+          - "Overdue critical alerts have clear visual escalation"
+          - "Existing click-to-select interaction preserved"
+        failure_modes:
+          - scenario: "OpsAlert type doesn't include a 'type' field for PANIC detection"
+            likelihood: medium
+            impact: medium
+            mitigation: "Use title pattern matching ('SOS EMERGENCY') or add type to alert interface"
+        tech_stack:
+          - TypeScript
+          - React
+          - Tailwind CSS
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: T4-2
+    title: "Wave 4 integration check and full regression review"
+    description: |
+      Final integration review across all 4 waves:
+      1. Login page: clean, no fake elements, no registration form
+      2. Guard dashboard: PanicButton visible, incident form simplified, EmergencyContactsBar visible
+      3. Offline: incident queue works, pending badge shows, sync feedback works
+      4. Command center: alerts sorted by priority, PANIC at top, overdue escalation
+      5. Full build succeeds (npm run build)
+      6. No TypeScript errors
+      7. Accessibility: all new components meet WCAG AA (contrast, keyboard, ARIA)
+      8. Security: no new vulnerabilities introduced (no hardcoded secrets, proper sanitization)
+    wave: 4
+    agent: gem-reviewer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: [T4-1]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/LoginPage.tsx
+        description: "Cleaned login page"
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Enhanced guard dashboard"
+      - path: DasiaAIO-Frontend/src/components/guards/PanicButton.tsx
+        description: "New panic button"
+      - path: DasiaAIO-Frontend/src/components/guards/EmergencyContactsBar.tsx
+        description: "New emergency contacts bar"
+      - path: DasiaAIO-Frontend/src/components/dashboard/IncidentAlertFeed.tsx
+        description: "Enhanced alert feed"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Final quality gate before shipping"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 0
+        focus_area: null
+        verification:
+          - "npm run build succeeds"
+          - "All prior wave acceptance criteria still pass"
+          - "No accessibility regressions"
+          - "No security issues"
+        acceptance_criteria:
+          - "All 8 priorities from the hardening spec are addressed"
+          - "Clean build with zero errors"
+          - "WCAG AA compliance for all new components"
+        failure_modes: []
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: true
+
+  - id: T4-3
+    title: "End-to-end browser validation — guard panic-to-command-center flow"
+    description: |
+      Use Playwright or manual browser testing to validate the full flow:
+      
+      Scenario 1: Guard Panic Flow
+      1. Login as guard user
+      2. Verify PanicButton visible on Mission tab
+      3. Switch to Support tab — verify PanicButton still visible
+      4. Tap PanicButton — verify SOS sent (check network tab or mock API)
+      5. Verify vibration API called
+      6. Verify "SOS Sent" feedback shown
+      
+      Scenario 2: Simplified Incident Report
+      1. On Mission tab, tap "Report Incident"
+      2. Verify only description + priority fields shown
+      3. Type description, submit — verify auto-generated title and GPS location in payload
+      
+      Scenario 3: Emergency Contacts
+      1. Verify EmergencyContactsBar toggle visible on all tabs
+      2. Expand — verify 3 contacts with tel: links
+      3. Verify contacts match constants file
+      
+      Scenario 4: Offline Resilience
+      1. Toggle offline in DevTools
+      2. Submit incident via modal — verify queued
+      3. Verify pending badge appears
+      4. Toggle online — verify sync feedback
+      
+      Scenario 5: Command Center (login as admin)
+      1. Navigate to command center dashboard
+      2. Verify incident feed sorted by severity
+      3. If PANIC incident exists, verify it's at top
+    wave: 4
+    agent: gem-browser-tester
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: [T4-2]
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Guard dashboard entry point"
+      - path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+        description: "Admin command center"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Validate real user flows end-to-end before shipping"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 2
+        estimated_lines: 0
+        focus_area: "Full flow validation"
+        verification:
+          - "All 5 scenarios pass"
+          - "No console errors during flows"
+          - "Mobile viewport (375px) tested"
+        acceptance_criteria:
+          - "Guard panic flow works: 1 tap → SOS sent → feedback shown"
+          - "Incident reporting: 1 field → submit → auto-fills rest"
+          - "Emergency contacts: visible, clickable, correct numbers"
+          - "Offline: queue works, sync feedback shows"
+          - "Command center: priority sorting works"
+        failure_modes:
+          - scenario: "Dev server not running during test"
+            likelihood: low
+            impact: high
+            mitigation: "Start dev server (npm run dev) before running tests"
+        validation_matrix:
+          - scenario: "Guard panic SOS flow"
+            steps:
+              - "Login as guard user at localhost:5173"
+              - "Locate PanicButton (floating red circle)"
+              - "Click PanicButton"
+              - "Verify network request to /api/incidents with type=PANIC"
+              - "Verify visual feedback (SOS Sent)"
+            expected_result: "SOS incident created with GPS coordinates"
+          - scenario: "Simplified incident report"
+            steps:
+              - "Click 'Report Incident' button on Mission tab"
+              - "Verify modal shows only description + priority"
+              - "Enter description text"
+              - "Click submit"
+              - "Verify request payload has auto-generated title and location"
+            expected_result: "Incident created with 1 field of manual input"
+          - scenario: "Emergency contacts visibility"
+            steps:
+              - "Check bottom of guard dashboard for EmergencyContactsBar"
+              - "Click expand toggle"
+              - "Verify 3 contacts with tel: links"
+              - "Switch tabs — verify bar persists"
+            expected_result: "Contacts reachable from any tab in 2 taps"
+          - scenario: "Offline incident queue"
+            steps:
+              - "Open DevTools → Network → toggle Offline"
+              - "Submit incident report"
+              - "Verify 'action pending sync' badge appears"
+              - "Toggle back Online"
+              - "Verify badge updates"
+            expected_result: "Incident queued offline, syncs on reconnect"
+          - scenario: "Command center priority sort"
+            steps:
+              - "Login as admin at localhost:5173"
+              - "Navigate to command center dashboard"
+              - "Verify incident alert feed is sorted by severity"
+              - "Verify PANIC incidents appear first"
+            expected_result: "Critical/PANIC alerts sorted to top"

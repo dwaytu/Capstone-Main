@@ -1,0 +1,316 @@
+plan_id: backend-server-config
+objective: Understand SENTINEL backend server configuration and diagnose ERR_CONNECTION_REFUSED on http://127.0.0.1:5000/api/health
+focus_area: backend-server-configuration
+created_at: "2026-04-04"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Backend is a Rust/Axum server (binary: `server`) that defaults to port 5000 on 0.0.0.0.
+  - Required env vars: DATABASE_URL (PostgreSQL), ADMIN_CODE (non-default). No `.env` file exists—only `.env.example`.
+  - Frontend resolves API URL from VITE_API_BASE_URL; `.env.development` points to Railway production, NOT localhost.
+  - The frontend will fail in dev because VITE_API_BASE_URL is set to the remote Railway URL, or if unset, config.ts throws an error demanding it.
+  - To run locally: create a `.env` in the backend dir, start PostgreSQL, then `cargo run --bin server`.
+
+research_metadata:
+  methodology: "hybrid retrieval: semantic_search + grep_search, sequential file reads of Cargo.toml, main.rs, config.rs, config.ts, .env files, docker-compose.yml, package.json"
+  scope: "Backend entry point, config, env vars, frontend API URL resolution, docker-compose, build scripts"
+  confidence: high
+  coverage: 95
+  decision_blockers: 1
+  research_blockers: 0
+
+files_analyzed:
+  - file: Cargo.toml
+    path: DasiaAIO-Backend/Cargo.toml
+    purpose: Rust package manifest — defines binary target and dependencies
+    key_elements:
+      - element: "[[bin]] name = 'server'"
+        type: pattern
+        location: "Cargo.toml:31-32"
+        description: "Single binary target 'server' with entry point at src/main.rs"
+      - element: "sqlx postgres feature"
+        type: variable
+        location: "Cargo.toml:11"
+        description: "PostgreSQL driver via sqlx with runtime-tokio-native-tls"
+    language: toml
+    lines: 32
+
+  - file: main.rs
+    path: DasiaAIO-Backend/src/main.rs
+    purpose: Server entry point — loads config, connects DB, runs migrations, builds Axum router, binds listener
+    key_elements:
+      - element: "config::Config::from_env()"
+        type: function
+        location: "main.rs:49"
+        description: "Loads all configuration from environment variables"
+      - element: "db::init_db_pool()"
+        type: function
+        location: "main.rs:53-56"
+        description: "Connects to PostgreSQL with retry logic (10 attempts, 5s delay)"
+      - element: "db::run_migrations()"
+        type: function
+        location: "main.rs:60"
+        description: "Runs inline SQL migrations on startup"
+      - element: "TcpListener::bind"
+        type: function
+        location: "main.rs:1597-1598"
+        description: "Binds to {server_host}:{server_port} — defaults 0.0.0.0:5000"
+      - element: "CORS fallback chain"
+        type: pattern
+        location: "main.rs:75-212"
+        description: "CORS_ORIGINS → CORS_ORIGIN → localhost allow-list fallback. In dev (no CORS env), allows localhost:5173, 127.0.0.1:5173, localhost:4173, localhost:3000, and native wrapper origins"
+    language: rust
+    lines: 1610
+
+  - file: config.rs
+    path: DasiaAIO-Backend/src/config.rs
+    purpose: Configuration struct loaded entirely from environment variables
+    key_elements:
+      - element: "Config struct"
+        type: class
+        location: "config.rs:3-13"
+        description: "Fields: app_env, server_host, server_port, database_url, gmail_user, gmail_password, admin_code, db_pool_max_connections, db_pool_acquire_timeout_secs"
+      - element: "Port resolution chain"
+        type: pattern
+        location: "config.rs:90-92"
+        description: "PORT → SERVER_PORT → default '5000'"
+      - element: "server_host default"
+        type: variable
+        location: "config.rs:103"
+        description: "SERVER_HOST defaults to '0.0.0.0'"
+      - element: "DATABASE_URL required"
+        type: variable
+        location: "config.rs:106-107"
+        description: "Mandatory — panics with Railway-specific help message if missing"
+      - element: "ADMIN_CODE validation"
+        type: pattern
+        location: "config.rs:98-100"
+        description: "ADMIN_CODE is required and must NOT equal the insecure default '122601'"
+      - element: "Production validation"
+        type: function
+        location: "config.rs:20-50"
+        description: "In production: JWT_SECRET must be 32+ chars, ADMIN_CODE must not be default, CORS_ORIGINS or CORS_ORIGIN must be set"
+    language: rust
+    lines: 126
+
+  - file: config.ts
+    path: DasiaAIO-Frontend/src/config.ts
+    purpose: Frontend API URL resolution — reads VITE_API_BASE_URL, validates, exports API_BASE_URL
+    key_elements:
+      - element: "resolveApiBaseUrl()"
+        type: function
+        location: "config.ts:63-79"
+        description: "Reads import.meta.env.VITE_API_BASE_URL. If set, validates it. If not set AND PROD, falls back to DEFAULT_PRODUCTION_API_BASE_URL. If not set AND DEV, throws error."
+      - element: "DEFAULT_PRODUCTION_API_BASE_URL"
+        type: variable
+        location: "config.ts:2"
+        description: "'https://backend-production-0c47.up.railway.app'"
+      - element: "validateApiBaseUrl()"
+        type: function
+        location: "config.ts:39-61"
+        description: "Validates URL format, HTTPS in prod, rejects localhost/private IPs in prod"
+    language: typescript
+    lines: 95
+
+  - file: .env.example
+    path: DasiaAIO-Backend/.env.example
+    purpose: Template for backend environment variables
+    key_elements:
+      - element: "DATABASE_URL template"
+        type: variable
+        location: ".env.example:7"
+        description: "postgresql://postgres:password@localhost:5432/guard_firearm_system"
+    language: shell
+    lines: 28
+
+  - file: .env.development
+    path: DasiaAIO-Frontend/.env.development
+    purpose: Frontend dev environment — loaded by Vite in dev mode
+    key_elements:
+      - element: "VITE_API_BASE_URL"
+        type: variable
+        location: ".env.development:1"
+        description: "Set to 'https://backend-production-0c47.up.railway.app' — points to REMOTE production, NOT localhost"
+    language: shell
+    lines: 1
+
+  - file: docker-compose.yml
+    path: DasiaAIO-Backend/docker-compose.yml
+    purpose: Docker Compose for local dev — PostgreSQL + backend
+    key_elements:
+      - element: "postgres service"
+        type: pattern
+        location: "docker-compose.yml:2-17"
+        description: "PostgreSQL 15-alpine on port 5432. User: postgres, Password: postgres, DB: guard_firearm_system"
+      - element: "backend service"
+        type: pattern
+        location: "docker-compose.yml:19-41"
+        description: "Builds from Dockerfile, maps port 5000:5000, sets DATABASE_URL, ADMIN_CODE=122601"
+    language: yaml
+    lines: 55
+
+  - file: db.rs
+    path: DasiaAIO-Backend/src/db.rs
+    purpose: Database pool initialization with retry logic and inline migrations
+    key_elements:
+      - element: "init_db_pool"
+        type: function
+        location: "db.rs:4-47"
+        description: "Connects to PostgreSQL with configurable max_connections and acquire_timeout. Retries 10 times with 5s delay."
+    language: rust
+    lines: 50
+
+  - file: vite.config.ts
+    path: DasiaAIO-Frontend/vite.config.ts
+    purpose: Vite configuration — NO proxy configured for API
+    key_elements:
+      - element: "No proxy"
+        type: pattern
+        location: "vite.config.ts:1-36"
+        description: "No server.proxy block exists. Frontend makes direct requests to VITE_API_BASE_URL."
+    language: typescript
+    lines: 36
+
+patterns_found:
+  - category: architecture
+    pattern: "Direct API URL via env var (no Vite proxy)"
+    description: "Frontend uses VITE_API_BASE_URL as a fully-qualified URL for all API calls. No Vite dev proxy is configured. The frontend makes direct fetch() calls to the backend origin."
+    examples:
+      - file: config.ts
+        location: "DasiaAIO-Frontend/src/config.ts:63-79"
+        snippet: |
+          const configuredUrl = import.meta.env.VITE_API_BASE_URL
+          // If not set in DEV, throws error
+    prevalence: common
+
+  - category: architecture
+    pattern: "Port resolution chain: PORT → SERVER_PORT → 5000"
+    description: "Backend checks PORT first (Railway convention), then SERVER_PORT, then defaults to 5000."
+    examples:
+      - file: config.rs
+        location: "DasiaAIO-Backend/src/config.rs:90-92"
+        snippet: |
+          let port_str = env::var("PORT")
+              .or_else(|_| env::var("SERVER_PORT"))
+              .unwrap_or_else(|_| "5000".to_string());
+    prevalence: common
+
+  - category: error_handling
+    pattern: "ADMIN_CODE must not be default"
+    description: "config.rs rejects the insecure default ADMIN_CODE '122601'. This will prevent startup if .env.example is copied as-is."
+    examples:
+      - file: config.rs
+        location: "DasiaAIO-Backend/src/config.rs:98-100"
+        snippet: |
+          if admin_code == "122601" {
+              return Err("ADMIN_CODE must not use the insecure default value.".to_string());
+          }
+    prevalence: common
+
+  - category: architecture
+    pattern: "CORS localhost fallback in dev"
+    description: "When neither CORS_ORIGINS nor CORS_ORIGIN is set, the server allows localhost:5173, 127.0.0.1:5173, and several other localhost origins."
+    examples:
+      - file: main.rs
+        location: "DasiaAIO-Backend/src/main.rs:180-196"
+        snippet: |
+          "CORS_ORIGINS/CORS_ORIGIN not set. Allowing localhost origins only."
+    prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: Axum HTTP server
+      responsibility: "Serves REST API on configurable host:port"
+      location: DasiaAIO-Backend/src/main.rs
+      relationship_to_domain: "Primary server process"
+    - component: PostgreSQL database
+      responsibility: "Persistent data store for all application data"
+      location: "Docker container or external service"
+      relationship_to_domain: "Required dependency — server fails to start without it"
+    - component: Frontend config module
+      responsibility: "Resolves API base URL from VITE_API_BASE_URL env var"
+      location: DasiaAIO-Frontend/src/config.ts
+      relationship_to_domain: "Determines which backend the frontend talks to"
+
+  data_flow_involving_domain: |
+    1. Frontend loads VITE_API_BASE_URL from .env.development (or .env.web/.env.production)
+    2. config.ts validates and exports API_BASE_URL
+    3. App.tsx and all components use `${API_BASE_URL}/api/...` for fetch calls
+    4. Backend binds to 0.0.0.0:{PORT|SERVER_PORT|5000}
+    5. Backend requires DATABASE_URL to connect to PostgreSQL before serving
+
+related_technology_stack:
+  languages_used_in_domain:
+    - Rust
+    - TypeScript
+  frameworks_used_in_domain:
+    - name: Axum 0.7
+      usage_in_domain: "HTTP server framework with routing, middleware, WebSocket support"
+    - name: Tokio
+      usage_in_domain: "Async runtime for the server"
+    - name: SQLx 0.8
+      usage_in_domain: "Async PostgreSQL driver with compile-time query checking"
+    - name: Vite
+      usage_in_domain: "Frontend dev server, env var injection via import.meta.env"
+  libraries_used_in_domain:
+    - name: tower-http
+      purpose_in_domain: "CORS layer, tracing layer"
+    - name: dotenv
+      purpose_in_domain: "Loads .env file into process environment"
+    - name: jsonwebtoken
+      purpose_in_domain: "JWT auth token handling"
+
+related_conventions:
+  naming_patterns_in_domain: "Environment variables use SCREAMING_SNAKE_CASE. Vite vars prefixed with VITE_."
+  structure_of_domain: "Config loaded once at startup via Config::from_env(). Frontend config resolved once at module import."
+  error_handling_in_domain: "Config errors return descriptive String errors. DB connection retries 10 times. Frontend config throws on invalid/missing URL."
+
+related_dependencies:
+  internal:
+    - component: config.rs
+      relationship_to_domain: "Provides Config struct consumed by main.rs"
+      direction: outbound
+    - component: db.rs
+      relationship_to_domain: "Provides database pool consumed by main.rs"
+      direction: outbound
+    - component: config.ts
+      relationship_to_domain: "Provides API_BASE_URL consumed by all frontend components"
+      direction: outbound
+  external:
+    - name: PostgreSQL 15+
+      purpose_for_domain: "Required database — server cannot start without it"
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: ADMIN_CODE
+      location: "config.rs:98-100"
+      concern: "Must not use default value '122601'. Blocks startup if default is detected."
+    - area: JWT_SECRET
+      location: "config.rs:24-33"
+      concern: "Must be 32+ characters in production."
+    - area: DATABASE_URL
+      location: "config.rs:106-107"
+      concern: "Contains credentials. No .env file exists — only .env.example."
+    - area: CORS configuration
+      location: "main.rs:75-212"
+      concern: "Dev fallback allows localhost origins. Production requires explicit CORS_ORIGINS."
+  authentication_patterns_in_domain: "JWT-based with access + refresh tokens"
+  authorization_patterns_in_domain: "Role-based: guard, supervisor, admin, superadmin"
+  data_validation_in_domain: "Config validates env vars at startup. Frontend validates API URL format/protocol."
+
+open_questions:
+  - question: "Is there a .env file in the backend directory that was git-ignored?"
+    context: "file_search found only .env.example, not .env. The .gitignore likely excludes .env files. The dev may need to create one."
+    type: decision_blocker
+    affects: ["backend-startup"]
+
+gaps:
+  - area: "Missing local .env file"
+    description: "No DasiaAIO-Backend/.env file exists. The developer must create one from .env.example with a non-default ADMIN_CODE and valid DATABASE_URL."
+    impact: decision_blocker
+    affects: ["backend-startup"]
+  - area: "Frontend .env.development points to remote"
+    description: ".env.development sets VITE_API_BASE_URL to Railway production URL, not http://127.0.0.1:5000. For local dev, this must be changed."
+    impact: decision_blocker
+    affects: ["frontend-backend-connectivity"]

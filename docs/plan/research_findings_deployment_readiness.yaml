@@ -1,0 +1,740 @@
+plan_id: deployment-readiness-20260404
+objective: Assess the current deployment readiness state of the SENTINEL platform
+focus_area: deployment-pipeline-build-release
+created_at: "2026-04-04"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - The release pipeline (.github/workflows/release.yml) is comprehensive and covers web, desktop (Tauri/Windows), and Android (Capacitor) with a quality gate. A successful manual CI run (23929317544) has validated all build jobs.
+  - All four packages (root, frontend, android-capacitor, desktop-tauri) are at version 1.0.0. Version sync tooling exists and is automated.
+  - Railway deployment is configured for both frontend (Dockerfile + serve) and backend (Rust multi-stage Dockerfile) with health checks.
+  - Android signing is enforced in CI via secrets; desktop MSI/NSIS bundles are produced but unsigned (no code-signing certificate configured).
+  - Key risks: Tauri updater keys are placeholder strings, backend CI workflow relies solely on docker-compose health check (no cargo test in its own CI), and no iOS build path exists.
+
+research_metadata:
+  methodology: "Hybrid retrieval: file_search + grep_search + read_file across .github/workflows/, package.json files, Dockerfiles, railway.json, build scripts, and platform wrapper configs"
+  scope: "Full deployment pipeline — CI/CD workflows, build scripts, Docker, Railway, platform wrappers (Android, Desktop), versioning, artifact naming, signing"
+  confidence: high
+  coverage: 95
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: release.yml
+    path: .github/workflows/release.yml
+    purpose: Governed multi-platform release workflow — orchestrates web, desktop, and Android builds with quality gate and GitHub Release publishing
+    key_elements:
+      - element: prepare job
+        type: function
+        location: release.yml:31
+        description: Resolves release metadata (tag, app version, android version code) and generates release notes + What's New summary
+      - element: quality-gate job
+        type: function
+        location: release.yml:95
+        description: Runs npm test (frontend Jest) and cargo test (backend) before any artifact builds proceed
+      - element: web job
+        type: function
+        location: release.yml:121
+        description: Builds production Vite bundle with VITE_API_BASE_URL + VITE_APP_VERSION, tars to sentinel-web-dist.tar.gz, renames via rename-artifacts.js
+      - element: desktop job
+        type: function
+        location: release.yml:195
+        description: Builds Tauri MSI + NSIS installers on windows-latest runner with Rust toolchain
+      - element: android job
+        type: function
+        location: release.yml:264
+        description: Sets up Java 21 + Android SDK, materializes keystore from base64 secret, builds debug + signed release APK/AAB
+      - element: publish job
+        type: function
+        location: release.yml:400
+        description: Aggregates all artifacts and publishes GitHub Release (only on tag-triggered runs)
+    language: yaml
+    lines: 450
+
+  - file: deploy-docs.yml
+    path: .github/workflows/deploy-docs.yml
+    purpose: Deploys docs/ directory to GitHub Pages on main branch pushes
+    key_elements:
+      - element: deploy job
+        type: function
+        location: deploy-docs.yml:22
+        description: Uses actions/upload-pages-artifact + actions/deploy-pages to publish docs + screenshots
+    language: yaml
+    lines: 48
+
+  - file: test.yml
+    path: DasiaAIO-Frontend/.github/workflows/test.yml
+    purpose: Frontend quality gate — runs npm ci + npm run build + npm test on push/PR to main
+    key_elements:
+      - element: build-and-test job
+        type: function
+        location: test.yml:16
+        description: Node 20 CI with npm ci, build, and Jest tests
+    language: yaml
+    lines: 42
+
+  - file: ci.yml
+    path: DasiaAIO-Backend/.github/workflows/ci.yml
+    purpose: Backend quality gate — builds Docker image and checks /api/health endpoint
+    key_elements:
+      - element: build-and-health-check job
+        type: function
+        location: ci.yml:18
+        description: docker compose up -d --build then curl health endpoint with 60-attempt retry loop
+    language: yaml
+    lines: 48
+
+  - file: package.json (root)
+    path: package.json
+    purpose: Root orchestration scripts for multi-platform release
+    key_elements:
+      - element: release:all script
+        type: variable
+        location: package.json:14
+        description: Delegates to DasiaAIO-Frontend's release:all which chains web, desktop, and android
+      - element: version field
+        type: variable
+        location: package.json:2
+        description: "1.0.0"
+    language: json
+    lines: 18
+
+  - file: package.json (frontend)
+    path: DasiaAIO-Frontend/package.json
+    purpose: Frontend build/test/release scripts
+    key_elements:
+      - element: release:web
+        type: variable
+        location: DasiaAIO-Frontend/package.json:12
+        description: "release:check -- web && vite build --mode web"
+      - element: release:desktop
+        type: variable
+        location: DasiaAIO-Frontend/package.json:13
+        description: "release:check -- desktop && vite build --mode desktop && tauri:build:prod"
+      - element: release:android
+        type: variable
+        location: DasiaAIO-Frontend/package.json:14
+        description: "release:check -- android && vite build --mode mobile && release:assemble"
+      - element: version field
+        type: variable
+        location: DasiaAIO-Frontend/package.json:5
+        description: "1.0.0"
+    language: json
+    lines: 68
+
+  - file: package.json (android-capacitor)
+    path: apps/android-capacitor/package.json
+    purpose: Capacitor Android wrapper with sync/assemble/bundle scripts
+    key_elements:
+      - element: version field
+        type: variable
+        location: apps/android-capacitor/package.json:4
+        description: "1.0.0"
+      - element: release:assemble
+        type: variable
+        location: apps/android-capacitor/package.json:9
+        description: "sync && gradlew.bat :app:assembleRelease"
+    language: json
+    lines: 25
+
+  - file: package.json (desktop-tauri)
+    path: apps/desktop-tauri/package.json
+    purpose: Tauri desktop wrapper with build scripts
+    key_elements:
+      - element: version field
+        type: variable
+        location: apps/desktop-tauri/package.json:4
+        description: "1.0.0"
+      - element: tauri:build:prod
+        type: variable
+        location: apps/desktop-tauri/package.json:8
+        description: "tauri build -- --target-dir target-release"
+    language: json
+    lines: 14
+
+  - file: Cargo.toml (backend)
+    path: DasiaAIO-Backend/Cargo.toml
+    purpose: Rust backend crate manifest
+    key_elements:
+      - element: version field
+        type: variable
+        location: DasiaAIO-Backend/Cargo.toml:3
+        description: "1.0.0"
+    language: toml
+    lines: 32
+
+  - file: Cargo.toml (desktop-tauri)
+    path: apps/desktop-tauri/src-tauri/Cargo.toml
+    purpose: Tauri desktop Rust crate manifest
+    key_elements:
+      - element: version field
+        type: variable
+        location: apps/desktop-tauri/src-tauri/Cargo.toml:3
+        description: "1.0.0"
+    language: toml
+    lines: 19
+
+  - file: tauri.conf.json
+    path: apps/desktop-tauri/src-tauri/tauri.conf.json
+    purpose: Tauri app config — window, security CSP, updater, bundle targets
+    key_elements:
+      - element: version field
+        type: variable
+        location: tauri.conf.json:4
+        description: "1.0.0"
+      - element: updater pubkey
+        type: variable
+        location: tauri.conf.json:38
+        description: "${TAURI_UPDATER_PUBLIC_KEY} — placeholder, not a real key"
+      - element: updater endpoint
+        type: variable
+        location: tauri.conf.json:40
+        description: "${TAURI_UPDATER_ENDPOINT} — placeholder, not a real URL"
+      - element: bundle targets
+        type: variable
+        location: tauri.conf.json:45
+        description: '["msi", "nsis"]'
+    language: json
+    lines: 50
+
+  - file: capacitor.config.ts
+    path: apps/android-capacitor/capacitor.config.ts
+    purpose: Capacitor Android config — webDir, scheme, plugins
+    key_elements:
+      - element: appId
+        type: variable
+        location: capacitor.config.ts:6
+        description: "com.sentinel.app"
+      - element: webDir
+        type: variable
+        location: capacitor.config.ts:8
+        description: "../../DasiaAIO-Frontend/app-dist"
+      - element: production detection
+        type: pattern
+        location: capacitor.config.ts:3
+        description: "Uses CAPACITOR_ENV or NODE_ENV to toggle cleartext/mixed-content/debugging"
+    language: typescript
+    lines: 33
+
+  - file: build.gradle
+    path: apps/android-capacitor/android/app/build.gradle
+    purpose: Android app Gradle config — signing, versioning, namespace
+    key_elements:
+      - element: signing config
+        type: pattern
+        location: build.gradle:15-90
+        description: "Reads SENTINEL_UPLOAD_STORE_FILE/PASSWORD/KEY_ALIAS/KEY_PASSWORD from env or Gradle properties. Enforces signed release unless SENTINEL_ALLOW_UNSIGNED_RELEASE=true."
+      - element: namespace
+        type: variable
+        location: build.gradle:87
+        description: "com.sentinel.app"
+      - element: version derivation
+        type: pattern
+        location: build.gradle:57-65
+        description: "versionName from SENTINEL_APP_VERSION; versionCode = major*10000 + minor*100 + patch"
+    language: groovy
+    lines: 120
+
+  - file: variables.gradle
+    path: apps/android-capacitor/android/variables.gradle
+    purpose: Android SDK version variables
+    key_elements:
+      - element: compileSdkVersion
+        type: variable
+        location: variables.gradle:3
+        description: "35"
+      - element: targetSdkVersion
+        type: variable
+        location: variables.gradle:4
+        description: "35"
+      - element: minSdkVersion
+        type: variable
+        location: variables.gradle:2
+        description: "23"
+    language: groovy
+    lines: 15
+
+  - file: Dockerfile (frontend)
+    path: DasiaAIO-Frontend/Dockerfile
+    purpose: Multi-stage Docker build — Node 20 builder for Vite, then serve static
+    key_elements:
+      - element: build args
+        type: variable
+        location: Dockerfile:9-10
+        description: "VITE_API_BASE_URL and VITE_APP_VERSION injected as build args"
+      - element: serve command
+        type: variable
+        location: Dockerfile:31
+        description: 'serve -s app-dist -l ${PORT:-3000}'
+    language: dockerfile
+    lines: 31
+
+  - file: Dockerfile (backend)
+    path: DasiaAIO-Backend/Dockerfile
+    purpose: Multi-stage Rust build — bookworm builder + slim runtime with non-root user
+    key_elements:
+      - element: SQLX_OFFLINE
+        type: variable
+        location: Dockerfile:12
+        description: "true — requires sqlx-data.json or .sqlx/ for compile-time query checking"
+      - element: non-root user
+        type: pattern
+        location: Dockerfile:21-23
+        description: "Creates sentinel user/group, runs as non-root"
+      - element: Rust version
+        type: variable
+        location: Dockerfile:2
+        description: "1.93.1-bookworm"
+    language: dockerfile
+    lines: 34
+
+  - file: docker-compose.yml
+    path: DasiaAIO-Backend/docker-compose.yml
+    purpose: Local dev compose — Postgres 15 + backend with health check
+    key_elements:
+      - element: postgres service
+        type: pattern
+        location: docker-compose.yml:2-17
+        description: "Postgres 15 Alpine with pg_isready health check"
+      - element: backend service
+        type: pattern
+        location: docker-compose.yml:19-39
+        description: "Backend with DATABASE_URL, ADMIN_CODE, GMAIL vars, depends_on postgres healthy"
+    language: yaml
+    lines: 55
+
+  - file: railway.json (frontend)
+    path: DasiaAIO-Frontend/railway.json
+    purpose: Railway deployment config for frontend
+    key_elements:
+      - element: builder
+        type: variable
+        location: railway.json:4
+        description: "DOCKERFILE"
+      - element: healthcheckPath
+        type: variable
+        location: railway.json:7
+        description: "/"
+    language: json
+    lines: 13
+
+  - file: railway.json (backend)
+    path: DasiaAIO-Backend/railway.json
+    purpose: Railway deployment config for backend
+    key_elements:
+      - element: builder
+        type: variable
+        location: railway.json:4
+        description: "DOCKERFILE"
+      - element: healthcheckPath
+        type: variable
+        location: railway.json:7
+        description: "/api/health"
+      - element: startCommand
+        type: variable
+        location: railway.json:6
+        description: "/app/server"
+    language: json
+    lines: 13
+
+  - file: release-version.js
+    path: scripts/release-version.js
+    purpose: Parses and normalizes semantic version input; computes Android versionCode
+    key_elements:
+      - element: normalizeVersion
+        type: function
+        location: release-version.js:4
+        description: "Strips leading v, validates semver, returns releaseTag/appVersion/major/minor/patch"
+      - element: computeAndroidVersionCode
+        type: function
+        location: release-version.js:21
+        description: "major*10000 + minor*100 + patch"
+    language: javascript
+    lines: 80
+
+  - file: sync-release-version.js
+    path: scripts/sync-release-version.js
+    purpose: Synchronizes version across all package.json files, tauri.conf.json, Cargo.toml, and .env.example files
+    key_elements:
+      - element: updateJsonVersion
+        type: function
+        location: sync-release-version.js:15
+        description: "Updates version field in any JSON file"
+      - element: updateTauriCargoVersion
+        type: function
+        location: sync-release-version.js:38
+        description: "Replaces version in [package] section of Tauri Cargo.toml"
+      - element: run
+        type: function
+        location: sync-release-version.js:82
+        description: "Updates root, frontend, android, desktop package.json + tauri.conf.json + Cargo.toml + .env.example files"
+    language: javascript
+    lines: 105
+
+  - file: generate-release-notes.js
+    path: scripts/generate-release-notes.js
+    purpose: Extracts release notes from CHANGELOG.md for a given version; generates summary for in-app What's New
+    key_elements:
+      - element: findSection
+        type: function
+        location: generate-release-notes.js:39
+        description: "Locates the CHANGELOG section matching the release tag"
+      - element: buildSummary
+        type: function
+        location: generate-release-notes.js:66
+        description: "Extracts first 3 bullets, truncated to 320 chars for What's New"
+    language: javascript
+    lines: 110
+
+  - file: rename-artifacts.js
+    path: scripts/rename-artifacts.js
+    purpose: Renames build artifacts to deterministic names per platform and version
+    key_elements:
+      - element: buildBaseName
+        type: function
+        location: rename-artifacts.js:60
+        description: "sentinel-web-v{version}, sentinel-desktop-windows-v{version}, SENTINEL_v{version} for android"
+    language: javascript
+    lines: 85
+
+  - file: ensure-production-env.mjs
+    path: DasiaAIO-Frontend/scripts/ensure-production-env.mjs
+    purpose: Pre-flight check for release builds — validates VITE_API_BASE_URL is HTTPS non-private, VITE_APP_VERSION is set
+    key_elements:
+      - element: DISALLOWED_HOSTS
+        type: variable
+        location: ensure-production-env.mjs:2
+        description: "Rejects localhost, 127.0.0.1, 0.0.0.0"
+      - element: isPrivateHost
+        type: function
+        location: ensure-production-env.mjs:12
+        description: "Rejects 192.168.x, 10.x, 172.16-31.x"
+    language: javascript
+    lines: 30
+
+  - file: setup-android-signing.ps1
+    path: scripts/setup-android-signing.ps1
+    purpose: PowerShell script to generate Android signing keystore and print GitHub Actions secret values
+    key_elements:
+      - element: keytool invocation
+        type: function
+        location: setup-android-signing.ps1:50+
+        description: "Generates sentinel-release.keystore, base64-encodes it, prints secret values"
+    language: powershell
+    lines: 60
+
+  - file: CHANGELOG.md
+    path: CHANGELOG.md
+    purpose: Version history — latest entry is 1.0.0 (2026-03-29)
+    key_elements:
+      - element: "1.0.0 entry"
+        type: variable
+        location: CHANGELOG.md:5
+        description: "Added: unified release orchestration, tag-driven workflow, What's New modal. Changed: Android identity, versionCode derivation. Security: signing enforcement."
+    language: markdown
+    lines: 18
+
+  - file: PRODUCTION_ROLLOUT.md
+    path: PRODUCTION_ROLLOUT.md
+    purpose: Comprehensive multi-platform production deployment guide
+    key_elements:
+      - element: Architecture overview
+        type: pattern
+        location: PRODUCTION_ROLLOUT.md:7-12
+        description: "Web (Railway), Desktop (Tauri MSI), Mobile (Capacitor APK/AAB), Backend (Railway)"
+      - element: Validated CI run
+        type: variable
+        location: PRODUCTION_ROLLOUT.md:135
+        description: "Manual run 23929317544 completed all build jobs successfully"
+      - element: Security notes
+        type: pattern
+        location: PRODUCTION_ROLLOUT.md:155
+        description: "Production Capacitor disables cleartext; TLS-only; no unsigned Android releases"
+    language: markdown
+    lines: 165
+
+patterns_found:
+  - category: architecture
+    pattern: Monorepo with delegated platform wrappers
+    description: Root package.json delegates to DasiaAIO-Frontend scripts, which further delegate to apps/android-capacitor and apps/desktop-tauri
+    examples:
+      - file: package.json
+        location: package.json:10-14
+        snippet: '"build:android": "npm run build:android --prefix DasiaAIO-Frontend"'
+      - file: DasiaAIO-Frontend/package.json
+        location: DasiaAIO-Frontend/package.json:10
+        snippet: '"build:android": "vite build --mode mobile && npm run sync --prefix ../apps/android-capacitor"'
+    prevalence: common
+
+  - category: architecture
+    pattern: Pre-flight environment validation for release builds
+    description: ensure-production-env.mjs validates required env vars and rejects private/localhost API URLs before any release build proceeds
+    examples:
+      - file: DasiaAIO-Frontend/scripts/ensure-production-env.mjs
+        location: ensure-production-env.mjs:1-7
+        snippet: "const REQUIRED_VARS = ['VITE_API_BASE_URL', 'VITE_APP_VERSION']"
+    prevalence: common
+
+  - category: architecture
+    pattern: Docker multi-stage builds
+    description: Both frontend (Node builder + serve) and backend (Rust builder + debian-slim runtime) use multi-stage Dockerfiles reducing image size
+    examples:
+      - file: DasiaAIO-Backend/Dockerfile
+        location: Dockerfile:2
+        snippet: "FROM rust:1.93.1-bookworm AS builder"
+      - file: DasiaAIO-Frontend/Dockerfile
+        location: Dockerfile:2
+        snippet: "FROM node:20-alpine as builder"
+    prevalence: common
+
+  - category: naming
+    pattern: Deterministic artifact naming
+    description: rename-artifacts.js produces sentinel-web-v{ver}.tar.gz, sentinel-desktop-windows-v{ver}.msi/.exe, SENTINEL_v{ver}.apk/.aab
+    examples:
+      - file: scripts/rename-artifacts.js
+        location: rename-artifacts.js:60-63
+        snippet: "if (platform === 'web') return `sentinel-web-v${normalizedVersion}`"
+    prevalence: common
+
+  - category: structure
+    pattern: Version synchronization across all targets
+    description: sync-release-version.js updates 4 package.json files + tauri.conf.json + Tauri Cargo.toml + .env.example files from a single version input
+    examples:
+      - file: scripts/sync-release-version.js
+        location: sync-release-version.js:82-93
+        snippet: "updateJsonVersion('package.json', versionInfo.appVersion)"
+    prevalence: common
+
+  - category: architecture
+    pattern: Android signed-only release enforcement
+    description: build.gradle fails tasks containing 'release' if signing credentials are missing (unless SENTINEL_ALLOW_UNSIGNED_RELEASE is explicitly true)
+    examples:
+      - file: apps/android-capacitor/android/app/build.gradle
+        location: build.gradle:70-73
+        snippet: "throw new RuntimeException('Release signing credentials are required...')"
+    prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: GitHub Actions Release Workflow
+      responsibility: Orchestrates multi-platform builds, quality gate, and GitHub Release publishing
+      location: .github/workflows/release.yml
+      relationship_to_domain: primary deployment pipeline
+
+    - component: Frontend Vite Build System
+      responsibility: Produces app-dist/ web bundle in web, mobile, or desktop mode
+      location: DasiaAIO-Frontend/vite.config.ts
+      relationship_to_domain: core build target consumed by all platform wrappers
+
+    - component: Capacitor Android Wrapper
+      responsibility: Wraps web bundle into native Android app with Gradle build
+      location: apps/android-capacitor/
+      relationship_to_domain: Android release artifact production
+
+    - component: Tauri Desktop Wrapper
+      responsibility: Wraps web bundle into native desktop app (MSI/NSIS)
+      location: apps/desktop-tauri/
+      relationship_to_domain: Desktop release artifact production
+
+    - component: Railway Deployment (Frontend + Backend)
+      responsibility: Hosts web SPA and Rust API in production
+      location: DasiaAIO-Frontend/railway.json, DasiaAIO-Backend/railway.json
+      relationship_to_domain: Production web hosting
+
+    - component: Release Tooling Scripts
+      responsibility: Version normalization, sync, release notes generation, artifact renaming
+      location: scripts/
+      relationship_to_domain: Supports CI and local release workflows
+
+  interfaces_used_by_domain:
+    - interface: GitHub Actions Secrets
+      location: .github/workflows/release.yml
+      usage_pattern: "SENTINEL_ANDROID_KEYSTORE_BASE64, SENTINEL_UPLOAD_STORE_PASSWORD, SENTINEL_UPLOAD_KEY_ALIAS, SENTINEL_UPLOAD_KEY_PASSWORD"
+
+    - interface: Railway Build System
+      location: DasiaAIO-Frontend/railway.json, DasiaAIO-Backend/railway.json
+      usage_pattern: "Dockerfile builder with health checks"
+
+    - interface: VITE_* Environment Variables
+      location: DasiaAIO-Frontend/scripts/ensure-production-env.mjs
+      usage_pattern: "VITE_API_BASE_URL, VITE_APP_VERSION, VITE_WHATS_NEW injected at build time"
+
+  data_flow_involving_domain: |
+    1. Developer triggers release via git tag push (v*) or manual workflow_dispatch
+    2. prepare job resolves version metadata and generates release notes from CHANGELOG.md
+    3. quality-gate job runs Jest (frontend) + cargo test (backend) — build fails here if tests fail
+    4. web/desktop/android jobs run in parallel, each:
+       a. Installs dependencies
+       b. Runs sync-release-version.js to align all manifests
+       c. Builds platform artifact with production env vars
+       d. Renames and uploads artifacts
+    5. publish job aggregates all artifacts and creates GitHub Release (tag-triggered only)
+    6. Railway deploys frontend/backend independently via Dockerfile on git push to main
+
+  key_relationships_to_domain:
+    - from: release.yml
+      to: scripts/release-version.js
+      relationship: calls
+    - from: release.yml
+      to: scripts/sync-release-version.js
+      relationship: calls
+    - from: release.yml
+      to: scripts/generate-release-notes.js
+      relationship: calls
+    - from: release.yml
+      to: scripts/rename-artifacts.js
+      relationship: calls
+    - from: DasiaAIO-Frontend/package.json
+      to: apps/android-capacitor/package.json
+      relationship: delegates build commands
+    - from: DasiaAIO-Frontend/package.json
+      to: apps/desktop-tauri/package.json
+      relationship: delegates build commands
+
+related_technology_stack:
+  languages_used_in_domain:
+    - YAML (GitHub Actions)
+    - JavaScript (build scripts)
+    - Groovy (Android Gradle)
+    - PowerShell (signing setup)
+    - Dockerfile
+    - TOML (Cargo, Tauri)
+    - JSON (configs)
+  frameworks_used_in_domain:
+    - name: GitHub Actions
+      usage_in_domain: CI/CD pipeline orchestration
+    - name: Vite
+      usage_in_domain: Frontend production builds
+    - name: Capacitor 7
+      usage_in_domain: Android native wrapper
+    - name: Tauri 2
+      usage_in_domain: Desktop native wrapper (MSI/NSIS)
+    - name: Railway
+      usage_in_domain: Production web deployment (Dockerfile-based)
+    - name: Docker
+      usage_in_domain: Backend and frontend containerization
+    - name: Gradle
+      usage_in_domain: Android APK/AAB builds and signing
+  libraries_used_in_domain:
+    - name: softprops/action-gh-release
+      purpose_in_domain: Publishing GitHub Releases with artifacts
+    - name: dtolnay/rust-toolchain
+      purpose_in_domain: Rust toolchain setup in CI
+    - name: android-actions/setup-android
+      purpose_in_domain: Android SDK setup in CI
+    - name: gradle/actions/setup-gradle
+      purpose_in_domain: Gradle cache and setup in CI
+    - name: serve (npm)
+      purpose_in_domain: Static file server for deployed frontend Docker image
+
+related_conventions:
+  naming_patterns_in_domain: "Artifacts: sentinel-{platform}-v{version}.{ext}; Secrets: SENTINEL_{purpose}_{detail}"
+  structure_of_domain: "Monorepo with root scripts/ for tooling, .github/workflows/ for CI, apps/ for platform wrappers"
+  error_handling_in_domain: "Pre-flight checks (ensure-production-env.mjs, Gradle signing validation) fail fast with descriptive messages; CI uses set -euo pipefail"
+  testing_in_domain: "quality-gate job runs Jest + cargo test before any artifact builds"
+  documentation_in_domain: "PRODUCTION_ROLLOUT.md is comprehensive; CHANGELOG.md tracks releases; scripts have inline documentation"
+
+related_dependencies:
+  internal:
+    - component: DasiaAIO-Frontend app-dist/
+      relationship_to_domain: All platform wrappers consume this built web bundle
+      direction: outbound
+    - component: DasiaAIO-Backend /api/health endpoint
+      relationship_to_domain: Railway health check + CI health check depend on this
+      direction: outbound
+    - component: CHANGELOG.md
+      relationship_to_domain: Release notes generation reads this
+      direction: inbound
+  external:
+    - name: GitHub Actions
+      purpose_for_domain: CI/CD execution environment
+    - name: Railway
+      purpose_for_domain: Production hosting (frontend + backend)
+    - name: Android SDK (API 35)
+      purpose_for_domain: Android compilation target
+    - name: Java 21 (Temurin)
+      purpose_for_domain: Android Gradle builds in CI
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: Android signing keystore
+      location: .github/workflows/release.yml (lines 334-345), scripts/setup-android-signing.ps1
+      concern: "Base64-encoded keystore stored as GitHub secret; materialized to RUNNER_TEMP in CI. Must never be committed."
+    - area: Production API URL validation
+      location: DasiaAIO-Frontend/scripts/ensure-production-env.mjs
+      concern: "Rejects localhost/private IPs but does not validate HTTPS scheme explicitly in all paths"
+    - area: Backend Dockerfile non-root user
+      location: DasiaAIO-Backend/Dockerfile:21-23
+      concern: "Good practice — runs as dedicated sentinel user"
+    - area: Tauri CSP policy
+      location: apps/desktop-tauri/src-tauri/tauri.conf.json:28-29
+      concern: "Production CSP restricts to self + HTTPS + specific WS endpoints. DevCSP is more permissive."
+    - area: Capacitor production mode
+      location: apps/android-capacitor/capacitor.config.ts:3-4
+      concern: "Disables cleartext and mixed content in production. Good."
+  authentication_patterns_in_domain: "Not directly in deployment — auth is runtime concern"
+  authorization_patterns_in_domain: "GitHub Actions secrets restrict access to signing credentials"
+  data_validation_in_domain: "ensure-production-env.mjs validates URL, build.gradle validates signing credentials"
+
+testing_patterns:
+  framework: "Jest (frontend) + cargo test (backend)"
+  coverage_areas:
+    - "Frontend unit tests via Jest"
+    - "Backend unit/integration tests via cargo test"
+    - "Backend CI health check via docker-compose + curl"
+  test_organization: "Frontend: DasiaAIO-Frontend/__mocks__/ + tests/; Backend: DasiaAIO-Backend/tests/"
+  mock_patterns:
+    - "Not directly relevant to deployment pipeline"
+
+open_questions:
+  - question: "Have the GitHub Actions Android signing secrets (SENTINEL_ANDROID_KEYSTORE_BASE64 etc.) been configured in the repository?"
+    context: "The CI workflow requires these 4 secrets for Android release builds. PRODUCTION_ROLLOUT.md references them but does not confirm they are provisioned."
+    type: nice_to_know
+    affects: ["android-release"]
+
+  - question: "Is the Tauri updater actually used? The pubkey and endpoint are placeholder env var strings."
+    context: "tauri.conf.json has '${TAURI_UPDATER_PUBLIC_KEY}' and '${TAURI_UPDATER_ENDPOINT}' which are not real values and are not set anywhere in CI."
+    type: research
+    affects: ["desktop-auto-update"]
+
+  - question: "Does the backend have a sqlx-data.json or .sqlx/ directory for SQLX_OFFLINE=true compilation?"
+    context: "The backend Dockerfile sets SQLX_OFFLINE=true which requires cached query metadata. If missing, the Docker build fails."
+    type: research
+    affects: ["backend-docker-build"]
+
+gaps:
+  - area: iOS build path
+    description: "No iOS build workflow, Capacitor iOS plugin, or Xcode project exists. iOS is completely absent."
+    impact: nice_to_know
+    affects: ["mobile-release"]
+
+  - area: Desktop code signing
+    description: "Tauri MSI/NSIS installers are not code-signed. PRODUCTION_ROLLOUT.md recommends signing to reduce SmartScreen friction, but no signing certificate or workflow step exists."
+    impact: research_blocker
+    affects: ["desktop-release"]
+
+  - area: Tauri auto-updater not configured
+    description: "tauri.conf.json has placeholder values for updater pubkey and endpoint. No updater server or update manifest generation exists."
+    impact: nice_to_know
+    affects: ["desktop-auto-update"]
+
+  - area: Backend CI does not run cargo test independently
+    description: "DasiaAIO-Backend/.github/workflows/ci.yml only does docker-compose up + health check. It does not run cargo test. The release workflow does run cargo test, but the standalone backend CI workflow does not."
+    impact: nice_to_know
+    affects: ["backend-quality"]
+
+  - area: No E2E/smoke test in release pipeline
+    description: "The quality-gate job runs unit tests only. No Playwright E2E, integration, or smoke tests run during the release workflow."
+    impact: nice_to_know
+    affects: ["release-quality"]
+
+  - area: No automated deployment trigger from release to Railway
+    description: "Railway deploys on git push to main (via Dockerfile). The GitHub Release workflow does not trigger a Railway deploy. Web builds are separate from Railway deploys."
+    impact: nice_to_know
+    affects: ["web-deployment"]
+
+  - area: Frontend Dockerfile uses npm install instead of npm ci
+    description: "DasiaAIO-Frontend/Dockerfile line 7 uses 'npm install' instead of 'npm ci', which may install different versions than lockfile specifies."
+    impact: nice_to_know
+    affects: ["web-docker-build"]

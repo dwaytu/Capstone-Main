@@ -1,0 +1,797 @@
+plan_id: guard-ux-overhaul
+objective: >
+  Fix all 7 blocking and 5 high-severity UX issues in the Guard Dashboard without adding features.
+  Restructure the sticky bottom region, eliminate competing navigation, fix header misuse,
+  and improve empty states — all while maintaining zero build errors.
+created_at: "2026-04-04T00:00:00Z"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 4
+  total_dependencies: 14
+  risk_score: medium
+
+tldr: |
+  12 UX issues across App.tsx, UserDashboard.tsx, index.css, GuardMapTab.tsx, and HeaderGlobalActions.tsx.
+  Wave 1 tackles 4 independent App.tsx / CSS fixes (competing nav, update button, location banner, grid columns).
+  Wave 2 restructures the sticky region and fixes cross-tab header bleed and header button clutter (3 tasks).
+  Wave 3 improves map empty state and documents z-index contract (2 tasks).
+  Wave 4 validates build integrity and visual correctness (2 tasks).
+  Total: 11 tasks across 4 waves. No new features — fixes only.
+
+open_questions: []
+
+pre_mortem:
+  overall_risk_level: medium
+  critical_failure_modes:
+    - scenario: "Moving check-in button from sticky region to Mission content breaks check-in flow for guards already trained on current layout"
+      likelihood: medium
+      impact: high
+      mitigation: "Keep identical button styling and prominent top-of-Mission placement. Check-in CTA remains the first thing guards see on Mission tab."
+    - scenario: "Removing App.tsx mobile nav for guards could hide navigation needed for non-guard views (profile, settings, inbox)"
+      likelihood: medium
+      impact: medium
+      mitigation: "Condition is scoped to isGuardWorkspaceView which already excludes inbox, settings, and profile views. Guard's own sticky nav handles guard-specific navigation."
+    - scenario: "Reducing sticky region height miscalculates padding-bottom causing content occlusion"
+      likelihood: medium
+      impact: high
+      mitigation: "CSS variable --guard-sticky-region-height is the single source of truth used by both guard-sticky-main padding and other bottom-offset calculations. Updating the variable once propagates correctly."
+    - scenario: "z-index changes in location banner dismissal cause visual stacking regressions"
+      likelihood: low
+      impact: medium
+      mitigation: "Fix #1 removes the competing z-64 nav for guards, and fix #4 adds dismiss rather than changing z-index values. Existing z-index hierarchy preserved."
+  assumptions:
+    - "Guard workspace custom layout (UserDashboard.tsx) is the ONLY layout guards use — they never see OperationalShell"
+    - "isGuardWorkspaceView in App.tsx already correctly identifies guard workspace vs guard-in-settings/profile"
+    - "The --guard-sticky-region-height CSS variable is the single source of truth for bottom spacing"
+    - "Build currently has 0 TypeScript errors and 0 Vite build errors"
+    - "Four nav items exist in guard sticky nav: Mission, Resources, Support, Map"
+
+implementation_specification:
+  code_structure: >
+    All changes are edits to existing files. No new files or components are created.
+    App.tsx gets 3 surgical condition changes. UserDashboard.tsx gets sticky region extraction
+    and SectionHeader fix. index.css gets variable and grid updates. GuardMapTab.tsx gets
+    an improved empty state. HeaderGlobalActions.tsx gets a guard-mode prop to hide non-essential buttons.
+  affected_areas:
+    - "DasiaAIO-Frontend/src/App.tsx — mobile nav suppression, update button guard condition, location banner dismiss"
+    - "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx — sticky region restructure, SectionHeader removal, check-in/action buttons moved to Mission content"
+    - "DasiaAIO-Frontend/src/index.css — --guard-sticky-region-height reduction, grid column fix, z-index documentation"
+    - "DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx — empty state improvement"
+    - "DasiaAIO-Frontend/src/components/shared/HeaderGlobalActions.tsx — guard-mode button reduction"
+  component_details:
+    - component: "App.tsx mobile nav gate"
+      responsibility: "Suppress mobile quick-nav rendering when isGuardWorkspaceView is true"
+      interfaces:
+        - "Uses existing isGuardWorkspaceView boolean — no new props"
+    - component: "App.tsx location banner dismiss"
+      responsibility: "Add dismiss button with localStorage 24-hour snooze to location permission banner"
+      interfaces:
+        - "New state: locationBannerDismissed (boolean)"
+        - "localStorage key for snooze timestamp"
+    - component: "UserDashboard sticky region"
+      responsibility: "Reduce sticky region to nav-only; relocate check-in button and action row into Mission tab content"
+      interfaces:
+        - "Same handlePrimaryCheckAction callback, same incidentModalOpen/setIncidentModalOpen state"
+    - component: "HeaderGlobalActions guard mode"
+      responsibility: "Accept optional guardMode prop to render only notifications + profile avatar"
+      interfaces:
+        - "New optional prop: guardMode?: boolean"
+    - component: "GuardMapTab empty state"
+      responsibility: "Replace minimal empty state with actionable guidance and tab-switch button"
+      interfaces:
+        - "New optional prop: onSwitchToMission?: () => void"
+  dependencies:
+    - component: "App.tsx mobile nav gate"
+      relationship: "Reads isGuardWorkspaceView which depends on normalizedRole and activeView"
+    - component: "UserDashboard sticky restructure"
+      relationship: "Depends on CSS variable update in index.css for correct spacing"
+    - component: "GuardMapTab empty state"
+      relationship: "Receives onSwitchToMission callback from UserDashboard parent"
+  integration_points:
+    - "App.tsx showMobileQuickNav rendering block (lines ~1208-1236)"
+    - "App.tsx Check for Updates button (lines ~945-954)"
+    - "App.tsx location banner (lines ~983-1004)"
+    - "UserDashboard.tsx guard-sticky-region div (lines ~1118-1175)"
+    - "UserDashboard.tsx SectionHeader outside tab conditionals (lines ~875-878)"
+    - "index.css --guard-sticky-region-height variable (line ~146)"
+    - "index.css .guard-sticky-nav grid (line ~1242)"
+
+contracts:
+  - from_task: "W1-CSS"
+    to_task: "W2-STICKY"
+    interface: "--guard-sticky-region-height reduced to ~4.5rem; .guard-sticky-nav grid set to repeat(4, ...)"
+    format: "CSS custom property value change"
+  - from_task: "W1-NAV"
+    to_task: "W3-ZINDEX"
+    interface: "App.tsx mobile nav no longer renders for guard workspace view"
+    format: "Conditional rendering gate on isGuardWorkspaceView"
+  - from_task: "W1-BANNER"
+    to_task: "W3-ZINDEX"
+    interface: "Location banner is now dismissible with 24-hour snooze"
+    format: "localStorage-based dismiss state"
+  - from_task: "W2-STICKY"
+    to_task: "W3-MAP"
+    interface: "Check-in and action buttons now in Mission tab content; sticky region is nav-only"
+    format: "JSX restructure within UserDashboard.tsx"
+  - from_task: "W2-HEADER"
+    to_task: "W4-BUILD"
+    interface: "HeaderGlobalActions accepts guardMode prop"
+    format: "Optional boolean prop on component interface"
+
+tasks:
+  # ═══════════════════════════════════════════
+  # WAVE 1 — Independent surgical fixes
+  # ═══════════════════════════════════════════
+
+  - id: "W1-NAV"
+    title: "Suppress App.tsx mobile quick-nav for guard workspace"
+    description: |
+      Issue #1 (BLOCKING): Dual competing navigation. App.tsx renders a mobile quick-nav at z-64
+      with [Overview, Calendar, Support, Profile]. UserDashboard renders its own guard-sticky-region
+      nav at z-42 with [Mission, Resources, Support, Map]. On mobile, BOTH are visible and "Support"
+      appears twice.
+
+      Fix: Gate the showMobileQuickNav rendering block (~line 1208) with `!isGuardWorkspaceView`.
+      When the guard is in their workspace, their own sticky-region nav is authoritative.
+      The isGuardWorkspaceView variable already exists and correctly excludes inbox/settings/profile.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-1-dual-nav"]
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Lines 888 (showMobileQuickNav = true), 893 (isGuardWorkspaceView), 1208-1236 (mobile nav rendering)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 8
+        focus_area: "App.tsx conditional rendering"
+        verification:
+          - "On mobile viewport, guard workspace shows ONLY guard sticky nav (no App-level nav at bottom)"
+          - "On mobile viewport, non-guard roles still see App-level mobile quick-nav"
+          - "Guard accessing inbox/settings/profile views still gets App-level nav (isGuardWorkspaceView is false)"
+        acceptance_criteria:
+          - "showMobileQuickNav rendering block is gated with !isGuardWorkspaceView"
+          - "Guard on Mission/Resources/Support/Map tabs sees only guard-sticky-region nav"
+          - "No TypeScript errors introduced"
+        failure_modes:
+          - scenario: "Guard loses all bottom navigation when in profile/inbox"
+            likelihood: low
+            impact: high
+            mitigation: "isGuardWorkspaceView is false for inbox, settings, profile — App nav still renders for those"
+        tech_stack:
+          - "React 18"
+          - "TypeScript"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "W1-UPDATE"
+    title: "Hide 'Check for Updates' button for guard role"
+    description: |
+      Issue #9 (HIGH): Persistent floating "Check for Updates" button at bottom-right on desktop.
+      Guards should not self-manage application updates.
+
+      Fix: Add `normalizedRole !== 'guard'` to the existing condition on the Check for Updates button
+      (~line 945 in App.tsx). The button already has conditions for isLoggedIn, !DEV, !hasBlockingOverlay.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-9-update-button"]
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Lines 945-954 (Check for Updates button rendering)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 3
+        focus_area: "App.tsx guard role condition"
+        verification:
+          - "Guard role does not see 'Check for Updates' button on desktop"
+          - "Admin, supervisor, superadmin roles still see the button"
+        acceptance_criteria:
+          - "normalizedRole !== 'guard' condition added to Check for Updates rendering"
+          - "No TypeScript errors introduced"
+        failure_modes:
+          - scenario: "normalizedRole is undefined or empty at render time"
+            likelihood: low
+            impact: low
+            mitigation: "normalizedRole is computed early in App.tsx from user state with fallback — already reliable"
+        tech_stack:
+          - "React 18"
+          - "TypeScript"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "W1-BANNER"
+    title: "Make location permission banner dismissible with 24h snooze"
+    description: |
+      Issue #4 (BLOCKING): Location banner at z-82 is permanently visible when geoPermissionState !== 'granted'.
+      No dismiss button exists. It takes significant screen real estate and overlays navigation.
+
+      Fix: Add a dismiss button to the location banner in App.tsx (~lines 983-1004).
+      Implement a localStorage-based 24-hour snooze:
+      - New state: locationBannerDismissed (boolean), initialized from localStorage timestamp check.
+      - Dismiss handler: sets localStorage key with current timestamp, sets state to true.
+      - On mount/re-render: check if stored timestamp is within 24 hours.
+      - Add the dismiss condition to the banner's rendering conditional.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-4-location-banner"]
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Lines 983-1004 (location banner rendering), state declarations area (~lines 50-120)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 30
+        focus_area: "App.tsx location banner dismiss logic"
+        verification:
+          - "Location banner shows dismiss button (X or 'Dismiss' text)"
+          - "Clicking dismiss hides banner and persists to localStorage"
+          - "Banner stays hidden for 24 hours after dismissal"
+          - "Banner reappears after 24 hours if permission still not granted"
+          - "Dismiss button meets min-h-11 touch target"
+        acceptance_criteria:
+          - "Dismiss button added to location banner with accessible label"
+          - "localStorage key stores dismissal timestamp"
+          - "Banner rendering condition includes !locationBannerDismissed"
+          - "24-hour snooze logic implemented correctly"
+          - "No TypeScript errors"
+        failure_modes:
+          - scenario: "localStorage unavailable in Capacitor/Tauri webview"
+            likelihood: low
+            impact: medium
+            mitigation: "localStorage is available in all target runtimes. Fallback: if getItem throws, banner stays visible (graceful degradation)."
+        tech_stack:
+          - "React 18"
+          - "TypeScript"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "W1-CSS"
+    title: "Fix sticky nav grid columns and prepare height variable for reduction"
+    description: |
+      Issue #6 (BLOCKING): .guard-sticky-nav uses repeat(6, minmax(0, 1fr)) but only 4 nav items exist.
+      Two phantom columns waste horizontal space.
+
+      Fix one CSS change in index.css:
+      1. Change .guard-sticky-nav grid-template-columns from repeat(6, ...) to repeat(4, ...) (~line 1242).
+      Note: The --guard-sticky-region-height reduction is deferred to W2-STICKY to land atomically
+      with the JSX content removal, preventing a broken intermediate state.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-6-grid-columns"]
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: ["W2-STICKY"]
+    context_files:
+      - path: "DasiaAIO-Frontend/src/index.css"
+        description: "Line 146 (--guard-sticky-region-height: 13rem), line 1242 (.guard-sticky-nav grid)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 10
+        focus_area: "index.css guard-specific rules"
+        verification:
+          - "Guard sticky nav shows 4 equal-width columns with no empty space"
+        acceptance_criteria:
+          - ".guard-sticky-nav grid-template-columns is repeat(4, minmax(0, 1fr))"
+          - "--guard-sticky-region-height remains 13rem (deferred to W2-STICKY)"
+        failure_modes: []
+        tech_stack:
+          - "Tailwind CSS v4"
+          - "CSS custom properties"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  # ═══════════════════════════════════════════
+  # WAVE 2 — Sticky region restructure + header fixes
+  # ═══════════════════════════════════════════
+
+  - id: "W2-STICKY"
+    title: "Restructure guard sticky region to nav-only; relocate buttons to Mission content"
+    description: |
+      Issues #2 (BLOCKING), #5 (BLOCKING), #11 (HIGH): The sticky bottom bar consumes 208px with
+      check-in button + Report Incident + View Instructions + tab nav. Only tab nav should be sticky.
+
+      Fix in UserDashboard.tsx:
+      1. Remove the check-in button from guard-sticky-region (the <button> with handlePrimaryCheckAction).
+      2. Remove the guard-sticky-action-row (Report Incident + View Instructions) from sticky region.
+      3. Add check-in button as the FIRST element inside the Mission tab content (activeSection === 'mission'),
+         styled as a prominent top-level CTA with same styling and onClick handler.
+      4. Add Report Incident and View Instructions as inline buttons below the check-in button in Mission content.
+      5. When no active shift (issue #5): do NOT render the check-in button at all — the duty status
+         banner already shows "OFF DUTY" state.
+      6. Remove the .guard-sticky-action-row CSS class usage (it will be unused).
+      7. The sticky region now contains ONLY the <nav> element with guard-sticky-nav.
+      8. Reduce --guard-sticky-region-height from 13rem to 4.5rem in index.css (~line 146).
+         Height breakdown: nav row (2.75rem) + vertical padding (1rem) + border/gap (~0.75rem) = ~4.5rem.
+      9. Update the CSS comment above the variable to reflect nav-only composition.
+      10. Add a SectionHeader with title='Mission' inside the mission tab conditional block.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-2-sticky-height", "issue-5-no-shift-button", "issue-11-pinned-actions"]
+    priority: high
+    status: pending
+    dependencies: ["W1-CSS"]
+    conflicts_with: ["W1-CSS", "W2-HEADER-FIX"]
+    context_files:
+      - path: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+        description: "Lines 1118-1175 (guard-sticky-region), Mission tab content section, activeSection conditionals"
+      - path: "DasiaAIO-Frontend/src/index.css"
+        description: ".guard-sticky-inner, .guard-sticky-action-row class definitions"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 2
+        estimated_lines: 120
+        focus_area: "UserDashboard.tsx sticky region and Mission tab content restructure"
+        verification:
+          - "Sticky bottom region contains ONLY the 4-tab navigation bar"
+          - "Check-in button appears at top of Mission tab content when an active shift exists"
+          - "Check-in button does NOT appear when no active shift"
+          - "Report Incident and View Instructions appear in Mission tab content below check-in"
+          - "Report Incident and View Instructions do NOT appear on Resources, Support, or Map tabs"
+          - "Sticky region visual height is approximately 4.5rem on mobile"
+          - "Check-in, Report Incident, View Instructions all function identically to before"
+        acceptance_criteria:
+          - "guard-sticky-region contains only nav element"
+          - "Check-in button rendered inside mission tab conditional with currentShift guard"
+          - "Action row buttons rendered inside mission tab conditional"
+          - "No active shift = no check-in button rendered anywhere"
+          - "All onClicks preserved and functional"
+          - "--guard-sticky-region-height reduced from 13rem to 4.5rem in index.css"
+          - "CSS comment updated to reflect nav-only composition"
+          - "Mission tab has a SectionHeader with contextual title inside the conditional block"
+          - "No TypeScript errors"
+        failure_modes:
+          - scenario: "Guards can't find check-in button after relocation"
+            likelihood: medium
+            impact: high
+            mitigation: "Check-in button is first element in Mission tab with same prominent styling. Mission is the default active tab."
+          - scenario: "Report Incident becomes less accessible from non-Mission tabs"
+            likelihood: medium
+            impact: medium
+            mitigation: "Incident reporting is a mission-context action. Guards on other tabs can switch to Mission with one tap."
+        tech_stack:
+          - "React 18"
+          - "TypeScript"
+          - "Tailwind CSS v4"
+        test_coverage: null
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: false
+
+  - id: "W2-HEADER-FIX"
+    title: "Remove global SectionHeader and add per-tab headers"
+    description: |
+      Issue #3 (BLOCKING): SectionHeader with title="Mission Screen" renders OUTSIDE tab conditionals
+      (lines 875-878). It shows on Resources, Support, and Map tabs too.
+
+      Fix in UserDashboard.tsx:
+      1. Remove the SectionHeader component call at lines 875-878 that sits outside the tab conditionals.
+      2. The Mission tab content (already addressed by W2-STICKY relocation) will include a
+         "Mission" section header naturally.
+      3. Resources tab already has its own header inside GuardResourcesTab.
+      4. Support tab already has its own header inside GuardSupportTab.
+      5. Map tab already has its own header inside GuardMapTab (title="Live Map").
+      6. Verify no tab shows "Mission Screen" as title when it shouldn't.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-3-mission-header"]
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: ["W2-STICKY"]
+    context_files:
+      - path: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+        description: "Lines 875-878 (SectionHeader outside tab conditionals), tab rendering blocks"
+      - path: "DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx"
+        description: "Has its own SectionHeader title='Live Map'"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 15
+        focus_area: "UserDashboard.tsx SectionHeader placement"
+        verification:
+          - "Mission tab shows 'Mission' header (or equivalent)"
+          - "Resources tab does NOT show 'Mission Screen'"
+          - "Support tab does NOT show 'Mission Screen'"
+          - "Map tab shows 'Live Map' (its own header)"
+        acceptance_criteria:
+          - "Global SectionHeader with 'Mission Screen' title removed"
+          - "Each tab shows its own contextual header"
+          - "No TypeScript errors"
+        failure_modes:
+          - scenario: "Mission tab loses its header entirely"
+            likelihood: low
+            impact: low
+            mitigation: "W2-STICKY task adds Mission-specific content including a header. If not, add a simple SectionHeader inside the mission conditional."
+        tech_stack:
+          - "React 18"
+          - "TypeScript"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "W2-HEADER-BUTTONS"
+    title: "Reduce HeaderGlobalActions to notifications + profile for guards"
+    description: |
+      Issue #8 (HIGH): HeaderGlobalActions renders 5 buttons (theme toggle, refresh, notifications,
+      settings, profile). Too many for a field guard who needs fast, focused access.
+
+      Fix in HeaderGlobalActions.tsx:
+      1. Add optional prop `guardMode?: boolean` to HeaderGlobalActionsProps.
+      2. When guardMode is true, render ONLY:
+         - NotificationPanel toggle (bell icon)
+         - AccountManager (profile avatar)
+      3. Hide: ThemeToggleButton, refresh button, settings button.
+      4. In UserDashboard.tsx, pass `guardMode={true}` to HeaderGlobalActions.
+      5. All other consumers of HeaderGlobalActions are unaffected (prop is optional, defaults false).
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-8-header-buttons"]
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/components/shared/HeaderGlobalActions.tsx"
+        description: "Full component — ThemeToggleButton, refresh, NotificationPanel, settings, AccountManager"
+      - path: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+        description: "Lines 860-869 (HeaderGlobalActions usage in guard header)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 25
+        focus_area: "HeaderGlobalActions conditional rendering"
+        verification:
+          - "Guard header shows only notification bell + profile avatar"
+          - "Non-guard dashboards still show all 5 action buttons"
+          - "Notifications panel opens/closes correctly in guard mode"
+          - "Profile avatar click works correctly in guard mode"
+        acceptance_criteria:
+          - "guardMode prop added to HeaderGlobalActionsProps"
+          - "When guardMode=true, only NotificationPanel and AccountManager render"
+          - "UserDashboard passes guardMode={true}"
+          - "No TypeScript errors"
+        failure_modes:
+          - scenario: "Guards lose access to theme toggle and settings entirely"
+            likelihood: low
+            impact: low
+            mitigation: "Theme toggle and settings remain accessible via profile modal. This is documented in the issue fix specification."
+        tech_stack:
+          - "React 18"
+          - "TypeScript"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  # ═══════════════════════════════════════════
+  # WAVE 3 — Content and UX improvements
+  # ═══════════════════════════════════════════
+
+  - id: "W3-MAP"
+    title: "Improve Guard Map tab empty state with actionable guidance"
+    description: |
+      Issue #10 (HIGH): Map empty state shows a tiny "No live coordinates available" box with
+      massive dead space and no guidance.
+
+      Fix in GuardMapTab.tsx:
+      1. Add optional prop `onSwitchToMission?: () => void` to GuardMapTabProps.
+      2. Replace the minimal empty state with an actionable card:
+         - Icon or illustration suggesting location/map
+         - Clear message: "Enable location tracking from the Mission tab to see your position on the map"
+         - Button: "Go to Mission" that calls onSwitchToMission
+         - If onSwitchToMission not provided, show text-only guidance
+      3. In UserDashboard.tsx, pass onSwitchToMission={() => setActiveSection('mission')} to GuardMapTab.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-10-map-empty"]
+    priority: medium
+    status: pending
+    dependencies: ["W2-STICKY"]
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx"
+        description: "Full component — empty state at bottom of file (~lines 87-91)"
+      - path: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+        description: "GuardMapTab rendering with props (~lines 1100-1110)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 30
+        focus_area: "GuardMapTab empty state UX"
+        verification:
+          - "Map tab with no coordinates shows actionable empty state with 'Go to Mission' button"
+          - "Clicking 'Go to Mission' switches to mission tab"
+          - "Map tab with valid coordinates still shows the map normally"
+        acceptance_criteria:
+          - "onSwitchToMission prop added to GuardMapTabProps"
+          - "Empty state shows descriptive message and navigation button"
+          - "UserDashboard passes onSwitchToMission callback"
+          - "Accessible: button has descriptive label, message is readable"
+          - "No TypeScript errors"
+        failure_modes: []
+        tech_stack:
+          - "React 18"
+          - "TypeScript"
+          - "Tailwind CSS v4"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "W3-ZINDEX"
+    title: "Document z-index contract and verify content occlusion fix"
+    description: |
+      Issues #7 (BLOCKING) and #12 (HIGH): Content occlusion on support tab and z-index hierarchy
+      problems. These are ROOT-CAUSED by issues #1 (dual nav) and #4 (non-dismissible banner).
+
+      After Wave 1 fixes land (W1-NAV removes competing nav, W1-BANNER makes banner dismissible):
+      1. Verify that guard content is no longer occluded — single padding-bottom from
+         --guard-sticky-region-height (now 4.5rem) is sufficient since App mobile nav is gone.
+      2. Add a z-index hierarchy documentation block in index.css near the z-index variable declarations,
+         documenting the stacking order and which elements exist at each layer.
+      3. Verify location banner (z-82) no longer permanently blocks navigation since it's dismissible.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers: ["issue-7-content-occlusion", "issue-12-zindex"]
+    priority: medium
+    status: pending
+    dependencies: ["W1-NAV", "W1-BANNER"]
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/index.css"
+        description: "Z-index variable declarations (~lines 134-143)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 20
+        focus_area: "CSS z-index documentation and verification"
+        verification:
+          - "Z-index hierarchy is documented in CSS comments"
+          - "Guard support tab content (including submit buttons) is fully visible and reachable"
+          - "Dismissing location banner reveals content underneath"
+        acceptance_criteria:
+          - "Z-index documentation block added near variable declarations in index.css"
+          - "Document explains which elements use each z-index layer"
+          - "No z-index values changed (documentation only + verification)"
+          - "No TypeScript or CSS errors"
+        failure_modes: []
+        tech_stack:
+          - "CSS"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  # ═══════════════════════════════════════════
+  # WAVE 4 — Validation
+  # ═══════════════════════════════════════════
+
+  - id: "W4-BUILD"
+    title: "Full build validation: tsc + vite build with zero errors"
+    description: |
+      Run TypeScript compiler and Vite production build to confirm all changes compile cleanly.
+      This is the gate check before visual validation.
+
+      Steps:
+      1. Run `npx tsc --noEmit` from DasiaAIO-Frontend — expect 0 errors.
+      2. Run `npx vite build` from DasiaAIO-Frontend — expect successful build with 0 errors.
+      3. If errors found, report exact error messages and file locations for triage.
+    wave: 4
+    agent: gem-reviewer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies: ["W1-NAV", "W1-UPDATE", "W1-BANNER", "W1-CSS", "W2-STICKY", "W2-HEADER-FIX", "W2-HEADER-BUTTONS", "W3-MAP", "W3-ZINDEX"]
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/tsconfig.json"
+        description: "TypeScript configuration"
+      - path: "DasiaAIO-Frontend/vite.config.ts"
+        description: "Vite build configuration"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 0
+        estimated_lines: 0
+        focus_area: "Build system validation"
+        verification:
+          - "tsc --noEmit exits with code 0"
+          - "vite build exits with code 0 and produces app-dist/"
+        acceptance_criteria:
+          - "Zero TypeScript compilation errors"
+          - "Zero Vite build errors"
+          - "Build output matches expected chunk structure"
+        failure_modes:
+          - scenario: "New prop types or removed JSX cause type errors"
+            likelihood: medium
+            impact: high
+            mitigation: "Each implementation task specifies 'No TypeScript errors' as acceptance criteria. Build validation catches anything missed."
+        requires_review: true
+        review_depth: lightweight
+        review_security_sensitive: false
+
+  - id: "W4-VISUAL"
+    title: "Browser visual validation of all guard dashboard changes"
+    description: |
+      Launch the dev server and visually verify all 12 issue fixes in a browser at mobile (375px)
+      and desktop (1280px) viewports.
+
+      Validation matrix covers:
+      - Mobile: Only guard sticky nav visible at bottom (no App nav)
+      - Mobile: Sticky region is slim (~4.5rem) with 4 nav tabs
+      - Mission tab: Check-in button at top, action buttons below, no "Mission Screen" title bleed
+      - Resources tab: No "Mission Screen" title
+      - Support tab: Content fully scrollable, no occlusion by bottom bar
+      - Map tab: Actionable empty state with "Go to Mission" button (when no coordinates)
+      - Header: Only notifications + profile for guard
+      - Location banner: Has dismiss button, dismissal persists
+      - Desktop: No "Check for Updates" button for guard role
+    wave: 4
+    agent: gem-browser-tester
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies: ["W4-BUILD"]
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/vite.config.ts"
+        description: "Dev server configuration (port 5173)"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 0
+        estimated_lines: 0
+        focus_area: "Visual regression validation"
+        verification:
+          - "All 12 issues verified as fixed in browser"
+          - "No visual regressions on guard dashboard"
+          - "No visual regressions on non-guard dashboards"
+        acceptance_criteria:
+          - "All validation scenarios pass at 375px and 1280px viewports"
+          - "Guard workflow (check in, report incident, navigate tabs) is functional"
+          - "No broken layouts, overflow, or z-index stacking issues"
+        failure_modes:
+          - scenario: "Dev server not running or API unavailable"
+            likelihood: low
+            impact: medium
+            mitigation: "Start dev server as prerequisite. Login with test guard account."
+        validation_matrix:
+          - scenario: "Guard mobile — no competing nav"
+            steps:
+              - "Set viewport to 375x812"
+              - "Log in as guard"
+              - "Verify only guard sticky nav visible at bottom"
+              - "Verify no App-level mobile nav rendered"
+            expected_result: "Single bottom nav with 4 tabs: Mission, Resources, Support, Map"
+          - scenario: "Guard mobile — slim sticky region"
+            steps:
+              - "On guard dashboard, inspect sticky region height"
+              - "Verify check-in button is NOT in sticky region"
+              - "Verify Report Incident and View Instructions NOT in sticky region"
+            expected_result: "Sticky region ~4.5rem containing only 4-tab navigation"
+          - scenario: "Mission tab — relocated buttons"
+            steps:
+              - "Navigate to Mission tab"
+              - "Verify check-in button appears at top of content (when shift exists)"
+              - "Verify Report Incident and View Instructions below check-in"
+              - "Click check-in button — verify it works"
+            expected_result: "Action buttons in Mission content, all functional"
+          - scenario: "Tab headers — no bleed"
+            steps:
+              - "Switch to each tab: Mission, Resources, Support, Map"
+              - "Verify each tab shows its own contextual header"
+              - "Verify 'Mission Screen' does NOT appear on non-Mission tabs"
+            expected_result: "Each tab shows appropriate header title"
+          - scenario: "Support tab — no content occlusion"
+            steps:
+              - "Navigate to Support tab"
+              - "Scroll to bottom of content"
+              - "Verify submit buttons are fully visible and clickable"
+            expected_result: "All form content reachable without being hidden behind sticky region"
+          - scenario: "Map tab — actionable empty state"
+            steps:
+              - "Navigate to Map tab (with tracking disabled)"
+              - "Verify actionable empty state message"
+              - "Click 'Go to Mission' button"
+              - "Verify switch to Mission tab"
+            expected_result: "Empty state with guidance and working navigation button"
+          - scenario: "Guard header — reduced buttons"
+            steps:
+              - "Verify guard header shows only notification bell + profile avatar"
+              - "Verify theme toggle is NOT visible"
+              - "Verify refresh button is NOT visible"
+            expected_result: "Minimal guard header with 2 action items"
+          - scenario: "Location banner — dismissible"
+            steps:
+              - "Trigger location banner (deny geolocation permission)"
+              - "Verify dismiss button is present"
+              - "Click dismiss"
+              - "Verify banner disappears"
+              - "Reload page — verify banner stays dismissed"
+            expected_result: "Banner dismissible with 24h localStorage snooze"
+          - scenario: "Desktop guard — no update button"
+            steps:
+              - "Set viewport to 1280x800"
+              - "Log in as guard"
+              - "Verify 'Check for Updates' button is NOT visible"
+            expected_result: "No update button for guard role"

@@ -1,0 +1,687 @@
+plan_id: operational-intelligence-gap-analysis
+objective: "Analyze what makes a REAL operational intelligence platform and map the gap between professional standards (Palantir Gotham, Axon Evidence, Genetec Security Center) and SENTINEL's current state"
+focus_area: operational-intelligence-platform-patterns
+created_at: "2026-04-04T00:00:00Z"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - SENTINEL has a Palantir-inspired command center with real-time summary, map, feeds, and AI panels — but it is read-heavy with limited actionable workflows (no incident lifecycle, no resource dispatch, no inter-user communication).
+  - Guard mobile UX has been redesigned with mission-first layout but still has 15+ useState hooks, no true offline-first architecture, no one-tap SOS, and no push notification delivery pipeline.
+  - The AI layer (incident classification, absence prediction, replacement suggestion, vehicle maintenance prediction) exists with LLM+keyword fallback but outputs are advisory-only — no closed-loop automation or workflow triggers.
+  - Critical professional platform capabilities missing: incident lifecycle management (triage→assign→resolve→debrief), real-time inter-user messaging, resource dispatch workflow, configurable alert routing/escalation, compliance reporting engine, and true offline-first mobile architecture.
+  - WebSocket infrastructure exists for tracking but is not used for push-state updates to dashboards — all panels poll on 15-30s intervals.
+
+research_metadata:
+  methodology: "Hybrid retrieval (semantic_search + grep_search), targeted file reads of dashboard components/hooks/handlers/services, domain knowledge of Palantir Gotham/Axon Evidence/Genetec Security Center/PSIM platforms"
+  scope: "Full frontend dashboard layer, backend handler+service layer, hook layer, offline/communication utilities, AI services"
+  confidence: high
+  coverage: 85
+  decision_blockers: 0
+  research_blockers: 0
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 1: PROFESSIONAL SECURITY OPERATIONS PLATFORM PATTERNS
+# ══════════════════════════════════════════════════════════════════════════════
+
+professional_platform_patterns:
+
+  command_center_views:
+    pattern: "High-density unified operational picture"
+    description: |
+      Professional SOC/PSIM platforms (Palantir Gotham, Genetec Security Center,
+      Milestone XProtect) present a single-pane-of-glass command center with:
+      - Status strip: system health, threat level, time, active resources (always visible)
+      - Primary map: full-width geospatial view with layered overlays (guards, vehicles, incidents, geofences)
+      - Feed columns: real-time event stream, alert queue, communications log
+      - Resource panels: guard roster with live status, vehicle fleet, asset inventory
+      - AI/analytics: predictive alerts, pattern detection, anomaly flags
+    information_density: |
+      Professional platforms achieve ~40-60 data points visible without scrolling on a
+      1920x1080 display. Key design: progressive disclosure (summary → detail on click),
+      color-coded severity (red/amber/green/blue), spatial encoding (map pins carry state).
+    sentinel_comparison: |
+      SENTINEL CommandCenterDashboard renders ~6 vertical sections requiring scroll:
+      SystemStatus → TacticalView → LiveOperations → OperationsManagement → AssetMonitoring.
+      Approximately 20-25 data points visible without scrolling. Map is one panel among many
+      rather than the primary canvas.
+
+  real_time_situational_awareness:
+    pattern: "Push-state event-driven updates"
+    description: |
+      Professional platforms use server-sent events or WebSocket channels for immediate
+      state propagation. When a guard checks in, moves, or reports an incident, ALL
+      connected supervisor screens update within 1-3 seconds. Key elements:
+      - Animated map markers showing guard movement in real-time
+      - Event stream with newest-first ordering and severity highlighting
+      - Audio/visual alerts for critical events (configurable per user)
+      - Freshness indicators showing data age
+    sentinel_comparison: |
+      SENTINEL has WebSocket for tracking (useOperationalMapData) but all dashboard panels
+      (incidents, shifts, assets, AI predictions) use polling at 15-30s intervals via
+      useEffect refresh cycles in CommandCenterDashboard. No audio alerts. LiveFreshnessPill
+      shows data age. Event stream (LiveOperationsFeed) is derived from polled shift/incident
+      data, not a true streaming feed.
+
+  alert_incident_management:
+    pattern: "Full incident lifecycle: Detect → Triage → Assign → Act → Resolve → Debrief"
+    description: |
+      Professional platforms model incidents as stateful entities with:
+      - Detection: automated (sensor, geofence, AI) or manual (guard report)
+      - Triage: operator reviews, sets priority, categorizes type
+      - Assignment: dispatcher assigns responders, notifies via radio/push
+      - Action tracking: responder logs actions, uploads evidence (photo/video/audio)
+      - Resolution: incident closed with outcome classification
+      - Debrief: post-incident report generation, lessons learned, corrective actions
+      - Evidence chain: complete audit trail with timestamps, actors, media
+    sentinel_comparison: |
+      SENTINEL has: create incident (guard), list active incidents (supervisor), update
+      status (open→investigating→resolved). Missing: assignment to responder, evidence
+      attachment, action logging, automated escalation timers, debrief/report generation,
+      SLA tracking. Incident model has only 3 states (open/investigating/resolved).
+      AI classifier assigns severity but does not trigger automated routing.
+
+  resource_deployment_visualization:
+    pattern: "Dispatch-ready resource management"
+    description: |
+      Resource deployment in professional platforms shows:
+      - Guard locations on map with status colors (on-post, en-route, break, off-duty)
+      - Drag-and-drop assignment from available pool to posts/incidents
+      - Shift coverage heatmap showing gaps
+      - Vehicle tracking with route replay
+      - Equipment allocation with chain-of-custody
+    sentinel_comparison: |
+      SENTINEL OperationalMap shows guard positions and client sites via Leaflet.
+      GuardDeploymentOverview is a data grid of shifts, not a visual deployment board.
+      No drag-and-drop assignment. No shift coverage heatmap. Vehicle positions displayed
+      but no route replay. Firearm allocations tracked but not shown spatially.
+
+  communication_channels:
+    pattern: "Integrated multi-channel communication"
+    description: |
+      Professional platforms include:
+      - Push-to-talk (PTT) radio integration
+      - In-app messaging (1:1 and group)
+      - Broadcast alerts (all guards, zone-specific)
+      - Automated notifications (system-generated alerts)
+      - Escalation chains (if no response in X minutes, notify next level)
+    sentinel_comparison: |
+      SENTINEL has: user notifications (database-stored, polled via API), push
+      notification scaffolding (VAPID key, service worker registration, subscription
+      endpoint). Missing: real-time messaging between users, broadcast capability,
+      escalation chains with timeout triggers, radio integration (expected limitation).
+      Guard support tab references "radio discipline" but no actual radio integration.
+
+  decision_support:
+    pattern: "Contextual intelligence for commanders"
+    description: |
+      - AI-generated incident summaries and severity classifications
+      - Predictive staffing (who is likely absent tomorrow)
+      - Historical pattern analysis (incident hotspots, time-of-day trends)
+      - Resource optimization recommendations
+      - Compliance dashboard (permit expiry, training status, certification gaps)
+      - Scenario modeling ("what if we redeploy 3 guards from Zone A to Zone B")
+    sentinel_comparison: |
+      SENTINEL has: AI incident classifier (Groq/OpenAI LLM + keyword fallback),
+      guard absence risk prediction (weighted heuristic), smart replacement suggestions,
+      vehicle maintenance prediction, incident summary generation. All are advisory panels
+      in the command center. Missing: historical trend analysis, scenario modeling,
+      compliance dashboard (permit expiry is a count only), actionable workflow triggers
+      from AI outputs (action buttons exist but are non-functional stubs).
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 2: GUARD-FIRST DESIGN PRINCIPLES
+# ══════════════════════════════════════════════════════════════════════════════
+
+guard_first_design_principles:
+
+  mobile_device_primacy:
+    principle: "Design for 360x640 portrait phone first, not desktop"
+    rationale: "Guards carry phones on patrol. Every interaction happens one-handed, often while walking."
+    sentinel_state: |
+      UserDashboard.tsx has single-column mobile layout with bottom nav (Mission/Resources/
+      Support/Map) and sticky field action dock. Responsive design present. However, the
+      component is 1000+ lines with 15+ useState hooks — a monolith that ships all tab
+      logic to every render. Not optimized for low-end Android devices common in security
+      workforce.
+
+  one_tap_critical_actions:
+    principle: "Check-in, SOS/panic, incident report available in ≤1 tap from any screen"
+    rationale: "In emergency, guard cannot navigate menus. Muscle memory on fixed positions."
+    sentinel_state: |
+      Sticky field action dock has: Report Incident, Check In/Check Out, View Instructions.
+      These are always visible at bottom of guard dashboard. However: Report Incident opens
+      a modal with 4 fields (title, description, location, priority) — minimum 5 taps to
+      submit. No SOS/panic button (one-tap emergency with auto-location). Check-in is
+      per-shift (must select correct shift) rather than context-aware (auto-detect current
+      shift).
+
+  context_aware_defaults:
+    principle: "Pre-fill location, time, shift, and priority based on context"
+    rationale: "Reduce data entry. Guard's phone knows where they are and what shift is active."
+    sentinel_state: |
+      Incident form does not auto-fill location from GPS. Check-in does not auto-detect
+      the current/upcoming shift. No auto-priority based on time-of-day or location risk.
+      Location tracking resolves GPS but doesn't feed into form pre-population.
+
+  offline_resilience:
+    principle: "All critical actions queue locally and sync when connectivity returns"
+    rationale: "Guards patrol areas with poor cellular coverage. Actions must never fail silently."
+    sentinel_state: |
+      offlineQueue.ts exists with IndexedDB storage and Background Sync API support.
+      Used by: check-in (enqueueOfflineAction on network failure). Not used by: incident
+      report, check-out, support tickets. Offline detection via navigator.onLine +
+      UIContext listeners. No local data cache for read operations (schedule, assignments
+      disappear when offline).
+
+  glanceable_status:
+    principle: "Guard knows their state in <3 seconds: checked-in? location? shift end? trackable?"
+    rationale: "No time to read. Color, position, and iconography must convey state instantly."
+    sentinel_state: |
+      Mission tab has Status Hero zone (checkmark + location + time) and Quick Info Row.
+      Color-coded status: green (on-post), amber (awaiting check-in), blue (standby).
+      Tracking indicator present. This is the strongest area of guard UX — session memory
+      confirms the 3-second rule redesign was planned and partially implemented.
+
+  low_light_conditions:
+    principle: "Dark theme with high-contrast critical elements, OLED-friendly"
+    rationale: "Night shift guards need readable screens without attracting attention."
+    sentinel_state: |
+      SOC dark theme applied globally via CSS custom properties. Semantic token contract
+      covers dark palette. OLED optimization not explicitly present (true black backgrounds
+      save battery on AMOLED screens). Contrast ratios generally adequate in dark mode.
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 3: SUPERVISOR COMMAND CENTER PRINCIPLES
+# ══════════════════════════════════════════════════════════════════════════════
+
+supervisor_command_center_principles:
+
+  real_time_guard_overview:
+    principle: "See all active guards with location, status, and time-on-post at a glance"
+    sentinel_state: |
+      CommandCenterDashboard → OperationalMap shows guard positions.
+      GuardDeploymentOverview shows shift list (guard name, site, status, times).
+      OperationalSummaryStrip shows aggregate counts (active guards, absent, etc.).
+      Missing: individual guard cards with last-seen time, movement status (moving/idle),
+      and communication status. No guard-to-map linking (click guard → zoom to position).
+
+  incident_escalation_management:
+    principle: "Incidents auto-escalate if unacknowledged within SLA. Visual urgency increases."
+    sentinel_state: |
+      Incidents have priority levels but no SLA timers. No auto-escalation.
+      IncidentAlertFeed shows severity-colored alerts. IncidentSeverityMonitoringPanel
+      shows distribution. No acknowledgment workflow (supervisor must manually change
+      status). No escalation chain to admin/superadmin.
+
+  resource_allocation_decisions:
+    principle: "One-click reassignment of guards, vehicles, equipment to incidents or posts"
+    sentinel_state: |
+      AssignmentPicker component exists for assignment selection. QuickActionsPanel
+      provides shortcut buttons. No one-click reassignment from incident to guard.
+      ReplacementSuggestionPanel shows AI-ranked suggestions with "Assign Now" CTA
+      buttons — but these are non-functional UI stubs (no backend dispatch endpoint).
+
+  shift_coverage_gap_detection:
+    principle: "Automatic detection and alerting when posts are unmanned or understaffed"
+    sentinel_state: |
+      TodaysShiftOperations shows shift list with status. Guard absence prediction
+      identifies HIGH risk guards. No automatic unmanned-post detection. No visual
+      coverage gap display (e.g., timeline showing when a post goes uncovered).
+
+  performance_monitoring:
+    principle: "Real-time and historical guard performance visible in context"
+    sentinel_state: |
+      MeritScoreDashboard tracks attendance rate, mission performance, permit compliance,
+      reliability score. TopReliableGuardsPanel shows rankings. PerformanceDashboard
+      shows guard reliability metrics. Analytics summary endpoint provides aggregate KPIs.
+      These are separate views — not integrated into the command center for in-context
+      decision making.
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 4: ADMIN / SUPERADMIN INTELLIGENCE PRINCIPLES
+# ══════════════════════════════════════════════════════════════════════════════
+
+admin_intelligence_principles:
+
+  operational_metrics_and_trends:
+    principle: "Time-series trends for all key metrics, not just current-state snapshots"
+    sentinel_state: |
+      AnalyticsDashboard shows current-state snapshots: total guards, active missions,
+      completion rates, resource utilization. Backend analytics handler computes point-in-
+      time aggregates. No time-series storage or trend computation. No "compared to last
+      week/month" analysis. Calendar view exists but is event-focused, not metric-focused.
+
+  compliance_and_audit:
+    principle: "Comprehensive audit trail with filtering, export, and anomaly detection"
+    sentinel_state: |
+      AuditDashboard (lazy loaded) + AuditLogViewer provide audit log viewing with
+      pagination, multi-field filtering, user-activity timelines, and anomaly group
+      extraction. Backend audit middleware captures write operations and authorization
+      denials. This is one of SENTINEL's strongest features — close to professional
+      standard for audit capability. Missing: scheduled compliance reports, export to
+      PDF/CSV, regulatory framework mapping.
+
+  resource_utilization_analysis:
+    principle: "Firearm utilization rates, vehicle fleet efficiency, guard deployment density"
+    sentinel_state: |
+      Analytics endpoint provides: firearms_in_use/available, vehicles_deployed/available,
+      guards_on_duty/available. PerformanceDashboard shows guard reliability. Missing:
+      utilization trends over time, cost-per-guard-hour analysis, optimal deployment
+      modeling, fleet lifecycle cost tracking.
+
+  predictive_insights:
+    principle: "ML-driven forecasting for staffing needs, incident likelihood, equipment failure"
+    sentinel_state: |
+      Guard absence risk prediction (weighted heuristic, not ML). Vehicle maintenance
+      prediction (heuristic-based). Incident severity classification (LLM-based via
+      Groq/OpenAI, keyword fallback). Incident summary generation (LLM-based). These
+      are real capabilities but heuristic-grade, not trained-model-grade. No historical
+      data analysis for trend-based prediction.
+
+  cost_and_efficiency:
+    principle: "Operational cost visibility, overtime tracking, billing integration"
+    sentinel_state: |
+      Merit score system tracks overtime candidates. No cost tracking, billing integration,
+      payroll data, or operational cost analysis features.
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 5: GAP ANALYSIS FRAMEWORK
+# ══════════════════════════════════════════════════════════════════════════════
+
+gap_analysis:
+
+  - capability: "Situational Awareness"
+    professional_standard: "Push-state map-centric COP with animated markers, audio alerts, <3s update latency"
+    sentinel_current: "Poll-based (15s) map + summary panels, LiveFreshnessPill, no audio, WebSocket only for tracking"
+    gap: "Dashboard state propagation is poll-based not push. No audio alerts. Map is one panel, not primary canvas."
+    priority: HIGH
+    effort: medium
+
+  - capability: "Incident Lifecycle"
+    professional_standard: "6-stage workflow (detect→triage→assign→act→resolve→debrief) with SLA timers, evidence chain, escalation"
+    sentinel_current: "3-stage (open→investigating→resolved), manual status changes, no assignment, no evidence, no escalation"
+    gap: "Missing 50% of incident lifecycle. No responder assignment, evidence attachment, SLA tracking, auto-escalation, debrief."
+    priority: CRITICAL
+    effort: major
+
+  - capability: "Resource Tracking"
+    professional_standard: "Real-time positions with history, movement trails, geofence compliance, fleet management"
+    sentinel_current: "Real-time guard/vehicle positions via WebSocket, geofence events, client sites. No movement trails, no route replay."
+    gap: "Positions and geofences present. Missing: movement history trails, route replay, guard-to-map deep linking, coverage heatmaps."
+    priority: MEDIUM
+    effort: medium
+
+  - capability: "Communication"
+    professional_standard: "In-app messaging, broadcast alerts, escalation chains, PTT radio integration"
+    sentinel_current: "Database-stored notifications polled via API. Push notification scaffolding (VAPID, SW) but no delivery pipeline."
+    gap: "No real-time messaging between users. No broadcast. No escalation chains. Push notifications scaffolded but not wired."
+    priority: CRITICAL
+    effort: major
+
+  - capability: "Decision Support"
+    professional_standard: "AI severity classification, predictive staffing, historical trends, scenario modeling, compliance dashboards"
+    sentinel_current: "AI severity classifier (LLM+keyword), absence prediction (heuristic), replacement suggestion, vehicle maintenance prediction, incident summary"
+    gap: "Advisory panels exist but are read-only stubs. No workflow triggers. No historical trends. No scenario modeling."
+    priority: HIGH
+    effort: medium
+
+  - capability: "Reporting & Analytics"
+    professional_standard: "Scheduled reports, configurable dashboards, export (PDF/CSV), trend analysis, KPI tracking with targets"
+    sentinel_current: "Point-in-time analytics snapshot, KPI targets hardcoded in frontend, no export, no trend storage, no scheduled reports"
+    gap: "No time-series data. No report generation. No export. No configurable dashboards."
+    priority: HIGH
+    effort: major
+
+  - capability: "Mobile Experience"
+    professional_standard: "Native or near-native mobile app with biometric auth, push notifications, background sync, camera/photo integration"
+    sentinel_current: "Capacitor-wrapped SPA with GPS tracking, offline queue (IndexedDB), touch-optimized layout. No biometric auth, limited background sync, no camera integration."
+    gap: "Wrapped web app, not native performance. Offline queue exists but only for check-in. No biometric unlock. No camera for evidence capture."
+    priority: HIGH
+    effort: medium
+
+  - capability: "Offline Capability"
+    professional_standard: "Full read/write offline with conflict resolution, background sync for all operations, local data cache"
+    sentinel_current: "offlineQueue.ts for check-in only. No local data cache. Dashboard panels show nothing when offline."
+    gap: "Offline queue scaffolded but barely used. No read-cache. Dashboard unusable offline. Incidents cannot be reported offline."
+    priority: CRITICAL
+    effort: major
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 6: TRANSFORMATION OPPORTUNITIES
+# ══════════════════════════════════════════════════════════════════════════════
+
+transformation_opportunities:
+
+  quick_wins:
+    description: "Achievable with small code changes, no new backend endpoints"
+    items:
+      - id: qw-1
+        title: "Auto-fill incident location from GPS"
+        description: "UserDashboard already has lastKnownLocation state. Pre-populate incidentForm.location with reverse-geocoded address or lat/lng when opening incident modal."
+        estimated_files: 1
+        estimated_lines: 20
+
+      - id: qw-2
+        title: "Auto-detect current shift for check-in"
+        description: "Filter scheduleItems for shifts where now() is between start_time and end_time + buffer. Auto-select the matching shift instead of requiring manual selection."
+        estimated_files: 1
+        estimated_lines: 30
+
+      - id: qw-3
+        title: "Extend offline queue to incident reports"
+        description: "Wrap incident submission in the same offlineQueue pattern already used for check-in. enqueueOfflineAction on network failure."
+        estimated_files: 1
+        estimated_lines: 15
+
+      - id: qw-4
+        title: "Add audio alert for critical incidents in command center"
+        description: "Play a short audio cue (Web Audio API) when incidentAlerts includes a new critical-severity item. Configurable via settings."
+        estimated_files: 2
+        estimated_lines: 30
+
+      - id: qw-5
+        title: "Make AI action buttons functional"
+        description: "Connect existing Assign Now, Deploy Replacement, Flag for Inspection buttons to corresponding API endpoints. Backend endpoints for assignment/dispatch may need creation."
+        estimated_files: 3-5
+        estimated_lines: 80-150
+
+      - id: qw-6
+        title: "Add SOS/panic button to guard sticky dock"
+        description: "One-tap button that creates a CRITICAL incident with auto-filled location, auto-filled title (Emergency SOS), and sends immediate notification to supervisors."
+        estimated_files: 2
+        estimated_lines: 50
+
+  medium_effort:
+    description: "Structural improvements requiring new components or backend changes"
+    items:
+      - id: me-1
+        title: "WebSocket-based dashboard state push"
+        description: "Replace 15s polling in CommandCenterDashboard with server-sent events or WebSocket channels for incidents, shifts, and alert state changes. Tracking WebSocket infrastructure already exists."
+        impact: "Reduces command center latency from 15s to <3s, reduces server load from N*polls to event-driven"
+
+      - id: me-2
+        title: "Incident assignment and escalation workflow"
+        description: "Add assigned_to, acknowledged_at, escalated_at, sla_deadline columns to incidents table. New states: assigned, acknowledged, escalated. Backend handlers for assign, acknowledge, escalate. Frontend incident detail panel with action timeline."
+        impact: "Transforms incidents from passive records to actionable workflows"
+
+      - id: me-3
+        title: "Local data cache for offline reads"
+        description: "Use IndexedDB to cache last-known schedule, allocations, and permits. Serve cached data when offline. Invalidate on successful API refresh."
+        impact: "Guard dashboard remains usable offline with stale-but-readable data"
+
+      - id: me-4
+        title: "Push notification delivery pipeline"
+        description: "Wire existing VAPID/service-worker scaffolding to backend. Store push subscriptions server-side. Send Web Push for critical incidents, shift changes, and escalations."
+        impact: "Guards receive alerts even when app is backgrounded"
+
+      - id: me-5
+        title: "Map-centric command center layout"
+        description: "Redesign CommandCenterDashboard to make OperationalMap the primary canvas (60% of viewport). Overlay event feed, alert queue, and resource panels as collapsible sidebars."
+        impact: "Matches professional SOC information architecture"
+
+      - id: me-6
+        title: "Guard movement history trails"
+        description: "Backend already stores tracking_points with timestamps. Add patrol path visualization on OperationalMap with time-slider replay."
+        impact: "Supervisor can review guard patrol compliance"
+
+  major_evolution:
+    description: "New capabilities requiring significant architecture work"
+    items:
+      - id: mj-1
+        title: "Real-time messaging system"
+        description: "In-app messaging (1:1, group, broadcast) using WebSocket channels. Message persistence in PostgreSQL. Read receipts. File/photo attachment support."
+        impact: "Eliminates dependency on external communication tools. Enables evidence-based communication."
+
+      - id: mj-2
+        title: "Evidence management"
+        description: "Photo/video capture from guard mobile, upload to object storage (S3/R2), attach to incidents. Chain-of-custody metadata. Thumbnail generation."
+        impact: "Professional-grade incident documentation"
+
+      - id: mj-3
+        title: "Compliance reporting engine"
+        description: "Scheduled report generation (daily/weekly/monthly), configurable templates, PDF/CSV export, email distribution. Regulatory framework mapping."
+        impact: "Reduces manual compliance work, enables client reporting"
+
+      - id: mj-4
+        title: "Historical trend analysis"
+        description: "Time-series aggregation of all operational metrics. Trend visualization with period-over-period comparison. Anomaly detection on metric trends."
+        impact: "Transforms analytics from snapshot to predictive"
+
+      - id: mj-5
+        title: "Native mobile app (React Native or Flutter)"
+        description: "Replace Capacitor web wrapper with native mobile app for better performance, background execution, biometric auth, camera integration, and push notification reliability."
+        impact: "Professional-grade mobile experience for guards"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 7: FILES ANALYZED
+# ══════════════════════════════════════════════════════════════════════════════
+
+files_analyzed:
+  - file: CommandCenterDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    purpose: "Supervisor/admin command center — unified tactical view"
+    key_elements:
+      - element: OperationalEventProvider
+        type: pattern
+        location: "CommandCenterDashboard.tsx:return"
+        description: "Cross-panel event selection context for incident/feed highlighting"
+      - element: "15s refresh interval"
+        type: pattern
+        location: "CommandCenterDashboard.tsx:~70-95"
+        description: "All dashboard data refreshed via polling, not push"
+      - element: "6 SectionPanels"
+        type: pattern
+        location: "CommandCenterDashboard.tsx:~210-370"
+        description: "Vertical scroll layout: SystemStatus, TacticalView, LiveOps, OpsManagement, AssetMonitoring"
+    language: typescript
+    lines: 380
+
+  - file: UserDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+    purpose: "Guard workspace — mission, resources, support, map tabs"
+    key_elements:
+      - element: "15+ useState hooks"
+        type: pattern
+        location: "UserDashboard.tsx:120-180"
+        description: "Monolithic state management — attendance, schedule, firearms, permits, tickets, incident form, location, tracking, etc."
+      - element: enqueueOfflineAction
+        type: function
+        location: "UserDashboard.tsx (imported)"
+        description: "Used for check-in offline queuing"
+      - element: "Bottom nav + sticky dock"
+        type: pattern
+        location: "UserDashboard.tsx:render"
+        description: "Mission/Resources/Support/Map tabs + Report Incident/Check In/Instructions dock"
+    language: typescript
+    lines: 1000+
+
+  - file: SuperadminDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+    purpose: "Elevated dashboard shell — routes to CommandCenter, analytics, audit, management views"
+    key_elements:
+      - element: CommandCenterDashboard
+        type: class
+        location: "SuperadminDashboard.tsx (imported)"
+        description: "Superadmin/admin/supervisor command center view"
+      - element: OperationalShell
+        type: class
+        location: "SuperadminDashboard.tsx (imported)"
+        description: "Fixed sidebar + header shell for elevated roles"
+    language: typescript
+    lines: 120+
+
+  - file: offlineQueue.ts
+    path: DasiaAIO-Frontend/src/utils/offlineQueue.ts
+    purpose: "IndexedDB-based offline action queue with Background Sync support"
+    key_elements:
+      - element: enqueueOfflineAction
+        type: function
+        location: "offlineQueue.ts:47"
+        description: "Stores failed API call in IndexedDB, requests Background Sync"
+      - element: "Duplicate detection"
+        type: pattern
+        location: "offlineQueue.ts:49-60"
+        description: "Checks last queued action to prevent duplicate submissions"
+    language: typescript
+    lines: 60
+
+  - file: useOperationalMapData.ts
+    path: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+    purpose: "WebSocket + REST hybrid for real-time map data"
+    key_elements:
+      - element: "WebSocket connection"
+        type: pattern
+        location: "useOperationalMapData.ts:389-460"
+        description: "Connects to /api/tracking/ws with Sec-WebSocket-Protocol auth"
+      - element: "Active guards, sites, geofence alerts"
+        type: variable
+        location: "useOperationalMapData.ts"
+        description: "Manages map entities from both WS and REST sources"
+    language: typescript
+    lines: 460+
+
+  - file: incident_ai_classifier.rs
+    path: DasiaAIO-Backend/src/services/incident_ai_classifier.rs
+    purpose: "AI incident severity classification — LLM (Groq/OpenAI) + keyword fallback"
+    key_elements:
+      - element: classify_incident_smart
+        type: function
+        location: "incident_ai_classifier.rs:37"
+        description: "Primary classifier — attempts LLM, falls back to keyword heuristic"
+      - element: resolve_llm_config
+        type: function
+        location: "incident_ai_classifier.rs:~60"
+        description: "Multi-provider config resolution (Groq, OpenAI, Ollama)"
+    language: rust
+    lines: 60+
+
+  - file: guard_prediction_service.rs
+    path: DasiaAIO-Backend/src/services/guard_prediction_service.rs
+    purpose: "Guard absence risk prediction — weighted heuristic"
+    key_elements:
+      - element: GuardAbsenceRiskResult
+        type: class
+        location: "guard_prediction_service.rs:10"
+        description: "Risk score struct with guard_id, risk_level, contributing factors"
+      - element: persist_absence_prediction
+        type: function
+        location: "guard_prediction_service.rs:39"
+        description: "Stores prediction result in guard_absence_predictions table"
+    language: rust
+    lines: 60+
+
+  - file: tracking.rs
+    path: DasiaAIO-Backend/src/handlers/tracking.rs
+    purpose: "GPS tracking, geofencing, WebSocket real-time updates"
+    key_elements:
+      - element: "WebSocket upgrade handler"
+        type: function
+        location: "tracking.rs"
+        description: "Real-time guard/vehicle position streaming"
+      - element: "Geofence proximity checks"
+        type: pattern
+        location: "tracking.rs:23-30"
+        description: "Constants for proximity radius, shift alert windows, dedup intervals"
+    language: rust
+    lines: 80+
+
+  - file: analytics.rs
+    path: DasiaAIO-Backend/src/handlers/analytics.rs
+    purpose: "Point-in-time analytics aggregation"
+    key_elements:
+      - element: AnalyticsResponse
+        type: class
+        location: "analytics.rs:13"
+        description: "Overview stats, performance metrics, resource utilization, mission stats"
+    language: rust
+    lines: 60+
+
+  - file: pushNotifications.ts
+    path: DasiaAIO-Frontend/src/utils/pushNotifications.ts
+    purpose: "Web Push subscription scaffolding — VAPID, service worker registration"
+    key_elements:
+      - element: VAPID_PUBLIC_KEY
+        type: variable
+        location: "pushNotifications.ts:15"
+        description: "VITE_VAPID_PUBLIC_KEY env var for push subscription"
+      - element: disableServiceWorkerInDevelopment
+        type: function
+        location: "pushNotifications.ts"
+        description: "Clears SW registrations in dev mode"
+    language: typescript
+    lines: ~120
+
+patterns_found:
+  - category: architecture
+    pattern: "Poll-based dashboard refresh"
+    description: "All command center panels use 15-30s polling intervals via useEffect + setInterval"
+    examples:
+      - file: CommandCenterDashboard.tsx
+        location: "CommandCenterDashboard.tsx:70-95"
+        snippet: "const refresher = window.setInterval(() => { void runRefreshCycle() }, 15000)"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Monolithic component state"
+    description: "Guard dashboard uses 15+ useState hooks in a single component"
+    examples:
+      - file: UserDashboard.tsx
+        location: "UserDashboard.tsx:120-180"
+        snippet: "const [attendance, setAttendance] = useState<AttendanceRecord[]>([]); const [scheduleItems, setScheduleItems]..."
+    prevalence: common
+
+  - category: architecture
+    pattern: "Advisory-only AI outputs"
+    description: "AI panels render predictions/classifications but action buttons have no backend wiring"
+    examples:
+      - file: GuardAbsencePredictionPanel.tsx
+        location: "GuardAbsencePredictionPanel.tsx"
+        snippet: "Deploy Replacement / Notify Guard buttons rendered but onClick is UI-only"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Partial offline support"
+    description: "Offline queue exists but only used for check-in; incidents, tickets, check-out are online-only"
+    examples:
+      - file: UserDashboard.tsx
+        location: "UserDashboard.tsx:~300"
+        snippet: "enqueueOfflineAction called in check-in error handler only"
+    prevalence: occasional
+
+open_questions:
+  - question: "Is the backend push notification delivery (web-push crate or external service) planned or implemented?"
+    context: "Frontend has VAPID scaffolding and subscription endpoint but no evidence of backend push sending logic"
+    type: research
+    affects: ["me-4", "communication gap"]
+
+  - question: "Are the AI action buttons (Assign Now, Deploy Replacement, etc.) intended to be functional or are they planned stubs?"
+    context: "v1.2.0 changelog describes them as 'actionable call-to-action buttons' but no corresponding backend dispatch endpoints were found"
+    type: decision_blocker
+    affects: ["qw-5", "decision support gap"]
+
+  - question: "Is there a message/chat table or endpoint planned for inter-user communication?"
+    context: "grep for chat/messaging/communication found only the radio discipline reference in GuardSupportTab"
+    type: research
+    affects: ["mj-1", "communication gap"]
+
+gaps:
+  - area: "Incident lifecycle management"
+    description: "Only 3 states, no assignment, no evidence, no SLA, no escalation — this is the largest functional gap vs professional platforms"
+    impact: decision_blocker
+    affects: ["me-2"]
+
+  - area: "Real-time communication"
+    description: "No messaging between users. Push notifications scaffolded but not delivering. No broadcast."
+    impact: decision_blocker
+    affects: ["mj-1", "me-4"]
+
+  - area: "Offline-first mobile architecture"
+    description: "Guard dashboard is unusable offline. Only check-in has offline queue. No read cache."
+    impact: research_blocker
+    affects: ["qw-3", "me-3"]
+
+  - area: "Time-series analytics"
+    description: "All analytics are point-in-time. No historical storage. No trend comparison."
+    impact: research_blocker
+    affects: ["mj-4"]

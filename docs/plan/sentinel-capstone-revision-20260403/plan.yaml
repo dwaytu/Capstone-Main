@@ -1,0 +1,169 @@
+plan_id: sentinel-capstone-revision-20260403
+objective: >
+  Produce a concise revision map for SENTINEL - Group 8.md that shifts implementation-heavy
+  narrative into abstraction-over-implementation language while preserving section structure
+  and factual capabilities.
+created_at: "2026-04-03"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 1
+  total_dependencies: 2
+  risk_score: medium
+
+tldr: |
+  The document contains multiple implementation-dense regions, especially in Purpose and Description,
+  Methodology, Development, and Design sections. Revision should preserve capabilities while removing
+  component names, implementation chronology, and development-history phrasing.
+open_questions:
+  - Should sprint labels be retained verbatim in Calendar of Activities or generalized to capability phases?
+
+pre_mortem:
+  overall_risk_level: medium
+  critical_failure_modes:
+    - scenario: Capability details are accidentally removed while stripping implementation specifics.
+      likelihood: medium
+      impact: high
+      mitigation: Preserve all user-visible behaviors and governance/security outcomes as explicit rewrite anchors.
+    - scenario: Section structure drifts during rewrite and breaks capstone format requirements.
+      likelihood: low
+      impact: critical
+      mitigation: Restrict edits to paragraph-level wording inside existing headings only.
+  assumptions:
+    - Section headings and order in SENTINEL - Group 8.md must remain unchanged.
+    - Rewrite focuses on abstraction level, not scope expansion or feature removal.
+
+implementation_specification:
+  code_structure: >
+    Keep all existing sections and subsection labels. Rewrite only target paragraphs using
+    capability-first, architecture-level language.
+  affected_areas:
+    - SENTINEL - Group 8.md Introduction > Purpose and Description
+    - SENTINEL - Group 8.md Chapter 2 > Methodology
+    - SENTINEL - Group 8.md Chapter 2 > Technologies to be Used in the System
+    - SENTINEL - Group 8.md Chapter 2 > Requirements Analysis
+    - SENTINEL - Group 8.md Chapter 2 > Development
+    - SENTINEL - Group 8.md Chapter 2 > Design of Software, System, Product, and/or Processes.
+  component_details:
+    - component: Revision map
+      responsibility: Identify prioritized section and paragraph ranges requiring abstraction uplift.
+      interfaces:
+        - Section name + line range + rewrite intent
+    - component: Rewrite guardrails
+      responsibility: Preserve factual capabilities while removing implementation chronology and component naming.
+      interfaces:
+        - Constraint checklist for each rewrite range
+  dependencies:
+    - component: Revision map
+      relationship: Informs rewrite execution order.
+    - component: Rewrite guardrails
+      relationship: Constrains wording choices during rewrite.
+  integration_points:
+    - Existing chapter and heading structure in SENTINEL - Group 8.md
+
+contracts:
+  - from_task: T1
+    to_task: T2
+    interface: Prioritized section ranges with evidence of implementation-heavy language
+    format: Bullet list with section names and line ranges
+  - from_task: T2
+    to_task: T3
+    interface: Draft rewrite intents per range aligned to abstraction-over-implementation constraints
+    format: Structured checklist
+
+tasks:
+  - id: T1
+    title: Identify implementation-heavy rewrite hotspots
+    description: |
+      Locate paragraph ranges that contain component names, implementation chronology,
+      and dev-history phrasing while preserving capability facts.
+    wave: 1
+    agent: gem-researcher
+    prototype: false
+    covers: ["C1", "C2"]
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: SENTINEL - Group 8.md
+        description: Primary capstone manuscript to analyze for rewrite targeting.
+  - id: T2
+    title: Build abstraction-first revision map
+    description: |
+      Convert hotspots into a concise prioritized map with rewrite intent per range,
+      preserving section structure and factual system capabilities.
+    wave: 2
+    agent: gem-documentation-writer
+    prototype: false
+    covers: ["C1", "C2", "C3"]
+    priority: high
+    status: pending
+    dependencies:
+      - T1
+    conflicts_with: []
+    context_files:
+      - path: SENTINEL - Group 8.md
+        description: Source content for abstraction-over-implementation rewrite planning.
+  - id: T3
+    title: Validate constraint compliance
+    description: |
+      Verify map entries preserve capabilities, avoid section restructuring, and remove
+      component-level implementation and dev-history phrasing.
+    wave: 3
+    agent: gem-reviewer
+    prototype: false
+    covers: ["C1", "C2", "C3", "C4"]
+    priority: medium
+    status: pending
+    dependencies:
+      - T2
+    conflicts_with: []
+    context_files:
+      - path: SENTINEL - Group 8.md
+        description: Reference for final compliance check.
+
+planning_pass: 1
+planning_history:
+  - pass: 1
+    reason: Initial planning pass from direct user request for revision mapping.
+    timestamp: "2026-04-03"
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 220
+    focus_area: Documentation abstraction planning
+    verification:
+      - Confirm all mapped ranges are within existing sections.
+      - Confirm intents remove component names and chronology cues.
+      - Confirm capability statements remain intact.
+    acceptance_criteria:
+      - Return prioritized list of section and paragraph ranges to rewrite.
+      - Provide rewrite intent per range.
+      - Keep section structure unchanged.
+      - Remove implementation chronology and dev-history phrasing.
+    failure_modes:
+      - scenario: Mapping misses high-density implementation blocks in Development section.
+        likelihood: medium
+        impact: high
+        mitigation: Prioritize longest implementation-dense ranges first.
+    tech_stack:
+      - Markdown
+      - YAML
+    test_coverage: null
+    requires_review: true
+    review_depth: standard
+    review_security_sensitive: false
+    environment: null
+    requires_approval: false
+    devops_security_sensitive: false
+    task_type: update
+    audience: stakeholders
+    coverage_matrix:
+      - Introduction
+      - Methodology
+      - Technical Background
+      - Requirements Analysis
+      - Development
+      - System Design

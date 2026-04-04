@@ -83,7 +83,7 @@ Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0
 
 - Frontend builds require `VITE_API_BASE_URL` and enforce HTTPS in production mode.
 - Backend startup in production requires strong `JWT_SECRET`, non-default `ADMIN_CODE`, and explicit CORS origin configuration.
-- Desktop updater uses Tauri updater endpoints and signed update metadata.
+- Desktop updater is currently disabled at the native layer; version awareness is handled by the frontend via backend release metadata checks.
 - Mobile and desktop share the same API origin contract as the web client.
 
 ## Documentation

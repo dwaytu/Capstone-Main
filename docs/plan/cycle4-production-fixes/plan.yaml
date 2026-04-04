@@ -1,0 +1,1774 @@
+plan_id: cycle4-production-fixes
+objective: |
+  Fix 5 BLOCKING + 9 HIGH + 6 MEDIUM issues identified in SENTINEL Phase 1/2 audit.
+  Primary focus: React Router integration, App.tsx decomposition, auth hardening,
+  backend security fixes, and UX polish. Transform SENTINEL from prototype to
+  production-grade across frontend and backend.
+created_at: "2026-04-04T00:00:00Z"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 6
+  total_dependencies: 29
+  risk_score: high
+
+tldr: |
+  Four-wave plan addressing 17 of 20 audit findings (3 HIGH deferred to next cycle):
+  - Wave 1 (6 tasks): React Router integration + App.tsx god-component decomposition.
+    This is the largest architectural change — string-based activeView state replaced
+    with React Router v7, role-based route guards, and URL-based navigation. App.tsx
+    (~1300 lines, ~20 useState hooks) is split into composable modules.
+  - Wave 2 (4 tasks): Auth hardening (XSS mitigations, cross-tab session sync, CSP
+    meta tag, toast notification system replacing single globalError).
+  - Wave 3 (6 tasks): Backend security (JWT secret separation, docker-compose secret
+    externalization, Redis-backed rate limiting, WebSocket auth, health endpoint auth,
+    structured logging).
+  - Wave 4 (4 tasks): UX polish (password strength indicator, date input UX, bundle
+    optimization, code review of all changes).
+  Total: 20 tasks across 4 waves. Frontend-first strategy — Waves 1-2 are immediately
+  testable. Wave 3 requires Rust changes + Railway redeployment. Wave 4 is polish.
+  3 HIGH audit findings deferred: migration versioning/rollback, structured logging,
+  location heartbeat offline queue.
+
+open_questions:
+  - "Backend cookie-based auth: Should we implement httpOnly cookie JWT in this cycle or defer to a future cycle? Current plan adds CSP + XSS mitigations as interim."
+  - "React Router version: v7 (latest) or v6? v7 has framework mode but we only need library mode. Plan assumes react-router v7 in library mode."
+  - "Rate limiting backend: Redis vs PostgreSQL-backed rate limiting? Plan assumes Redis since Railway supports Redis add-on."
+
+pre_mortem:
+  overall_risk_level: high
+  critical_failure_modes:
+    - scenario: "React Router migration breaks all navigation across 4 roles"
+      likelihood: medium
+      impact: critical
+      mitigation: |
+        Incremental migration: keep viewRegistry as fallback during transition.
+        Each route is tested per-role before removing old activeView paths.
+        Rollback strategy: git revert of Wave 1 commits if router integration
+        fails verification. Each sub-task (t3a/t3b/t3c) is a separate commit
+        for granular rollback.
+    - scenario: "App.tsx decomposition introduces state synchronization bugs"
+      likelihood: medium
+      impact: high
+      mitigation: |
+        Extract state into context providers one at a time. Each extraction is
+        a separate commit. Auth context first (most critical), then UI state.
+        Existing behavior preserved via pass-through props during transition.
+    - scenario: "Backend JWT secret separation breaks existing tokens"
+      likelihood: high
+      impact: high
+      mitigation: |
+        Dual-secret validation: new code tries REFRESH_JWT_SECRET first, falls
+        back to JWT_SECRET for tokens issued before migration. Communicate token
+        rotation window to users (re-login within 7 days).
+    - scenario: "Railway redeployment fails or introduces downtime"
+      likelihood: low
+      impact: high
+      mitigation: |
+        Stage all backend changes locally with docker-compose first. Deploy to
+        Railway staging environment if available. Keep previous deployment as
+        rollback target.
+    - scenario: "Bundle size increases from adding react-router"
+      likelihood: low
+      impact: medium
+      mitigation: |
+        react-router is ~14KB gzipped. Combined with code-splitting improvements
+        in Wave 4, net bundle size should decrease. Monitor with vite build output.
+  assumptions:
+    - "React Router v7 will be used in library mode (not framework mode)"
+    - "No backend API contract changes needed for frontend routing — all routes are client-side"
+    - "Existing component props (user, onLogout, onViewChange, activeView) can be replaced with hooks/context"
+    - "Railway deployment supports environment variable updates without downtime"
+    - "Redis add-on is available on Railway for persistent rate limiting"
+    - "All 4 roles (guard, supervisor, admin, superadmin) must work after each wave"
+
+implementation_specification:
+  code_structure: |
+    Frontend restructure:
+      src/
+        router/
+          index.tsx          — Route definitions, lazy loading
+          guards.tsx         — RoleGuard, AuthGuard components
+          routes.ts          — Route path constants
+        context/
+          AuthContext.tsx     — Auth state (user, login, logout, tokens)
+          UIContext.tsx       — UI state (errors, notifications, modals)
+          LocationContext.tsx — Location consent + geo state
+        hooks/
+          useAuth.ts         — Hook wrapping AuthContext
+          useToast.ts        — Toast notification hook
+          useSessionSync.ts  — Cross-tab session sync
+        components/
+          layout/
+            AppShell.tsx     — Main layout (sidebar + header + outlet)
+            MobileNav.tsx    — Mobile bottom navigation
+          shared/
+            ToastContainer.tsx — Toast notification stack
+            PasswordStrength.tsx — Password strength indicator
+
+    Backend changes (minimal, targeted):
+      src/
+        utils.rs             — Separate JWT secrets
+        middleware/
+          rate_limit.rs      — Redis-backed rate limiting
+          ws_auth.rs         — WebSocket auth middleware
+        handlers/
+          health.rs          — Auth-gated system health
+        config.rs            — Remove weak ADMIN_CODE default
+
+  affected_areas:
+    - "DasiaAIO-Frontend/src/App.tsx — complete decomposition"
+    - "DasiaAIO-Frontend/src/router/ — new directory"
+    - "DasiaAIO-Frontend/src/context/ — new/expanded context providers"
+    - "DasiaAIO-Frontend/src/components/layout/ — AppShell extraction"
+    - "DasiaAIO-Frontend/src/components/LoginPage.tsx — password strength"
+    - "DasiaAIO-Frontend/src/utils/api.ts — CSP, sanitization"
+    - "DasiaAIO-Frontend/src/main.tsx — wrap with RouterProvider"
+    - "DasiaAIO-Frontend/package.json — add react-router dependency"
+    - "DasiaAIO-Frontend/index.html — CSP meta tag"
+    - "DasiaAIO-Backend/src/utils.rs — JWT secret separation"
+    - "DasiaAIO-Backend/src/middleware/rate_limit.rs — Redis backing"
+    - "DasiaAIO-Backend/src/handlers/health.rs — auth gate"
+    - "DasiaAIO-Backend/src/routes.rs — WS auth middleware"
+    - "DasiaAIO-Backend/docker-compose.yml — secret externalization"
+    - "DasiaAIO-Backend/src/config.rs — ADMIN_CODE strength"
+
+  component_details:
+    - component: "Router (src/router/)"
+      responsibility: |
+        Define all application routes with role-based access control.
+        Lazy-load dashboard components. Map old activeView keys to URL paths.
+      interfaces:
+        - "RouteDefinition[] — array of path, element, roles, lazy component"
+        - "RoleGuard — wrapper component checking user.role against allowed roles"
+        - "AuthGuard — wrapper component redirecting unauthenticated users to /login"
+        - "ROUTES constant — centralized path strings"
+
+    - component: "AuthContext (src/context/AuthContext.tsx)"
+      responsibility: |
+        Manage authentication state: user object, tokens, login/logout handlers,
+        token refresh, legal consent status. Replace ~8 useState hooks from App.tsx.
+      interfaces:
+        - "useAuth() — { user, isLoggedIn, login, logout, isLoading }"
+        - "AuthProvider — context provider wrapping app"
+
+    - component: "UIContext (src/context/UIContext.tsx)"
+      responsibility: |
+        Manage UI-level state: toast notifications (replacing globalError),
+        modal state, release prompts, what's-new prompts.
+      interfaces:
+        - "useUI() — { toasts, addToast, removeToast, releasePrompt, whatsNew }"
+        - "UIProvider — context provider"
+
+    - component: "AppShell (src/components/layout/AppShell.tsx)"
+      responsibility: |
+        Main authenticated layout: sidebar, header, mobile nav, content outlet.
+        Extracted from App.tsx render tree.
+      interfaces:
+        - "AppShell — layout component with <Outlet /> for nested routes"
+        - "Props: user, onLogout (from context, not props)"
+
+    - component: "ToastContainer (src/components/shared/ToastContainer.tsx)"
+      responsibility: |
+        Render a stack of toast notifications. Auto-dismiss after timeout.
+        Supports error, warning, success, info types. Replaces single globalError.
+      interfaces:
+        - "Toast type — { id, type, message, duration }"
+        - "Renders from UIContext toast array"
+
+    - component: "SessionSync (src/hooks/useSessionSync.ts)"
+      responsibility: |
+        Listen for storage events and BroadcastChannel messages to sync
+        login/logout across browser tabs.
+      interfaces:
+        - "useSessionSync(onLogout) — hook that triggers logout in other tabs"
+
+  dependencies:
+    - component: "Router"
+      relationship: "Depends on AuthContext for user/role info in route guards"
+    - component: "AppShell"
+      relationship: "Consumes AuthContext for user data, UIContext for toasts/modals"
+    - component: "ToastContainer"
+      relationship: "Reads from UIContext toast array"
+    - component: "SessionSync"
+      relationship: "Calls AuthContext logout when cross-tab event detected"
+
+  integration_points:
+    - "main.tsx wraps app with BrowserRouter + AuthProvider + UIProvider"
+    - "All dashboard components receive user from useAuth() instead of props"
+    - "Sidebar/Header use useNavigate() instead of onViewChange callback"
+    - "LoginPage calls useAuth().login() and navigates via useNavigate()"
+    - "Backend JWT changes require frontend token refresh to work with new secrets"
+
+contracts:
+  - from_task: "w1-t2-auth-context"
+    to_task: "w1-t1-router-setup"
+    interface: "AuthContext provides useAuth() consumed by route guards (AuthGuard, RoleGuard)"
+    format: "AuthContext must export useAuth() returning { user, isLoggedIn, login, logout } before route guards can enforce access control"
+
+  - from_task: "w1-t2-auth-context"
+    to_task: "w1-t3a-contexts"
+    interface: "AuthContext provider pattern guides UIContext + LocationContext creation"
+    format: "AuthProvider exists in main.tsx; new context providers follow same pattern"
+
+  - from_task: "w1-t3a-contexts"
+    to_task: "w1-t3b-appshell"
+    interface: "UIContext + LocationContext are available for AppShell consumption"
+    format: "UIProvider and LocationProvider wrap RouterProvider in main.tsx alongside AuthProvider"
+
+  - from_task: "w1-t3b-appshell"
+    to_task: "w1-t3c-migrate-components"
+    interface: "AppShell with <Outlet/> and useNavigate() ready for component migration"
+    format: "Router + contexts + AppShell are wired; components can replace onViewChange with useNavigate()"
+
+  - from_task: "w1-t3c-migrate-components"
+    to_task: "w1-t4-wave1-review"
+    interface: "Decomposed App.tsx, all contexts, AppShell, and migrated components ready for review"
+    format: "All files compile (tsc), build (vite build), and maintain existing behavior"
+
+  - from_task: "w1-t4-wave1-review"
+    to_task: "w2-t1-xss-csp"
+    interface: "Reviewed and approved Wave 1 code is stable base for auth hardening"
+    format: "No blocking review comments; all routes functional for 4 roles"
+
+  - from_task: "w2-t2-toast-system"
+    to_task: "w2-t4-wave2-review"
+    interface: "Toast system replaces globalError across all components"
+    format: "UIContext provides addToast/removeToast; ToastContainer renders stack"
+
+  - from_task: "w3-t1-jwt-separation"
+    to_task: "w3-t6-wave3-review"
+    interface: "JWT secret separation ready for review before deployment"
+    format: "REFRESH_JWT_SECRET env var; dual-validation fallback; tests pass"
+
+  - from_task: "w3-t6-wave3-review"
+    to_task: "w4-t3-bundle-optimize"
+    interface: "All backend changes reviewed; frontend can optimize bundle"
+    format: "Security review passed; no blocking findings"
+
+tasks:
+  # ════════════════════════════════════════════════
+  # WAVE 1 — React Router + App.tsx Decomposition
+  # ════════════════════════════════════════════════
+
+  - id: "w1-t1-router-setup"
+    title: "Install React Router and create route infrastructure"
+    description: |
+      Install react-router (v7, library mode) and create the routing infrastructure.
+
+      1. Add react-router dependency to package.json.
+      2. Create src/router/routes.ts with path constants mapping old activeView keys:
+         - "/" → redirect to role-based home
+         - "/login" → LoginPage
+         - "/dashboard" → SuperadminDashboard/AdminDashboard (admin/superadmin)
+         - "/overview" → UserDashboard (guard)
+         - "/calendar" → CalendarDashboard
+         - "/performance" → PerformanceDashboard
+         - "/merit" → MeritScoreDashboard
+         - "/firearms" → FirearmInventory
+         - "/allocation" → FirearmAllocation
+         - "/permits" → GuardFirearmPermits
+         - "/maintenance" → FirearmMaintenance
+         - "/armored-cars" → ArmoredCarDashboard
+         - "/profile" → ProfileDashboard
+         - "/settings" → SettingsView
+         - "/analytics" → AnalyticsDashboard
+         - "/audit" → AuditDashboard
+         - "*" → 404 redirect to home
+      3. Create src/router/guards.tsx with AuthGuard and RoleGuard components.
+         - AuthGuard: redirects to /login if not authenticated
+         - RoleGuard: checks user.role against allowed roles array, shows access denied if unauthorized
+      4. Create src/router/index.tsx with createBrowserRouter configuration using lazy() for code splitting.
+      5. Update src/main.tsx to wrap app with RouterProvider.
+      6. Ensure Vite dev server has historyApiFallback (already default with Vite).
+
+      Key constraint: Do NOT remove activeView from App.tsx yet — this task only ADDS
+      the router infrastructure alongside existing navigation. Integration happens in w1-t3.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BLOCKING-1: No URL routing"
+    priority: high
+    status: pending
+    dependencies:
+      - "w1-t2-auth-context"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/package.json"
+        description: "Add react-router dependency"
+      - path: "DasiaAIO-Frontend/src/main.tsx"
+        description: "Wrap app with RouterProvider"
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Reference for existing view keys and role logic"
+      - path: "DasiaAIO-Frontend/src/types/auth.ts"
+        description: "Role type definitions for route guards"
+      - path: "DasiaAIO-Frontend/src/utils/permissions.ts"
+        description: "Permission system for route access control"
+      - path: "DasiaAIO-Frontend/vite.config.ts"
+        description: "Verify historyApiFallback support"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 250
+        focus_area: "Routing infrastructure"
+        verification:
+          - "npm install completes successfully with react-router"
+          - "tsc compiles with zero errors"
+          - "vite build succeeds"
+          - "Route constants file exports all path strings"
+          - "AuthGuard redirects unauthenticated users to /login"
+          - "RoleGuard shows access denied for wrong roles"
+        acceptance_criteria:
+          - "react-router is installed and listed in package.json dependencies"
+          - "src/router/routes.ts exports ROUTES constant with all path mappings"
+          - "src/router/guards.tsx exports AuthGuard and RoleGuard components"
+          - "src/router/index.tsx exports router configuration with lazy-loaded routes"
+          - "main.tsx renders RouterProvider"
+          - "All existing views have corresponding URL paths"
+          - "Browser back/forward buttons work for navigation"
+          - "Direct URL access loads the correct view (deep linking works)"
+        failure_modes:
+          - scenario: "React Router conflicts with existing activeView state"
+            likelihood: medium
+            impact: medium
+            mitigation: "Router is additive — both systems coexist until w1-t3 integrates them"
+        tech_stack:
+          - "react-router v7 (library mode)"
+          - "React 18 lazy/Suspense for code splitting"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w1-t2-auth-context"
+    title: "Extract auth state into AuthContext provider"
+    description: |
+      Extract authentication state from App.tsx into a dedicated AuthContext.
+
+      1. Create src/context/AuthContext.tsx:
+         - Move these useState hooks from App.tsx:
+           isLoggedIn, user, isLoading, hasAcceptedToa, toaChecked, toaError
+         - Move these handlers: handleLogin, handleLogout, handleAcceptToa, handleDeclineToa
+         - Move auth restoration useEffect (restoreAuth)
+         - Move token-expired event listener useEffect
+         - Export AuthProvider and useAuth hook
+      2. AuthProvider wraps children and provides:
+         - user: User | null
+         - isLoggedIn: boolean
+         - isLoading: boolean
+         - hasAcceptedToa: boolean
+         - login(userData: User): void
+         - logout(): void
+         - acceptToa(): Promise<void>
+         - declineToa(): void
+      3. Update main.tsx: wrap RouterProvider with AuthProvider.
+      4. Do NOT yet remove the corresponding state from App.tsx — that happens in w1-t3.
+         This task creates the context; w1-t3 wires it up.
+
+      Design: AuthContext reads/writes localStorage and SecureStorage (Capacitor)
+      for token management, delegating to existing api.ts functions.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "HIGH-1: App.tsx god component decomposition"
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with:
+      - "w1-t3a-contexts"
+      - "w1-t3b-appshell"
+      - "w1-t3c-migrate-components"
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Source of auth state and handlers to extract"
+      - path: "DasiaAIO-Frontend/src/utils/api.ts"
+        description: "Token management functions used by auth logic"
+      - path: "DasiaAIO-Frontend/src/types/auth.ts"
+        description: "Role and auth type definitions"
+      - path: "DasiaAIO-Frontend/src/config.ts"
+        description: "API_BASE_URL and platform detection"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 2
+        estimated_lines: 280
+        focus_area: "Auth state extraction"
+        verification:
+          - "tsc compiles with zero errors"
+          - "useAuth() hook returns correct user data after login"
+          - "Logout clears all auth state"
+          - "Token refresh works through context"
+          - "Legal consent (ToA) flow works through context"
+        acceptance_criteria:
+          - "src/context/AuthContext.tsx exports AuthProvider and useAuth"
+          - "All auth-related useState hooks have equivalent context state"
+          - "Login/logout/ToA handlers are accessible via useAuth()"
+          - "Token restoration on page refresh works through AuthContext"
+          - "AuthContext properly cleans up useEffect listeners"
+        failure_modes:
+          - scenario: "Token refresh race condition when multiple components call useAuth"
+            likelihood: medium
+            impact: high
+            mitigation: "refreshInFlight singleton in api.ts already prevents concurrent refreshes; context delegates to same function"
+        tech_stack:
+          - "React Context API"
+          - "React 18"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w1-t3a-contexts"
+    title: "Create UIContext + LocationContext, wire into main.tsx"
+    description: |
+      Create the two remaining context providers for App.tsx decomposition.
+      Keep App.tsx functional with both old and new systems coexisting.
+
+      1. Create src/context/UIContext.tsx (lightweight for now):
+         - Move: globalError, releasePrompt, whatsNewPrompt, isNetworkOnline, isBackendReachable
+         - Move: network/backend probe useEffects
+         - Move: update check useEffect and handlers
+         - Export UIProvider and useUI hook
+      2. Create src/context/LocationContext.tsx:
+         - Move: hasLocationConsent, locationConsentChecked, geoPermissionState, geoNotice, locationBannerDismissed
+         - Move: location consent handlers and heartbeat useEffect
+         - Export LocationProvider and useLocation hook
+      3. Wire both providers into main.tsx alongside existing AuthProvider.
+         Order: AuthProvider > UIProvider > LocationProvider > RouterProvider.
+      4. Do NOT remove corresponding state from App.tsx yet — this task
+         only creates the contexts. App.tsx continues to work with both systems.
+
+      Design: Follow the same pattern as AuthContext (from w1-t2). Each context
+      has a Provider component and a custom hook for consumption.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "HIGH-1: App.tsx god component decomposition"
+    priority: high
+    status: pending
+    dependencies:
+      - "w1-t2-auth-context"
+    conflicts_with:
+      - "w1-t2-auth-context"
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Source of UI and location state to extract"
+      - path: "DasiaAIO-Frontend/src/context/AuthContext.tsx"
+        description: "Pattern reference from w1-t2"
+      - path: "DasiaAIO-Frontend/src/main.tsx"
+        description: "Wire new providers here"
+      - path: "DasiaAIO-Frontend/src/utils/location.ts"
+        description: "Location utils used by LocationContext"
+      - path: "DasiaAIO-Frontend/src/utils/trackingPolicy.ts"
+        description: "Tracking policy used by heartbeat logic"
+    planning_pass: 2
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation (was part of w1-t3-app-decompose)"
+        timestamp: "2026-04-04T00:00:00Z"
+      - pass: 2
+        reason: "Split from w1-t3 per critic BLOCKING-1: original task over-scoped"
+        timestamp: "2026-04-04T12:00:00Z"
+        estimated_effort: medium
+        estimated_files: 4
+        estimated_lines: 200
+        focus_area: "Context provider creation"
+        verification:
+          - "tsc compiles with zero errors"
+          - "UIContext exports UIProvider and useUI hook"
+          - "LocationContext exports LocationProvider and useLocation hook"
+          - "Both providers wired in main.tsx"
+          - "App.tsx still functions with old state alongside new contexts"
+          - "vite build succeeds"
+        acceptance_criteria:
+          - "src/context/UIContext.tsx exports UIProvider and useUI"
+          - "src/context/LocationContext.tsx exports LocationProvider and useLocation"
+          - "main.tsx wraps app with all three context providers"
+          - "App.tsx remains functional (no regressions)"
+          - "UI state (errors, network, prompts) accessible via useUI()"
+          - "Location state accessible via useLocation()"
+        failure_modes:
+          - scenario: "Dual state (context + App.tsx) causes sync issues"
+            likelihood: medium
+            impact: medium
+            mitigation: "Contexts read from same localStorage/state source; App.tsx state becomes pass-through during transition"
+        tech_stack:
+          - "React Context API"
+          - "React 18"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w1-t3b-appshell"
+    title: "Create AppShell, rewrite App.tsx to use router Outlet"
+    description: |
+      Create the AppShell layout component and rewrite App.tsx to use
+      React Router's <Outlet/> for content rendering. Reduce App.tsx
+      from ~1300 lines to ~200 lines.
+
+      1. Create src/components/layout/AppShell.tsx:
+         - Main authenticated layout with sidebar, header, mobile nav
+         - Uses <Outlet /> from react-router for nested content
+         - Consumes useAuth(), useUI(), useLocation() from contexts
+         - Renders ToA gate, location consent gate, modals (release prompt, what's new)
+         - Renders mobile bottom nav bar
+      2. Rewrite App.tsx to be minimal:
+         - Import providers (AuthProvider, UIProvider, LocationProvider)
+         - Import RouterProvider with router from src/router/
+         - Wrap with ErrorBoundary
+         - ~150-200 lines max
+      3. Wire AppShell as the layout route in src/router/index.tsx.
+      4. Remove activeView useState and setActiveView from App.tsx entirely.
+      5. Remove viewRegistry from App.tsx (routes handle this now).
+      6. Move remaining UI useState hooks into contexts or AppShell as appropriate.
+
+      Key constraint: After this task, App.tsx is a thin shell. All layout
+      rendering is in AppShell. All state is in contexts. Content is via Outlet.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BLOCKING-1: No URL routing"
+      - "HIGH-1: App.tsx god component decomposition"
+    priority: high
+    status: pending
+    dependencies:
+      - "w1-t1-router-setup"
+      - "w1-t2-auth-context"
+      - "w1-t3a-contexts"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Primary file being decomposed"
+      - path: "DasiaAIO-Frontend/src/router/index.tsx"
+        description: "Router configuration from w1-t1"
+      - path: "DasiaAIO-Frontend/src/context/AuthContext.tsx"
+        description: "Auth context from w1-t2"
+      - path: "DasiaAIO-Frontend/src/context/UIContext.tsx"
+        description: "UI context from w1-t3a"
+      - path: "DasiaAIO-Frontend/src/context/LocationContext.tsx"
+        description: "Location context from w1-t3a"
+      - path: "DasiaAIO-Frontend/src/components/Sidebar.tsx"
+        description: "Sidebar rendered by AppShell"
+      - path: "DasiaAIO-Frontend/src/components/Header.tsx"
+        description: "Header rendered by AppShell"
+    planning_pass: 2
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation (was part of w1-t3-app-decompose)"
+        timestamp: "2026-04-04T00:00:00Z"
+      - pass: 2
+        reason: "Split from w1-t3 per critic BLOCKING-1: original task over-scoped"
+        timestamp: "2026-04-04T12:00:00Z"
+        estimated_effort: large
+        estimated_files: 5
+        estimated_lines: 350
+        focus_area: "AppShell extraction and App.tsx rewrite"
+        verification:
+          - "App.tsx is under 200 lines"
+          - "tsc compiles with zero errors"
+          - "vite build succeeds"
+          - "All 4 roles can navigate to their home views"
+          - "Browser URL updates when navigating between views"
+          - "Browser back/forward works"
+          - "Page refresh preserves current view"
+          - "Mobile bottom nav works"
+          - "Sidebar navigation works"
+          - "Login redirects to role-appropriate home"
+          - "Logout redirects to /login"
+        acceptance_criteria:
+          - "App.tsx reduced from ~1300 lines to <200 lines"
+          - "No more activeView useState in App.tsx"
+          - "No more viewRegistry in App.tsx"
+          - "AppShell layout component renders sidebar + header + Outlet"
+          - "UIContext manages global errors, network state, prompts"
+          - "LocationContext manages geo state and heartbeat"
+        failure_modes:
+          - scenario: "AppShell layout breaks on mobile viewport"
+            likelihood: medium
+            impact: medium
+            mitigation: "AppShell reuses existing layout CSS from App.tsx; test mobile viewport during verification"
+          - scenario: "Sidebar active state detection breaks"
+            likelihood: medium
+            impact: medium
+            mitigation: "Use useLocation().pathname matching against ROUTES constants"
+        tech_stack:
+          - "react-router v7"
+          - "React Context API"
+          - "React 18 Suspense"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w1-t3c-migrate-components"
+    title: "Migrate all dashboard/sidebar/header components from onViewChange to useNavigate"
+    description: |
+      Mechanical migration of all components that use onViewChange prop to
+      useNavigate() from react-router. This is a high-file-count but low-risk
+      task — each change follows the same pattern.
+
+      For each component:
+      1. Remove onViewChange prop from component interface
+      2. Import { useNavigate } from 'react-router'
+      3. Replace onViewChange('viewKey') calls with navigate('/path')
+      4. Replace activeView prop comparisons with useLocation().pathname
+      5. Remove activeView from props interface
+
+      Components to migrate (~12-15 files):
+      - Sidebar.tsx — navigation links
+      - Header.tsx — navigation actions
+      - SuperadminDashboard.tsx — admin nav links
+      - AdminDashboard.tsx — admin nav links
+      - UserDashboard.tsx — guard nav links
+      - CalendarDashboard.tsx — nav links
+      - PerformanceDashboard.tsx — nav links
+      - MeritScoreDashboard.tsx — nav links
+      - FirearmInventory.tsx — nav links
+      - FirearmAllocation.tsx — nav links
+      - GuardFirearmPermits.tsx — nav links
+      - FirearmMaintenance.tsx — nav links
+      - ArmoredCarDashboard.tsx — nav links
+      - ProfileDashboard.tsx — nav links
+      - SettingsView.tsx — nav links
+
+      Each file change is mechanical: same pattern, independently testable.
+      Each sub-migration is a separate commit for granular rollback.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BLOCKING-1: No URL routing"
+    priority: high
+    status: pending
+    dependencies:
+      - "w1-t3b-appshell"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/components/Sidebar.tsx"
+        description: "Sidebar needs useNavigate() migration"
+      - path: "DasiaAIO-Frontend/src/components/Header.tsx"
+        description: "Header needs useNavigate() migration"
+      - path: "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx"
+        description: "Dashboard needs onViewChange → useNavigate migration"
+      - path: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+        description: "Guard dashboard needs onViewChange → useNavigate migration"
+      - path: "DasiaAIO-Frontend/src/components/CalendarDashboard.tsx"
+        description: "Calendar dashboard needs prop migration"
+      - path: "DasiaAIO-Frontend/src/router/routes.ts"
+        description: "ROUTES constants for path mapping"
+    planning_pass: 2
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation (was part of w1-t3-app-decompose)"
+        timestamp: "2026-04-04T00:00:00Z"
+      - pass: 2
+        reason: "Split from w1-t3 per critic BLOCKING-1: original task over-scoped"
+        timestamp: "2026-04-04T12:00:00Z"
+        estimated_effort: medium
+        estimated_files: 15
+        estimated_lines: 300
+        focus_area: "Mechanical onViewChange → useNavigate migration"
+        verification:
+          - "Zero references to onViewChange remain in component files"
+          - "Zero references to activeView prop remain in component files"
+          - "tsc compiles with zero errors"
+          - "vite build succeeds"
+          - "All dashboard components navigate via URL"
+          - "Direct URL access works (deep linking)"
+          - "Unauthorized route access shows access denied"
+        acceptance_criteria:
+          - "All dashboard components use useNavigate() instead of onViewChange prop"
+          - "All active-state detection uses useLocation().pathname"
+          - "Mobile nav uses navigate() instead of setActiveView()"
+          - "No onViewChange prop references remain in codebase"
+          - "All 4 roles can navigate to their home views via URL"
+        failure_modes:
+          - scenario: "Components that depend on activeView string comparisons break"
+            likelihood: medium
+            impact: high
+            mitigation: "Search for all activeView references before starting. Use ROUTES constants for consistent path mapping. Each file is a separate commit."
+        tech_stack:
+          - "react-router v7"
+          - "React hooks"
+        test_coverage: null
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: false
+
+  - id: "w1-t4-wave1-review"
+    title: "Wave 1 code review — Router + decomposition"
+    description: |
+      Full code review of all Wave 1 changes (w1-t1 through w1-t3c):
+      - Verify React Router integration is correct and complete
+      - Verify AuthContext properly manages all auth state
+      - Verify App.tsx decomposition preserves all existing functionality
+      - Verify UIContext and LocationContext are correctly wired
+      - Check for regressions in role-based access control
+      - Verify no security issues introduced (route guards, auth state)
+      - Check accessibility: skip links still work, focus management on navigation
+      - Verify all 4 roles (guard, supervisor, admin, superadmin) navigate correctly
+      - Check that no activeView or onViewChange remnants exist
+      - Verify lazy loading and code splitting work
+    wave: 1
+    agent: gem-reviewer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies:
+      - "w1-t3c-migrate-components"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Decomposed App.tsx"
+      - path: "DasiaAIO-Frontend/src/router/index.tsx"
+        description: "Route configuration"
+      - path: "DasiaAIO-Frontend/src/router/guards.tsx"
+        description: "Route guards"
+      - path: "DasiaAIO-Frontend/src/context/AuthContext.tsx"
+        description: "Auth context"
+      - path: "DasiaAIO-Frontend/src/context/UIContext.tsx"
+        description: "UI context"
+      - path: "DasiaAIO-Frontend/src/context/LocationContext.tsx"
+        description: "Location context"
+      - path: "DasiaAIO-Frontend/src/components/layout/AppShell.tsx"
+        description: "Layout shell"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 0
+        focus_area: "Code review"
+        verification:
+          - "No blocking review comments remain"
+          - "All verification criteria from w1-t1 through w1-t3 confirmed"
+        acceptance_criteria:
+          - "Code review passes with no blocking issues"
+          - "Route guards correctly enforce role-based access"
+          - "No XSS vectors introduced in routing logic"
+          - "Accessibility preserved (skip links, focus management)"
+          - "tsc and vite build pass"
+        failure_modes:
+          - scenario: "Review finds critical auth bypass in route guards"
+            likelihood: low
+            impact: critical
+            mitigation: "Route guards are reviewed line-by-line; auth context is tested against all 4 roles"
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: true
+
+  # ════════════════════════════════════════════════
+  # WAVE 2 — Auth Hardening + Error Handling
+  # ════════════════════════════════════════════════
+
+  - id: "w2-t1-xss-csp"
+    title: "Add XSS protections and Content Security Policy"
+    description: |
+      Mitigate localStorage JWT XSS risk with defense-in-depth measures.
+
+      1. Add CSP meta tag to DasiaAIO-Frontend/index.html:
+         - default-src 'self'
+         - script-src 'self' (no unsafe-inline, no unsafe-eval)
+         - style-src 'self' 'unsafe-inline' (Tailwind needs inline styles)
+         - img-src 'self' data: https:
+         - connect-src 'self' and API_BASE_URL origins
+         - frame-ancestors 'none'
+         - base-uri 'self'
+         - form-action 'self'
+      2. Add output sanitization utility (src/utils/sanitize.ts):
+         - sanitizeHtml(input: string): string — strips HTML tags
+         - Used where user input is rendered in UI (error messages, usernames, etc.)
+      3. Review and harden api.ts:
+         - Ensure all error messages from backend are sanitized before display
+         - Add X-Content-Type-Options: nosniff awareness
+      4. Add referrerPolicy meta tag to index.html
+      5. Ensure no innerHTML usage exists in render paths
+
+      Note: Full mitigation (httpOnly cookie JWT) requires backend changes in a future cycle.
+      This task provides the interim XSS defense layer.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BLOCKING-2: localStorage JWT XSS vulnerable (partial mitigation)"
+    priority: high
+    status: pending
+    dependencies:
+      - "w1-t4-wave1-review"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/index.html"
+        description: "Add CSP and security meta tags"
+      - path: "DasiaAIO-Frontend/src/utils/api.ts"
+        description: "Review error message handling for XSS"
+      - path: "DasiaAIO-Frontend/src/config.ts"
+        description: "API_BASE_URL for CSP connect-src"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 80
+        focus_area: "XSS defense layer"
+        verification:
+          - "CSP meta tag present in index.html"
+          - "No inline scripts in HTML"
+          - "sanitizeHtml function strips tags correctly"
+          - "vite build succeeds with CSP"
+          - "App loads without CSP violations in console"
+        acceptance_criteria:
+          - "CSP meta tag in index.html with restrictive policy"
+          - "src/utils/sanitize.ts exports sanitizeHtml function"
+          - "Error messages from API responses are sanitized before display"
+          - "No innerHTML usage in render paths"
+          - "Referrer-Policy meta tag set to strict-origin-when-cross-origin"
+        failure_modes:
+          - scenario: "CSP blocks legitimate resources (Leaflet tiles, external APIs)"
+            likelihood: medium
+            impact: medium
+            mitigation: "CSP connect-src includes tile server origins; img-src includes https: for map tiles"
+        tech_stack:
+          - "HTML meta tags"
+          - "TypeScript utility"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: true
+
+  - id: "w2-t2-toast-system"
+    title: "Replace globalError with toast notification system"
+    description: |
+      Replace the single globalError string state with a proper toast notification stack.
+
+      1. Extend UIContext (created in w1-t3a) with toast support:
+         - toasts: Toast[] — array of active notifications
+         - addToast(toast: Omit<Toast, 'id'>): string — adds toast, returns ID
+         - removeToast(id: string): void — removes specific toast
+         - Toast type: { id: string, type: 'error' | 'warning' | 'success' | 'info', message: string, duration?: number }
+      2. Create src/components/shared/ToastContainer.tsx:
+         - Renders toast stack in bottom-right (desktop) or top (mobile)
+         - Auto-dismiss after duration (default 5s for info/success, 10s for error)
+         - Dismiss button on each toast
+         - ARIA live region for accessibility (role="status" for info, role="alert" for errors)
+         - Max 5 visible toasts; oldest dismissed when exceeded
+         - Smooth enter/exit animations via CSS transitions
+      3. Replace all globalError usage:
+         - setGlobalError('message') → addToast({ type: 'error', message: 'message' })
+         - Remove globalError useState (already moved to UIContext in w1-t3)
+      4. Add success toasts for key actions:
+         - Login success, logout, ToA acceptance, location consent
+      5. Ensure toast z-index is above mobile nav but below modals.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "HIGH-4: Single globalError state overwrites"
+    priority: high
+    status: pending
+    dependencies:
+      - "w1-t3a-contexts"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/context/UIContext.tsx"
+        description: "Extend with toast state management"
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Reference for current globalError usage"
+      - path: "DasiaAIO-Frontend/src/index.css"
+        description: "CSS variables for z-index and toast styles"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 200
+        focus_area: "Toast notification system"
+        verification:
+          - "Multiple errors display simultaneously (not overwriting)"
+          - "Toasts auto-dismiss after specified duration"
+          - "Dismiss button removes individual toasts"
+          - "Screen readers announce error toasts via role=alert"
+          - "Toast stack doesn't overflow viewport"
+        acceptance_criteria:
+          - "UIContext supports addToast/removeToast"
+          - "ToastContainer renders stack of notifications"
+          - "Multiple concurrent toasts display correctly"
+          - "No more single globalError state anywhere"
+          - "ARIA live regions for accessibility"
+          - "Auto-dismiss with configurable duration"
+        failure_modes:
+          - scenario: "Toast memory leak from rapid error generation"
+            likelihood: low
+            impact: medium
+            mitigation: "Max 5 toasts; auto-dismiss timers; cleanup on unmount"
+        tech_stack:
+          - "React Context API"
+          - "CSS transitions"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w2-t3-session-sync"
+    title: "Add cross-tab session synchronization"
+    description: |
+      Implement cross-tab session sync so login/logout in one tab propagates to others.
+
+      1. Create src/hooks/useSessionSync.ts:
+         - Use BroadcastChannel API (with localStorage event fallback for older browsers)
+         - Channel name: 'sentinel-auth-sync'
+         - Message types:
+           - { type: 'logout' } — triggers logout in other tabs
+           - { type: 'login', user: User } — triggers login in other tabs
+         - On receiving 'logout': call AuthContext.logout()
+         - On receiving 'login': update AuthContext with new user
+      2. Integrate hook into AuthContext:
+         - After login: broadcast { type: 'login', user }
+         - After logout: broadcast { type: 'logout' }
+         - On mount: listen for messages and react
+      3. Handle edge cases:
+         - Tab opened before login completes → sync from localStorage
+         - Multiple rapid login/logout events → debounce sync
+         - BroadcastChannel not supported → fall back to storage event listener
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "HIGH-5: No cross-tab session sync"
+    priority: medium
+    status: pending
+    dependencies:
+      - "w1-t2-auth-context"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/context/AuthContext.tsx"
+        description: "Integrate session sync into auth context"
+      - path: "DasiaAIO-Frontend/src/utils/api.ts"
+        description: "Token management for sync"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 120
+        focus_area: "Cross-tab synchronization"
+        verification:
+          - "Logout in Tab A triggers logout in Tab B"
+          - "Login in Tab A triggers login in Tab B"
+          - "BroadcastChannel message format is correct"
+          - "Fallback to storage events works when BroadcastChannel unavailable"
+          - "No infinite sync loops"
+        acceptance_criteria:
+          - "src/hooks/useSessionSync.ts exports useSessionSync hook"
+          - "Logout propagates across all open tabs"
+          - "Login propagates across all open tabs"
+          - "Graceful fallback for browsers without BroadcastChannel"
+          - "No infinite event loops from recursive sync"
+        failure_modes:
+          - scenario: "Infinite login/logout loop between tabs"
+            likelihood: medium
+            impact: high
+            mitigation: "Each broadcast includes a unique event ID; tabs ignore events they originated"
+        tech_stack:
+          - "BroadcastChannel API"
+          - "Storage event fallback"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w2-t4-wave2-review"
+    title: "Wave 2 code review — Auth hardening + notifications"
+    description: |
+      Security-focused code review of Wave 2 changes:
+      - Verify CSP is correctly configured and doesn't block legitimate resources
+      - Review sanitization utility for completeness
+      - Verify toast notification system is accessible (ARIA)
+      - Check cross-tab sync for security implications (no sensitive data in broadcasts)
+      - Verify no regression in auth flow
+      - Test CSP with browser dev tools (no violations)
+    wave: 2
+    agent: gem-reviewer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies:
+      - "w2-t1-xss-csp"
+      - "w2-t2-toast-system"
+      - "w2-t3-session-sync"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/index.html"
+        description: "CSP meta tag review"
+      - path: "DasiaAIO-Frontend/src/utils/sanitize.ts"
+        description: "Sanitization utility review"
+      - path: "DasiaAIO-Frontend/src/components/shared/ToastContainer.tsx"
+        description: "Toast accessibility review"
+      - path: "DasiaAIO-Frontend/src/hooks/useSessionSync.ts"
+        description: "Cross-tab sync security review"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 0
+        focus_area: "Security review"
+        verification:
+          - "No CSP violations in browser console"
+          - "Toast container passes accessibility audit"
+          - "No sensitive data (tokens, passwords) in BroadcastChannel messages"
+        acceptance_criteria:
+          - "Security review passes with no critical findings"
+          - "CSP is correctly restrictive"
+          - "Toast system is accessible"
+          - "Cross-tab sync doesn't leak sensitive data"
+        failure_modes:
+          - scenario: "CSP blocks Leaflet map tiles or API requests"
+            likelihood: medium
+            impact: medium
+            mitigation: "CSP connect-src and img-src explicitly allow required origins"
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: true
+
+  # ════════════════════════════════════════════════
+  # WAVE 3 — Backend Security Fixes
+  # NOTE: w3-t2, w3-t3, w3-t4, w3-t5 are parallelizable after w3-t1 completes
+  # ════════════════════════════════════════════════
+
+  - id: "w3-t1-jwt-separation"
+    title: "Separate JWT secrets for access and refresh tokens"
+    description: |
+      Backend fix: Use different signing secrets for access tokens and refresh tokens.
+
+      1. In src/utils.rs:
+         - Add jwt_refresh_secret() function that reads REFRESH_JWT_SECRET env var
+         - Fall back to JWT_SECRET if REFRESH_JWT_SECRET not set (backward compat)
+         - Update generate_refresh_token() to use jwt_refresh_secret()
+         - Update verify_refresh_token() to use jwt_refresh_secret()
+         - Keep generate_access_token() and verify_token() using JWT_SECRET
+      2. In src/config.rs:
+         - Add REFRESH_JWT_SECRET to config validation
+         - Warn (not error) if REFRESH_JWT_SECRET equals JWT_SECRET
+         - Warn if REFRESH_JWT_SECRET is not set
+      3. Update docker-compose.yml:
+         - Add REFRESH_JWT_SECRET environment variable
+      4. Document in README:
+         - New env var: REFRESH_JWT_SECRET
+         - Migration: existing refresh tokens signed with old secret will still validate during fallback period
+
+      Backward compatibility: verify_refresh_token tries REFRESH_JWT_SECRET first,
+      falls back to JWT_SECRET. This allows rolling migration without forced re-login.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BLOCKING-3: Shared JWT secret"
+    priority: high
+    status: pending
+    dependencies:
+      - "w2-t4-wave2-review"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Backend/src/utils.rs"
+        description: "JWT generation and verification functions"
+      - path: "DasiaAIO-Backend/src/config.rs"
+        description: "Environment variable configuration"
+      - path: "DasiaAIO-Backend/docker-compose.yml"
+        description: "Add REFRESH_JWT_SECRET env var"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 80
+        focus_area: "JWT security"
+        verification:
+          - "cargo build succeeds"
+          - "cargo test passes"
+          - "Access tokens verified with JWT_SECRET"
+          - "Refresh tokens verified with REFRESH_JWT_SECRET"
+          - "Fallback to JWT_SECRET works when REFRESH_JWT_SECRET not set"
+          - "Token refresh flow works end-to-end"
+        acceptance_criteria:
+          - "Access and refresh tokens use different signing secrets"
+          - "REFRESH_JWT_SECRET env var supported"
+          - "Backward-compatible fallback for old refresh tokens"
+          - "Config warns when secrets are identical"
+          - "cargo test passes"
+        failure_modes:
+          - scenario: "Existing refresh tokens become invalid after deploy"
+            likelihood: high
+            impact: high
+            mitigation: "Dual-key validation: try REFRESH_JWT_SECRET first, fall back to JWT_SECRET"
+        tech_stack:
+          - "Rust"
+          - "jsonwebtoken crate"
+        test_coverage: "Unit tests for token generation and verification with separate secrets"
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: true
+
+  - id: "w3-t2-docker-secrets"
+    title: "Externalize hardcoded credentials from docker-compose.yml"
+    description: |
+      Remove hardcoded secrets from docker-compose.yml that are tracked in VCS.
+
+      1. Update docker-compose.yml:
+         - Replace hardcoded POSTGRES_PASSWORD with ${POSTGRES_PASSWORD:-postgres}
+         - Replace hardcoded DATABASE_URL to use ${POSTGRES_PASSWORD} variable
+         - Replace hardcoded ADMIN_CODE with ${ADMIN_CODE}
+         - Add .env.example file with placeholder values
+         - Remove RESEND_API_KEY default value
+      2. Create DasiaAIO-Backend/.env.example:
+         - POSTGRES_USER=postgres
+         - POSTGRES_PASSWORD=<change-me>
+         - POSTGRES_DB=guard_firearm_system
+         - ADMIN_CODE=<generate-strong-code>
+         - JWT_SECRET=<generate-64-char-secret>
+         - REFRESH_JWT_SECRET=<generate-64-char-secret>
+         - GMAIL_USER=
+         - GMAIL_PASSWORD=
+         - RESEND_API_KEY=
+      3. Add .env to .gitignore (verify it's already there)
+      4. Update README with local setup instructions referencing .env file
+      5. In src/config.rs: Add ADMIN_CODE strength validation — reject if less than
+         12 characters or purely numeric. Follow the existing JWT_SECRET validation
+         pattern. Server should refuse to start with a weak ADMIN_CODE.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BLOCKING-4: Hardcoded credentials in docker-compose.yml"
+    priority: high
+    status: pending
+    dependencies:
+      - "w3-t1-jwt-separation"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Backend/docker-compose.yml"
+        description: "Docker compose with hardcoded secrets"
+      - path: "DasiaAIO-Backend/.gitignore"
+        description: "Verify .env is gitignored"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 60
+        focus_area: "Secret management"
+        verification:
+          - "docker-compose.yml contains no hardcoded passwords"
+          - ".env.example exists with placeholder values"
+          - ".env is in .gitignore"
+          - "docker compose up still works with .env file"
+        acceptance_criteria:
+          - "No hardcoded passwords or secrets in docker-compose.yml"
+          - ".env.example with all required variables documented"
+          - "ADMIN_CODE no longer has default value in docker-compose.yml"
+          - "docker compose up works when .env file is present"
+          - "ADMIN_CODE shorter than 12 chars is rejected at startup"
+        failure_modes:
+          - scenario: "Developers can't start local environment without .env setup"
+            likelihood: medium
+            impact: low
+            mitigation: ".env.example is comprehensive; docker-compose has fallback defaults for non-sensitive values"
+        tech_stack:
+          - "Docker Compose"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: true
+
+  - id: "w3-t3-ws-auth"
+    title: "Add authentication to WebSocket tracking endpoint"
+    description: |
+      Backend fix: Add auth middleware to the /api/tracking/ws WebSocket endpoint.
+
+      1. In src/routes.rs:
+         - Add auth middleware to the WebSocket tracking route
+         - Extract JWT from query parameter (ws:// doesn't support Authorization headers)
+         - Validate token before upgrading to WebSocket
+         - Reject connections with invalid/expired tokens
+      2. Create/update WebSocket auth helper:
+         - Extract token from ?token= query parameter
+         - Validate using verify_token()
+         - Extract user_id and role from claims
+         - Pass user context into WebSocket handler
+      3. Update frontend WebSocket connection (if applicable):
+         - Include token in WebSocket URL query parameter
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "HIGH-2: WebSocket tracking endpoint bypasses auth"
+    priority: high
+    status: pending
+    dependencies:
+      - "w3-t1-jwt-separation"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Backend/src/routes.rs"
+        description: "Route definitions including WebSocket endpoint"
+      - path: "DasiaAIO-Backend/src/utils.rs"
+        description: "Token verification functions"
+      - path: "DasiaAIO-Backend/src/middleware"
+        description: "Existing middleware for reference"
+      - path: "DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts"
+        description: "WebSocket connection that needs token parameter"
+      - path: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+        description: "Guard dashboard consuming live tracking"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 80
+        focus_area: "WebSocket security"
+        verification:
+          - "WebSocket connection without token is rejected"
+          - "WebSocket connection with invalid token is rejected"
+          - "WebSocket connection with valid token succeeds"
+          - "Guard live tracking map updates with WS auth token"
+          - "cargo build succeeds"
+          - "cargo test passes"
+        acceptance_criteria:
+          - "WebSocket endpoint requires authentication"
+          - "Invalid tokens result in connection rejection"
+          - "User context available in WebSocket handler"
+          - "Frontend WebSocket connection includes token"
+        failure_modes:
+          - scenario: "Live tracking breaks for authenticated users"
+            likelihood: medium
+            impact: high
+            mitigation: "Test with valid and invalid tokens; ensure token refresh before WS connect"
+        tech_stack:
+          - "Rust / Axum"
+          - "axum WebSocket"
+        test_coverage: "Integration test for WS auth"
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: true
+
+  - id: "w3-t4-health-auth"
+    title: "Add authentication to /api/health/system endpoint"
+    description: |
+      Backend fix: Gate the detailed /api/health/system endpoint behind authentication.
+
+      1. In src/handlers/health.rs or src/routes.rs:
+         - Keep /api/health as public (load balancer health check)
+         - Add auth middleware to /api/health/system
+         - Restrict to admin and superadmin roles only
+      2. Remove /api/health/system from PUBLIC_API_PATHS in frontend api.ts
+      3. Ensure existing health checks (Docker, Railway) still work via /api/health
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "HIGH-3: Exposed /api/health/system endpoint"
+    priority: medium
+    status: pending
+    dependencies:
+      - "w3-t1-jwt-separation"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Backend/src/handlers/health.rs"
+        description: "Health endpoint handler"
+      - path: "DasiaAIO-Backend/src/routes.rs"
+        description: "Route definitions"
+      - path: "DasiaAIO-Frontend/src/utils/api.ts"
+        description: "PUBLIC_API_PATHS to update"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 40
+        focus_area: "Health endpoint security"
+        verification:
+          - "/api/health remains publicly accessible"
+          - "/api/health/system requires valid admin/superadmin token"
+          - "Unauthenticated /api/health/system returns 401"
+          - "Frontend removes /api/health/system from PUBLIC_API_PATHS"
+        acceptance_criteria:
+          - "/api/health/system requires authentication"
+          - "/api/health/system restricted to admin/superadmin roles"
+          - "/api/health remains public for health checks"
+          - "Frontend PUBLIC_API_PATHS updated"
+        failure_modes:
+          - scenario: "Railway health checks break"
+            likelihood: low
+            impact: high
+            mitigation: "Railway uses /api/health (public), not /api/health/system"
+        tech_stack:
+          - "Rust / Axum"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: true
+
+  - id: "w3-t5-rate-limit-persistence"
+    title: "Add persistent backing to rate limiter"
+    description: |
+      Backend fix: Replace ephemeral in-memory rate limiting with a persistent solution.
+
+      Option A (preferred if Redis available on Railway):
+        - Add Redis connection to rate_limit.rs
+        - Use Redis INCR + EXPIRE for sliding window rate limiting
+        - Add REDIS_URL env var support
+        - Fall back to in-memory if Redis unavailable
+
+      Option B (no Redis):
+        - Use PostgreSQL advisory locks or a rate_limit_entries table
+        - Periodic cleanup of expired entries
+        - Simpler but adds DB load
+
+      NOTE: If Redis is not available on Railway, implement Option B (PostgreSQL
+      advisory locks with rate_limit_entries table). Steps:
+      (1) Create migration for rate_limit_entries table with columns: key TEXT,
+          counter INT, window_start TIMESTAMPTZ, expires_at TIMESTAMPTZ.
+      (2) Update RateLimiter to query/upsert this table.
+      (3) Add periodic cleanup of expired entries.
+      Verification criteria remain the same regardless of backend chosen.
+
+      Implementation (Option A):
+      1. Add redis crate to Cargo.toml
+      2. Update RateLimiter to support Redis backend:
+         - RateLimiter::new(redis_url: Option<String>) — connects to Redis or falls back to in-memory
+         - check_rate_limit uses INCR/EXPIRE in Redis
+         - Graceful degradation: if Redis is down, fall back to in-memory
+      3. Update server initialization to pass REDIS_URL to rate limiter
+      4. Add REDIS_URL to docker-compose.yml with a Redis service
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BLOCKING-5: Ephemeral in-memory rate limiting"
+    priority: medium
+    status: pending
+    dependencies:
+      - "w3-t1-jwt-separation"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Backend/src/middleware/rate_limit.rs"
+        description: "Current in-memory rate limiter"
+      - path: "DasiaAIO-Backend/Cargo.toml"
+        description: "Add redis dependency"
+      - path: "DasiaAIO-Backend/docker-compose.yml"
+        description: "Add Redis service"
+      - path: "DasiaAIO-Backend/src/main.rs"
+        description: "Server initialization"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 150
+        focus_area: "Rate limiting persistence"
+        verification:
+          - "Rate limiter state persists across server restarts"
+          - "Rate limiting correctly blocks excess requests"
+          - "Fallback to in-memory works when Redis unavailable"
+          - "cargo build succeeds"
+          - "cargo test passes"
+        acceptance_criteria:
+          - "Rate limiter uses Redis for state persistence"
+          - "Graceful fallback to in-memory when Redis unavailable"
+          - "Rate limit headers still returned correctly"
+          - "Docker compose includes Redis service"
+          - "REDIS_URL env var documented"
+        failure_modes:
+          - scenario: "Redis connection failure causes all requests to be rate limited"
+            likelihood: low
+            impact: high
+            mitigation: "Graceful degradation: if Redis is unreachable, fall back to in-memory and log warning"
+        tech_stack:
+          - "Rust"
+          - "redis crate"
+          - "Docker / Redis"
+        test_coverage: "Unit test for Redis and in-memory rate limiting"
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: true
+
+  - id: "w3-t6-wave3-review"
+    title: "Wave 3 code review — Backend security"
+    description: |
+      Security-focused review of all backend changes:
+      - JWT secret separation: verify no secret leakage, proper fallback
+      - Docker compose: no remaining hardcoded secrets
+      - WebSocket auth: proper token validation, no bypasses
+      - Health endpoint: proper role gating
+      - Rate limiter: Redis integration correctness, fallback behavior
+      - Review for Rust safety: no .unwrap() in handlers, proper error propagation
+      - Verify all changes compile and tests pass
+    wave: 3
+    agent: gem-reviewer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies:
+      - "w3-t1-jwt-separation"
+      - "w3-t2-docker-secrets"
+      - "w3-t3-ws-auth"
+      - "w3-t4-health-auth"
+      - "w3-t5-rate-limit-persistence"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Backend/src/utils.rs"
+        description: "JWT changes"
+      - path: "DasiaAIO-Backend/src/middleware/rate_limit.rs"
+        description: "Rate limiter changes"
+      - path: "DasiaAIO-Backend/src/routes.rs"
+        description: "Route/WS auth changes"
+      - path: "DasiaAIO-Backend/docker-compose.yml"
+        description: "Secret externalization"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 0
+        focus_area: "Backend security review"
+        verification:
+          - "No .unwrap() in handler code"
+          - "No hardcoded secrets in any tracked file"
+          - "All auth middleware correctly validates tokens"
+          - "cargo build && cargo test pass"
+        acceptance_criteria:
+          - "All backend security changes pass review"
+          - "No critical security findings"
+          - "Rust best practices followed (error propagation, no unwrap)"
+          - "All changes compile and test"
+        failure_modes:
+          - scenario: "Review finds auth bypass in WebSocket handler"
+            likelihood: low
+            impact: critical
+            mitigation: "WS auth is reviewed with focus on token validation edge cases"
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: true
+
+  # ════════════════════════════════════════════════
+  # WAVE 4 — UX Polish + Optimization
+  # ════════════════════════════════════════════════
+
+  - id: "w4-t1-password-strength"
+    title: "Add password strength indicator to registration form"
+    description: |
+      Add a visual password strength indicator to the registration form.
+
+      1. Create src/components/shared/PasswordStrength.tsx:
+         - Accept password string as prop
+         - Calculate strength based on:
+           - Length (min 8, strong at 12+)
+           - Uppercase + lowercase
+           - Numbers
+           - Special characters
+         - Display visual bar with color gradient (red → yellow → green)
+         - Display text label: Weak / Fair / Strong / Very Strong
+         - Accessible: aria-live="polite" for strength changes
+      2. Integrate into registration form (LoginPage.tsx registration section):
+         - Show PasswordStrength below password input
+         - Show strength during typing (real-time feedback)
+      3. Style with existing Tailwind token classes (danger, warning, success colors)
+    wave: 4
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "MEDIUM-1: Password strength indicator missing"
+    priority: low
+    status: pending
+    dependencies:
+      - "w2-t4-wave2-review"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/components/LoginPage.tsx"
+        description: "Registration form where indicator is added"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 100
+        focus_area: "Registration UX"
+        verification:
+          - "Strength indicator appears below password field during registration"
+          - "Indicator updates in real-time as user types"
+          - "Color and label change based on password complexity"
+          - "Screen readers announce strength changes"
+        acceptance_criteria:
+          - "PasswordStrength component renders visual strength bar"
+          - "Real-time strength calculation during typing"
+          - "Accessible with aria-live region"
+          - "Uses existing design token colors"
+        failure_modes:
+          - scenario: "Strength indicator causes layout shift on mobile"
+            likelihood: low
+            impact: low
+            mitigation: "Fixed height reserved for strength indicator"
+        tech_stack:
+          - "React"
+          - "Tailwind CSS"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w4-t2-date-input-ux"
+    title: "Improve date input UX with format guidance"
+    description: |
+      Fix silent rejection of non-ISO date format inputs.
+
+      1. Find date input fields in registration and profile forms
+      2. Add placeholder text showing expected format: "YYYY-MM-DD"
+      3. Add inline validation message when format is incorrect
+      4. Consider adding a date picker component (native HTML date input)
+         - Use type="date" which provides native browser date picker
+         - Fallback text with format hint for unsupported browsers
+      5. Ensure date values are formatted to ISO before API submission
+    wave: 4
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "MEDIUM-2: Date input UX"
+    priority: low
+    status: pending
+    dependencies:
+      - "w2-t4-wave2-review"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/components/LoginPage.tsx"
+        description: "Registration form with date inputs"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 40
+        focus_area: "Date input UX"
+        verification:
+          - "Date inputs show format hint"
+          - "Invalid date format shows error message"
+          - "Native date picker appears on supported browsers"
+          - "Date values sent to API in ISO format"
+        acceptance_criteria:
+          - "Date inputs use type=date or show YYYY-MM-DD placeholder"
+          - "Inline validation message for invalid formats"
+          - "Dates correctly formatted before API submission"
+        failure_modes:
+          - scenario: "Native date picker not available on some mobile browsers"
+            likelihood: low
+            impact: low
+            mitigation: "Fallback to text input with format hint and validation"
+        tech_stack:
+          - "HTML5 date input"
+          - "React"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w4-t3-bundle-optimize"
+    title: "Optimize bundle size with enhanced code splitting"
+    description: |
+      Reduce main bundle from 475KB (103KB gzipped) with additional code splitting.
+
+      1. Update vite.config.ts:
+         - Add lazy-loaded route chunks (each dashboard is its own chunk)
+         - Verify existing manualChunks (mapping, icons) are still optimal
+         - Consider splitting large dashboards into their own chunks
+      2. Fix api.ts mixed static/dynamic import warning:
+         - Move dynamic import to separate utility or use consistent import pattern
+      3. Audit dependencies:
+         - Check if any large dependencies can be tree-shaken further
+         - Ensure no duplicate dependencies in bundle
+      4. Add bundle analysis script (vite-bundle-visualizer or similar)
+      5. Target: main chunk under 80KB gzipped after route-based splitting
+    wave: 4
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - "BUILD: Main bundle 475KB"
+      - "BUILD: api.ts mixed import warning"
+    priority: low
+    status: pending
+    dependencies:
+      - "w3-t6-wave3-review"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/vite.config.ts"
+        description: "Vite build configuration"
+      - path: "DasiaAIO-Frontend/src/router/index.tsx"
+        description: "Lazy-loaded route definitions from Wave 1"
+      - path: "DasiaAIO-Frontend/src/utils/api.ts"
+        description: "Fix mixed import warning"
+      - path: "DasiaAIO-Frontend/package.json"
+        description: "Dependency audit"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 50
+        focus_area: "Bundle optimization"
+        verification:
+          - "vite build succeeds"
+          - "Main chunk under 80KB gzipped"
+          - "No mixed import warnings"
+          - "All routes still load correctly"
+          - "Lazy loading works (network tab shows chunk loads on navigation)"
+        acceptance_criteria:
+          - "Main bundle reduced from 103KB gzipped"
+          - "Route-based code splitting active"
+          - "No build warnings"
+          - "All dashboards load correctly via lazy loading"
+        failure_modes:
+          - scenario: "Aggressive splitting causes waterfall loading (slow initial render)"
+            likelihood: low
+            impact: medium
+            mitigation: "Preload critical chunks with link rel=modulepreload"
+        tech_stack:
+          - "Vite"
+          - "Rollup"
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: "w4-t4-final-review"
+    title: "Final comprehensive review — all waves"
+    description: |
+      Final review of the entire cycle4 production fixes:
+      - Verify all BLOCKING issues are resolved or mitigated
+      - Verify all HIGH issues are resolved
+      - Verify MEDIUM issues addressed
+      - Run full build (tsc + vite build)
+      - Verify bundle size improvement
+      - Check accessibility across main flows
+      - Document any remaining issues for next cycle
+      - Verify backend changes are ready for Railway deployment
+      - Create deployment checklist for backend changes
+    wave: 4
+    agent: gem-reviewer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies:
+      - "w4-t1-password-strength"
+      - "w4-t2-date-input-ux"
+      - "w4-t3-bundle-optimize"
+    conflicts_with: []
+    context_files:
+      - path: "DasiaAIO-Frontend/src/App.tsx"
+        description: "Verify decomposition is complete"
+      - path: "DasiaAIO-Frontend/src/router/index.tsx"
+        description: "Verify routing is complete"
+      - path: "DasiaAIO-Backend/docker-compose.yml"
+        description: "Verify no hardcoded secrets"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: "Initial plan creation"
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 3
+        estimated_lines: 0
+        focus_area: "Comprehensive final review"
+        verification:
+          - "All 5 BLOCKING issues resolved or mitigated"
+          - "All 9 HIGH issues resolved"
+          - "MEDIUM issues addressed"
+          - "tsc: 0 errors"
+          - "vite build: success, bundle size improved"
+          - "cargo build: success"
+          - "cargo test: all pass"
+        acceptance_criteria:
+          - "All audit findings addressed with appropriate fixes or documented mitigations/deferrals"
+          - "Build passes on frontend and backend"
+          - "No regressions in existing functionality"
+          - "Deployment checklist created for backend Railway deploy"
+          - "3 deferred HIGH findings documented with justification"
+        failure_modes:
+          - scenario: "Integration issues discovered between waves"
+            likelihood: medium
+            impact: medium
+            mitigation: "Each wave has its own review gate; issues caught early"
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: true
+        task_type: documentation
+        audience: developers
+        coverage_matrix:
+          - "Issue resolution summary"
+          - "Deployment checklist"
+          - "Remaining backlog for next cycle"
+
+deferred_to_next_cycle:
+  - finding: "HIGH-4: Migrations have no versioning/rollback"
+    justification: |
+      Migration versioning requires adopting a migration tool (e.g., sqlx-cli migrate)
+      and retrofitting all existing .sql files. This is a process change that affects
+      the entire backend workflow and should be planned as a dedicated task, not
+      squeezed into a security-focused cycle.
+  - finding: "HIGH-8: No structured logging / request ID tracing"
+    justification: |
+      Structured logging (tracing crate integration, request ID middleware, JSON log
+      output) is a cross-cutting concern that touches every handler. Adding it alongside
+      JWT separation and other security changes risks merge conflicts and dilutes review
+      focus. Better as a standalone infrastructure task.
+  - finding: "HIGH-9: Location heartbeat fire-and-forget / no offline queue"
+    justification: |
+      Offline queue for location heartbeats requires Capacitor/Tauri platform-specific
+      storage, background task scheduling, and retry logic. This is a mobile-focused
+      feature that requires dedicated testing on physical devices and emulators.
+
+planning_pass: 2
+planning_history:
+  - pass: 1
+    reason: "Initial plan creation from Phase 1/2 audit findings"
+    timestamp: "2026-04-04T00:00:00Z"
+  - pass: 2
+    reason: "Critic review fixes: split over-scoped w1-t3 into 3 sub-tasks (BLOCKING-1), fix inverted w1-t1/w1-t2 dependency (BLOCKING-2), add 3 deferred HIGH findings (HIGH-1), add WS frontend context files (HIGH-2), add ADMIN_CODE strength validation (HIGH-3), remove false w2-t3 dependency on w2-t1 (HIGH-4), fix pre-mortem feature flag claim (HIGH-5), add Wave 3 parallelism note (MEDIUM-1), add PostgreSQL fallback for rate limiter (MEDIUM-2)"
+    timestamp: "2026-04-04T12:00:00Z"

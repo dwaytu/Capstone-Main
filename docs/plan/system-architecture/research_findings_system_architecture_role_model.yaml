@@ -1,0 +1,784 @@
+plan_id: system-architecture-role-model
+objective: "Comprehensive system architecture and role-model research for SENTINEL security operations platform"
+focus_area: "System identity, role-based workflows, API surface, data model, critical paths"
+created_at: "2026-04-04"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - SENTINEL is a mission/decision-support platform for Davao Security & Investigation Agency managing personnel, firearms, armored cars, incidents, and real-time field tracking across web/desktop/mobile.
+  - Four roles enforced: guard (field), supervisor (field oversight + approvals), admin (operational management), superadmin (full system + audit). All elevated roles share one shell; guards get a mission-first workspace.
+  - ~120 API endpoints grouped into 14 feature domains, protected by JWT + RBAC middleware with legal-consent enforcement, rate limiting, audit logging, and CORS governance.
+  - Core data model spans 25+ tables covering users/auth, scheduling/attendance, firearms/permits, armored cars/trips, incidents, notifications, merit scores, tracking/geofencing, AI predictions, and audit logs.
+  - Critical paths: authentication + legal consent, guard check-in/check-out, incident reporting, location heartbeat. Secondary: AI predictions, merit scoring, analytics dashboards.
+
+research_metadata:
+  methodology: "Hybrid retrieval: read_file on COPILOT.md, CHATGPT_SYSTEM_GUIDE.md, AGENTS.md, App.tsx, main.rs, migration SQL files, permissions.ts, navigation.ts, authz.rs, auth.ts. grep_search for role routing patterns."
+  scope: "Full-stack: frontend routing/RBAC, backend route registration/middleware, database schema, AI services"
+  confidence: high
+  coverage: 92
+  decision_blockers: 0
+  research_blockers: 0
+
+# ═══════════════════════════════════════════════════════════════
+# 1. SYSTEM INTENT MODEL
+# ═══════════════════════════════════════════════════════════════
+
+system_identity:
+  name: "SENTINEL"
+  full_name: "SENTINEL Security Operations Platform"
+  organization: "Davao Security & Investigation Agency (DSIA)"
+  purpose: |
+    Mission and decision-support system that combines governed operational records,
+    real-time field signals, policy enforcement, and assistive AI analytics so command
+    roles can decide: who is deployable, which assets are compliant, where field
+    personnel are operating, and what incidents or exceptions require intervention.
+  core_value_proposition: |
+    Reduces delayed detection, strengthens accountability, and preserves legally
+    defensible operational history across web, desktop, and Android runtimes.
+  platforms:
+    - web: "React 18 SPA served by Vite"
+    - desktop: "Tauri wrapper consuming web build"
+    - mobile: "Capacitor wrapper for Android"
+
+  managed_domains:
+    - "Personnel and scheduling"
+    - "Guard attendance and replacement workflows"
+    - "Firearm inventory, permits, allocation, and maintenance"
+    - "Armored car fleet, driver assignment, trips, and maintenance"
+    - "Real-time GPS tracking and geofencing"
+    - "Incident reporting and AI-assisted classification"
+    - "Notifications, support tickets, and analytics"
+    - "Merit scoring and performance evaluation"
+    - "System audit logging and compliance"
+
+  tech_stack:
+    backend:
+      framework: "Rust + Axum 0.8"
+      database: "PostgreSQL via sqlx 0.8"
+      async_runtime: "Tokio"
+      auth: "JWT (jsonwebtoken) with access + refresh token rotation"
+      ai: "Ollama HTTP API (llama3) with keyword-classifier fallback"
+    frontend:
+      framework: "React 18 + TypeScript (strict)"
+      bundler: "Vite"
+      styling: "Tailwind CSS v4 with semantic design tokens"
+      state: "useState/useEffect only (no Redux)"
+      mapping: "Leaflet + React Leaflet with OpenStreetMap tiles"
+      testing: "Jest + Testing Library + Playwright"
+
+# ═══════════════════════════════════════════════════════════════
+# 2. ROLE-BASED WORKFLOW MAP
+# ═══════════════════════════════════════════════════════════════
+
+role_model:
+  hierarchy: "superadmin > admin > supervisor > guard"
+  legacy_compat: "'user' role normalized to 'guard' in all paths"
+  enforcement: "Backend: middleware/authz.rs permission checks. Frontend: utils/permissions.ts RBAC + types/auth.ts normalization."
+
+  roles:
+    # ─────────────────────────────────────────────────────────
+    # SUPERADMIN
+    # ─────────────────────────────────────────────────────────
+    superadmin:
+      description: "Full system authority. Only role with audit log access and user management."
+      dashboard_component: "SuperadminDashboard (shared elevated shell)"
+      default_view: "dashboard (CommandCenterDashboard)"
+      sidebar_navigation:
+        main_menu:
+          - "Dashboard (CommandCenterDashboard — Palantir-style SOC view)"
+          - "Approvals (pending guard registrations)"
+          - "Calendar (CalendarDashboard)"
+          - "Analytics (AnalyticsDashboard)"
+          - "System Audit Log (AuditDashboard — lazy loaded)"
+        operations:
+          - "Trip Management"
+          - "Schedule (shifts CRUD)"
+          - "Missions (assignment/retrieval)"
+          - "Performance (PerformanceDashboard)"
+          - "Merit Scores (MeritScoreDashboard)"
+        resources:
+          - "Firearms (FirearmInventory)"
+          - "Allocation (FirearmAllocation)"
+          - "Permits (GuardFirearmPermits)"
+          - "Maintenance (FirearmMaintenance)"
+          - "Armored Cars (ArmoredCarDashboard)"
+
+      permissions:
+        - manage_users
+        - view_audit_logs
+        - approve_guards
+        - view_analytics
+        - manage_firearms
+        - manage_allocations
+        - manage_permits
+        - manage_maintenance
+        - manage_armored_cars
+        - view_guard_workspace
+
+      unique_capabilities:
+        - "Create admin, supervisor, and guard accounts"
+        - "View/filter/export audit logs (audit_logs table)"
+        - "View user activity timelines and anomaly summaries"
+        - "All admin and supervisor capabilities"
+
+      critical_workflow: |
+        System oversight: review audit anomalies, approve/reject guard registrations,
+        manage personnel accounts, review compliance posture across all operational domains.
+
+      data_needs:
+        - "Full user roster with presence (last_seen_at)"
+        - "Audit logs with source IP, user agent, action keys"
+        - "All analytics aggregates and trends"
+        - "Pending guard approval queue"
+        - "All operational data (firearms, cars, shifts, incidents, tracking)"
+
+    # ─────────────────────────────────────────────────────────
+    # ADMIN
+    # ─────────────────────────────────────────────────────────
+    admin:
+      description: "Operational management. Same shell as superadmin but NO audit log access."
+      dashboard_component: "SuperadminDashboard (shared elevated shell)"
+      default_view: "dashboard"
+      sidebar_navigation: "Same as superadmin MINUS 'System Audit Log'"
+
+      permissions:
+        - manage_users
+        - approve_guards
+        - view_analytics
+        - manage_firearms
+        - manage_allocations
+        - manage_permits
+        - manage_maintenance
+        - manage_armored_cars
+        - view_guard_workspace
+
+      unique_capabilities:
+        - "Create supervisor and guard accounts"
+        - "All supervisor capabilities"
+
+      critical_workflow: |
+        Day-to-day operational command: manage schedules, allocate firearms,
+        assign missions, oversee fleet operations, approve guard registrations.
+
+      data_needs:
+        - "Full user roster with presence"
+        - "Analytics and trends"
+        - "Guard approval queue"
+        - "All operational data (firearms, cars, shifts, incidents, tracking)"
+
+    # ─────────────────────────────────────────────────────────
+    # SUPERVISOR
+    # ─────────────────────────────────────────────────────────
+    supervisor:
+      description: "Field oversight. Reviews guard operations, approves registrations, manages resources."
+      dashboard_component: "SuperadminDashboard (shared elevated shell)"
+      default_view: "dashboard"
+      sidebar_navigation: "Same as admin (no audit log, no user management CRUD)"
+
+      permissions:
+        - approve_guards
+        - view_analytics
+        - manage_firearms
+        - manage_allocations
+        - manage_permits
+        - manage_maintenance
+        - manage_armored_cars
+        - view_guard_workspace
+
+      unique_capabilities:
+        - "Approve/reject pending guard registrations"
+        - "View analytics and performance data"
+        - "Manage firearms, allocations, permits, maintenance"
+        - "Manage armored cars, trips, driver assignments"
+        - "View real-time tracking map and manage geofences"
+        - "Location heartbeat (tracking telemetry sender)"
+
+      critical_workflow: |
+        Field command: monitor live guard positions on operational map,
+        detect no-shows and trigger replacements, manage shift scheduling,
+        approve guard registrations, review AI-generated absence predictions
+        and replacement suggestions.
+
+      data_needs:
+        - "Live tracking map data (guard positions, geofence events)"
+        - "Active shifts and attendance records"
+        - "Guard availability status"
+        - "AI predictions (absence risk, replacement suggestions, vehicle maintenance)"
+        - "Analytics aggregates"
+        - "Guard approval queue"
+
+    # ─────────────────────────────────────────────────────────
+    # GUARD
+    # ─────────────────────────────────────────────────────────
+    guard:
+      description: "Field operator. Mission-first mobile workspace. Self-registration with pending approval."
+      dashboard_component: "UserDashboard (guards/UserDashboard.tsx)"
+      default_view: "overview (mission tab)"
+      bottom_navigation:
+        - "Mission (shifts, assignments, check-in/check-out)"
+        - "Resources (firearms allocations, permits)"
+        - "Support (tickets, contacts)"
+        - "Map (GuardMapTab — personal location view)"
+
+      permissions:
+        - view_guard_workspace
+
+      unique_capabilities:
+        - "Self-register (creates pending guard account)"
+        - "Check in / check out of assigned shifts"
+        - "Report incidents with AI severity classification"
+        - "Request shift swaps with other guards"
+        - "Toggle personal availability"
+        - "Submit support tickets"
+        - "View own firearm allocations and permits"
+        - "Send location heartbeat (tracking telemetry)"
+        - "View own merit score and evaluations"
+
+      critical_workflow: |
+        Field operations: view assigned shifts, check in/out at post,
+        report incidents, send location heartbeat for live tracking,
+        manage availability, request shift swaps.
+
+      data_needs:
+        - "Own shift schedule and attendance history"
+        - "Own firearm allocations and permit status"
+        - "Own merit score and client evaluations"
+        - "Own notifications (replacements, approvals, alerts)"
+        - "Own support tickets"
+        - "Location consent and GPS state"
+
+# ═══════════════════════════════════════════════════════════════
+# 3. API ENDPOINT INVENTORY
+# ═══════════════════════════════════════════════════════════════
+
+api_surface:
+  base_path: "/api"
+  total_endpoint_count: "~120 (including alias routes)"
+  auth_model: "JWT bearer token with legal-consent claim enforcement"
+  global_middleware_stack:
+    - "CORS (outermost)"
+    - "Security headers (X-Content-Type-Options, X-Frame-Options, CSP, HSTS)"
+    - "Body limit (1MB)"
+    - "Presence tracking (touch last_seen)"
+    - "Authorization failure audit logging"
+    - "Request tracing (tower_http)"
+    - "Request timeout (30s default)"
+    - "API rate limiting (per requester+path)"
+
+  feature_groups:
+
+    authentication:
+      description: "Login, registration, email verification, password reset, token refresh, logout"
+      middleware: "auth_rate_limit (per-route)"
+      endpoints:
+        - "POST /api/register — Guard self-registration (creates pending account)"
+        - "POST /api/login — JWT login (requires verified + approved)"
+        - "POST /api/verify — Email verification code"
+        - "POST /api/resend-code — Resend verification code"
+        - "POST /api/forgot-password — Initiate password reset"
+        - "POST /api/verify-reset-code — Validate reset code"
+        - "POST /api/reset-password — Set new password"
+        - "POST /api/refresh — Rotate access/refresh tokens"
+        - "POST /api/logout — Revoke refresh session"
+      notes: "All routes duplicated under /api/auth/* prefix for backward compat"
+
+    legal_consent:
+      description: "Terms of Agreement acceptance gate"
+      middleware: "require_authenticated"
+      endpoints:
+        - "POST /api/legal/consent — Record acceptance"
+        - "GET /api/legal/consent/status — Check consent state"
+
+    user_management:
+      description: "User CRUD, profile photos, guard approvals"
+      endpoints:
+        - "GET /api/users — List all users (require_manage_users)"
+        - "POST /api/users — Create user by actor (require_manage_users + audit)"
+        - "GET /api/users/pending-approvals — Pending guard registrations (require_guard_approval)"
+        - "PUT /api/users/:id/approval — Approve/reject guard (require_guard_approval + audit)"
+        - "GET /api/user/:id — Get user by ID (require_authenticated)"
+        - "PUT /api/user/:id — Update user (require_authenticated + audit)"
+        - "DELETE /api/user/:id — Delete user (require_manage_users + audit)"
+        - "PUT /api/user/:id/profile-photo — Upload photo (require_authenticated + audit)"
+        - "DELETE /api/user/:id/profile-photo — Remove photo (require_authenticated + audit)"
+        - "GET /api/guards — List approved guards (require_authenticated)"
+
+    firearms:
+      description: "Firearm inventory CRUD"
+      middleware: "require_firearm_management + audit on writes"
+      endpoints:
+        - "POST /api/firearms — Add firearm"
+        - "GET /api/firearms — List all firearms (paginated)"
+        - "GET /api/firearms/:id — Get firearm detail"
+        - "PUT /api/firearms/:id — Update firearm"
+        - "DELETE /api/firearms/:id — Delete firearm"
+
+    firearm_allocation:
+      description: "Issue/return firearms to guards, track active and overdue allocations"
+      middleware: "require_firearm_allocation + audit on writes"
+      endpoints:
+        - "POST /api/firearm-allocation/issue — Issue firearm to guard"
+        - "POST /api/firearm-allocation/return — Return firearm"
+        - "GET /api/guard-allocations/:guard_id — Guard's allocations (require_authenticated)"
+        - "GET /api/firearm-allocations/active — Active allocations"
+        - "GET /api/firearm-allocations — All allocations"
+        - "GET /api/firearm-allocations/overdue — Overdue allocations"
+
+    firearm_maintenance:
+      description: "Schedule, track, and complete firearm maintenance"
+      middleware: "require_firearm_management"
+      endpoints:
+        - "POST /api/firearm-maintenance/schedule — Schedule maintenance"
+        - "GET /api/firearm-maintenance/pending — Pending maintenance"
+        - "POST /api/firearm-maintenance/:id/complete — Complete maintenance"
+        - "GET /api/firearm-maintenance/:firearm_id — Maintenance history"
+        - "GET /api/firearm-maintenance — All maintenance records"
+
+    guard_permits:
+      description: "Guard firearm permit lifecycle"
+      middleware: "require_firearm_management (CRUD), require_authenticated (guard self-read)"
+      endpoints:
+        - "POST /api/guard-firearm-permits — Create permit"
+        - "GET /api/guard-firearm-permits — All permits"
+        - "GET /api/guard-firearm-permits/expiring — Expiring permits"
+        - "POST /api/guard-firearm-permits/auto-expire — Auto-expire past-due"
+        - "PUT /api/guard-firearm-permits/:id/revoke — Revoke permit"
+        - "GET /api/guard-firearm-permits/:guard_id — Guard's permits (authenticated)"
+
+    scheduling_and_attendance:
+      description: "Shift CRUD, guard attendance check-in/check-out, no-show detection, replacements, availability"
+      endpoints:
+        - "POST /api/guard-replacement/shifts — Create shift (require_schedule_management)"
+        - "GET /api/guard-replacement/shifts — All shifts (require_schedule_management)"
+        - "PUT /api/guard-replacement/shifts/:id — Update shift"
+        - "DELETE /api/guard-replacement/shifts/:id — Delete shift"
+        - "GET /api/guard-replacement/guard/:id/shifts — Guard's shifts (authenticated)"
+        - "POST /api/guard-replacement/attendance/check-in — Check in (authenticated + audit)"
+        - "POST /api/guard-replacement/attendance/check-out — Check out (authenticated + audit)"
+        - "GET /api/attendance/:guard_id — Guard attendance (authenticated)"
+        - "POST /api/guard-replacement/detect-no-shows — Detect no-shows (require_schedule_management)"
+        - "POST /api/guard-replacement/request-replacement — Request replacement (authenticated)"
+        - "POST /api/guard-replacement/accept-replacement — Accept replacement (authenticated)"
+        - "POST /api/guard-replacement/set-availability — Set availability (authenticated + audit)"
+        - "GET /api/guard-replacement/availability/:id — Get availability (authenticated)"
+
+    shift_swaps:
+      description: "Guard-to-guard shift swap requests"
+      middleware: "require_authenticated"
+      endpoints:
+        - "POST /api/shifts/swap-request — Create swap request"
+        - "GET /api/shifts/swap-requests — List swap requests"
+        - "PATCH /api/shifts/swap-requests/:id/respond — Accept/decline swap"
+
+    notifications:
+      description: "In-app notification system with push subscription"
+      endpoints:
+        - "POST /api/notifications — Create notification (require_notifications_management)"
+        - "GET /api/users/:id/notifications — User's notifications (authenticated)"
+        - "GET /api/users/:id/notifications/unread-count — Unread count (authenticated)"
+        - "PUT /api/users/:id/notifications/mark-all-read — Mark all read (authenticated)"
+        - "PUT /api/notifications/:id/read — Mark single read (authenticated)"
+        - "DELETE /api/notifications/:id — Delete notification (authenticated)"
+        - "POST /api/notifications/push-subscribe — Subscribe to push (authenticated)"
+
+    armored_cars_and_trips:
+      description: "Fleet management: vehicle CRUD, allocation, maintenance, driver assignment, trip lifecycle"
+      middleware: "require_armored_car_management / require_trip_management + audit on writes"
+      endpoints:
+        - "POST /api/armored-cars — Add vehicle"
+        - "GET /api/armored-cars — List vehicles"
+        - "GET /api/vehicles — List vehicles alias (authenticated)"
+        - "GET /api/armored-cars/:id — Vehicle detail"
+        - "PUT /api/armored-cars/:id — Update vehicle"
+        - "DELETE /api/armored-cars/:id — Delete vehicle"
+        - "POST /api/car-allocation/issue — Issue car"
+        - "POST /api/car-allocation/return — Return car"
+        - "GET /api/car-allocations/:car_id — Car allocations"
+        - "GET /api/car-allocations/active — Active allocations"
+        - "POST /api/car-maintenance/schedule — Schedule maintenance"
+        - "POST /api/car-maintenance/:id/complete — Complete maintenance"
+        - "GET /api/car-maintenance/:car_id — Maintenance history"
+        - "POST /api/driver-assignment/assign — Assign driver"
+        - "POST /api/driver-assignment/:id/unassign — Unassign driver"
+        - "GET /api/car-drivers/:car_id — Car drivers"
+        - "POST /api/trips — Create trip"
+        - "POST /api/trips/end — End trip"
+        - "GET /api/trips/car/:car_id — Car trips"
+        - "GET /api/trips — All trips"
+        - "GET /api/trip-management/active — Active trips"
+        - "GET /api/trip-management/:id — Trip details"
+        - "PUT /api/trip-management/:id/status — Update trip status"
+        - "POST /api/trip-management/assign-driver — Assign driver to trip"
+        - "GET /api/trip-management/driver-assignments — Driver assignments"
+
+    missions:
+      description: "Mission assignment and retrieval"
+      middleware: "require_mission_management"
+      endpoints:
+        - "POST /api/missions/assign — Assign mission"
+        - "GET /api/missions — List missions"
+
+    merit_and_performance:
+      description: "Guard merit scoring, rankings, evaluations, overtime candidates"
+      endpoints:
+        - "POST /api/merit/calculate — Calculate score (require_merit_manage)"
+        - "GET /api/merit/:guard_id — Guard's score (authenticated)"
+        - "GET /api/merit/rankings/all — All ranked guards (require_merit_view)"
+        - "POST /api/merit/evaluations/submit — Submit evaluation (require_merit_manage)"
+        - "GET /api/merit/evaluations/:guard_id — Guard evaluations (authenticated)"
+        - "GET /api/merit/overtime-candidates — Overtime candidates (require_merit_view)"
+
+    analytics_and_ai:
+      description: "Operational analytics, AI predictions, incident classification"
+      middleware: "require_analytics_view + expensive_rate_limit for AI endpoints"
+      endpoints:
+        - "GET /api/analytics — Summary analytics"
+        - "GET /api/analytics/trends — Performance trends"
+        - "GET /api/analytics/guard-reliability — Guard reliability"
+        - "PUT /api/analytics/mission-status — Update mission status"
+        - "GET /api/alerts/predictive — Predictive alerts (permits, maintenance, no-shows, availability)"
+        - "GET /api/ai/guard-absence-risk — Guard absence risk predictions"
+        - "GET /api/ai/replacement-suggestions — Smart guard replacement suggestions"
+        - "GET /api/ai/vehicle-maintenance-risk — Vehicle maintenance risk predictions"
+        - "POST /api/ai/classify-incident — AI incident severity classification (authenticated)"
+        - "POST /api/ai/summarize-incident — AI incident summary (authenticated)"
+
+    tracking:
+      description: "Real-time GPS tracking, geofencing, websocket live map"
+      middleware: "require_tracking_access (supervisor + guard only)"
+      endpoints:
+        - "GET /api/tracking/map-data — Full map snapshot"
+        - "GET /api/tracking/ws — Websocket live stream"
+        - "GET /api/tracking/client-sites — List client sites"
+        - "POST /api/tracking/client-sites — Create site"
+        - "PUT /api/tracking/client-sites/:id — Update site"
+        - "DELETE /api/tracking/client-sites/:id — Delete site"
+        - "GET /api/tracking/geofences — All geofence zones"
+        - "GET /api/tracking/client-sites/:id/geofences — Site geofences"
+        - "POST /api/tracking/client-sites/:id/geofences — Create geofence"
+        - "PUT /api/tracking/geofences/:id — Update geofence"
+        - "DELETE /api/tracking/geofences/:id — Delete geofence"
+        - "POST /api/tracking/heartbeat — Guard location heartbeat"
+        - "POST /api/tracking/points — Create tracking point"
+        - "GET /api/tracking/guard-history/:id — Guard history"
+        - "GET /api/tracking/guard-path/:id — Guard path"
+        - "GET /api/tracking/active-guards — Active guards"
+        - "POST /api/tracking/proximity-alerts/check — Check proximity alerts"
+
+    audit:
+      description: "System audit log review — superadmin only"
+      middleware: "require_superadmin"
+      endpoints:
+        - "GET /api/audit-logs — Paginated audit logs (legacy)"
+        - "GET /api/audit/logs — Paginated audit logs"
+        - "GET /api/audit/logs/filter — Filtered audit logs"
+        - "GET /api/audit/user-activity/:id — User activity timeline + heatmap"
+        - "GET /api/audit/anomalies — Anomaly summaries"
+
+    incidents:
+      description: "Incident reporting and status management"
+      middleware: "require_authenticated + audit on writes"
+      endpoints:
+        - "POST /api/incidents — Create incident"
+        - "GET /api/incidents — List incidents"
+        - "GET /api/incidents/active — Active incidents"
+        - "PATCH /api/incidents/:id/status — Update incident status"
+
+    support_tickets:
+      description: "Bug reports and support requests"
+      middleware: "require_authenticated + audit on create"
+      endpoints:
+        - "POST /api/support-tickets — Create ticket"
+        - "GET /api/support-tickets/:guard_id — Guard's tickets"
+
+    training:
+      description: "Guard training records"
+      middleware: "require_schedule_management"
+      endpoints:
+        - "POST /api/training-records — Create training record"
+        - "GET /api/training-records/expiring — Expiring training"
+        - "GET /api/training-records/:guard_id — Guard training history"
+
+    system:
+      description: "Health checks and version metadata"
+      middleware: "none (public)"
+      endpoints:
+        - "GET /api/health — Basic health"
+        - "GET /api/health/system — System health (DB, websocket, uptime)"
+        - "GET /api/system/version — Release metadata for update prompts"
+
+# ═══════════════════════════════════════════════════════════════
+# 4. DATA MODEL SUMMARY
+# ═══════════════════════════════════════════════════════════════
+
+data_model:
+  database: PostgreSQL
+  orm: "sqlx 0.8 (compile-time checked queries via query! macro)"
+  schema_bootstrap: "db.rs run_migrations() at startup + IF NOT EXISTS guards"
+  id_strategy: "UUID v4 as VARCHAR(36)"
+
+  table_groups:
+
+    identity_and_auth:
+      tables:
+        - name: users
+          purpose: "All accounts across all roles"
+          key_columns: "id, email, username, role, verified, approval_status, last_seen_at, consent_accepted_at, consent_version, consent_ip, consent_user_agent, profile_photo"
+          constraints: "role is free-form varchar constrained in business logic"
+        - name: verifications
+          purpose: "Email verification codes"
+          key_columns: "user_id, code, email"
+        - name: password_reset_tokens
+          purpose: "Hashed password reset codes with lockout"
+          key_columns: "user_id (VARCHAR(36)), token (hashed, 128 chars), expires_at (TIMESTAMPTZ)"
+        - name: refresh_token_sessions
+          purpose: "Server-side refresh token session persistence"
+
+    scheduling_and_attendance:
+      tables:
+        - name: shifts
+          purpose: "Shift definitions with guard assignment"
+          key_columns: "id, guard_id, client_site, start_time, end_time, status, grace_period_minutes, replacement_status"
+        - name: attendance
+          purpose: "Guard shift attendance records (check-in/check-out)"
+          key_columns: "id, guard_id, shift_id, check_in_time, check_out_time, status"
+        - name: guard_availability
+          purpose: "Guard availability toggle (UNIQUE on guard_id)"
+          key_columns: "guard_id, available, available_from, available_to"
+        - name: guard_shift_swaps
+          purpose: "Shift swap requests between guards"
+          key_columns: "requester_id, target_id, shift_id, status (pending/accepted/declined)"
+
+    firearms:
+      tables:
+        - name: firearms
+          purpose: "Firearm inventory"
+          key_columns: "id, model, caliber, serial_number, status"
+        - name: firearm_allocations
+          purpose: "Guard-firearm allocation records"
+          key_columns: "id, guard_id, firearm_id, allocation_date, return_date, status, issued_by"
+        - name: guard_firearm_permits
+          purpose: "Guard firearm carry permits"
+          key_columns: "id, guard_id, permit_type, issued_date, expiry_date, status"
+        - name: firearm_maintenance
+          purpose: "Firearm maintenance schedule and history"
+          key_columns: "id, firearm_id, maintenance_type, scheduled_date, completion_date, status"
+        - name: training_records
+          purpose: "Guard firearms training records"
+          key_columns: "id, guard_id, training_type, completed_date, expiry_date, status"
+
+    fleet:
+      tables:
+        - name: armored_cars
+          purpose: "Armored vehicle inventory"
+        - name: car_allocations
+          purpose: "Vehicle allocation to operations"
+        - name: car_maintenance
+          purpose: "Vehicle maintenance schedule and history"
+        - name: driver_assignments
+          purpose: "Driver-to-vehicle assignments"
+        - name: trips
+          purpose: "Trip lifecycle records"
+
+    operations:
+      tables:
+        - name: incidents
+          purpose: "Reported incidents with AI-assigned severity"
+          key_columns: "id, title, description, location, priority, severity, status"
+        - name: missions
+          purpose: "Mission assignments"
+        - name: notifications
+          purpose: "In-app notifications"
+          key_columns: "id, user_id, title, message, type, related_shift_id, read"
+        - name: support_tickets
+          purpose: "Bug reports and support requests"
+          key_columns: "id, user_id, title, description, category, priority, status"
+
+    merit_and_performance:
+      tables:
+        - name: guard_merit_scores
+          purpose: "Calculated merit scores per guard (UNIQUE on guard_id)"
+          key_columns: "attendance_score, punctuality_score, client_rating, overall_score, rank"
+          scoring_formula: "overall = attendance(30%) + punctuality(35%) + client_rating(35%)"
+        - name: client_evaluations
+          purpose: "Client/supervisor ratings for guards (0-5 stars)"
+        - name: punctuality_records
+          purpose: "Individual shift check-in punctuality tracking"
+          key_columns: "guard_id, shift_id, scheduled_start_time, actual_check_in_time, minutes_late, is_on_time"
+
+    tracking_and_geofencing:
+      tables:
+        - name: client_sites
+          purpose: "Client sites with geographic coordinates"
+          key_columns: "id, name, latitude, longitude"
+        - name: tracking_points
+          purpose: "GPS breadcrumbs (entity_type='guard', entity_id=guard_id)"
+          key_columns: "id, entity_type, entity_id, latitude, longitude, user_id"
+        - name: geofence_events
+          purpose: "Enter/exit events per guard x client site"
+          key_columns: "guard_id, site_id, event_type (enter/exit)"
+        - name: site_geofences
+          purpose: "Geofence zone definitions (radius or polygon)"
+          key_columns: "client_site_id, radius, polygon"
+
+    ai_intelligence:
+      tables:
+        - name: guard_absence_predictions
+          purpose: "Weighted heuristic absence risk predictions"
+          key_columns: "guard_id, risk_score, risk_level, confidence_score, explanation (JSONB), contributing_factors (JSONB)"
+          formula: "AbsenceRisk = (absences * 0.5) + (late_checkins * 0.3) + (recent_leave * 0.2)"
+        - name: smart_guard_replacements
+          purpose: "AI-recommended replacement guards for shifts"
+          key_columns: "shift_id, absent_guard_id, recommended_guard_id, compatibility_score, scoring_breakdown (JSONB)"
+          formula: "ReplacementScore = (reliability * 0.4) + (availability * 0.3) + (distance * 0.3)"
+        - name: incident_severity_classifications
+          purpose: "AI incident severity predictions"
+          key_columns: "incident_id, predicted_severity, confidence_score, rationale"
+        - name: predictive_vehicle_maintenance
+          purpose: "Vehicle maintenance risk predictions"
+          key_columns: "car_id, risk_score, risk_level, recommended_action"
+        - name: ai_incident_summaries
+          purpose: "AI-generated incident summaries"
+
+    audit:
+      tables:
+        - name: audit_logs
+          purpose: "Write audit trail + authorization failure records"
+          key_columns: "id, user_id, action_key, source_ip, user_agent, metadata (JSONB), result, timestamp"
+
+# ═══════════════════════════════════════════════════════════════
+# 5. CRITICAL vs SECONDARY PATH CLASSIFICATION
+# ═══════════════════════════════════════════════════════════════
+
+critical_paths:
+  description: "Workflows that MUST work. Failure here blocks core operations."
+
+  paths:
+    - name: "Authentication & Legal Consent"
+      components:
+        - "POST /api/login"
+        - "POST /api/register"
+        - "POST /api/verify"
+        - "POST /api/legal/consent"
+        - "POST /api/refresh"
+      failure_impact: "Complete system lockout — no user can access any feature"
+      degradation: "No graceful degradation possible"
+
+    - name: "Guard Check-In / Check-Out"
+      components:
+        - "POST /api/guard-replacement/attendance/check-in"
+        - "POST /api/guard-replacement/attendance/check-out"
+        - "GET /api/guard-replacement/guard/:id/shifts"
+      failure_impact: "Guards cannot prove attendance. Breaks scheduling, merit scoring, and accountability chain"
+      degradation: "Frontend has offline queue (enqueueOfflineAction) for partial resilience"
+
+    - name: "Incident Reporting"
+      components:
+        - "POST /api/incidents"
+        - "GET /api/incidents/active"
+      failure_impact: "Field security events go unreported. Legal/compliance risk"
+      degradation: "AI classification can fail independently; core creation must succeed"
+
+    - name: "Location Heartbeat (Guard Tracking)"
+      components:
+        - "POST /api/tracking/heartbeat"
+        - "GET /api/tracking/ws (websocket)"
+      failure_impact: "Loss of real-time field awareness. Supervisors cannot monitor guard positions"
+      degradation: "Polling fallback if websocket fails. IP-based location fallback if GPS denied"
+
+    - name: "Guard Approval Workflow"
+      components:
+        - "GET /api/users/pending-approvals"
+        - "PUT /api/users/:id/approval"
+      failure_impact: "New guards cannot start working. Blocks onboarding pipeline"
+      degradation: "No fallback — approval is a prerequisite for login"
+
+    - name: "Notification Delivery"
+      components:
+        - "GET /api/users/:id/notifications"
+        - "POST /api/notifications"
+      failure_impact: "Replacement requests, approval decisions, and alerts go unseen"
+      degradation: "Panel renders degraded state with fallback text"
+
+secondary_paths:
+  description: "Workflows that SHOULD work but can degrade gracefully."
+
+  paths:
+    - name: "AI Predictions & Classification"
+      components:
+        - "GET /api/ai/guard-absence-risk"
+        - "GET /api/ai/replacement-suggestions"
+        - "GET /api/ai/vehicle-maintenance-risk"
+        - "POST /api/ai/classify-incident"
+        - "POST /api/ai/summarize-incident"
+      degradation: "Keyword-classifier fallback for incidents. Prediction panels show empty state. Core operations unaffected."
+
+    - name: "Analytics Dashboard"
+      components:
+        - "GET /api/analytics"
+        - "GET /api/analytics/trends"
+        - "GET /api/analytics/guard-reliability"
+      degradation: "Dashboard shows loading/error state. Operational workflows continue independently."
+
+    - name: "Merit Scoring"
+      components:
+        - "POST /api/merit/calculate"
+        - "GET /api/merit/rankings/all"
+      degradation: "Merit data becomes stale. Does not block scheduling or attendance."
+
+    - name: "Audit Log Review"
+      components:
+        - "GET /api/audit/logs"
+        - "GET /api/audit/anomalies"
+      degradation: "Audit records still written (middleware). Read access for review can be delayed."
+
+    - name: "Fleet Management (Armored Cars / Trips)"
+      components: "All /api/armored-cars/*, /api/trips/*, /api/car-*"
+      degradation: "Vehicle operations degrade to manual coordination. Guard operations unaffected."
+
+    - name: "Firearm Inventory & Maintenance"
+      components: "All /api/firearms/*, /api/firearm-maintenance/*"
+      degradation: "Inventory management reverts to manual tracking. Active allocations remain valid."
+
+    - name: "Calendar Dashboard"
+      components: "CalendarDashboard aggregation logic"
+      degradation: "Memoized computation with partial data-source failure resilience. Shows available data even if some sources fail."
+
+    - name: "Update Checks & What's New"
+      components:
+        - "GET /api/system/version"
+        - "GitHub API fallback"
+      degradation: "Silently skipped on failure. User not prompted for updates."
+
+    - name: "Support Tickets"
+      components:
+        - "POST /api/support-tickets"
+        - "GET /api/support-tickets/:guard_id"
+      degradation: "Guards can use alternative communication channels."
+
+# ═══════════════════════════════════════════════════════════════
+# OPEN QUESTIONS & GAPS
+# ═══════════════════════════════════════════════════════════════
+
+open_questions:
+  - question: "What is the backend permission model for 'user' role positions in utils::has_permission?"
+    context: "Backend authz.rs delegates to utils::has_permission but the actual role→permission map in utils.rs was not read"
+    type: nice_to_know
+    affects: []
+
+  - question: "Is db.rs schema bootstrap fully idempotent or are there edge cases with column additions?"
+    context: "Schema uses IF NOT EXISTS guards and ALTER TABLE ADD COLUMN IF NOT EXISTS, but column type mismatches would not be caught"
+    type: nice_to_know
+    affects: []
+
+gaps:
+  - area: "Backend utils.rs permission map"
+    description: "The full role→permission mapping in utils.rs was not read. authz.rs delegates to utils::has_permission."
+    impact: nice_to_know
+    affects: []
+
+  - area: "Geofence alert loop timing and notification deduplication"
+    description: "Background geofence alert service timing and deduplication logic was not deeply inspected."
+    impact: nice_to_know
+    affects: []

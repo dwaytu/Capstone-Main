@@ -1,0 +1,512 @@
+plan_id: frontend-state-auth-errors
+objective: "Research how the SENTINEL frontend handles state management, authentication flows, API layer, WebSocket/realtime, and error handling patterns"
+focus_area: "DasiaAIO-Frontend — state, auth, API, WebSocket, error handling"
+created_at: "2026-04-04"
+created_by: researcher
+status: completed
+
+tldr: |
+  - Auth uses JWT access + refresh tokens stored in localStorage (with Capacitor SecureStorage on mobile); token refresh is transparent via fetchJsonOrThrow with automatic 401 retry.
+  - State is managed entirely via useState/useEffect in App.tsx (no Redux, no Context except ThemeProvider); user object is prop-drilled to all dashboards.
+  - API layer centers on a single fetchJsonOrThrow utility that handles auth injection, retries, timeout, and auth-expired event dispatch.
+  - WebSocket is used only for the operational map (useOperationalMapData hook) with exponential backoff reconnect (max 8 attempts) and HTTP polling fallback.
+  - Error handling uses a global ErrorBoundary wrapper, a globalError state banner, and window-level error/unhandledrejection listeners; per-component error states are ad-hoc.
+
+research_metadata:
+  methodology: "Hybrid retrieval: semantic_search + grep_search for initial discovery; read_file for detailed examination of key modules; list_dir for structural mapping"
+  scope: "Full DasiaAIO-Frontend/src tree — utils, hooks, components, context, types, config"
+  confidence: high
+  coverage: 85
+  decision_blockers: 0
+  research_blockers: 0
+
+# ─────────────────────────────────────────────────────────────
+# 1. AUTHENTICATION FLOW
+# ─────────────────────────────────────────────────────────────
+authentication_flow:
+  login_component:
+    file: src/components/LoginPage.tsx
+    mechanism: |
+      POST ${API_BASE_URL}/api/login with { identifier, password }.
+      On success, receives { user, token, refreshToken }.
+      Calls storeAuthSession(token, refreshToken) then invokes onLogin(user) callback.
+    registration: "POST /api/register — includes email verification step via /api/verify"
+    password_reset: "Three-step: /api/forgot-password → /api/verify-reset-code → /api/reset-password"
+
+  token_storage:
+    primary: "localStorage key 'token' for access token"
+    refresh_token: "localStorage key 'refreshToken' (web/desktop); Capacitor SecureStoragePlugin on native mobile"
+    user_object: "localStorage key 'user' — full JSON serialization of User object"
+    helpers:
+      - "readLocalStorage() / writeLocalStorage() / removeLocalStorage() — safe wrappers with try/catch"
+      - "persistRefreshTokenSecurely() — writes to SecureStoragePlugin on Capacitor, falls back to localStorage"
+      - "loadSecureRefreshToken() — reads from SecureStoragePlugin first, falls back to localStorage"
+
+  token_refresh:
+    mechanism: |
+      refreshAccessToken() in utils/api.ts.
+      Tries two endpoints sequentially: /api/refresh then /api/auth/refresh.
+      Uses a shared promise (refreshInFlight) to deduplicate concurrent refresh attempts.
+      On success, calls storeAuthSession(newToken, newRefreshToken) and resets authExpiryNotified flag.
+    trigger: |
+      1. On app boot: restoreAuth() calls refreshAuthSessionIfNeeded() which checks isAuthTokenExpired().
+      2. On 401/403 during fetchJsonOrThrow: if refresh token is available, attempts transparent refresh and retries the original request once.
+    expiry_detection: |
+      isAuthTokenExpired() decodes the JWT payload, reads exp claim, and compares against Date.now() with 30s clock skew tolerance.
+
+  session_restore:
+    file: src/App.tsx
+    location: "useEffect([], []) — restoreAuth()"
+    flow: |
+      1. hydrateAuthSession() — loads refresh token from SecureStorage/localStorage
+      2. Read localStorage 'user' and getAuthToken()
+      3. refreshAuthSessionIfNeeded() — refresh if expired
+      4. If refresh fails or no token → clearAuthSession() + clear user + setIsLoggedIn(false)
+      5. If success → parse user, normalize role, setUser/setIsLoggedIn
+
+  token_expiry_UX:
+    custom_event: "window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { message } }))"
+    listener: "App.tsx useEffect listens for 'auth:token-expired' → sets globalError, clears session, forces logout"
+    user_sees: "'Session expired. Please log in again.' displayed in a globalError banner at bottom of screen"
+    mid_session_behavior: |
+      When token expires mid-session:
+      1. fetchJsonOrThrow detects 401/403 or token-expired message patterns
+      2. Attempts transparent refresh via refreshAccessToken()
+      3. If refresh succeeds → retries original request with new token (user never sees error)
+      4. If refresh fails → dispatches 'auth:token-expired' event → auto-logout + error banner
+
+  logout:
+    file: src/App.tsx
+    function: handleLogout
+    flow: |
+      1. POST /api/logout with refresh token (fire-and-forget)
+      2. clearAuthSession() — removes token + refresh token from all storage
+      3. localStorage.removeItem('user')
+      4. Reset all state: user=null, isLoggedIn=false, hasAcceptedToa=false
+
+# ─────────────────────────────────────────────────────────────
+# 2. API LAYER
+# ─────────────────────────────────────────────────────────────
+api_layer:
+  core_module:
+    file: src/utils/api.ts
+    exports:
+      - fetchJsonOrThrow
+      - parseResponseBody
+      - getApiErrorMessage
+      - getAuthToken
+      - getRefreshToken
+      - storeAuthSession
+      - clearAuthSession
+      - getAuthHeaders
+      - hydrateAuthSession
+      - isAuthTokenExpired
+      - refreshAuthSessionIfNeeded
+
+  fetchJsonOrThrow:
+    description: "Central fetch wrapper used by all authenticated API calls"
+    features:
+      - "Auto-injects Authorization: Bearer <token> for protected endpoints"
+      - "Determines protected vs public endpoints via PUBLIC_API_PATHS set"
+      - "15s default timeout with AbortController"
+      - "Automatic retry: GET/HEAD/OPTIONS retry once on 408/425/429/500/502/503/504 with exponential backoff (400ms base)"
+      - "Idempotent PUT/DELETE with Idempotency-Key header also eligible for retry"
+      - "Non-JSON response body fallback — wraps raw text in { message, error, raw } shape"
+      - "Auth-expired auto-refresh: on 401/403, attempts token refresh then retries request once"
+      - "If refresh fails, dispatches 'auth:token-expired' custom event"
+    error_handling: |
+      - Network errors → "You appear to be offline." or fallbackError message
+      - Timeout → "Request timed out after {timeoutMs}ms"
+      - Non-OK response → server message from body.error || body.message || fallbackError
+      - Auth expired (after failed refresh) → "Session expired. Please log in again."
+
+  global_error_surface:
+    file: src/App.tsx
+    mechanisms:
+      - "window 'error' listener → captures ErrorEvent.message → setGlobalError"
+      - "window 'unhandledrejection' listener → captures rejection reason → setGlobalError"
+      - "auth:token-expired custom event listener → normalized message → setGlobalError"
+    display: "Fixed-position banner at bottom-right (or bottom-left for guard workspace) with Dismiss button"
+
+  error_boundary:
+    file: src/components/ErrorBoundary.tsx
+    type: "React class component with getDerivedStateFromError + componentDidCatch"
+    features:
+      - "Catches rendering errors in child tree"
+      - "Displays section-specific error with 'Reload section' button"
+      - "Logs via logError() which filters out expected auth noise patterns"
+      - "onRetry callback resets error state and navigates to home view"
+    usage: "App.tsx wraps each view in <ErrorBoundary key={view} sectionLabel={...}>"
+
+  http_status_handling:
+    "401": "Detected by isAuthExpired() → triggers refresh attempt → if fails, auto-logout"
+    "403": "Detected if response body contains token-expired patterns → same flow as 401; otherwise treated as permission error (server message shown)"
+    "500": "Retried once for GET requests; error message from response body shown to user"
+    "408/425/429/502/503/504": "Retried once for safe methods with backoff"
+
+# ─────────────────────────────────────────────────────────────
+# 3. STATE MANAGEMENT
+# ─────────────────────────────────────────────────────────────
+state_management:
+  approach: "Pure React useState/useEffect — no Redux, no Zustand, no global store"
+
+  context_providers:
+    - name: ThemeProvider
+      file: src/context/ThemeProvider.tsx
+      provides: "theme, toggleTheme, setTheme, isLoading"
+      scope: "Wraps entire app in main.tsx"
+      notes: "Only React Context in the app — used for dark/light theme toggle with localStorage persistence"
+
+  user_state:
+    location: "App.tsx — useState<User | null>(null)"
+    persistence: "localStorage key 'user' — JSON serialized"
+    distribution: "Prop-drilled to all dashboard components as { user } prop"
+    role_normalization: "normalizeRole() from types/auth.ts — maps 'user' → 'guard', lowercases and validates"
+
+  role_based_ui:
+    permissions_module:
+      file: src/utils/permissions.ts
+      mechanism: |
+        Static rolePermissions map: Record<Role, Permission[]>
+        can(role, permission) → boolean check
+        canAny() / canAll() for multiple permissions
+      roles:
+        superadmin: "All 11 permissions"
+        admin: "All except view_audit_logs"
+        supervisor: "7 permissions (no manage_users, no view_audit_logs)"
+        guard: "Only view_guard_workspace"
+    view_gating: |
+      App.tsx viewRegistry maps view keys to { component, permission? }.
+      canView(view, role) checks permission before rendering.
+      If denied → renderAccessDenied() shows "Access denied" card with "Return to dashboard" button.
+    dashboard_routing: |
+      - superadmin/admin/supervisor → SuperadminDashboard
+      - guard → UserDashboard
+      Decision made in renderHome() based on normalizedRole.
+
+  state_risks:
+    - area: "User object dual-source"
+      description: "User data lives in both React state (user) and localStorage ('user'). Updates must keep both in sync — App.tsx does this manually in handleLogin, handleLogout, handleAcceptToa, handleProfilePhotoUpdate."
+      severity: medium
+    - area: "No centralized state"
+      description: "Each dashboard component independently fetches its own data with useState/useEffect. No shared cache or deduplication. Multiple components may fetch the same endpoints."
+      severity: low
+    - area: "Stale localStorage on concurrent tabs"
+      description: "No cross-tab synchronization via storage events. If user logs out in one tab, another tab retains stale user/token until its next fetch fails."
+      severity: medium
+    - area: "activeView string-based routing"
+      description: "View navigation uses a plain string state (activeView) instead of URL-based routing. No browser back/forward support, no deep linking, no bookmarkable URLs."
+      severity: low
+
+# ─────────────────────────────────────────────────────────────
+# 4. WEBSOCKET / REALTIME
+# ─────────────────────────────────────────────────────────────
+websocket_realtime:
+  implementation:
+    file: src/hooks/useOperationalMapData.ts
+    protocol: "WebSocket with subprotocols: ['sentinel-tracking-v1', 'bearer.{token}']"
+    url: "${API_BASE_URL.replace(/^http/, 'ws')}/api/tracking/ws"
+    feature_flag: "VITE_ENABLE_TRACKING_WS=true required to enable"
+
+  connection_lifecycle:
+    guard_conditions: |
+      Requires: valid auth token + enableTrackingWs=true + hasTrackingAccess (supervisor or admin/superadmin).
+      If any condition false → wsConnectionState='disabled', no connection attempted.
+    states: "disabled | connecting | open | backoff | closed"
+    auth_via_subprotocol: "Token passed as bearer.{token} WebSocket subprotocol"
+
+  reconnection:
+    strategy: "Exponential backoff"
+    base_delay: 1500ms
+    max_delay: 30000ms
+    max_attempts: 8
+    behavior: |
+      On disconnect (non-auth close):
+      1. Increment reconnect counter
+      2. Calculate delay: min(1500 * 2^(attempts-1), 30000)
+      3. Set state to 'backoff', show "Retrying live map in Xs"
+      4. After delay, attempt reconnect
+      5. After 8 failed attempts → state='closed', message "Live map socket unavailable. Using periodic refresh."
+
+  auth_close_codes:
+    description: "WS_AUTH_CLOSE_CODES set — specific close codes trigger auth-expired flow instead of reconnect"
+    behavior: "On auth close code → state='closed', error='Session expired', dispatches auth:token-expired event"
+
+  fallback:
+    mechanism: "HTTP polling via setInterval (fallbackInterval) as backup when WebSocket is unavailable or disabled"
+    data_format: "Expects JSON payload with type='snapshot' and data containing MapDataResponse"
+
+  health_monitoring:
+    file: src/hooks/useServiceHealth.ts
+    mechanism: |
+      Polls /api/health/system every 15s.
+      Derives monitoringNodes and vehicleTelemetry status from websocket.status field in response.
+      Binary online/offline status for: database, apiGateway, monitoringNodes, vehicleTelemetry, authenticationService.
+
+# ─────────────────────────────────────────────────────────────
+# 5. ERROR HANDLING PATTERNS
+# ─────────────────────────────────────────────────────────────
+error_handling_patterns:
+  global_error_boundary:
+    file: src/components/ErrorBoundary.tsx
+    description: "Class component wrapping each view — catches React rendering crashes"
+    recovery: "Reload section button resets error state and navigates home"
+    logging: "logError() from utils/logger.ts — filters auth noise patterns before console.error"
+
+  global_error_banner:
+    file: src/App.tsx
+    state: "globalError: string"
+    sources:
+      - "window 'error' events"
+      - "window 'unhandledrejection' events"
+      - "auth:token-expired custom events"
+    display: "Fixed-position danger-styled banner with dismiss button"
+    limitation: "Only shows one error at a time (last-write-wins). No toast queue."
+
+  network_failure_handling:
+    connectivity_detection:
+      - "navigator.onLine / window 'online'/'offline' events → isNetworkOnline state"
+      - "Backend reachability probe: GET /api/health every 30s → isBackendReachable state"
+    banner: "showConnectivityBanner displayed when offline or backend unreachable"
+    messages:
+      offline: "Network connection is offline. Reconnect to continue syncing SENTINEL data."
+      backend_down: "Backend is unreachable right now. Retrying automatically in the background."
+
+  per_component_patterns:
+    description: "Each dashboard has its own [error, setError] = useState<string>('') pattern"
+    examples:
+      - "ArmoredCarDashboard: try/catch around fetches → setError(err.message)"
+      - "AnalyticsDashboard: fetchJsonOrThrow in useEffect → error state + error display"
+      - "useOperationalMapData: error state for WebSocket connection issues"
+    inconsistency: "No standardized error component or pattern — each component handles display differently"
+
+  loading_states:
+    app_level: "isLoading state in App.tsx — shows skeleton pulse animation during auth restore"
+    per_component: "Each dashboard manages its own loading boolean — typically shows spinner or skeleton"
+    websocket: "useOperationalMapData has loading state + wsConnectionState for granular status"
+
+  auth_noise_filter:
+    file: src/utils/logger.ts
+    mechanism: |
+      isExpectedAuthNoise() checks error messages against known patterns:
+      'invalid or expired token', 'invalidtoken', 'session expired', 'please log in again', 'jwt'
+      logError() suppresses console.error for these expected auth lifecycle messages.
+
+# ─────────────────────────────────────────────────────────────
+# FILES ANALYZED
+# ─────────────────────────────────────────────────────────────
+files_analyzed:
+  - file: App.tsx
+    path: src/App.tsx
+    purpose: "Root application component — auth state, view routing, global error handling, location tracking heartbeat"
+    key_elements:
+      - { element: "restoreAuth", type: function, location: "App.tsx:185-225", description: "Hydrates auth session on boot" }
+      - { element: "handleLogin", type: function, location: "App.tsx:422-438", description: "Processes login callback from LoginPage" }
+      - { element: "handleLogout", type: function, location: "App.tsx:440-453", description: "Clears all auth state and storage" }
+      - { element: "handleTokenExpiry", type: function, location: "App.tsx:228-237", description: "Listener for auth:token-expired event" }
+      - { element: "viewRegistry", type: variable, location: "App.tsx:751-814", description: "Maps view keys to components with permission gates" }
+      - { element: "globalError", type: variable, location: "App.tsx:160", description: "App-wide error string state" }
+    language: TypeScript/React
+    lines: ~1300
+
+  - file: api.ts
+    path: src/utils/api.ts
+    purpose: "Central API/auth utility — token storage, fetch wrapper, refresh logic"
+    key_elements:
+      - { element: "fetchJsonOrThrow", type: function, location: "api.ts:312-430", description: "Authenticated fetch with retry, timeout, and auto-refresh" }
+      - { element: "refreshAccessToken", type: function, location: "api.ts:240-278", description: "Attempts token refresh via two endpoints" }
+      - { element: "storeAuthSession", type: function, location: "api.ts:480-490", description: "Persists token and refresh token" }
+      - { element: "notifyAuthExpired", type: function, location: "api.ts:122-130", description: "Dispatches auth:token-expired CustomEvent" }
+      - { element: "isAuthExpired", type: function, location: "api.ts:132-142", description: "Detects 401 or token-expired message patterns" }
+    language: TypeScript
+    lines: ~510
+
+  - file: LoginPage.tsx
+    path: src/components/LoginPage.tsx
+    purpose: "Login, registration, email verification, and password reset forms"
+    key_elements:
+      - { element: "handleSubmit", type: function, location: "LoginPage.tsx:86-240", description: "Multi-mode form handler for login/register/verify" }
+      - { element: "handleForgotPassword", type: function, location: "LoginPage.tsx:242+", description: "Three-step password reset flow" }
+    language: TypeScript/React
+    lines: ~795
+
+  - file: ErrorBoundary.tsx
+    path: src/components/ErrorBoundary.tsx
+    purpose: "React error boundary for catching rendering crashes"
+    key_elements:
+      - { element: "ErrorBoundary", type: class, location: "ErrorBoundary.tsx:15-78", description: "Class component with retry support" }
+    language: TypeScript/React
+    lines: 80
+
+  - file: permissions.ts
+    path: src/utils/permissions.ts
+    purpose: "Role-based permission checking"
+    key_elements:
+      - { element: "can", type: function, location: "permissions.ts:51-54", description: "Checks if role has a specific permission" }
+      - { element: "rolePermissions", type: variable, location: "permissions.ts:15-48", description: "Static role → permissions mapping" }
+    language: TypeScript
+    lines: 63
+
+  - file: auth.ts
+    path: src/types/auth.ts
+    purpose: "Role types and normalization"
+    key_elements:
+      - { element: "normalizeRole", type: function, location: "auth.ts:17-23", description: "Normalizes role string, maps 'user' → 'guard'" }
+    language: TypeScript
+    lines: 30
+
+  - file: useOperationalMapData.ts
+    path: src/hooks/useOperationalMapData.ts
+    purpose: "WebSocket + HTTP polling for live tracking map data"
+    key_elements:
+      - { element: "connectWebSocket", type: function, location: "useOperationalMapData.ts:389-450", description: "WebSocket connection with auth and reconnect" }
+      - { element: "scheduleReconnect", type: function, location: "useOperationalMapData.ts:370-388", description: "Exponential backoff reconnection" }
+    language: TypeScript/React
+    lines: ~470
+
+  - file: useServiceHealth.ts
+    path: src/hooks/useServiceHealth.ts
+    purpose: "Periodic health polling for service status dashboard"
+    key_elements:
+      - { element: "useServiceHealth", type: function, location: "useServiceHealth.ts:61-88", description: "Polls /api/health/system every 15s" }
+    language: TypeScript/React
+    lines: 90
+
+  - file: config.ts
+    path: src/config.ts
+    purpose: "API URL resolution, platform detection, version constants"
+    key_elements:
+      - { element: "API_BASE_URL", type: variable, location: "config.ts:81", description: "Resolved and validated API base URL" }
+      - { element: "detectRuntimePlatform", type: function, location: "config.ts:27-37", description: "Detects web/capacitor/tauri runtime" }
+    language: TypeScript
+    lines: ~100
+
+  - file: logger.ts
+    path: src/utils/logger.ts
+    purpose: "Error logging with auth noise suppression"
+    key_elements:
+      - { element: "logError", type: function, location: "logger.ts:22-25", description: "Logs errors, suppresses expected auth messages" }
+    language: TypeScript
+    lines: 26
+
+  - file: ThemeProvider.tsx
+    path: src/context/ThemeProvider.tsx
+    purpose: "Dark/light theme context with localStorage persistence and system preference detection"
+    key_elements:
+      - { element: "ThemeProvider", type: class, location: "ThemeProvider.tsx:62+", description: "Only React Context provider in the app" }
+    language: TypeScript/React
+    lines: ~140
+
+  - file: main.tsx
+    path: src/main.tsx
+    purpose: "Application entry point"
+    key_elements:
+      - { element: "bootstrap", type: function, location: "main.tsx:12-22", description: "Renders App within StrictMode + ThemeProvider" }
+    language: TypeScript/React
+    lines: 24
+
+# ─────────────────────────────────────────────────────────────
+# PATTERNS FOUND
+# ─────────────────────────────────────────────────────────────
+patterns_found:
+  - category: architecture
+    pattern: "Prop-drilling for user state"
+    description: "User object is stored in App.tsx and passed as props to all dashboard components. No context or state management library."
+    examples:
+      - { file: App.tsx, location: "App.tsx:752-810", snippet: "component: ({ user, onLogout, onViewChange, activeView }) => (...)" }
+    prevalence: common
+
+  - category: architecture
+    pattern: "String-based view routing"
+    description: "Navigation uses useState<string>('users') instead of URL router. Views selected via activeView string matched against viewRegistry."
+    examples:
+      - { file: App.tsx, location: "App.tsx:148", snippet: "const [activeView, setActiveView] = useState<string>('users')" }
+    prevalence: common
+
+  - category: error_handling
+    pattern: "Per-component error state"
+    description: "Each dashboard component manages its own [error, setError] = useState<string>('') with try/catch around fetch calls."
+    examples:
+      - { file: ArmoredCarDashboard.tsx, location: "ArmoredCarDashboard.tsx:94", snippet: "const [error, setError] = useState<string>('')" }
+    prevalence: common
+
+  - category: error_handling
+    pattern: "Global error capture via window events"
+    description: "App.tsx attaches listeners for window 'error' and 'unhandledrejection' events, routing them to globalError state."
+    examples:
+      - { file: App.tsx, location: "App.tsx:243-265", snippet: "window.addEventListener('error', handleWindowError)" }
+    prevalence: common
+
+  - category: structure
+    pattern: "Centralized fetch wrapper"
+    description: "All authenticated API calls use fetchJsonOrThrow from utils/api.ts. Raw fetch() is used only for public endpoints (health, login, logout)."
+    examples:
+      - { file: api.ts, location: "api.ts:312", snippet: "export async function fetchJsonOrThrow<T>(...)" }
+    prevalence: common
+
+  - category: naming
+    pattern: "Custom hooks for data domains"
+    description: "Domain-specific data fetching lives in src/hooks/ — each hook manages its own loading/error/data states."
+    examples:
+      - { file: useOperationalMapData.ts, location: "hooks/useOperationalMapData.ts", snippet: "export function useOperationalMapData(): UseOperationalMapDataResult" }
+      - { file: useServiceHealth.ts, location: "hooks/useServiceHealth.ts", snippet: "export function useServiceHealth()" }
+    prevalence: common
+
+  - category: architecture
+    pattern: "Custom event bus for auth lifecycle"
+    description: "Auth expiry communicated via CustomEvent('auth:token-expired'). Decouples api.ts from App.tsx state."
+    examples:
+      - { file: api.ts, location: "api.ts:124", snippet: "window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { message } }))" }
+    prevalence: occasional
+
+  - category: architecture
+    pattern: "Dual-endpoint fallback"
+    description: "Login, refresh, and several other endpoints try both /api/X and /api/auth/X for backward compatibility."
+    examples:
+      - { file: api.ts, location: "api.ts:248", snippet: "const refreshEndpoints = [`${API_BASE_URL}/api/refresh`, `${API_BASE_URL}/api/auth/refresh`]" }
+    prevalence: occasional
+
+# ─────────────────────────────────────────────────────────────
+# OPEN QUESTIONS & GAPS
+# ─────────────────────────────────────────────────────────────
+open_questions:
+  - question: "Is there any CSRF protection on the login/consent POST endpoints?"
+    context: "Login and legal consent submit via POST with JSON body but no CSRF token observed. JWT Bearer auth covers most endpoints but pre-auth endpoints rely on SameSite cookies (not observed) or are unprotected."
+    type: nice_to_know
+    affects: [security]
+
+  - question: "What is the intended behavior when multiple tabs are open and one tab logs out?"
+    context: "No cross-tab synchronization via 'storage' events. Other tabs retain stale tokens until their next fetch fails."
+    type: research
+    affects: [state-management]
+
+  - question: "Are WebSocket auth close codes documented on the backend?"
+    context: "WS_AUTH_CLOSE_CODES is referenced but the actual Set values were not in the visible range of useOperationalMapData.ts."
+    type: nice_to_know
+    affects: [websocket]
+
+gaps:
+  - area: "Cross-tab session sync"
+    description: "No listener for window 'storage' events. Logout/login in one tab is invisible to other tabs until a request fails."
+    impact: nice_to_know
+    affects: [state-management, auth]
+
+  - area: "No URL-based routing"
+    description: "String-based activeView state means no browser back/forward, no deep links, no shareable URLs. Refresh always returns to the home view."
+    impact: nice_to_know
+    affects: [state-management, UX]
+
+  - area: "No standardized error display component"
+    description: "Error display varies per dashboard — some use inline text, some use styled banners. No reusable ErrorAlert/Toast component."
+    impact: nice_to_know
+    affects: [error-handling, consistency]
+
+  - area: "Single globalError string"
+    description: "Only one global error can be shown at a time. Rapid errors overwrite each other. No queuing or stacking."
+    impact: nice_to_know
+    affects: [error-handling]
+
+  - area: "Token in localStorage (XSS risk)"
+    description: "Access token stored in localStorage is accessible to any XSS payload. HttpOnly cookies would be more secure but require backend changes."
+    impact: nice_to_know
+    affects: [security]

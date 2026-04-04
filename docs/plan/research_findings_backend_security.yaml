@@ -1,0 +1,437 @@
+plan_id: backend-security-assessment
+objective: "Assess Rust/Axum backend for security posture, configuration handling, and deployment readiness"
+focus_area: backend-security-config-deployment
+created_at: "2026-04-04"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Authentication is well-implemented: bcrypt password hashing, JWT access+refresh token pair with rotation, account lockout, audit logging of auth events.
+  - RBAC is enforced per-route via Axum middleware with a permissions model covering four roles (guard, supervisor, admin, superadmin).
+  - Error handling properly masks internal details (DatabaseError/InternalServerError return generic messages to clients, internal details logged via tracing).
+  - docker-compose.yml contains a hardcoded insecure ADMIN_CODE default ("122601") and postgres/postgres credentials — dev-only but a risk if misused.
+  - The WebSocket endpoint `/api/tracking/ws` has NO authentication middleware — CRITICAL finding.
+  - All SQL uses parameterized queries via sqlx `.bind()` — no SQL injection vectors found.
+  - Rate limiting uses in-memory HashMap — state is lost on restart and not shared across instances; not suitable for horizontal scaling.
+
+research_metadata:
+  methodology: "Hybrid retrieval: semantic_search + grep_search, targeted file reads across all handler/middleware/config/deployment files"
+  scope: "Full backend codebase: src/, migrations/, Dockerfile, docker-compose.yml, railway.json, Cargo.toml"
+  confidence: high
+  coverage: 92
+  decision_blockers: 1
+  research_blockers: 0
+
+# ============================================================================
+# SECURITY FINDINGS
+# ============================================================================
+
+findings:
+
+  # --------------------------------------------------------------------------
+  # CRITICAL
+  # --------------------------------------------------------------------------
+
+  - id: SEC-001
+    severity: CRITICAL
+    category: "Authentication Bypass"
+    title: "WebSocket endpoint has no authentication middleware"
+    description: |
+      The route `/api/tracking/ws` is registered as a plain GET handler without any
+      authorization middleware layer. All other tracking routes use
+      `require_tracking_access`, but the WebSocket upgrade endpoint is unprotected.
+      An unauthenticated client can connect and potentially receive real-time
+      location data for guards and vehicles.
+    location:
+      file: DasiaAIO-Backend/src/main.rs
+      line: 1435
+      snippet: '.route("/api/tracking/ws", get(handlers::tracking::tracking_ws))'
+    recommendation: |
+      Add `.route_layer(axum_middleware::from_fn(middleware::authz::require_tracking_access))`
+      or implement token-based auth within the WebSocket handler itself (query param or
+      first message auth handshake).
+
+  # --------------------------------------------------------------------------
+  # HIGH
+  # --------------------------------------------------------------------------
+
+  - id: SEC-002
+    severity: HIGH
+    category: "Secrets Management"
+    title: "docker-compose.yml contains hardcoded insecure default credentials"
+    description: |
+      The docker-compose.yml exposes:
+      - ADMIN_CODE: 122601  (the known insecure default)
+      - POSTGRES_USER: postgres / POSTGRES_PASSWORD: postgres
+      - RESEND_API_KEY: dev-key-for-local-testing
+      While intended for local dev, this file is committed to the repo. If anyone
+      deploys with these defaults, the system is immediately compromised.
+      The runtime config.rs does reject ADMIN_CODE=122601, but the default postgres
+      credentials have no such guard.
+    location:
+      file: DasiaAIO-Backend/docker-compose.yml
+      lines: 4-6, 28
+    recommendation: |
+      Replace hardcoded values with `${VARIABLE}` references and document required
+      env vars. Add a `.env.example` file. For ADMIN_CODE, the existing runtime
+      rejection is good — extend similar validation to DATABASE_URL credentials.
+
+  - id: SEC-003
+    severity: HIGH
+    category: "Rate Limiting"
+    title: "Rate limiter state is in-memory only — lost on restart, not shared across instances"
+    description: |
+      RateLimiter uses `Arc<Mutex<HashMap<String, VecDeque<Instant>>>>`. This means:
+      1. All rate limit state is lost when the server restarts.
+      2. If horizontally scaled (multiple instances), each instance has independent
+         state, effectively multiplying the allowed rate by the instance count.
+      3. The HashMap grows unboundedly — no eviction of expired buckets.
+    location:
+      file: DasiaAIO-Backend/src/middleware/rate_limit.rs
+      lines: 1-30
+    recommendation: |
+      For production multi-instance deployment, move rate limiting to Redis or a
+      similar shared store. For single-instance deployment, add periodic cleanup
+      of expired bucket entries to prevent unbounded memory growth.
+
+  - id: SEC-004
+    severity: HIGH
+    category: "Access Control"
+    title: "JWT access and refresh tokens share the same signing secret"
+    description: |
+      Both `generate_access_token()` and `generate_refresh_token()` use the same
+      `JWT_SECRET`. The refresh token includes a `token_type: "refresh"` field and
+      `verify_refresh_token()` checks for it, but `verify_token()` (used by authz
+      middleware) does NOT reject tokens with `token_type: "refresh"`. This means
+      a refresh token could potentially be used as an access token if it happens to
+      deserialize into TokenClaims (the `token_type` and `jti` fields would be
+      silently ignored by serde's default behavior).
+    location:
+      file: DasiaAIO-Backend/src/utils.rs
+      lines: 51-145
+    recommendation: |
+      Either use separate signing secrets for access and refresh tokens, or add
+      explicit validation in `verify_token()` to reject tokens that contain a
+      `token_type` field (indicating they are refresh tokens).
+
+  # --------------------------------------------------------------------------
+  # MEDIUM
+  # --------------------------------------------------------------------------
+
+  - id: SEC-005
+    severity: MEDIUM
+    category: "Configuration"
+    title: "Gmail credentials fallback to dummy values in non-production"
+    description: |
+      Config falls back to `gmail_user: "no-reply@example.com"` and
+      `gmail_password: "dummy-password"` when env vars are not set. The gmail_password
+      field exists in the Config struct but GMAIL_PASSWORD appears to be a legacy
+      credential field (the actual email sending uses RESEND_API_KEY). The presence
+      of gmail_password in config is misleading and could lead to accidental credential
+      exposure if logging or serialization is added.
+    location:
+      file: DasiaAIO-Backend/src/config.rs
+      lines: 120-121
+    recommendation: |
+      Remove gmail_password from Config if RESEND_API_KEY is the active email
+      transport. If Gmail SMTP is still needed, require the env var explicitly
+      or fail startup.
+
+  - id: SEC-006
+    severity: MEDIUM
+    category: "Deployment"
+    title: "Health check endpoints are unauthenticated and expose internal state"
+    description: |
+      `/api/health` and `/api/health/system` have no auth middleware.
+      They expose: database status, uptime seconds, active WebSocket connection count,
+      and timestamp. While health endpoints are typically public, the system health
+      endpoint may leak operational details useful for reconnaissance.
+    location:
+      file: DasiaAIO-Backend/src/main.rs
+      lines: 1567-1569
+      file2: DasiaAIO-Backend/src/handlers/health.rs
+      lines: 29-50
+    recommendation: |
+      Keep `/api/health` public but minimal (just "ok"/"degraded").
+      Restrict `/api/health/system` to authenticated superadmin users.
+
+  - id: SEC-007
+    severity: MEDIUM
+    category: "Database"
+    title: "Migrations run inline at startup via code-based ALTER TABLE statements"
+    description: |
+      Database migrations are implemented as sequential `ALTER TABLE ... ADD COLUMN IF
+      NOT EXISTS` statements executed in `db::run_migrations()`. There is no migration
+      versioning, no rollback support, and no tracking of which migrations have been
+      applied. The SQL migration files in `migrations/` directory appear to be separate
+      manual scripts, not integrated into the startup migration flow.
+    location:
+      file: DasiaAIO-Backend/src/db.rs
+      lines: 51-200+
+      directory: DasiaAIO-Backend/migrations/
+    recommendation: |
+      Adopt sqlx-cli migrations (`sqlx migrate run`) for versioned, tracked,
+      reversible migrations. Move all schema changes from db.rs into numbered
+      migration files.
+
+  - id: SEC-008
+    severity: MEDIUM
+    category: "Input Validation"
+    title: "Registration restricted to @gmail.com addresses only"
+    description: |
+      `validate_gmail()` enforces that all registration emails must end with
+      `@gmail.com`. While this may be a business requirement, it prevents use of
+      organizational email addresses and limits future scalability.
+    location:
+      file: DasiaAIO-Backend/src/utils.rs
+      lines: 392-398
+    recommendation: |
+      If this is intentional (guards must use personal Gmail), document it clearly.
+      Otherwise, consider accepting any valid email domain.
+
+  - id: SEC-009
+    severity: MEDIUM
+    category: "Security Headers"
+    title: "CSP is configurable via environment variable without validation"
+    description: |
+      The SECURITY_CSP env var allows overriding Content-Security-Policy. A
+      misconfigured CSP (e.g., `default-src *`) would weaken browser-side protections.
+      The default CSP is very restrictive (`default-src 'none'`) which is good for
+      an API-only backend.
+    location:
+      file: DasiaAIO-Backend/src/middleware/security_headers.rs
+      lines: 13-22
+    recommendation: |
+      Add validation for the CSP value or at minimum log a warning if the configured
+      policy is more permissive than the default.
+
+  # --------------------------------------------------------------------------
+  # LOW
+  # --------------------------------------------------------------------------
+
+  - id: SEC-010
+    severity: LOW
+    category: "Code Quality"
+    title: "Single .unwrap() in production code path (regex compilation)"
+    description: |
+      `validate_email()` uses `Regex::new(...).unwrap()`. This is technically safe
+      because the regex is a compile-time constant and will always succeed, but it
+      is the only `.unwrap()` in the entire handler/utils codebase. Regex compilation
+      on every call is also unnecessary overhead.
+    location:
+      file: DasiaAIO-Backend/src/utils.rs
+      line: 397
+    recommendation: |
+      Use `lazy_static!` or `std::sync::OnceLock` to compile the regex once.
+      This eliminates both the `.unwrap()` concern and the per-call overhead.
+
+  - id: SEC-011
+    severity: LOW
+    category: "Deployment"
+    title: "Dockerfile uses specific Rust version pinning (good practice)"
+    description: |
+      The Dockerfile pins `rust:1.93.1-bookworm` and uses multi-stage build with
+      a non-root `sentinel` user. Uses `--locked` for reproducible builds and
+      `SQLX_OFFLINE=true` for compile-time query checking. This is solid.
+    location:
+      file: DasiaAIO-Backend/Dockerfile
+    recommendation: "No action needed. Good security posture for container builds."
+
+  - id: SEC-012
+    severity: LOW
+    category: "Authentication"
+    title: "Dual auth route paths create maintenance complexity"
+    description: |
+      Both `/api/login` and `/api/auth/login` (and similar pairs for all auth
+      endpoints) point to the same handlers. This is documented as backward
+      compatibility but doubles the attack surface for any route-level security
+      misconfiguration.
+    location:
+      file: DasiaAIO-Backend/src/main.rs
+      lines: 216-320
+    recommendation: |
+      Consider deprecating one set of routes. Use HTTP redirects if backward
+      compatibility is essential.
+
+# ============================================================================
+# POSITIVE SECURITY CONTROLS (What's working well)
+# ============================================================================
+
+positive_findings:
+
+  - title: "Parameterized queries throughout"
+    description: |
+      All database queries use sqlx with `.bind()` parameters. grep for string
+      interpolation in SQL context returned zero matches. No SQL injection risk.
+    evidence: "grep for `format!(\".*SELECT` across all handlers found only error
+      message formatting, never query construction."
+
+  - title: "Password hashing with bcrypt (cost 12)"
+    description: |
+      Passwords are hashed using bcrypt with configurable cost (default 12,
+      range 10-14). The cost is read from BCRYPT_COST env var with validation.
+    location: DasiaAIO-Backend/src/utils.rs lines 370-378
+
+  - title: "Account lockout with dual-scope protection"
+    description: |
+      Login failures are tracked per-user AND per-IP. After configurable threshold
+      (default 5 attempts in 15 minutes), account is locked for 15 minutes.
+      All thresholds are configurable via env vars with sensible bounds.
+    location: DasiaAIO-Backend/src/handlers/auth.rs lines 20-50
+
+  - title: "Refresh token rotation with session tracking"
+    description: |
+      Refresh tokens use JTI (unique ID), are stored hashed in the database,
+      and old tokens are revoked atomically in a transaction when rotated.
+      Reuse of a revoked token is detected and rejected.
+    location: DasiaAIO-Backend/src/handlers/auth.rs lines 210-290
+
+  - title: "Comprehensive security headers"
+    description: |
+      X-Content-Type-Options: nosniff, X-Frame-Options: DENY,
+      Referrer-Policy: no-referrer, Content-Security-Policy: default-src 'none',
+      HSTS in production (max-age=31536000; includeSubDomains; preload).
+    location: DasiaAIO-Backend/src/middleware/security_headers.rs
+
+  - title: "Error handling masks internal details"
+    description: |
+      DatabaseError and InternalServerError return generic "Internal server error"
+      to clients while logging the real error via tracing. BadRequest, NotFound,
+      etc. return their messages directly (appropriate for client-facing errors).
+    location: DasiaAIO-Backend/src/error.rs lines 52-90
+
+  - title: "Production startup validation"
+    description: |
+      In production mode, startup fails if: JWT_SECRET is weak (<32 chars or
+      known defaults), ADMIN_CODE is the default, CORS origins are not configured.
+    location: DasiaAIO-Backend/src/config.rs lines 20-53
+
+  - title: "Audit logging for auth failures and write operations"
+    description: |
+      Two audit middleware layers: `audit_authz_failures` logs 401/403 responses,
+      `audit_write_requests` logs all POST/PUT/PATCH/DELETE operations. Both
+      capture actor, IP, user-agent, and action metadata.
+    location: DasiaAIO-Backend/src/middleware/audit.rs
+
+  - title: "Request timeout enforcement"
+    description: |
+      Global middleware enforces configurable request timeout (default 30s,
+      range 5-120s). Prevents slow-loris and long-running request abuse.
+    location: DasiaAIO-Backend/src/middleware/request_timeout.rs
+
+  - title: "1MB body size limit"
+    description: |
+      DefaultBodyLimit::max(1024 * 1024) prevents large payload attacks.
+    location: DasiaAIO-Backend/src/main.rs line 1593
+
+  - title: "Connection pooling with retry logic"
+    description: |
+      Database connection uses PgPoolOptions with configurable max connections
+      (default 10, range 1-100) and acquire timeout (default 30s). Connection
+      retries up to 10 times with 5-second delays.
+    location: DasiaAIO-Backend/src/db.rs lines 4-45
+
+  - title: "Legal consent enforcement"
+    description: |
+      Authorization middleware enforces that users have accepted legal consent
+      before accessing any API endpoint (except logout and consent endpoints).
+    location: DasiaAIO-Backend/src/middleware/authz.rs lines 12-22
+
+  - title: "Anti-enumeration on resend-code"
+    description: |
+      The resend verification code endpoint returns a generic success message
+      regardless of whether the account exists, preventing account enumeration.
+    location: DasiaAIO-Backend/src/handlers/auth.rs lines 567-570
+
+  - title: "CORS properly scoped"
+    description: |
+      CORS is configured with explicit origin allow-lists. In production,
+      CORS_ORIGINS must be set. Native app origins (capacitor://, tauri://)
+      are always included. Local dev origins only added in non-production.
+    location: DasiaAIO-Backend/src/main.rs lines 75-212
+
+  - title: "Non-root container user"
+    description: |
+      Dockerfile creates a dedicated `sentinel` user/group and runs the
+      server binary as that user. No root execution in the container.
+    location: DasiaAIO-Backend/Dockerfile lines 20-26
+
+# ============================================================================
+# ARCHITECTURE SUMMARY
+# ============================================================================
+
+architecture:
+  auth_flow: |
+    1. Registration: guard self-registers → email verification → admin approval → login enabled
+    2. Login: identifier (email/username/phone) + password → bcrypt verify → JWT access + refresh tokens
+    3. Token refresh: refresh token rotation with JTI tracking, old token revoked in transaction
+    4. Authorization: per-route middleware extracts JWT, checks role permissions, enforces legal consent
+    5. Account lockout: per-user + per-IP lockout after N failures within configurable window
+
+  middleware_stack_order: |
+    (outermost → innermost):
+    1. CORS layer
+    2. Security headers
+    3. Body size limit (1MB)
+    4. Presence (touch_last_seen)
+    5. Audit authz failures
+    6. Trace layer
+    7. Request timeout
+    8. API rate limit
+    9. Per-route: auth rate limit / authz middleware / audit write requests
+
+  rate_limit_tiers:
+    auth: "10 req/60s (default, per IP+user, auth endpoints only)"
+    api: "240 req/60s (default, global API tier)"
+    expensive: "30 req/60s (default, AI/predictive endpoints)"
+
+  roles:
+    superadmin: "All permissions (17 total)"
+    admin: "All permissions (17 total, identical to superadmin)"
+    supervisor: "15 permissions (no create_user, no delete_user)"
+    guard: "3 permissions (create_support_ticket, manage_notifications, view_merit)"
+
+# ============================================================================
+# OPEN QUESTIONS
+# ============================================================================
+
+open_questions:
+  - question: "Is the WebSocket endpoint intentionally unauthenticated?"
+    context: "Every other tracking endpoint has require_tracking_access but /api/tracking/ws does not"
+    type: decision_blocker
+    affects: ["tracking-feature", "security-posture"]
+
+  - question: "Are the SQL migration files in migrations/ ever executed automatically?"
+    context: "db.rs has inline migrations; the migrations/ folder has separate .sql files with no runner"
+    type: research
+    affects: ["database-management"]
+
+  - question: "Is admin and superadmin having identical permissions intentional?"
+    context: "Both roles return the exact same 17-permission array in role_permissions()"
+    type: nice_to_know
+    affects: ["rbac-design"]
+
+# ============================================================================
+# GAPS
+# ============================================================================
+
+gaps:
+  - area: "CSRF Protection"
+    description: "No CSRF tokens or double-submit cookies. Relies solely on Bearer token auth which is CSRF-immune for API-only backends, but the dual-route structure and cookie handling should be verified."
+    impact: nice_to_know
+    affects: ["security-posture"]
+
+  - area: "Password reset code brute-force"
+    description: "Password reset uses 8-digit numeric codes. The auth rate limiter protects the endpoint, but a determined attacker with distributed IPs could attempt brute force within the 10-minute expiry window. A shorter code window or CAPTCHA would help."
+    impact: research_blocker
+    affects: ["auth-security"]
+
+  - area: "No automated security testing"
+    description: "No SAST/DAST integration found in the repo. No cargo-audit or cargo-deny in CI."
+    impact: nice_to_know
+    affects: ["ci-cd-security"]
+
+  - area: "Horizontal scaling readiness"
+    description: "In-memory rate limiting and no shared session state mean the backend cannot be horizontally scaled without architecture changes."
+    impact: research_blocker
+    affects: ["deployment-scaling"]

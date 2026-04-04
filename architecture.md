@@ -515,14 +515,15 @@
 ### CI/CD Release Workflow
 - Workflow file: `.github/workflows/release.yml`
 - Trigger modes:
-  - Manual: `workflow_dispatch` with `release_version` and optional `api_base_url`
+  - Manual: `workflow_dispatch` with required `release_version` and `api_base_url` inputs (`api_base_url` defaults to the production backend URL)
   - Tagged release: push tag matching `v*`
 - Pipeline jobs:
   - `prepare`: resolves semantic release metadata and generates release notes from `CHANGELOG.md`
+  - `quality-gate`: runs frontend and backend tests before artifact builds
   - `web`: builds `app-dist` and packages a tarball artifact
   - `desktop`: builds MSI/NSIS installers through Tauri
   - `android`: builds signed APK and AAB artifacts only
-  - `publish`: attaches release assets to GitHub Releases for tag-driven runs
+  - `publish`: attaches release assets to GitHub Releases for tag-driven runs only
 
 ### Desktop Packaging Pipeline
 - Build runner: `windows-latest`
@@ -558,9 +559,13 @@
 - `scripts/generate-release-notes.js` generates release notes and a short `What's New` summary for clients
 
 ### Runtime and Action Notes
-- Workflow build runtime uses Node.js 24 via `actions/setup-node`.
+- Workflow build runtime uses Node.js 22 via `actions/setup-node`.
 - Release builds inject one shared backend base URL through `VITE_API_BASE_URL` for web, desktop, and Android outputs.
 - Frontend release scripts enforce production safety checks (`DasiaAIO-Frontend/scripts/ensure-production-env.mjs`) before packaging.
+
+### Verified Release Outcome
+- Live manual run `23929317544` completed `prepare`, `quality-gate`, `web`, `desktop`, and `android` successfully.
+- The Android path materialized signing material, produced signed APK and AAB outputs, and confirmed that publish remains tag-gated rather than dispatch-driven.
 
 ### Distribution Surface
 - Successful tag builds publish install artifacts directly to GitHub Releases for the matching tag.

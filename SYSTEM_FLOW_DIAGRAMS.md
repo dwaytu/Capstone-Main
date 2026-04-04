@@ -1,6 +1,6 @@
 # SYSTEM FLOW DIAGRAMS
 
-Updated: 2026-03-29
+Updated: 2026-04-03
 
 ## 1. Authentication, Approval, and Legal Consent Flow
 
@@ -62,25 +62,29 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[Tag push v* or workflow_dispatch] --> B[prepare job]
-    B --> C[release-version + sync-release-version]
-    C --> D[generate-release-notes]
+    B --> C[quality-gate job]
+    C --> D[web job]
+    C --> E[desktop job]
+    C --> F[android job]
 
-    B --> E[web job]
-    B --> F[desktop job]
-    B --> G[android job]
+    F --> G[Materialize keystore from Actions secrets]
+    G --> H[:app:assembleDebug preflight]
+    H --> I[:app:assembleRelease + :app:bundleRelease]
 
-    E --> H[sentinel-web-vX.Y.Z.tar.gz]
-    F --> I[sentinel-desktop-windows-vX.Y.Z msi/exe]
-    G --> J[sentinel-android-vX.Y.Z apk/aab]
+    D --> J[sentinel-web-vX.Y.Z.tar.gz]
+    E --> K[sentinel-desktop-windows-vX.Y.Z msi/exe]
+    I --> L[sentinel-android-vX.Y.Z apk/aab]
 
-    H --> K[publish job]
-    I --> K
-    J --> K
-    K --> L[GitHub Release assets]
+    J --> M{Tag-triggered run?}
+    K --> M
+    L --> M
+    M -- Yes --> N[publish job -> GitHub Release assets]
+    M -- No --> O[Artifact validation only; publish skipped]
 ```
 
 ## 5. Validation Signals for These Flows
 
 - Frontend tests/build pass (`npm test`, `npm run build` in `DasiaAIO-Frontend`).
 - Backend tests/runtime pass (`cargo test`, `docker compose up -d`, `/api/health`).
-- Release flow requires a live GitHub Actions run to validate repository secret availability.
+- Live manual GitHub Actions run `23929317544` completed `prepare`, `quality-gate`, `web`, `desktop`, and `android` successfully.
+- Android validation in that run included keystore materialization plus signed APK/AAB artifact generation; publish remained skipped because the run was not tag-driven.

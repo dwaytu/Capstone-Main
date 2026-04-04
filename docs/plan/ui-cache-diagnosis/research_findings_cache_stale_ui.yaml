@@ -1,0 +1,467 @@
+plan_id: ui-cache-diagnosis
+objective: "Identify all caching layers that could cause VSCode Simple Browser to show stale UI content during development"
+focus_area: "Service Worker / PWA Cache / Vite HMR / Build Artifacts / CSS Build Cache"
+created_at: "2026-04-04"
+created_by: "gem-researcher"
+status: completed
+
+tldr: |
+  - ROOT CAUSE (HIGH confidence): A fully functional service worker at `public/sw.js` implements cache-first fetch strategy for ALL GET requests (except /api/). It caches `/`, `/index.html`, and then dynamically caches every subsequent GET response. Even though `disableServiceWorkerInDevelopment()` is called in `main.tsx`, it can only run AFTER the SW has already intercepted the page load. Once the SW is installed in a browser context, it serves stale `/index.html` and stale JS modules from CacheStorage before the cleanup code ever executes.
+  - SECONDARY CAUSE (MEDIUM confidence): `app-dist/` contains stale production build artifacts including an old `sw.js` copy. If the Vite dev server ever fell back to serving from this directory, or if the browser previously loaded from a production build at the same origin, the old SW could still be active.
+  - NO ISSUES FOUND: Vite config has clean HMR setup, no PWA plugin, no custom cache headers. Tailwind v4 PostCSS has no build cache. `index.html` has no cache-control meta tags.
+  - VSCode Simple Browser does not expose DevTools, making it impossible for users to manually clear CacheStorage/unregister SWs — the cleanup must be fully automated and race-free.
+
+research_metadata:
+  methodology: "Hybrid retrieval: semantic_search + grep_search for SW/cache patterns; read_file for full source examination of sw.js, pushNotifications.ts, vite.config.ts, index.html, postcss.config.js, tailwind.config.ts, main.tsx; directory listing of public/ and app-dist/"
+  scope: "All frontend source files, public assets, build output, and configuration files related to caching, service workers, and HMR"
+  confidence: high
+  coverage: 95
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: sw.js
+    path: DasiaAIO-Frontend/public/sw.js
+    purpose: "Service worker providing push notifications, offline caching, and background sync"
+    key_elements:
+      - element: CACHE_NAME
+        type: variable
+        location: "sw.js:4"
+        description: "Cache name 'sentinel-v1' — static, never changes. Old caches are only evicted by name mismatch, not by content hash."
+      - element: STATIC_ASSETS
+        type: variable
+        location: "sw.js:5"
+        description: "Pre-cached assets: ['/', '/index.html', '/logo/sentinel-192.png', '/logo/sentinel-96.png']. These are cached on SW install."
+      - element: "install event"
+        type: pattern
+        location: "sw.js:61-63"
+        description: "Calls cache.addAll(STATIC_ASSETS) then skipWaiting(). Pre-caches index.html and root path on first install."
+      - element: "activate event"
+        type: pattern
+        location: "sw.js:66-73"
+        description: "Deletes old caches with different names, then calls clients.claim(). This means the SW takes control immediately."
+      - element: "fetch event handler"
+        type: pattern
+        location: "sw.js:76-89"
+        description: "CRITICAL: Cache-first strategy for ALL non-API GET requests. Returns cached response if found; only fetches from network on cache miss. Dynamically caches all fetched responses (JS modules, CSS, etc)."
+    language: javascript
+    lines: 163
+
+  - file: pushNotifications.ts
+    path: DasiaAIO-Frontend/src/utils/pushNotifications.ts
+    purpose: "SW registration/unregistration and push notification subscription utilities"
+    key_elements:
+      - element: disableServiceWorkerInDevelopment
+        type: function
+        location: "pushNotifications.ts:21-37"
+        description: "In dev mode: unregisters all SWs and deletes all caches. Called from main.tsx on startup."
+      - element: registerServiceWorker
+        type: function
+        location: "pushNotifications.ts:49-57"
+        description: "Only registers SW when NOT in dev mode (import.meta.env.DEV check). Guards against dev-mode registration."
+      - element: isDevelopmentRuntime
+        type: function
+        location: "pushNotifications.ts:17-19"
+        description: "Returns import.meta.env.DEV — Vite compile-time constant."
+    language: typescript
+    lines: 120
+
+  - file: main.tsx
+    path: DasiaAIO-Frontend/src/main.tsx
+    purpose: "Application entry point — renders React root"
+    key_elements:
+      - element: "disableServiceWorkerInDevelopment call"
+        type: pattern
+        location: "main.tsx:11"
+        description: "Called with void (fire-and-forget). Executes async SW cleanup but does NOT await completion before React renders."
+    language: typescript
+    lines: 16
+
+  - file: vite.config.ts
+    path: DasiaAIO-Frontend/vite.config.ts
+    purpose: "Vite build and dev server configuration"
+    key_elements:
+      - element: "server.hmr config"
+        type: pattern
+        location: "vite.config.ts:28-33"
+        description: "HMR configured with ws protocol, localhost host, and matching clientPort. Standard setup."
+      - element: "build.outDir"
+        type: pattern
+        location: "vite.config.ts:9"
+        description: "Output to 'app-dist/' with emptyOutDir:true"
+      - element: plugins
+        type: pattern
+        location: "vite.config.ts:7"
+        description: "Only @vitejs/plugin-react — no PWA plugin, no SW plugin, no cache plugin."
+    language: typescript
+    lines: 35
+
+  - file: index.html
+    path: DasiaAIO-Frontend/index.html
+    purpose: "HTML entry point for Vite dev server"
+    key_elements:
+      - element: "head content"
+        type: pattern
+        location: "index.html:3-8"
+        description: "No cache-control meta tags, no manifest link, no SW registration script. Clean."
+    language: html
+    lines: 13
+
+  - file: postcss.config.js
+    path: DasiaAIO-Frontend/postcss.config.js
+    purpose: "PostCSS configuration for Tailwind CSS v4"
+    key_elements:
+      - element: plugins
+        type: pattern
+        location: "postcss.config.js:2-4"
+        description: "Only @tailwindcss/postcss plugin. No caching plugins."
+    language: javascript
+    lines: 5
+
+  - file: tailwind.config.ts
+    path: DasiaAIO-Frontend/tailwind.config.ts
+    purpose: "Tailwind CSS configuration with semantic color tokens"
+    key_elements:
+      - element: content
+        type: pattern
+        location: "tailwind.config.ts:5-8"
+        description: "Standard content scanning — no cache configuration."
+    language: typescript
+    lines: 80
+
+  - file: app-dist/sw.js
+    path: DasiaAIO-Frontend/app-dist/sw.js
+    purpose: "STALE production copy of sw.js in build output directory"
+    key_elements:
+      - element: "identical sw.js copy"
+        type: pattern
+        location: "app-dist/sw.js:1-30"
+        description: "Full copy of sw.js in build output. If served, would install the caching SW."
+    language: javascript
+    lines: 163
+
+  - file: app-dist/index.html
+    path: DasiaAIO-Frontend/app-dist/index.html
+    purpose: "Production build HTML with hashed asset references"
+    key_elements:
+      - element: "hashed JS/CSS references"
+        type: pattern
+        location: "app-dist/index.html:8-12"
+        description: "References hashed assets (index-DUOYvQvS.js, index-zX3qkYuW.css) — stale from previous build."
+    language: html
+    lines: 15
+
+patterns_found:
+  - category: architecture
+    pattern: "Service Worker with cache-first fetch strategy"
+    description: "sw.js implements a cache-first pattern for all non-API GET requests. Once installed, the SW will serve cached responses for /, /index.html, and any dynamically cached assets (JS modules, CSS) before checking the network. This is the textbook cause of stale UI in browsers."
+    examples:
+      - file: sw.js
+        location: "sw.js:76-89"
+        snippet: |
+          self.addEventListener('fetch', (event) => {
+            const { request } = event;
+            const url = new URL(request.url);
+            if (request.method !== 'GET') return;
+            if (url.pathname.startsWith('/api/')) return;
+            event.respondWith(
+              caches.match(request).then((cached) => {
+                if (cached) return cached;
+                return fetch(request).then((response) => {
+                  if (response.ok && response.type !== 'opaque') {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                  }
+                  return response;
+                });
+              }),
+            );
+          });
+    prevalence: common
+
+  - category: architecture
+    pattern: "Race condition in SW cleanup at startup"
+    description: "disableServiceWorkerInDevelopment() is called as fire-and-forget (void) in main.tsx. The SW fetch handler can intercept the initial page load and serve cached index.html BEFORE the cleanup function unregisters the SW. The cleanup only takes effect on subsequent navigations."
+    examples:
+      - file: main.tsx
+        location: "main.tsx:11"
+        snippet: "void disableServiceWorkerInDevelopment()"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Stale build artifacts in app-dist/"
+    description: "app-dist/ contains a full production build including sw.js. While Vite's dev server serves from src/, the presence of this directory could cause confusion if any tool or browser loads from it."
+    examples:
+      - file: app-dist/sw.js
+        location: "app-dist/sw.js:1"
+        snippet: "// Service worker: push notifications + offline caching + action queue"
+    prevalence: occasional
+
+  - category: structure
+    pattern: "Dev-mode SW guard is compile-time only"
+    description: "registerServiceWorker() checks import.meta.env.DEV and returns null in dev. This prevents NEW registrations but does NOT handle a previously-registered SW that is already active."
+    examples:
+      - file: pushNotifications.ts
+        location: "pushNotifications.ts:49-53"
+        snippet: |
+          export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+            if (!('serviceWorker' in navigator)) return null
+            if (isDevelopmentRuntime()) return null
+          }
+    prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: "Service Worker (sw.js)"
+      responsibility: "Push notifications, offline caching, background sync"
+      location: "DasiaAIO-Frontend/public/sw.js"
+      relationship_to_domain: "Primary cache layer — intercepts ALL GET requests with cache-first strategy"
+    - component: "pushNotifications.ts"
+      responsibility: "SW lifecycle management (register/unregister)"
+      location: "DasiaAIO-Frontend/src/utils/pushNotifications.ts"
+      relationship_to_domain: "Contains the dev-mode cleanup logic"
+    - component: "main.tsx"
+      responsibility: "App entry point — calls SW cleanup"
+      location: "DasiaAIO-Frontend/src/main.tsx"
+      relationship_to_domain: "Invokes disableServiceWorkerInDevelopment() as fire-and-forget"
+    - component: "Vite Dev Server"
+      responsibility: "Development server with HMR"
+      location: "DasiaAIO-Frontend/vite.config.ts"
+      relationship_to_domain: "Serves fresh modules, but SW can intercept before they reach the browser"
+  data_flow_involving_domain: |
+    Browser navigates to localhost:5173 →
+    IF active SW exists: SW fetch handler intercepts request →
+      Cache hit? → Returns STALE cached response (index.html, JS modules) →
+      Cache miss? → Network fetch → caches response → returns to browser
+    IF no active SW: Request goes directly to Vite dev server → fresh response with HMR
+    
+    On page load: main.tsx runs → disableServiceWorkerInDevelopment() fires async →
+      Unregisters all SWs → Deletes all CacheStorage entries →
+      BUT: This runs AFTER the SW already served the stale page
+
+related_technology_stack:
+  languages_used_in_domain:
+    - TypeScript
+    - JavaScript (sw.js — cannot be TS, runs in SW context)
+  frameworks_used_in_domain:
+    - name: Vite 7.3.1
+      usage_in_domain: "Dev server with HMR, serves from source. No PWA/SW plugins."
+    - name: React 18
+      usage_in_domain: "Renders after SW cleanup is initiated but not necessarily completed"
+  libraries_used_in_domain:
+    - name: "@tailwindcss/postcss"
+      purpose_in_domain: "CSS processing — no caching implications"
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: "SW scope covers entire origin"
+      location: "pushNotifications.ts:53 — register(SW_PATH, { scope: '/' })"
+      concern: "SW with scope '/' intercepts ALL navigation and resource requests. In dev mode, this can cause stale auth tokens/user data to be served from cache."
+    - area: "Dynamic cache population"
+      location: "sw.js:84-86"
+      concern: "Every successful GET response is cached. This means API responses (if they weren't excluded) and application state could be cached. Currently API is excluded, but any non-API GET (e.g., user avatar URLs) gets cached."
+
+# ============================================================================
+# FINDINGS — Structured Diagnosis Report
+# ============================================================================
+
+findings:
+  - id: F1
+    title: "Service Worker with cache-first strategy is the primary cause"
+    severity: critical
+    confidence: high
+    could_cause_stale_ui: true
+    location: "DasiaAIO-Frontend/public/sw.js:76-89"
+    description: |
+      The sw.js file implements a cache-first fetch strategy for ALL non-API GET requests.
+      On install, it pre-caches '/', '/index.html', and logo assets.
+      On every subsequent fetch, it dynamically caches the response (JS modules, CSS, etc).
+      
+      Once this SW is installed in a browser context (including VSCode Simple Browser),
+      it will serve the CACHED version of index.html and all JS/CSS modules, completely
+      bypassing the Vite dev server's HMR-enabled responses.
+      
+      The cache name is 'sentinel-v1' which NEVER changes, so the cache is never
+      automatically invalidated — it will serve stale content indefinitely.
+    evidence:
+      - "sw.js line 4: const CACHE_NAME = 'sentinel-v1' (static, no content hash)"
+      - "sw.js line 78-79: cache-first pattern — returns cached response immediately if found"
+      - "sw.js line 82-86: dynamically caches ALL successful GET responses"
+      - "sw.js line 61-63: install event pre-caches index.html"
+      - "sw.js line 71: activate calls clients.claim() — takes control immediately"
+    recommended_fix: |
+      Option A (Recommended): Add network-first strategy for dev assets:
+        In sw.js, skip caching for requests to localhost or for module URLs (*.tsx, *.ts, *.jsx, @vite/*, etc.)
+      
+      Option B: Change CACHE_NAME to include a hash or version that changes with each build.
+      
+      Option C (Already partially implemented): The disableServiceWorkerInDevelopment() function
+        already exists but has a race condition (see F2). Fix the race condition.
+
+  - id: F2
+    title: "Race condition: SW cleanup runs AFTER SW serves stale page"
+    severity: high
+    confidence: high
+    could_cause_stale_ui: true
+    location: "DasiaAIO-Frontend/src/main.tsx:11"
+    description: |
+      main.tsx calls `void disableServiceWorkerInDevelopment()` — fire-and-forget.
+      The problem is temporal ordering:
+      
+      1. Browser requests localhost:5173/ 
+      2. Active SW intercepts → serves cached index.html (STALE)
+      3. Cached index.html loads cached main.tsx bundle (STALE)
+      4. main.tsx finally executes → calls disableServiceWorkerInDevelopment()
+      5. SW is unregistered, caches are cleared
+      6. But the page is ALREADY rendered with stale content
+      7. User must manually refresh to see updated content
+      
+      In VSCode Simple Browser, there's no easy way to force-refresh or clear
+      the SW cache, so the stale content persists until the SW cleanup completes
+      AND the page is reloaded.
+    evidence:
+      - "main.tsx line 11: void disableServiceWorkerInDevelopment() — not awaited"
+      - "pushNotifications.ts line 21-37: the cleanup is async, unregisters all SWs and deletes all caches"
+      - "But SW fetch handler at sw.js:76-89 runs BEFORE any application JS executes"
+    recommended_fix: |
+      The core issue is that the SW fetch handler intercepts the initial navigation
+      request before any application code can run. Solutions:
+      
+      1. Add a self-destruct mechanism in sw.js itself: In the fetch handler, check
+         if the request is for localhost (or check a flag), and if so, skip caching
+         and pass through to network.
+      
+      2. In sw.js, add a message listener that the app can use to force-skip cache:
+         self.addEventListener('message', (event) => {
+           if (event.data === 'skipCache') { /* unregister self */ }
+         })
+      
+      3. Add dev-detection to sw.js itself:
+         if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+           // Don't cache anything, just pass through
+         }
+
+  - id: F3
+    title: "Stale sw.js copy in app-dist/ build output"
+    severity: low
+    confidence: medium
+    could_cause_stale_ui: true
+    location: "DasiaAIO-Frontend/app-dist/sw.js"
+    description: |
+      The app-dist/ directory contains a full production build including sw.js.
+      While Vite's dev server does NOT serve from app-dist/, there are scenarios
+      where this could cause issues:
+      
+      1. If the user previously ran `npm run preview` (which serves from app-dist/),
+         the SW would have been installed from that build.
+      2. That SW would then persist in the browser and intercept subsequent dev
+         server requests at the same origin+port.
+      3. The stale hashed assets in app-dist/ (e.g., index-DUOYvQvS.js) would
+         NOT match the Vite dev server's module URLs, potentially causing errors.
+    evidence:
+      - "app-dist/sw.js exists with identical caching logic"
+      - "app-dist/index.html references hashed assets: /assets/index-DUOYvQvS.js"
+      - "Dev server uses unhashed module paths: /src/main.tsx"
+    recommended_fix: |
+      Clean app-dist/ before running dev server, or ensure preview and dev
+      servers run on different ports (they already do: 4173 vs 5173).
+      Consider adding `rm -rf app-dist` to the dev script.
+
+  - id: F4
+    title: "No cache-control meta tags in index.html (NOT a problem)"
+    severity: none
+    confidence: high
+    could_cause_stale_ui: false
+    location: "DasiaAIO-Frontend/index.html"
+    description: |
+      index.html has no <meta> cache-control directives and no manifest.json link.
+      This is correct for development — Vite's dev server sets appropriate no-cache
+      headers. The ABSENCE of cache-control metas is NOT contributing to the problem.
+    evidence:
+      - "index.html contains only charset, viewport, title, favicon, and root div"
+    recommended_fix: null
+
+  - id: F5
+    title: "Vite config has clean HMR setup (NOT a problem)"
+    severity: none
+    confidence: high
+    could_cause_stale_ui: false
+    location: "DasiaAIO-Frontend/vite.config.ts"
+    description: |
+      Vite config has standard HMR configuration with ws protocol, localhost host,
+      and matching clientPort. No PWA plugin, no cache plugin, no custom response
+      headers. The HMR setup is correct and not contributing to stale UI.
+    evidence:
+      - "vite.config.ts:28-33: standard HMR config"
+      - "plugins: [react()] — only React plugin, no PWA/cache plugins"
+    recommended_fix: null
+
+  - id: F6
+    title: "Tailwind CSS v4 / PostCSS has no build cache issue"
+    severity: none
+    confidence: high
+    could_cause_stale_ui: false
+    location: "DasiaAIO-Frontend/postcss.config.js"
+    description: |
+      PostCSS config uses only @tailwindcss/postcss plugin with no caching
+      configuration. Tailwind v4 processes CSS on each request through Vite's
+      transform pipeline, which does not persist cache across dev server restarts.
+    evidence:
+      - "postcss.config.js has only @tailwindcss/postcss plugin"
+      - "No caching plugins or cache directory configuration"
+    recommended_fix: null
+
+  - id: F7
+    title: "VSCode Simple Browser lacks SW management capabilities"
+    severity: medium
+    confidence: high
+    could_cause_stale_ui: true
+    location: "N/A — VSCode Simple Browser limitation"
+    description: |
+      VSCode's Simple Browser is an embedded Chromium webview that does NOT expose:
+      - DevTools (no Application → Service Workers panel)
+      - Cache clearing UI
+      - Hard refresh (Ctrl+Shift+R)
+      - 'Update on reload' SW debugging option
+      
+      This means that once a SW is installed in the Simple Browser context, the
+      user has NO manual way to clear it. The application's automated cleanup
+      (disableServiceWorkerInDevelopment) is the ONLY mechanism, and it has the
+      race condition described in F2.
+      
+      The Simple Browser may also share its cache/SW registrations across sessions,
+      meaning a SW installed in a previous session persists.
+    evidence:
+      - "VSCode Simple Browser is a basic webview2 wrapper without DevTools"
+      - "No equivalent of Chrome's 'Application → Clear Storage' in Simple Browser"
+    recommended_fix: |
+      1. Fix the SW race condition (F2) so cleanup is reliable without manual intervention.
+      2. Consider opening dev URLs in an external browser instead of Simple Browser.
+      3. Add a dev-mode bypass directly in sw.js (see F2 recommended fix option 3).
+
+# ============================================================================
+# Root Cause Summary
+# ============================================================================
+
+root_cause_summary: |
+  The stale UI in VSCode Simple Browser is caused by a **service worker race condition**.
+  
+  The sw.js file at `public/sw.js` implements a cache-first fetch strategy that:
+  1. Pre-caches `/` and `/index.html` on install
+  2. Dynamically caches ALL non-API GET responses
+  3. Serves cached responses before checking the network
+  
+  The dev-mode cleanup function `disableServiceWorkerInDevelopment()` exists and works
+  correctly, but it runs TOO LATE — the SW has already intercepted the initial navigation
+  and served stale cached content before any application JavaScript executes.
+  
+  VSCode Simple Browser compounds this because it lacks DevTools and manual cache/SW
+  management, making the automated cleanup the only available remedy.
+
+open_questions: []
+
+gaps:
+  - area: "VSCode Simple Browser SW persistence behavior"
+    description: "Cannot definitively confirm whether VSCode Simple Browser shares SW registrations across window reloads or VSCode restarts. Behavior may vary by VS Code version and webview2 runtime."
+    impact: nice_to_know
+    affects: []

@@ -1,0 +1,711 @@
+plan_id: sentinel-codebase-assessment-20260403
+objective: Analyze the SENTINEL codebase to assess current strengths, shallow or incomplete areas, and whether the system behaves like a mission workflow platform.
+focus_area: platform-audit
+created_at: 2026-04-03T00:00:00Z
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Current strengths: the codebase has real breadth, with role-aware dashboards, a substantial Axum backend, live tracking primitives, legal-consent/auth hardening, and native wrapper support for Android and desktop.
+  - Biggest gaps: many workflows still stop at dashboard visibility rather than end-to-end command execution; several surfaces are client-side stitched summaries, manual forms, or MVP placeholders rather than operational systems.
+  - Why it does not fully feel mission-grade yet: the app has command-center aesthetics and many endpoints, but too little shared workflow state, weak drill-down/action continuity, duplicated admin shells, and important workflow seams such as manual target IDs and coarse authorization.
+  - Highest-leverage change surfaces are App-level role routing, the duplicated elevated dashboards, command-center data aggregation, shift-swap authorization, tracking authorization boundaries, and guard support/map workflows.
+  - Evidence is strongest in App.tsx, the role dashboards, CommandCenterDashboard.tsx, useOperationalMapData.ts, main.rs, authz.rs, tracking.rs, shift_swap.rs, GuardSupportTab.tsx, and GuardShiftSwapPanel.tsx.
+
+research_metadata:
+  methodology: hybrid retrieval using grep_search, file_search, read_file, repository instruction review, PRD review, and targeted relationship discovery between frontend hooks/components and backend handlers/routes
+  scope: frontend dashboards, backend routes/services, realtime tracking, operational map flows, role experiences, notifications/offline/push utilities, and Android/Tauri wrappers
+  confidence: high
+  coverage: 82
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+- file: App.tsx
+  path: DasiaAIO-Frontend/src/App.tsx
+  purpose: Top-level auth/session restore, legal-consent gating, role routing, protected view dispatch, and global heartbeat orchestration.
+  key_elements:
+  - element: App
+    type: function
+    location: DasiaAIO-Frontend/src/App.tsx:145
+    description: Central runtime coordinator for login state, overlays, mobile quick-nav, heartbeat emission, and role-based view rendering.
+  - element: viewRegistry
+    type: variable
+    location: DasiaAIO-Frontend/src/App.tsx:721
+    description: Maps view keys to component factories and permission requirements for non-home sections.
+  - element: renderHome
+    type: function
+    location: DasiaAIO-Frontend/src/App.tsx:819
+    description: Sends superadmin, admin, and supervisor users into a shared elevated shell while guards get a separate guard dashboard.
+  language: typescript
+  lines: 1248
+
+- file: UserDashboard.tsx
+  path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+  purpose: Guard mission shell including attendance, incident reporting, support, resources, map expansion, profile modal, and local tracking controls.
+  key_elements:
+  - element: UserDashboard
+    type: function
+    location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:105
+    description: Guard-facing mission workspace with multiple embedded workflows and polling-based data refresh.
+  - element: refreshData
+    type: function
+    location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:228
+    description: Loads attendance, shifts, allocations, permits, and tickets via five independent API calls.
+  - element: sendHeartbeat effect
+    type: pattern
+    location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:323
+    description: Pushes guard heartbeat every 20 seconds when tracking is enabled.
+  language: typescript
+  lines: 1351
+
+- file: CommandCenterDashboard.tsx
+  path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+  purpose: Elevated command-center composition for summary, tactical map, live feed, alerts, AI panels, shift operations, and asset monitoring.
+  key_elements:
+  - element: CommandCenterDashboard
+    type: function
+    location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:35
+    description: Orchestrates multiple hook-driven panels into the SOC-style dashboard.
+  - element: runRefreshCycle
+    type: function
+    location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:60
+    description: Polls multiple backend slices every 15 seconds via separate hook refresh functions.
+  - element: OperationalEventProvider
+    type: pattern
+    location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:211
+    description: Provides lightweight event selection context to feed widgets.
+  language: typescript
+  lines: 362
+
+- file: OperationalMapPanel.tsx
+  path: DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx
+  purpose: Leaflet-based operational map with client sites, active guard telemetry, geofence alerts, path playback, and site editing UI.
+  key_elements:
+  - element: OperationalMapPanel
+    type: function
+    location: DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx:67
+    description: Main operational map experience for elevated roles.
+  - element: loadActiveGuards effect
+    type: pattern
+    location: DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx:145
+    description: Fetches active guards intelligence every 30 seconds.
+  - element: selectedGuardPath playback
+    type: pattern
+    location: DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx:177
+    description: Replays fetched path telemetry for a selected guard.
+  language: typescript
+  lines: 801
+
+- file: useOperationalMapData.ts
+  path: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+  purpose: Shared operational-map data layer with snapshot loading, optional websocket updates, and guard heartbeat emission.
+  key_elements:
+  - element: useOperationalMapData
+    type: function
+    location: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts:140
+    description: Frontend abstraction around tracking map snapshots, websocket state, active guards, and CRUD actions.
+  - element: role access setup
+    type: pattern
+    location: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts:170
+    description: Treats only supervisors as elevated for UI while allowing supervisors and guards to access tracking features.
+  - element: sendGuardHeartbeat
+    type: function
+    location: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts:262
+    description: Sends map heartbeat samples back to the backend.
+  language: typescript
+  lines: 510
+
+- file: AdminDashboard.tsx
+  path: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+  purpose: Elevated admin dashboard for users, approvals, schedules, and command center access.
+  key_elements:
+  - element: AdminDashboard
+    type: function
+    location: DasiaAIO-Frontend/src/components/AdminDashboard.tsx:168
+    description: Admin shell with heavy overlap in structure and logic with the superadmin shell.
+  - element: canViewUserRow
+    type: function
+    location: DasiaAIO-Frontend/src/components/AdminDashboard.tsx:195
+    description: Frontend-only row visibility logic by viewer role.
+  - element: fetchUsers
+    type: function
+    location: DasiaAIO-Frontend/src/components/AdminDashboard.tsx:226
+    description: Loads users directly from backend and drives the management grid.
+  language: typescript
+  lines: 1199
+
+- file: SuperadminDashboard.tsx
+  path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+  purpose: Primary elevated shell for superadmin, admin, and supervisor experiences, including inbox, dashboard, approvals, missions, analytics, trips, and audit log.
+  key_elements:
+  - element: SuperadminDashboard
+    type: function
+    location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:188
+    description: Large all-purpose elevated workspace spanning many operational sections.
+  - element: activeSection
+    type: variable
+    location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:196
+    description: Drives the elevated shell navigation and view mode selection.
+  - element: fetchData
+    type: function
+    location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:332
+    description: Loads core user management data into the superadmin workspace.
+  language: typescript
+  lines: 1808
+
+- file: GuardSupportTab.tsx
+  path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+  purpose: Guard support workspace for field instructions, schedule change requests, support tickets, and shift swaps.
+  key_elements:
+  - element: GuardSupportTab
+    type: function
+    location: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx:37
+    description: Support tab that combines multiple guard support workflows in one panel.
+  - element: hardcoded support contacts
+    type: pattern
+    location: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx:138
+    description: Uses static contact cards instead of a live directory or role-aware operational escalation chain.
+  language: typescript
+  lines: 213
+
+- file: GuardShiftSwapPanel.tsx
+  path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+  purpose: Guard-facing shift swap request and response UI.
+  key_elements:
+  - element: GuardShiftSwapPanel
+    type: function
+    location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:25
+    description: Shows swap request form and request list for guard workflows.
+  - element: manual target lookup
+    type: pattern
+    location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:166
+    description: Requires manual target guard ID entry instead of a validated personnel directory or assignment-aware selector.
+  language: typescript
+  lines: 293
+
+- file: main.rs
+  path: DasiaAIO-Backend/src/main.rs
+  purpose: Backend bootstrap and full route registry for auth, users, resources, analytics, AI, tracking, incidents, notifications, and system endpoints.
+  key_elements:
+  - element: main
+    type: function
+    location: DasiaAIO-Backend/src/main.rs:40
+    description: Initializes config, DB, migrations, CORS, middleware, and the entire router.
+  - element: Router::new
+    type: pattern
+    location: DasiaAIO-Backend/src/main.rs:215
+    description: Centralized route declaration with many aliases and mixed authorization patterns.
+  - element: tracking routes
+    type: pattern
+    location: DasiaAIO-Backend/src/main.rs:1386
+    description: Exposes map snapshots, websocket, client-site CRUD, geofences, heartbeat, history, and proximity alerts.
+  language: rust
+  lines: 1650
+
+- file: authz.rs
+  path: DasiaAIO-Backend/src/middleware/authz.rs
+  purpose: Backend authorization middleware, including legal-consent gating and permission enforcement.
+  key_elements:
+  - element: require_tracking_access
+    type: function
+    location: DasiaAIO-Backend/src/middleware/authz.rs:77
+    description: Allows both supervisor and guard roles into tracking endpoints.
+  - element: enforce_legal_consent
+    type: function
+    location: DasiaAIO-Backend/src/middleware/authz.rs:15
+    description: Blocks most authenticated routes until legal consent has been accepted.
+  language: rust
+  lines: 156
+
+- file: tracking.rs
+  path: DasiaAIO-Backend/src/handlers/tracking.rs
+  purpose: Operational tracking, map snapshots, geofences, proximity alerts, heartbeat ingestion, and websocket broadcasting.
+  key_elements:
+  - element: get_map_data
+    type: function
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1382
+    description: Builds role-scoped map snapshots and triggers proximity alert evaluation for non-guard viewers.
+  - element: guard_heartbeat
+    type: function
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1792
+    description: Stores location telemetry, enforces sample accuracy thresholds, and publishes websocket updates.
+  - element: tracking_ws
+    type: function
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1965
+    description: Authenticates websocket upgrades with bearer token via protocol or query string and pushes snapshot broadcasts.
+  language: rust
+  lines: 2055
+
+- file: shift_swap.rs
+  path: DasiaAIO-Backend/src/handlers/shift_swap.rs
+  purpose: Shift swap creation, listing, and response handling.
+  key_elements:
+  - element: create_swap_request
+    type: function
+    location: DasiaAIO-Backend/src/handlers/shift_swap.rs:33
+    description: Inserts swap request rows from client-provided requester and target IDs.
+  - element: list_swap_requests
+    type: function
+    location: DasiaAIO-Backend/src/handlers/shift_swap.rs:71
+    description: Returns up to 200 swap requests without server-side per-user scoping.
+  - element: respond_to_swap
+    type: function
+    location: DasiaAIO-Backend/src/handlers/shift_swap.rs:120
+    description: Updates swap status without verifying that the responder is the target guard.
+  language: rust
+  lines: 156
+
+- file: support_tickets.rs
+  path: DasiaAIO-Backend/src/handlers/support_tickets.rs
+  purpose: Guard support ticket creation and lookup.
+  key_elements:
+  - element: get_guard_tickets
+    type: function
+    location: DasiaAIO-Backend/src/handlers/support_tickets.rs:17
+    description: Returns support tickets for the requested guard or elevated viewer.
+  - element: create_ticket
+    type: function
+    location: DasiaAIO-Backend/src/handlers/support_tickets.rs:38
+    description: Minimal ticket creation flow with required subject/message/guard ID validation only.
+  language: rust
+  lines: 71
+
+- file: analytics.rs
+  path: DasiaAIO-Backend/src/handlers/analytics.rs
+  purpose: Summary analytics and trend endpoints.
+  key_elements:
+  - element: get_analytics
+    type: function
+    location: DasiaAIO-Backend/src/handlers/analytics.rs:74
+    description: Computes overview and performance metrics directly from operational tables.
+  language: rust
+  lines: 336
+
+- file: ai.rs
+  path: DasiaAIO-Backend/src/handlers/ai.rs
+  purpose: AI/heuristic endpoints for absence risk, replacements, maintenance risk, incident classification, and summarization.
+  key_elements:
+  - element: classify_incident
+    type: function
+    location: DasiaAIO-Backend/src/handlers/ai.rs:175
+    description: Exposes severity classification via LLM-or-keyword fallback service.
+  - element: summarize_incident
+    type: function
+    location: DasiaAIO-Backend/src/handlers/ai.rs:207
+    description: Exposes summarization based on lightweight local summarization heuristics.
+  language: rust
+  lines: 245
+
+- file: capacitor.config.ts
+  path: apps/android-capacitor/capacitor.config.ts
+  purpose: Android wrapper configuration for the shared frontend build.
+  key_elements:
+  - element: config
+    type: variable
+    location: apps/android-capacitor/capacitor.config.ts:5
+    description: Points Android wrapper at the shared web build and toggles webview/network settings.
+  language: typescript
+  lines: 28
+
+- file: main.rs
+  path: apps/desktop-tauri/src-tauri/src/main.rs
+  purpose: Desktop shell entry point.
+  key_elements:
+  - element: main
+    type: function
+    location: apps/desktop-tauri/src-tauri/src/main.rs:3
+    description: Starts a Tauri shell with updater and process plugins only.
+  language: rust
+  lines: 8
+
+patterns_found:
+- category: strengths
+  pattern: Broad operational surface area already exists
+  description: The system covers auth, users, approvals, scheduling, incidents, firearms, permits, armored cars, analytics, AI, notifications, tracking, and wrappers in one repo.
+  examples:
+  - file: DasiaAIO-Backend/src/main.rs
+    location: DasiaAIO-Backend/src/main.rs:215
+    snippet: let app = Router::new() with a large consolidated route graph spanning auth, resources, analytics, AI, tracking, incidents, notifications, and system endpoints.
+  - file: DasiaAIO-Frontend/src/App.tsx
+    location: DasiaAIO-Frontend/src/App.tsx:721
+    snippet: viewRegistry plus renderHome route users into many role-specific surfaces from one shell.
+  prevalence: common
+
+- category: strengths
+  pattern: Role normalization and permission gating are consistently applied in the frontend shell
+  description: The frontend normalizes roles, maps legacy user to guard, and applies permission checks before opening protected views.
+  examples:
+  - file: DasiaAIO-Frontend/src/types/auth.ts
+    location: DasiaAIO-Frontend/src/types/auth.ts:20
+    snippet: return normalized === 'user' ? 'guard' : (normalized as Role)
+  - file: DasiaAIO-Frontend/src/App.tsx
+    location: DasiaAIO-Frontend/src/App.tsx:786
+    snippet: canView uses permission-aware routing before rendering protected views.
+  prevalence: common
+
+- category: strengths
+  pattern: Real-time tracking foundation is deeper than pure mock UI
+  description: The map stack includes telemetry persistence, websocket snapshot fan-out, geofence evaluation, path history, and active-guard queries.
+  examples:
+  - file: DasiaAIO-Backend/src/handlers/tracking.rs
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1382
+    snippet: get_map_data builds role-scoped snapshot payloads including sites, zones, points, and geofence alerts.
+  - file: DasiaAIO-Backend/src/handlers/tracking.rs
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1965
+    snippet: tracking_ws authenticates upgrade requests and pushes snapshot refreshes over a broadcast bus.
+  - file: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+    location: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts:314
+    snippet: websocket with exponential backoff falls back to 30 second polling.
+  prevalence: occasional
+
+- category: strengths
+  pattern: Guard experience is more task-oriented than the rest of the app
+  description: The guard dashboard bundles check-in/out, incident reporting, ticketing, shift swaps, tracking, map, resources, and profile actions into one dedicated workspace.
+  examples:
+  - file: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+    location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:323
+    snippet: mission shell includes live tracking, current shift context, incident reporting, support forms, and map expansion.
+  - file: DasiaAIO-Frontend/src/__tests__/guardDashboardRedesign.test.tsx
+    location: DasiaAIO-Frontend/src/__tests__/guardDashboardRedesign.test.tsx:92
+    snippet: targeted tests cover mission hierarchy, sticky controls, support grouping, and map behavior.
+  prevalence: occasional
+
+- category: architecture
+  pattern: Elevated experiences are duplicated rather than platformized
+  description: AdminDashboard and SuperadminDashboard contain large parallel shells with overlapping state, fetch logic, and view orchestration instead of deriving from a shared operational shell abstraction.
+  examples:
+  - file: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+    location: DasiaAIO-Frontend/src/components/AdminDashboard.tsx:168
+    snippet: standalone dashboard shell with fetchUsers, fetchShifts, fetchPendingApprovals, and command center wiring.
+  - file: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+    location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:188
+    snippet: larger parallel shell with similar user/approval/schedule logic plus missions, analytics, trips, and audit.
+  prevalence: common
+
+- category: architecture
+  pattern: Command center is composed from many polling slices instead of a shared workflow projection
+  description: The elevated command center looks rich, but its state is assembled from multiple independent hooks and periodic polling rather than a backend command-state model.
+  examples:
+  - file: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:60
+    snippet: runRefreshCycle loops through separate refresh tasks every 15 seconds.
+  - file: DasiaAIO-Frontend/src/hooks/useOpsSummary.ts
+    location: DasiaAIO-Frontend/src/hooks/useOpsSummary.ts:26
+    snippet: summary is computed client-side from seven endpoint calls and local counting/filtering.
+  prevalence: common
+
+- category: product_gap
+  pattern: Workflow seams are manual and MVP-like in critical guard operations
+  description: Several frontline flows rely on manual IDs, static contacts, or generic forms rather than mission-aware selectors and server-projected workflows.
+  examples:
+  - file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+    location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:166
+    snippet: Target Guard ID input requires manual personnel lookup.
+  - file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+    location: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx:161
+    snippet: No scheduled shifts are available right now.
+  - file: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+    location: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx:138
+    snippet: Operations Desk, Site Supervisor, and HR and Compliance are rendered as hardcoded cards.
+  prevalence: common
+
+- category: product_gap
+  pattern: Cross-panel event selection is shallow
+  description: The operational event context currently captures feed selection state but does not drive a richer incident drill-down, response panel, or synchronized workflow state.
+  examples:
+  - file: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+    location: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx:22
+    snippet: context stores only selectedEvent and selectedEventId.
+  - file: DasiaAIO-Frontend/src/components/dashboard/LiveOperationsFeed.tsx
+    location: DasiaAIO-Frontend/src/components/dashboard/LiveOperationsFeed.tsx:68
+    snippet: feed click only sets selected event and ring highlight.
+  - file: DasiaAIO-Frontend/src/components/dashboard/IncidentAlertFeed.tsx
+    location: DasiaAIO-Frontend/src/components/dashboard/IncidentAlertFeed.tsx:17
+    snippet: alert click only updates selectedEvent in shared context.
+  prevalence: occasional
+
+- category: security
+  pattern: Authorization depth is inconsistent behind authenticated routes
+  description: Router-level auth exists, but some handlers trust client-supplied identities or return global data without server-side scoping.
+  examples:
+  - file: DasiaAIO-Backend/src/handlers/shift_swap.rs
+    location: DasiaAIO-Backend/src/handlers/shift_swap.rs:33
+    snippet: create_swap_request inserts requester_id and target_id from payload without comparing them to token claims.
+  - file: DasiaAIO-Backend/src/handlers/shift_swap.rs
+    location: DasiaAIO-Backend/src/handlers/shift_swap.rs:71
+    snippet: list_swap_requests returns all swap requests and leaves guard filtering to the frontend.
+  - file: DasiaAIO-Backend/src/handlers/shift_swap.rs
+    location: DasiaAIO-Backend/src/handlers/shift_swap.rs:120
+    snippet: respond_to_swap updates status without verifying responder ownership.
+  prevalence: occasional
+
+- category: security
+  pattern: Tracking authorization is coarse and mismatched to the frontend role model
+  description: The backend grants supervisors and guards access to the full tracking route family, while the frontend only treats supervisors as elevated for map-management UI.
+  examples:
+  - file: DasiaAIO-Backend/src/middleware/authz.rs
+    location: DasiaAIO-Backend/src/middleware/authz.rs:84
+    snippet: require_tracking_access allows role != supervisor and role != guard only.
+  - file: DasiaAIO-Backend/src/main.rs
+    location: DasiaAIO-Backend/src/main.rs:1402
+    snippet: client-site creation, update, delete, geofences, and proximity-alert routes all use require_tracking_access.
+  - file: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+    location: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts:170
+    snippet: setIsElevatedUser(role === 'supervisor') while setHasTrackingAccess(role === 'supervisor' || role === 'guard').
+  prevalence: occasional
+
+- category: maturity_gap
+  pattern: Explicit MVP placeholder language remains in shipped surfaces
+  description: Some settings surfaces openly state that governance controls are deferred, reinforcing that parts of the product are intentionally unfinished.
+  examples:
+  - file: DasiaAIO-Frontend/src/components/settings/AdminSettings.tsx
+    location: DasiaAIO-Frontend/src/components/settings/AdminSettings.tsx:31
+    snippet: Additional controls are planned for a later wave. This MVP keeps notifications available without introducing a new backend contract.
+  - file: DasiaAIO-Frontend/src/components/settings/SuperadminSettings.tsx
+    location: DasiaAIO-Frontend/src/components/settings/SuperadminSettings.tsx:31
+    snippet: Additional controls are planned for a later wave. This MVP keeps notifications available without adding privileged backend endpoints.
+  prevalence: occasional
+
+- category: wrappers
+  pattern: Cross-platform wrappers are thin shells over the web app
+  description: Android and desktop packages primarily provide containerization, permissions, and update/build plumbing rather than substantial native workflows.
+  examples:
+  - file: apps/android-capacitor/capacitor.config.ts
+    location: apps/android-capacitor/capacitor.config.ts:5
+    snippet: wrapper points webDir to ../../DasiaAIO-Frontend/app-dist and sets webview/network plugin flags.
+  - file: apps/desktop-tauri/src-tauri/src/main.rs
+    location: apps/desktop-tauri/src-tauri/src/main.rs:3
+    snippet: desktop shell boots Tauri with updater and process plugins only.
+  prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+  - component: App role router
+    responsibility: Restores session, gates legal consent, dispatches role experiences, and emits global location heartbeat.
+    location: DasiaAIO-Frontend/src/App.tsx
+    relationship_to_domain: domain depends on this
+  - component: Guard workspace
+    responsibility: Executes frontline attendance, incident, ticket, swap, and tracking workflows.
+    location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+    relationship_to_domain: domain depends on this
+  - component: Elevated command center
+    responsibility: Presents operational overview, live feed, alerts, AI panels, and map intelligence.
+    location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    relationship_to_domain: domain depends on this
+  - component: Operational map stack
+    responsibility: Handles snapshot fetch, websocket refresh, path history, geofences, and map CRUD.
+    location: DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx and DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+    relationship_to_domain: domain depends on this
+  - component: Axum route graph
+    responsibility: Exposes every API used by frontend shells and native wrappers.
+    location: DasiaAIO-Backend/src/main.rs
+    relationship_to_domain: this uses domain outputs
+  - component: Tracking backend
+    responsibility: Stores telemetry, builds map snapshots, computes geofence/proximity alerts, and fans out websocket updates.
+    location: DasiaAIO-Backend/src/handlers/tracking.rs
+    relationship_to_domain: this uses domain outputs
+  interfaces_used_by_domain:
+  - interface: Permission-based role gating
+    location: DasiaAIO-Frontend/src/utils/permissions.ts
+    usage_pattern: frontend shell checks permissions before opening protected views
+  - interface: require_tracking_access and require_authenticated
+    location: DasiaAIO-Backend/src/middleware/authz.rs
+    usage_pattern: router-level authz wrappers for tracking and authenticated flows
+  - interface: service worker + IndexedDB offline queue
+    location: DasiaAIO-Frontend/public/sw.js and DasiaAIO-Frontend/src/utils/offlineQueue.ts
+    usage_pattern: offline action persistence and replay for selected POST workflows
+  data_flow_involving_domain: Guard and elevated shells pull operational state from many REST endpoints; the map stack additionally consumes websocket snapshots and posts telemetry heartbeats; backend handlers mostly read/write Postgres directly; wrapper apps load the shared frontend build and rely on the same API contracts.
+  key_relationships_to_domain:
+  - from: DasiaAIO-Frontend/src/App.tsx
+    to: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+    relationship: renders
+  - from: DasiaAIO-Frontend/src/App.tsx
+    to: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+    relationship: renders
+  - from: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    to: DasiaAIO-Frontend/src/hooks/useOpsSummary.ts
+    relationship: calls
+  - from: DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx
+    to: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+    relationship: calls
+  - from: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+    to: DasiaAIO-Backend/src/handlers/tracking.rs
+    relationship: calls
+  - from: DasiaAIO-Backend/src/main.rs
+    to: DasiaAIO-Backend/src/middleware/authz.rs
+    relationship: wraps routes with
+
+related_technology_stack:
+  languages_used_in_domain:
+  - TypeScript
+  - Rust
+  - SQL
+  - JavaScript
+  - JSON
+  frameworks_used_in_domain:
+  - name: React
+    usage_in_domain: Frontend role shells, dashboards, hooks, and settings/profile flows.
+  - name: Vite
+    usage_in_domain: Frontend build and environment partitioning for web/mobile/desktop.
+  - name: Axum
+    usage_in_domain: Backend routing, middleware, websocket upgrades, and JSON handlers.
+  - name: Tauri
+    usage_in_domain: Desktop wrapper shell and updater integration.
+  - name: Capacitor
+    usage_in_domain: Android wrapper with geolocation, push, and status-bar integration.
+  libraries_used_in_domain:
+  - name: react-leaflet / leaflet
+    purpose_in_domain: Operational map rendering and telemetry visualization.
+  - name: sqlx
+    purpose_in_domain: Direct Postgres access from handlers and services.
+  - name: tower-http
+    purpose_in_domain: CORS and tracing middleware.
+  - name: reqwest
+    purpose_in_domain: External LLM provider calls in incident classification.
+  - name: IndexedDB + service worker APIs
+    purpose_in_domain: Offline queue and push-notification support.
+  external_apis_used_in_domain:
+  - name: Groq / OpenAI-compatible chat completions
+    integration_point: DasiaAIO-Backend/src/services/incident_ai_classifier.rs
+  - name: ipinfo / geolocation-db
+    integration_point: DasiaAIO-Frontend/src/utils/location.ts
+  - name: OpenStreetMap embed
+    integration_point: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+
+related_conventions:
+  naming_patterns_in_domain: role names are normalized to lowercase and legacy user is coerced to guard; frontend view keys drive shell routing; backend endpoints are mostly grouped under /api/{feature}; React hooks use useX naming for each dashboard slice.
+  structure_of_domain: frontend is split into standalone role shells plus many feature panels; backend uses a large main.rs route registry with thin route module and direct handler-to-db queries.
+  error_handling_in_domain: frontend hooks generally store local error strings and continue partial rendering; backend returns AppError variants and often uses unwrap_or defaults in analytics-style handlers.
+  testing_in_domain: frontend has targeted Jest and Playwright coverage around the guard dashboard redesign, but the broader elevated workflows and backend authz boundaries are not evidenced here as tightly tested.
+  documentation_in_domain: wrappers are documented as shells around the shared frontend build; PRD scope explicitly calls out frontend-only guard redesign; some settings copy labels features as MVP/later wave.
+
+related_dependencies:
+  internal:
+  - component: DasiaAIO-Frontend/src/utils/api.ts
+    relationship_to_domain: Provides fetchJsonOrThrow, auth header, and token lifecycle utilities for most frontend workflows.
+    direction: outbound
+  - component: DasiaAIO-Backend/src/utils.rs
+    relationship_to_domain: Supplies token verification, permission checks, IDs, pagination, and role normalization.
+    direction: outbound
+  - component: DasiaAIO-Backend/src/db.rs
+    relationship_to_domain: Defines operational tables and permissions that the handlers depend on.
+    direction: outbound
+  - component: DasiaAIO-Frontend/public/sw.js
+    relationship_to_domain: Executes offline replay and push reception for selected frontend flows.
+    direction: outbound
+  external:
+  - name: PostgreSQL
+    purpose_for_domain: Persistence for users, shifts, incidents, notifications, telemetry, geofence events, and AI prediction artifacts.
+  - name: Leaflet ecosystem
+    purpose_for_domain: Tactical map rendering and interaction.
+  - name: Native wrapper runtimes
+    purpose_for_domain: Android and desktop packaging without a separate native application logic layer.
+
+domain_security_considerations:
+  sensitive_areas:
+  - area: Shift swap authorization
+    location: DasiaAIO-Backend/src/handlers/shift_swap.rs
+    concern: authenticated access exists, but requester ownership and responder authorization are not enforced in the handler.
+  - area: Tracking administration boundary
+    location: DasiaAIO-Backend/src/middleware/authz.rs and DasiaAIO-Backend/src/main.rs
+    concern: guards can access mutating tracking routes used for client-site and geofence management because tracking access is role-broadened.
+  - area: Websocket authentication
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1965
+    concern: token validation is custom inside the websocket handler rather than enforced by standard router middleware, though the implementation does verify token and legal consent.
+  authentication_patterns_in_domain: JWT bearer tokens are used across REST and websocket flows; frontend restores, refreshes, and clears auth sessions centrally in App.tsx.
+  authorization_patterns_in_domain: most backend routes rely on router-applied authz middleware; some handlers add self-or-role checks, while shift-swap logic shows weaker server-side scoping.
+  data_validation_in_domain: coordinate validation, incident status/priority normalization, and support-ticket required-field checks are present; many product workflows still trust simple client payloads and string IDs.
+
+testing_patterns:
+  framework: Jest plus Playwright on the frontend
+  coverage_areas:
+  - Guard dashboard redesign layout and grouped workflows
+  - Settings persistence behavior
+  - Guard smoke coverage in Playwright specs
+  test_organization: unit-style tests live under src/__tests__ and browser coverage under tests/
+  mock_patterns:
+  - trackingPolicy, location permission, and push notification utilities are mocked for guard dashboard tests
+  - mocked frontend data protects guard UX tests from backend dependency
+
+change_priority_surfaces:
+- file: DasiaAIO-Frontend/src/App.tsx
+  reason: single choke point for role routing, home-view logic, consent gating, and global heartbeat duplication
+  observed_issue: superadmin, admin, and supervisor all converge into the same large shell; route dispatch is broad but not workflow-centric
+- file: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+  reason: largest elevated shell with overlapping concerns
+  observed_issue: acts as a monolith for dashboard, approvals, schedule, missions, analytics, trips, audit, and notifications
+- file: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+  reason: parallel elevated shell
+  observed_issue: duplicates user/approval/schedule logic instead of sharing a common operational platform layer
+- file: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+  reason: central product promise surface
+  observed_issue: looks mission-grade visually, but state is still assembled from polling slices rather than a unified command workflow model
+- file: DasiaAIO-Frontend/src/hooks/useOpsSummary.ts
+  reason: hidden architectural hotspot behind the command center
+  observed_issue: computes cross-domain operational state in the client from multiple endpoint calls
+- file: DasiaAIO-Backend/src/handlers/shift_swap.rs
+  reason: frontline workflow integrity and authorization
+  observed_issue: server does not fully scope requester or responder authority
+- file: DasiaAIO-Backend/src/middleware/authz.rs
+  reason: authorization policy boundary
+  observed_issue: tracking access policy is too coarse for client-site and geofence administration
+- file: DasiaAIO-Backend/src/main.rs
+  reason: route graph and API contract shape
+  observed_issue: wide aliasing and duplicated route surfaces increase surface area and make platform behavior harder to reason about
+- file: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+  reason: frontline support experience
+  observed_issue: hardcoded contacts and generic forms make the support workspace feel informational rather than operational
+- file: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+  reason: core workforce workflow
+  observed_issue: manual target guard ID entry and weak workflow context make swap handling feel student-level
+- file: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+  reason: potential backbone for shared operational state
+  observed_issue: currently stores only selection highlight state, not actionable command context
+- file: apps/android-capacitor/capacitor.config.ts and apps/desktop-tauri/src-tauri/src/main.rs
+  reason: cross-platform differentiation
+  observed_issue: wrappers are thin shells with limited native capability beyond packaging, geolocation/push plumbing, and updater support
+
+open_questions:
+- question: Is it intentional that admin and supervisor experiences are primarily served through the superadmin shell rather than distinct workflow shells?
+  context: App.tsx routes superadmin, admin, and supervisor users into the same elevated experience, while a separate AdminDashboard also exists.
+  type: research
+  affects: [platform-audit]
+- question: Are guards intended to be able to create and mutate client sites and geofences, or should those routes be supervisor-only?
+  context: require_tracking_access currently gates the mutating tracking routes and allows both guards and supervisors.
+  type: decision_blocker
+  affects: [platform-audit]
+- question: Is there any server-side web-push sending flow beyond storing subscriptions?
+  context: the frontend and backend implement subscription capture, and the service worker handles incoming push, but this pass did not find a delivery fan-out path.
+  type: research
+  affects: [platform-audit]
+- question: Are the hardcoded guard support contacts placeholders or expected production data?
+  context: GuardSupportTab currently embeds specific contact cards directly in the component.
+  type: research
+  affects: [platform-audit]
+
+gaps:
+- area: Mission workflow continuity
+  description: The system shows alerts, incidents, map telemetry, schedules, and AI signals, but there is little evidence of a shared incident-command workflow linking detection, assignment, escalation, response ownership, and resolution in one connected loop.
+  impact: decision_blocker
+  affects: [platform-audit]
+- area: Elevated dashboard architecture
+  description: Admin and superadmin flows are large, overlapping shells with repeated data-fetch and section logic, which makes the product feel assembled from screens rather than shaped around operational roles.
+  impact: research_blocker
+  affects: [platform-audit]
+- area: Frontline guard workflows
+  description: Support and swap flows rely on manual inputs, static contacts, and generic forms, which weakens the sense of a polished field-operations product.
+  impact: research_blocker
+  affects: [platform-audit]
+- area: Authorization precision
+  description: Shift swap authorization and tracking administration boundaries are too coarse to feel enterprise-grade.
+  impact: decision_blocker
+  affects: [platform-audit]
+- area: Cross-platform differentiation
+  description: Android and desktop wrappers currently package the web app effectively but do not yet add substantial mission-native capabilities that change the operational experience.
+  impact: nice_to_know
+  affects: [platform-audit]
+- area: Product maturity signaling
+  description: Explicit MVP/later-wave copy and placeholder governance sections remain in shipped UI, reinforcing an incomplete product feel.
+  impact: research_blocker
+  affects: [platform-audit]

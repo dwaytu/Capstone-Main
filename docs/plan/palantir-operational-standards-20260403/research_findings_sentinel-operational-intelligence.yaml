@@ -1,0 +1,661 @@
+plan_id: palantir-operational-standards-20260403
+objective: Translate the meaning of 'Palantir-level' operational intelligence into concrete standards for the SENTINEL project.
+focus_area: sentinel-operational-intelligence
+created_at: 2026-04-03
+created_by: GitHub Copilot
+status: completed
+
+tldr: |
+  - In this context, 'Palantir-like' does not mean military aesthetics; it means an ontology-backed operating system that fuses live data, logic, actions, and security into one decision environment for human operators.
+  - SENTINEL already contains early versions of this pattern: a shared command center, cross-panel event context, predictive panels with suggested actions, mission-first guard UX, and role-scoped inboxes.
+  - The main gap between current SENTINEL and a production-grade operational intelligence platform is not feature count; it is formalization of shared operational objects, latency/freshness guarantees, closed-loop workflow governance, and measurable reliability standards.
+  - Elevated roles in SENTINEL currently share one operational shell but diverge through permissions, inbox content, and user-management authority; a production-grade evolution would sharpen those decision boundaries further.
+  - Systems feel student-level when they present dashboards as reports instead of action environments, hide role ambiguity behind one generic UI, or claim 'AI intelligence' without governed human-in-the-loop execution.
+
+research_metadata:
+  methodology: Hybrid retrieval using repo documentation, targeted code search, targeted file reads, role/permission mapping, and external verification against official Palantir product pages for Gotham, Foundry, AIP, and Ontology.
+  scope: Focused on role-based operational UX, command-center architecture, inbox/action surfaces, governance controls, and production-readiness documentation relevant to an operational intelligence platform.
+  confidence: high
+  coverage: 84
+  decision_blockers: 0
+  research_blockers: 2
+  external_sources:
+    - title: Palantir Gotham
+      url: https://www.palantir.com/platforms/gotham/
+      relevance: Official framing for operational decision-making, situational awareness, edge command, and dynamic operations.
+    - title: Palantir Foundry
+      url: https://www.palantir.com/platforms/foundry/
+      relevance: Official framing for ontology-powered closed-loop operations, real-time collaboration, and common logic layers.
+    - title: Palantir AIP
+      url: https://www.palantir.com/platforms/aip/
+      relevance: Official framing for AI integrated into operational decision-making with human-in-the-loop approvals.
+    - title: Palantir Ontology
+      url: https://www.palantir.com/platforms/ontology/
+      relevance: Official framing for unifying data, logic, action, and security into one operational model.
+
+files_analyzed:
+  - file: PRD.yaml
+    path: docs/PRD.yaml
+    purpose: Current product scope for the latest guard dashboard UX tranche.
+    key_elements:
+      - element: scope
+        type: variable
+        location: docs/PRD.yaml:16
+        description: Constrains the active product tranche to guard mission-first UX, summary-first information architecture, and frontend-bounded redesign.
+      - element: acceptance_criteria
+        type: variable
+        location: docs/PRD.yaml:30
+        description: Defines first-viewport mission hierarchy, single sticky interaction region, grouped support flows, and browser regression coverage.
+      - element: decisions
+        type: variable
+        location: docs/PRD.yaml:107
+        description: Records explicit intent to keep the guard experience mission-first, summary-first, and implementation-realistic.
+    language: yaml
+    lines: 139
+  - file: CHATGPT_SYSTEM_GUIDE.md
+    path: CHATGPT_SYSTEM_GUIDE.md
+    purpose: Technical reference documenting system behavior, modules, recent hardening work, and the existing 'Palantir-style' transformation notes.
+    key_elements:
+      - element: Current Role Model
+        type: pattern
+        location: CHATGPT_SYSTEM_GUIDE.md:28
+        description: Documents the implemented roles and legacy-role normalization behavior.
+      - element: v1.2.0 Palantir-Style Platform Transformation
+        type: pattern
+        location: CHATGPT_SYSTEM_GUIDE.md:215
+        description: Captures shared event context, AI action layers, and command-center behavior already described as a platform transformation.
+      - element: Frontend Architecture Notes
+        type: pattern
+        location: CHATGPT_SYSTEM_GUIDE.md:132
+        description: Describes the command center, mission-first guard workspace, and shell-level UX hardening.
+    language: markdown
+    lines: 1606
+  - file: PRODUCTION_ROLLOUT.md
+    path: PRODUCTION_ROLLOUT.md
+    purpose: Defines the intended production topology, release process, artifact outputs, and release validation checkpoints.
+    key_elements:
+      - element: Production Architecture
+        type: pattern
+        location: PRODUCTION_ROLLOUT.md:5
+        description: Establishes one shared backend for web, desktop, and Android clients.
+      - element: CI/CD Release Workflow
+        type: pattern
+        location: PRODUCTION_ROLLOUT.md:48
+        description: Documents release automation and artifact publication expectations.
+      - element: Final Production Checklist
+        type: pattern
+        location: PRODUCTION_ROLLOUT.md:67
+        description: Lists cross-platform smoke testing and backend consistency checks.
+    language: markdown
+    lines: 75
+  - file: SYSTEM_AUDIT_REPORT.md
+    path: SYSTEM_AUDIT_REPORT.md
+    purpose: Records security and release-surface hardening work plus verification results.
+    key_elements:
+      - element: Key Improvements Implemented
+        type: pattern
+        location: SYSTEM_AUDIT_REPORT.md:14
+        description: Shows concrete hardening work across credentials, schema alignment, Android packaging, and workflow secrets.
+      - element: Verification Results
+        type: pattern
+        location: SYSTEM_AUDIT_REPORT.md:41
+        description: Documents successful frontend tests/builds, backend tests, Docker config, and health endpoint validation.
+    language: markdown
+    lines: 64
+  - file: App.tsx
+    path: DasiaAIO-Frontend/src/App.tsx
+    purpose: Root orchestration for authentication, role normalization, view gating, and role-specific home rendering.
+    key_elements:
+      - element: getHomeView
+        type: function
+        location: DasiaAIO-Frontend/src/App.tsx:779
+        description: Maps guards to an overview home and elevated roles to the dashboard view.
+      - element: canView
+        type: function
+        location: DasiaAIO-Frontend/src/App.tsx:784
+        description: Enforces view-level permission checks based on the permission registry.
+      - element: renderHome
+        type: function
+        location: DasiaAIO-Frontend/src/App.tsx:819
+        description: Routes superadmin, admin, and supervisor into the elevated dashboard shell while guards receive the field dashboard.
+      - element: tracking heartbeat gate
+        type: pattern
+        location: DasiaAIO-Frontend/src/App.tsx:634
+        description: Restricts live location heartbeat behavior to supervisor and guard roles.
+    language: typescript
+    lines: 1104
+  - file: auth.ts
+    path: DasiaAIO-Frontend/src/types/auth.ts
+    purpose: Role normalization and elevated-role classification.
+    key_elements:
+      - element: normalizeRole
+        type: function
+        location: DasiaAIO-Frontend/src/types/auth.ts:13
+        description: Normalizes inconsistent role strings and maps legacy user to guard.
+      - element: isElevatedRole
+        type: function
+        location: DasiaAIO-Frontend/src/types/auth.ts:20
+        description: Declares superadmin, admin, and supervisor as the elevated operational tier.
+    language: typescript
+    lines: 23
+  - file: permissions.ts
+    path: DasiaAIO-Frontend/src/utils/permissions.ts
+    purpose: Frontend permission matrix backing role-based decision environments.
+    key_elements:
+      - element: rolePermissions
+        type: variable
+        location: DasiaAIO-Frontend/src/utils/permissions.ts:12
+        description: Defines the current capability envelope per role.
+      - element: can
+        type: function
+        location: DasiaAIO-Frontend/src/utils/permissions.ts:40
+        description: Evaluates whether a role can open a protected surface or action path.
+    language: typescript
+    lines: 58
+  - file: navigation.ts
+    path: DasiaAIO-Frontend/src/config/navigation.ts
+    purpose: Navigation model for elevated and guard workspaces.
+    key_elements:
+      - element: ELEVATED_NAV
+        type: variable
+        location: DasiaAIO-Frontend/src/config/navigation.ts:10
+        description: Shows the elevated role information architecture centered on inbox, dashboard, approvals, analytics, audit log, operations, and resources.
+      - element: GUARD_NAV
+        type: variable
+        location: DasiaAIO-Frontend/src/config/navigation.ts:29
+        description: Shows the guard information architecture centered on inbox, dashboard, schedule, resources, and contacts.
+      - element: getSidebarNav
+        type: function
+        location: DasiaAIO-Frontend/src/config/navigation.ts:46
+        description: Applies role filtering and home-view mapping to navigation.
+    language: typescript
+    lines: 55
+  - file: SuperadminDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+    purpose: Shared elevated-role workspace that hosts the command center, inboxes, operational modules, and user-management constraints.
+    key_elements:
+      - element: CommandCenterDashboard import
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:10
+        description: Confirms that the elevated workspace is centered around a command-center surface.
+      - element: role-specific inbox imports
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:19
+        description: Confirms elevated-role differentiation is currently implemented primarily through inbox panels.
+      - element: canViewUserRow
+        type: function
+        location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:246
+        description: Encodes the hierarchy boundary for who can view or act on which user roles.
+    language: typescript
+    lines: 1707
+  - file: CommandCenterDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    purpose: Core operational intelligence surface for elevated roles.
+    key_elements:
+      - element: 15-second refresh cycle
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:64
+        description: Establishes periodic refresh of summary, shifts, assets, incidents, predictive alerts, and vehicle/guard prediction modules.
+      - element: liveOperationsItems
+        type: function
+        location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:118
+        description: Fuses shifts, vehicles, incidents, and firearms into one operational feed.
+      - element: incidentAlerts
+        type: function
+        location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:183
+        description: Merges incident-derived alerts with summary-derived alerts into a unified alert stream.
+    language: typescript
+    lines: 331
+  - file: OperationalEventContext.tsx
+    path: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+    purpose: Shared state for cross-panel event selection in the command center.
+    key_elements:
+      - element: OperationalEventContextValue
+        type: interface
+        location: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx:9
+        description: Encodes selected event identity and controls for shared operational focus.
+      - element: OperationalEventProvider
+        type: function
+        location: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx:20
+        description: Provides the cross-panel selection substrate used by the command center.
+    language: typescript
+    lines: 39
+  - file: UserDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+    purpose: Mission-first field UX for guards under operational pressure.
+    key_elements:
+      - element: GuardSection
+        type: type
+        location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:56
+        description: Defines the core field sections as inbox, mission, resources, support, and map.
+      - element: resolveSectionFromView
+        type: function
+        location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:74
+        description: Maps incoming views to a compact field workflow.
+      - element: refreshData
+        type: function
+        location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:229
+        description: Pulls attendance, shifts, allocations, permits, and support tickets together for the guard's operational picture.
+      - element: offline queue integration
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:6
+        description: Shows support for degraded-mode action buffering through the offline queue utility.
+    language: typescript
+    lines: 1199
+  - file: SuperadminInboxPanel.tsx
+    path: DasiaAIO-Frontend/src/components/inbox/SuperadminInboxPanel.tsx
+    purpose: Governance-focused decision queue for the highest privilege role.
+    key_elements:
+      - element: governance summary statistics
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/inbox/SuperadminInboxPanel.tsx:176
+        description: Surfaces incidents, pending approvals, and unread notifications as governance signals.
+      - element: incident and approval queue building
+        type: function
+        location: DasiaAIO-Frontend/src/components/inbox/SuperadminInboxPanel.tsx:83
+        description: Converts unresolved incidents and overdue approvals into urgent inbox actions.
+    language: typescript
+    lines: 227
+  - file: AdminInboxPanel.tsx
+    path: DasiaAIO-Frontend/src/components/inbox/AdminInboxPanel.tsx
+    purpose: Operations-control inbox for admin users.
+    key_elements:
+      - element: buildInboxItems
+        type: function
+        location: DasiaAIO-Frontend/src/components/inbox/AdminInboxPanel.tsx:52
+        description: Builds queue items from approvals, firearm status, and unread notifications.
+      - element: operational metrics summary
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/inbox/AdminInboxPanel.tsx:186
+        description: Exposes active guards, pending approvals, and incident counts to frame admin decisions.
+    language: typescript
+    lines: 221
+  - file: SupervisorInboxPanel.tsx
+    path: DasiaAIO-Frontend/src/components/inbox/SupervisorInboxPanel.tsx
+    purpose: Field-control inbox for supervisors.
+    key_elements:
+      - element: toInboxItems
+        type: function
+        location: DasiaAIO-Frontend/src/components/inbox/SupervisorInboxPanel.tsx:34
+        description: Converts replacement approvals, live incidents, unassigned shifts, and notifications into field-control actions.
+      - element: Field Control Inbox
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/inbox/SupervisorInboxPanel.tsx:203
+        description: Labels the supervisor decision surface explicitly as field control.
+    language: typescript
+    lines: 209
+  - file: GuardInboxPanel.tsx
+    path: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx
+    purpose: Personal action queue for guards.
+    key_elements:
+      - element: mapShiftsToInboxItems
+        type: function
+        location: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx:59
+        description: Surfaces upcoming shifts inside the next 24 hours as urgent mission actions.
+      - element: offline and error handling
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx:186
+        description: Shows cached/offline messaging and degraded-state handling for field users.
+    language: typescript
+    lines: 215
+
+patterns_found:
+  - category: architecture
+    pattern: Shared elevated command environment with role-specific inbox overlays.
+    description: Superadmin, admin, and supervisor all enter the same elevated dashboard shell, but each role sees a different decision queue and authority boundary.
+    examples:
+      - file: DasiaAIO-Frontend/src/App.tsx
+        location: DasiaAIO-Frontend/src/App.tsx:819
+        snippet: if (role === 'superadmin' || role === 'admin' || role === 'supervisor') { return <SuperadminDashboard ... /> }
+      - file: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:19
+        snippet: import { SupervisorInboxPanel } ... import { AdminInboxPanel } ... import { SuperadminInboxPanel }
+    prevalence: common
+  - category: architecture
+    pattern: Unified operations picture assembled from multiple live domains.
+    description: The command center fuses personnel, incident, vehicle, firearm, and predictive-alert streams into one operational view.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:46
+        snippet: const summaryState = useOpsSummary(); const shiftsState = useOpsShifts(); const assetsState = useOpsAssets(); const incidentsState = useIncidents()
+      - file: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx:118
+        snippet: liveOperationsItems combines shifts, vehicles, incidents, and firearms into one feed.
+    prevalence: common
+  - category: structure
+    pattern: Mission-first field UX for guards.
+    description: Guard flows are compressed into a small set of field actions and sections rather than a dense multi-pane admin shell.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:56
+        snippet: type GuardSection = 'inbox' | 'mission' | 'resources' | 'support' | 'map'
+      - file: docs/PRD.yaml
+        location: docs/PRD.yaml:4
+        snippet: as_a Guard i_want A mission-first dashboard landing view that surfaces my current duty context and primary actions immediately
+    prevalence: common
+  - category: architecture
+    pattern: Cross-panel event focus instead of isolated widgets.
+    description: Event selection is shared across panels so multiple modules can align around the same incident or alert.
+    examples:
+      - file: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+        location: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx:20
+        snippet: OperationalEventProvider stores selectedEventId, selectedEvent, selectEvent, clearSelection.
+      - file: CHATGPT_SYSTEM_GUIDE.md
+        location: CHATGPT_SYSTEM_GUIDE.md:217
+        snippet: Cross-panel selection highlights matching rows across alert and feed panels.
+    prevalence: occasional
+  - category: security
+    pattern: Role normalization and capability gating before rendering or tracking.
+    description: Roles are normalized early, views are permission-gated, and tracking is restricted to the operational edge roles.
+    examples:
+      - file: DasiaAIO-Frontend/src/types/auth.ts
+        location: DasiaAIO-Frontend/src/types/auth.ts:13
+        snippet: normalizeRole maps invalid or legacy values to a safe Role.
+      - file: DasiaAIO-Frontend/src/App.tsx
+        location: DasiaAIO-Frontend/src/App.tsx:784
+        snippet: canView checks route permission before view rendering.
+      - file: DasiaAIO-Frontend/src/App.tsx
+        location: DasiaAIO-Frontend/src/App.tsx:635
+        snippet: const canSendTrackingHeartbeat = role === 'supervisor' || role === 'guard'
+    prevalence: common
+  - category: ux
+    pattern: Degraded-mode messaging for frontline continuity.
+    description: Guard-facing flows expose offline, sync, and partial-failure cues instead of silently failing.
+    examples:
+      - file: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx
+        location: DasiaAIO-Frontend/src/components/inbox/GuardInboxPanel.tsx:186
+        snippet: Offline - showing cached data
+      - file: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:112
+        snippet: state includes isInitialLoading, isSyncing, syncError, actionStatus, isOnline
+    prevalence: occasional
+  - category: testing
+    pattern: UX acceptance tests focus on first-viewport clarity and action availability.
+    description: Guard redesign tests validate mission hierarchy, sticky actions, summary-first sections, and support grouping.
+    examples:
+      - file: docs/PRD.yaml
+        location: docs/PRD.yaml:30
+        snippet: AC-001 Mission-first hierarchy is visible in first viewport
+      - file: DasiaAIO-Frontend/src/__tests__/guardDashboardRedesign.test.tsx
+        location: DasiaAIO-Frontend/src/__tests__/guardDashboardRedesign.test.tsx:120
+        snippet: report incident and mission buttons are present in the sticky region
+    prevalence: occasional
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: Elevated operational shell
+      responsibility: Hosts inbox, dashboard, approvals, analytics, audit, and operational management for elevated roles.
+      location: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+      relationship_to_domain: domain depends on this
+    - component: Command center
+      responsibility: Combines live summary, map, alerts, predictive signals, and recommended actions into one decision environment.
+      location: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+      relationship_to_domain: domain depends on this
+    - component: Operational event context
+      responsibility: Synchronizes event focus across multiple operational panels.
+      location: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+      relationship_to_domain: domain depends on this
+    - component: Guard field shell
+      responsibility: Provides the low-clutter field interface for mission execution, support, resources, and map.
+      location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+      relationship_to_domain: domain depends on this
+    - component: Role inbox panels
+      responsibility: Convert raw operational data into role-specific queues of decisions and escalations.
+      location: DasiaAIO-Frontend/src/components/inbox/
+      relationship_to_domain: domain depends on this
+  interfaces_used_by_domain:
+    - interface: Role
+      location: DasiaAIO-Frontend/src/types/auth.ts
+      usage_pattern: Normalized role identity used across navigation, permissions, and home-view routing.
+    - interface: Permission
+      location: DasiaAIO-Frontend/src/utils/permissions.ts
+      usage_pattern: Capability map used to authorize access to protected views and functions.
+    - interface: OperationalEventContextValue
+      location: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+      usage_pattern: Shared event-selection contract for cross-panel situational focus.
+  data_flow_involving_domain: Live data is fetched from summary, shift, asset, incident, notification, analytics, and predictive endpoints; the elevated shell merges those streams into a common command view and role-specific inboxes, while the guard shell narrows them into mission, support, resource, and map workflows with degraded-mode continuity.
+  key_relationships_to_domain:
+    - from: DasiaAIO-Frontend/src/App.tsx
+      to: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+      relationship: calls
+    - from: DasiaAIO-Frontend/src/App.tsx
+      to: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+      relationship: calls
+    - from: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+      to: DasiaAIO-Frontend/src/context/OperationalEventContext.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/inbox/SuperadminInboxPanel.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/inbox/AdminInboxPanel.tsx
+      relationship: composes
+    - from: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+      to: DasiaAIO-Frontend/src/components/inbox/SupervisorInboxPanel.tsx
+      relationship: composes
+
+related_technology_stack:
+  languages_used_in_domain:
+    - TypeScript
+    - YAML
+    - Markdown
+  frameworks_used_in_domain:
+    - name: React
+      usage_in_domain: Builds the role-specific decision environments and composable operational panels.
+    - name: Vite
+      usage_in_domain: Frontend build/runtime substrate for the operational UI.
+  libraries_used_in_domain:
+    - name: Lucide React
+      purpose_in_domain: Iconography for operational status, urgency, and action surfaces.
+    - name: Leaflet / React Leaflet
+      purpose_in_domain: Geospatial situational awareness and operational map views.
+  external_apis_used_in_domain:
+    - name: SENTINEL backend REST API
+      integration_point: Summary, incidents, notifications, shifts, assets, analytics, tracking, and predictive-alert endpoints.
+
+related_conventions:
+  naming_patterns_in_domain: Role and workspace naming is explicit and operator-oriented, using terms such as CommandCenterDashboard, Field Control Inbox, Governance Inbox, OperationalEventContext, and Mission-first guard sections.
+  structure_of_domain: Elevated roles use one shared shell with route-level modules and role-specific queue panels; guard workflows are condensed into a focused field shell.
+  error_handling_in_domain: Frontline and inbox surfaces prefer partial-failure tolerance, empty states, and offline or retry messaging over hard crashes.
+  testing_in_domain: Current documented testing emphasis is strongest for the guard UX tranche; production docs also record build, test, Docker, and health-check validation.
+  documentation_in_domain: High-level behavior is documented in PRD, system guide, rollout guide, and system audit artifacts rather than one dedicated operational-standards document.
+
+related_dependencies:
+  internal:
+    - component: DasiaAIO-Frontend/src/utils/api.ts
+      relationship_to_domain: Provides authenticated fetch behavior and protected request handling.
+      direction: outbound
+    - component: DasiaAIO-Frontend/src/hooks
+      relationship_to_domain: Supplies live summary, assets, incidents, predictions, and service health to the command center.
+      direction: outbound
+    - component: DasiaAIO-Backend API routes and services
+      relationship_to_domain: Supplies the operational data model and AI outputs rendered by the frontend decision environments.
+      direction: outbound
+  external:
+    - name: Railway
+      purpose_for_domain: Production hosting and backend deployment target documented in rollout materials.
+    - name: Docker Compose
+      purpose_for_domain: Local operational verification path for backend and database services.
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: Role-based access to elevated operational views
+      location: DasiaAIO-Frontend/src/App.tsx; DasiaAIO-Frontend/src/utils/permissions.ts
+      concern: Decision environments expose incident, personnel, audit, and resource controls that must remain capability-gated.
+    - area: Human-in-the-loop operational actions
+      location: CHATGPT_SYSTEM_GUIDE.md:215; DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+      concern: AI-suggested or high-impact actions must remain attributable, governed, and reviewable.
+    - area: Location tracking
+      location: DasiaAIO-Frontend/src/App.tsx:634; DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+      concern: Live location and field telemetry require explicit consent, scoped role access, and clear operator messaging.
+  authentication_patterns_in_domain: Authenticated session state is required before protected API calls and home rendering; login and consent gating are handled at the application root.
+  authorization_patterns_in_domain: Authorization is implemented through normalized roles, a permission matrix, filtered navigation, and access-denied fallbacks.
+  data_validation_in_domain: Frontend validation is present for role normalization and section gating, while backend/API contract enforcement remains the source of truth for protected writes.
+
+testing_patterns:
+  framework: Jest plus frontend build validation, backend cargo tests, Docker verification, and health endpoint checks.
+  coverage_areas:
+    - Guard mission-first UX hierarchy and bottom action shell
+    - Support/resource/map section behavior in the guard experience
+    - Frontend production build
+    - Backend tests and local health verification
+  test_organization: UX-centric frontend tests live alongside the React app; rollout and audit documents record broader runtime verification.
+  mock_patterns:
+    - Mocked frontend data for guard UX regression coverage
+    - Health endpoint checks for backend smoke verification
+
+translated_standards:
+  palantir_like_definition:
+    concise_definition: A Palantir-like operational intelligence platform is a decision-centric operating system that fuses live multi-source data, shared operational objects, governed actions, and human-in-the-loop workflows into one role-aware environment built for fast, high-consequence decisions.
+    core_traits:
+      - trait: Real-time fused operational picture
+        standard: The platform must combine incidents, personnel, assets, geography, alerts, and predictions into one continuously refreshed operational view rather than separate reporting pages.
+        source_basis:
+          - Palantir Foundry describes closed-loop operations and real-time collaboration.
+          - SENTINEL CommandCenterDashboard merges summary, shifts, assets, incidents, and predictions on a 15-second cycle.
+      - trait: Shared operational model
+        standard: Data must be represented as coherent operational objects and relationships so multiple panels and workflows reference the same incident, guard, site, mission, firearm, or vehicle instead of duplicating state.
+        source_basis:
+          - Palantir Ontology describes coherent objects, properties, links, actions, logic, and security.
+          - SENTINEL OperationalEventContext provides a small but real shared-event pattern.
+      - trait: Decision environments, not dashboard cosmetics
+        standard: Every major surface must answer what is happening, what matters now, who owns it, what can be done next, and what changes if an operator acts.
+        source_basis:
+          - Gotham frames itself as an operating system for global decision-making.
+          - SENTINEL inbox panels already turn raw data into review, assign, inspect, and approve actions.
+      - trait: Human-in-the-loop AI
+        standard: AI outputs must propose, prioritize, or explain actions inside operational workflows, but remain visible, attributable, and approval-aware.
+        source_basis:
+          - AIP emphasizes operators reviewing AI-proposed resolutions with execution visibility.
+          - SENTINEL system docs describe predictive panels upgraded to actionable buttons.
+      - trait: Governed actionability
+        standard: The same platform that reads operational truth must be able to write back through controlled workflows, audit trails, and role restrictions.
+        source_basis:
+          - Palantir Ontology describes traceable, governed actions and unified security policies.
+          - SENTINEL permissions, approvals, audit surfaces, and rollout/audit docs establish the beginnings of that control model.
+      - trait: High-stakes clarity
+        standard: Severity, freshness, ownership, state transitions, and next actions must be visually obvious in the first scan, especially on mobile or degraded connections.
+        source_basis:
+          - Gotham and Foundry emphasize operational environments under dynamic conditions.
+          - SENTINEL PRD and guard UX tests explicitly prioritize first-viewport mission clarity and summary-first layouts.
+  sentinel_role_decision_model:
+    superadmin:
+      mission: Govern the integrity of the entire platform and intervene on cross-domain risk, access, and compliance.
+      primary_decisions:
+        - Approve or reject pending accounts and privileged operational changes.
+        - Review unresolved or severe incidents with governance implications.
+        - Inspect audit history and system-wide anomalies.
+        - Set escalation posture when systemic drift, abuse, or policy conflict appears.
+      decision_environment_standard:
+        - Governance inbox with overdue approvals, unresolved incidents, and unread compliance-significant notifications.
+        - Full access to audit logs, analytics, users, operations, and resources.
+        - Authority to see and act across all roles.
+      evidence_in_repo:
+        - SuperadminInboxPanel labels the surface as Governance Inbox and prioritizes incidents plus overdue approvals.
+        - permissions.ts grants manage_users and view_audit_logs only to superadmin.
+    admin:
+      mission: Run operational readiness across personnel, assets, approvals, and day-to-day service continuity.
+      primary_decisions:
+        - Approve guard-related operational requests.
+        - Investigate firearm or asset statuses requiring action.
+        - Monitor incident counts, active guards, and readiness signals.
+        - Coordinate staffing and resource availability across the operation.
+      decision_environment_standard:
+        - Operations inbox with approvals, firearm status reviews, and unread operational notifications.
+        - Access to analytics and resource-management views, without superadmin-only governance powers.
+        - Visibility into most roles except superadmin for user-row management.
+      evidence_in_repo:
+        - AdminInboxPanel builds queue items from approvals, firearms, notifications, and metrics.
+        - SuperadminDashboard restricts admin from acting on superadmin rows.
+    supervisor:
+      mission: Control the field in near-real time by resolving staffing gaps, live incidents, and on-the-ground execution friction.
+      primary_decisions:
+        - Fill unassigned shifts and replacement needs.
+        - Triage active incidents by site and urgency.
+        - Act on live field notifications and local operational disruptions.
+        - Maintain situational awareness through field telemetry and incident timelines.
+      decision_environment_standard:
+        - Field Control Inbox centered on replacement approvals, live incidents, and unassigned shifts.
+        - Access to the elevated command center but with narrower authority boundaries than admin or superadmin.
+        - Live tracking and field heartbeat access retained because supervisor is an operational edge role.
+      evidence_in_repo:
+        - SupervisorInboxPanel explicitly labels the surface Field Control Inbox.
+        - App.tsx permits tracking heartbeat for supervisor and guard roles only.
+    guard:
+      mission: Execute assigned work safely and accurately with minimal cognitive overhead under field pressure.
+      primary_decisions:
+        - Confirm current assignment and next shift obligations.
+        - Check in, check out, report incidents, and request help or schedule changes.
+        - Maintain awareness of permits, equipment, map position, and support channels.
+        - Continue operating in degraded conditions when connectivity is limited.
+      decision_environment_standard:
+        - Mission-first field shell with inbox, mission, resources, support, and map.
+        - First viewport must show duty context, primary actions, and immediate status without admin noise.
+        - Offline or partial-sync behavior must be explicit and survivable.
+      evidence_in_repo:
+        - UserDashboard implements a compact GuardSection model and offline queue integration.
+        - GuardInboxPanel prioritizes upcoming shifts, swap requests, unread notices, and offline messaging.
+  production_grade_panel_criteria:
+    platform_and_data:
+      - criterion: One shared operational truth model linking guards, incidents, shifts, vehicles, firearms, sites, and alerts across views.
+      - criterion: Cross-panel focus state so alerts, maps, feeds, and detail panes can align on the same event or mission.
+      - criterion: Clearly documented freshness model for each live stream, including timestamp, update frequency, and stale-state behavior.
+    role_design:
+      - criterion: Each role has a distinct decision charter, queue, escalation scope, and action boundary rather than a single generic dashboard with hidden buttons.
+      - criterion: Access control is enforced in both navigation and action execution paths, with auditable reasoning for privileged decisions.
+      - criterion: High-consequence actions are attributable to a person or controlled automation path.
+    operational_workflows:
+      - criterion: Mission-critical flows are closed loop, meaning alert to decision to action to acknowledgement to resolution is visible in one system.
+      - criterion: AI predictions and summaries are embedded into workflows as explainable recommendations, not detached side widgets.
+      - criterion: Failure modes are treated as first-class states, including offline, partial sync, stale feed, and degraded service conditions.
+    reliability_and_security:
+      - criterion: Production deployment path is documented and repeatable across web, desktop, and mobile against one canonical backend.
+      - criterion: Build, test, health-check, and release verification evidence exists and is current.
+      - criterion: Secrets, auth, password reset, audit logging, and role enforcement show explicit hardening rather than classroom defaults.
+    high_stakes_ux_clarity:
+      - criterion: First scan reveals severity, owner, freshness, and next action without interpretation work.
+      - criterion: One screen does not compete with itself through duplicated navigation, inconsistent status language, or decorative overload.
+      - criterion: Mobile and field usage preserve action clarity, thumb reach, and cognitive simplicity.
+      - criterion: Alerts and recommendations are prioritized, labeled, and contextualized enough that operators can trust what they are seeing under pressure.
+  student_level_anti_patterns:
+    - anti_pattern: A dashboard that mostly reports numbers but does not let operators decide or act from the same surface.
+    - anti_pattern: One shared UI for every role where differentiation is mostly visual or hidden rather than decision-based.
+    - anti_pattern: 'AI' features that generate summaries or scores without provenance, confidence framing, or workflow integration.
+    - anti_pattern: No visible freshness, stale-state handling, or degraded-mode behavior for live operational data.
+    - anti_pattern: Fragmented data where incidents, schedules, assets, and map context disagree or must be reconciled manually by the operator.
+    - anti_pattern: Over-designed interfaces that look sophisticated but bury urgent actions, ownership, and severity cues.
+
+open_questions:
+  - question: Is the capstone panel evaluating SENTINEL against enterprise product heuristics or against literal defense-grade command-and-control expectations?
+    context: The phrase 'Palantir-level' can imply either platform qualities or military-grade operational scope, and those are not the same bar.
+    type: nice_to_know
+    affects: []
+  - question: Which operational objects should become first-class shared entities in SENTINEL's own explicit ontology or object model?
+    context: Current code already links events across panels, but the repository does not document a formal shared operational object model.
+    type: research
+    affects: []
+  - question: What are the target freshness, uptime, and response-time expectations for command-center surfaces?
+    context: Production-grade judgment depends heavily on non-functional targets, but these are not formally documented in the reviewed materials.
+    type: research
+    affects: []
+
+gaps:
+  - area: Formal operational ontology
+    description: The repo documents many domains and cross-panel event focus, but it does not define one formal shared entity/action model comparable to the Ontology language used in Palantir's platform framing.
+    impact: research_blocker
+    affects: []
+  - area: Non-functional operating thresholds
+    description: Freshness SLAs, stale-data thresholds, escalation latency targets, and operator response budgets are not explicitly defined in the reviewed docs.
+    impact: research_blocker
+    affects: []
+  - area: Role-specific elevated home experiences
+    description: Elevated roles are well differentiated by permissions and inboxes, but they still share one main dashboard shell rather than fully distinct decision environments.
+    impact: nice_to_know
+    affects: []
+  - area: Human-in-the-loop governance policy detail
+    description: AI actionability is described in the system guide, but the exact approval, override, and accountability rules for AI-assisted actions are not fully documented in the reviewed artifacts.
+    impact: nice_to_know
+    affects: []

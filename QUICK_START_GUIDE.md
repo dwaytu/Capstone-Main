@@ -1,164 +1,123 @@
-# 🚀 QUICK START GUIDE - Testing & Deployment
+# SENTINEL Quick Start Guide
 
-**TL;DR:** All authentication bugs fixed + forgot password feature added. Ready to test!
+This guide covers the fastest path to running SENTINEL for each platform.
 
----
+## Web
 
-## ⚡ 30-Second What Happened
+1. Open https://dasiasentinel.xyz/
+2. Sign in with your provisioned account credentials.
+3. If you are a new guard, register via the login page and wait for admin approval.
 
-You had 3 problems:
-1. ❌ Clicking "Refresh Page" logged you out
-2. ❌ No "Forgot your password?" option
-3. ❌ Authentication system was broken internally
+## Desktop (Windows)
 
-**We fixed all 3:**
-- ✅ Added JWT tokens + localStorage persistence
-- ✅ Fixed refresh button to keep you logged in
-- ✅ Built complete password recovery system
+1. Download the latest `.msi` or `.exe` installer from [GitHub Releases](https://github.com/dwaytu/Capstone-Main/releases/latest).
+2. Run the installer and launch SENTINEL.
+3. Sign in with the same credentials used on the web.
 
----
+## Android
 
-## 🧪 TEST THESE RIGHT NOW
+1. Download the latest APK from [GitHub Releases](https://github.com/dwaytu/Capstone-Main/releases/latest).
+2. Enable sideloading on the device if not already enabled.
+3. Install and launch the app.
+4. Sign in with your account credentials.
 
-### Quick Test #1: Page Refresh (5 seconds)
-```
-1. Login
-2. Press F5 (refresh)
-3. ✅ Should STAY logged in
-```
+## Local Development
 
-### Quick Test #2: Refresh Page Button (5 seconds)
-```
-1. Login
-2. Click account dropdown → "Refresh Page"
-3. ✅ Should STAY logged in
-```
+### Prerequisites
 
-### Quick Test #3: Forgot Password (2 minutes)
-```
-1. Click "Forgot your password?" on login
-2. Enter your Gmail email
-3. Check Gmail for 6-digit code
-4. Enter the code
-5. Enter new password (twice)
-6. ✅ "Password reset successful!"
-7. Login with new password
-```
+- Node.js 20+
+- Rust toolchain (rustup)
+- PostgreSQL (or Docker)
+- `DATABASE_URL` environment variable pointing to a PostgreSQL instance
 
-### Quick Test #4: Verify Token Storage (1 minute)
-```
-1. Login
-2. Press F12 (DevTools)
-3. Go to "Application" tab
-4. Click "Local Storage"
-5. ✅ See "token" and "user" entries
-6. Logout
-7. ✅ Entries cleared
-```
+### Backend
 
----
-
-## 📋 What Changed
-
-### Files Modified
-- `src/App.tsx` - Auth now persists
-- `src/components/LoginPage.tsx` - Added forgot password UI
-- `src/components/AccountManager.tsx` - Fixed refresh button
-- `DasiaAIO-Backend/src/handlers/auth.rs` - Added password reset endpoints
-- `DasiaAIO-Backend/Cargo.toml` - Added JWT library
-- (... and 3 more backend files)
-
-### What You Get
-- JWT tokens stored in localStorage
-- Password recovery via email
-- Sessions survive page refresh
-- No more logout when clicking refresh
-- Secure password reset codes
-
----
-
-## 🔑 Key Features
-
-### Authentication
-```
-✅ Login → Get JWT token
-✅ Token stored in browser
-✅ Page refresh → Auto-restored
-✅ Logout → Cleared
-```
-
-### Forgot Password
-```
-✅ Email entry
-✅ 6-digit code sent  
-✅ Code verification
-✅ Password reset
-✅ Immediate login with new password
-```
-
----
-
-## 📞 If Something Breaks
-
-### "Still logging me out on refresh"
-→ Clear localStorage and try again (DevTools → Application → Local Storage → Clear All)
-
-### "Didn't get reset code"
-→ Check Gmail spam folder, verify API key configured
-
-### "Reset code says invalid"
-→ Code expired (10 min) or already used, request new one
-
-### "Can't login with new password"  
-→ Confirm passwords matched, try again slowly
-
----
-
-## 🚀 Ready to Deploy?
-
-### Before Going Live
-1. ✅ Test all 4 quick tests above
-2. ✅ Verify email is working  
-3. ✅ Check browser console (F12) for errors
-4. ✅ Set JWT_SECRET env var to strong value
-5. ✅ Set RESEND_API_KEY for your Resend account
-
-### Deploy Steps
 ```bash
-# From DasiaAIO-Backend folder:
-docker compose down
+cd DasiaAIO-Backend
+# Option A: Docker
 docker compose up -d --build
+
+# Option B: Native
+cargo run --bin server
 ```
 
----
+Health check: `curl http://localhost:5000/api/health`
 
-## 📊 System Health
+### Frontend
 
 ```bash
-# Check if running:
-docker ps | grep guard-firearm
-
-# View logs:
-docker logs guard-firearm-backend
-
-# Database status:
-docker logs guard-firearm-postgres
+cd DasiaAIO-Frontend
+npm install
+npm run dev
 ```
 
----
+Opens at http://localhost:5173. Requires the backend running at `localhost:5000`.
 
-## 📚 For Deep Dives
+### Cross-Platform Builds
 
-- [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md) - Overview
-- [AUDIT_AUTHENTICATION_SYSTEM.md](AUDIT_AUTHENTICATION_SYSTEM.md) - What was wrong
-- [PHASE1_IMPLEMENTATION_REPORT.md](PHASE1_IMPLEMENTATION_REPORT.md) - JWT details
-- [PHASE2_IMPLEMENTATION_REPORT.md](PHASE2_IMPLEMENTATION_REPORT.md) - Password reset details
+From repository root:
 
----
+```bash
+npm run build:web        # Web production bundle
+npm run build:desktop    # Tauri MSI/EXE
+npm run build:android    # Capacitor APK
+```
 
-## ✅ Done!
+Release builds require `VITE_API_BASE_URL` (HTTPS production URL) and `VITE_APP_VERSION`.
 
-All code is compiled, tested, and running.
+## Environment Variables
 
-**Next**: Run the 4 quick tests above and provide feedback!
+### Backend (required)
+
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | Token signing key (must be strong in production) |
+| `ADMIN_CODE` | Internal account creation code (must be non-default in production) |
+| `CORS_ORIGINS` | Comma-separated allowed origins |
+
+### Backend (optional)
+
+| Variable | Purpose |
+|----------|---------|
+| `RESEND_API_KEY` | Email provider key for verification and password reset |
+| `APP_ENV` | Set to `production` for strict startup validation |
+| `REQUEST_TIMEOUT_SECS` | API request timeout (default: 30) |
+| `JWT_EXPIRY_HOURS` | Access token lifetime |
+
+### Frontend (build-time)
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_BASE_URL` | Backend API URL (must be HTTPS in production) |
+| `VITE_APP_VERSION` | Semantic version for release identity |
+
+## Account Provisioning
+
+- **Guards**: Self-register via the login page. Accounts start as `pending` and require approval from an admin or supervisor.
+- **Admin/Supervisor**: Created by a superadmin through the user management interface.
+- **Superadmin**: Promoted via direct database update. See `DasiaAIO-Backend/scripts/railway_live_account_provision.sql`.
+
+## Roles
+
+| Role | Access |
+|------|--------|
+| `superadmin` | Full platform management, audit logs, user creation |
+| `admin` | User management, operational dashboards, approvals |
+| `supervisor` | Operational visibility, guard approvals, tracking |
+| `guard` | Personal workspace, check-in/out, incident reporting |
+
+## Troubleshooting
+
+- **Logged out on refresh**: Clear `localStorage` and sign in again.
+- **Password reset code not received**: Check spam folder. Verify `RESEND_API_KEY` is configured.
+- **403 errors on dashboard load**: Verify your role has permission for the requested resource.
+- **CORS errors in browser**: Ensure `CORS_ORIGINS` includes your frontend domain.
+- **Backend won't start in production**: Check that `JWT_SECRET`, `ADMIN_CODE`, and `CORS_ORIGINS` are set to non-default values.
+
+## Further Reading
+
+- [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md) — Multi-platform deployment and release workflow
+- [CHATGPT_SYSTEM_GUIDE.md](CHATGPT_SYSTEM_GUIDE.md) — Full system architecture reference
+- [COPILOT.md](COPILOT.md) — Technical stack conventions and API routes
 

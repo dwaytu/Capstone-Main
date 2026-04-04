@@ -27,11 +27,9 @@
   },
   "plugins": {
     "updater": {
-      "active": true,
-      "pubkey": "${TAURI_UPDATER_PUBLIC_KEY}",
-      "endpoints": [
-        "${TAURI_UPDATER_ENDPOINT}"
-      ],
+      "active": false,
+      "pubkey": "",
+      "endpoints": [],
       "windows": {
         "installMode": "passive"
       }

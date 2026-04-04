@@ -4,7 +4,16 @@ This document is a high-signal handoff so a new ChatGPT session can quickly unde
 
 ## 1. What This System Is
 
-SENTINEL is an integrated security operations platform for Davao Security & Investigation Agency.
+SENTINEL is a mission and decision-support system for Davao Security & Investigation Agency.
+It combines governed operational records, real-time field signals, policy enforcement, and assistive analytics so command roles can decide:
+
+- who is deployable
+- which assets are compliant
+- where field personnel are operating
+- what incidents or exceptions require intervention
+
+The platform is built to reduce delayed detection, strengthen accountability, and preserve legally defensible operational history across web, desktop, and Android runtimes.
+
 It manages:
 
 - Personnel and scheduling
@@ -187,12 +196,22 @@ Client access governance hardening:
 - `DasiaAIO-Frontend/src/context/ThemeProvider.tsx` now initializes theme state synchronously from persisted preference/system fallback and applies root theme classes in a layout effect to reduce first-paint theme flicker.
 - A follow-up dashboard consistency pass normalized residual micro-typography and control spacing in `Sidebar`, `AuditDashboard`, `IncidentPanel`, and `IncidentSeverityClassifier`, aligning compact labels/chips and action control heights without changing module behavior.
 - A production-readiness UI hardening pass now enforces a unified front-end layering contract in `DasiaAIO-Frontend/src/index.css` (map panes, sticky shells, drawers, floating notices, overlays, and modal tiers) to prevent cross-module z-index collisions.
-- Shared shell controls were refined for readability and mobile stability: `Header` now truncates long titles cleanly on narrow viewports, `Sidebar` spacing follows an 8px rhythm with reduced overlap risk, and account/notification dropdowns use lower, predictable stack layers instead of ad-hoc high z-values.
+ Shared shell controls were refined for readability and mobile stability: `Header` now truncates long titles cleanly on narrow viewports, `Sidebar` spacing follows an 8px rhythm with reduced overlap risk, and header overlays use predictable stack layers instead of ad-hoc high z-values.
+- Elevated and guard shells now use a shared header global-actions contract (`DasiaAIO-Frontend/src/components/shared/HeaderGlobalActions.tsx`) that keeps sidebar navigation focused on primary destinations while moving quick inbox, settings, refresh, theme, and profile controls into the fixed top-right header.
+- `DasiaAIO-Frontend/src/components/shared/useOverlayController.ts` now centralizes mutually exclusive header overlay state so quick inbox, settings drawer, and profile menu share Escape/outside-close behavior and focus restoration patterns.
+- `DasiaAIO-Frontend/src/components/NotificationPanel.tsx` now functions as a compact role-aware quick inbox instead of a sidebar destination. It surfaces high-priority items, degraded-state notices, and a fallback action to the full `inbox` view without removing existing view-state support. The panel now sanitizes incomplete user context and malformed summary items before render so header overlays cannot crash the elevated or guard shell during partial-load states.
+- `DasiaAIO-Frontend/src/components/settings/SettingsPanel.tsx` and `DasiaAIO-Frontend/src/components/settings/RoleSettingsContent.tsx` now provide a shared slide-over settings surface in the header while preserving the full `settings` route as a fallback screen for direct view navigation and recovery flows.
+- Direct `Header` consumers with view-state routing context (`ArmoredCarDashboard`, `FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, and `MeritScoreDashboard`) now pass shared `onNavigateToInbox` and `onNavigateToSettings` callbacks so top-right actions stay consistent across elevated resource pages while the sidebar remains limited to primary navigation.
+- `DasiaAIO-Frontend/src/utils/pushNotifications.ts` now short-circuits service-worker registration in Vite development and clears existing localhost registrations/caches from `src/main.tsx` startup so the web shell cannot be pinned to stale cached chrome during dashboard iteration. Production push/offline behavior continues to use `/sw.js`.
+- `DasiaAIO-Frontend/vite.config.ts` now pins dev HMR client behavior to localhost (`server.hmr.host`, `clientPort`, `strictPort`) so VS Code integrated-browser sessions avoid localhost/127.0.0.1 websocket drift and consistently load current shell updates.
+- `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now accepts a shared `onRefresh` callback so elevated dashboards use a single header refresh action instead of duplicating page-specific refresh buttons alongside global controls.
+- `DasiaAIO-Frontend/src/App.tsx` and `DasiaAIO-Frontend/src/components/NotificationCenter.tsx` now keep persistent connectivity/toast messaging out of the header hit area by using narrower shell status trays with large-screen offsets, reducing overlap with navigation and command actions during degraded backend states.
+- `DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx` now renders a centered degraded-state recovery panel on command-center load failure, replacing the previous mixed loading/error presentation with explicit retry and fallback navigation actions.
 - Modal behavior was normalized with reusable overlay/panel patterns (`.soc-modal-backdrop`, `.soc-modal-panel`) and applied across schedule/user edit dialogs, trip details, calendar event details, bug report dialog, and approval drawers so dialogs consistently appear above dashboard chrome.
 - Scroll and safe-area handling were tightened by applying `soc-scroll-area` plus bottom safe-area padding in shared content panes (`OperationalShell`, `ProfileDashboard`) to keep profile/account forms fully visible and scrollable on mobile devices.
 - Operational map presentation was refined to avoid UI obstruction: Leaflet pane z-order was constrained in `index.css`, map containers now isolate stacking contexts, and loading overlays are non-interactive (`pointer-events-none`) so map feedback no longer blocks surrounding dashboard interactions.
 - Global mobile quick navigation in `App.tsx` is disabled for guard routing, and guard navigation is now single-sourced inside `UserDashboard.tsx` through a dedicated bottom-nav field shell to avoid redundant controls.
-- `DasiaAIO-Frontend/src/components/UserDashboard.tsx` was redesigned to a mission-first guard workspace with a single-column mobile layout, persistent field action dock (`Report Incident`, `Check In/Check Out`, `View Instructions`), assignment-focused top summary cards, and a separate map screen with explicit expand/collapse behavior.
+- `DasiaAIO-Frontend/src/components/UserDashboard.tsx` was redesigned to a mission-first guard workspace with a single-column mobile layout, persistent field action dock (`Report Incident`, `Check In/Check Out`, `View Instructions`), assignment-focused top summary cards, a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`), and shared top-right header actions for quick inbox, settings, and profile access.
 - Guard resilience UX now includes explicit loading/sync states, offline and partial-sync banners with retry, and protected action feedback messages for field-critical workflows.
 - Tracking telemetry hooks now enforce frontend role gating (`supervisor`/`guard`) before calling tracking APIs/websocket endpoints (`useOperationalMapData`, `useReplacementSuggestions`, and app-level heartbeat dispatch in `App.tsx`), preventing repeated `403` tracking calls for non-tracking roles.
 - Sidebar service-health polling (`DasiaAIO-Frontend/src/hooks/useServiceHealth.ts`) now uses `/api/health/system` payloads instead of probing role-restricted operational routes, eliminating expected-but-noisy `403` console spam for lower-privilege sessions.
@@ -470,7 +489,7 @@ Current frontend reality:
   - `DasiaAIO-Frontend/src/App.tsx` now shows a version-scoped "What's New" dialog after release upgrades, populated from `VITE_WHATS_NEW` and persisted so each version is shown once.
   - `DasiaAIO-Frontend/src/App.tsx` now includes connectivity resilience UX: online/offline listeners, recurring backend health probe, and a persistent disconnected banner when backend/network is unavailable.
   - Mobile bottom quick-navigation in `App.tsx` is currently disabled for guard routing so guard navigation remains single-sourced in `UserDashboard.tsx`.
-  - `UserDashboard.tsx` now uses a mission-first guard shell with no sidebar, persistent action buttons, and a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`, `Profile`).
+  - `UserDashboard.tsx` now uses a mission-first guard shell with no sidebar, persistent action buttons, a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`), and shared top-right header actions for quick inbox, settings, and profile access.
   - Floating runtime notices in `App.tsx` (update/location/error banners) account for safe-area offsets without depending on bottom quick-nav spacing.
   - Core shell touch-target tuning:
     - `Header.tsx`, `Sidebar.tsx`, `NotificationCenter.tsx`, and `OperationalMapPanel.tsx` now use larger interactive target sizing and focus-visible affordances for mobile/tablet usability and keyboard access.
@@ -479,7 +498,7 @@ Current frontend reality:
     - `App.tsx` now uses dynamic mobile quick-nav column sizing to avoid sparse/awkward guard navigation spacing on small screens, and `auth:token-expired` handlers now surface the event message before session reset.
     - `App.tsx` restore-auth now validates persisted access-token freshness on startup and attempts refresh-token recovery before restoring a logged-in session; if refresh recovery fails, local auth state is cleared before gated workflows (including legal-consent submission) can execute.
     - `App.tsx` legal-consent acceptance now performs pre-submit session validation/refresh and routes expired sessions back to login instead of allowing stale-token consent POST attempts.
-    - `NotificationPanel.tsx` now uses explicit button semantics (`type="button"` + labels), Escape/outside-close behavior, larger touch targets, and inline panel error messaging instead of blocking alert dialogs.
+    - `NotificationPanel.tsx` now serves as the shared quick inbox overlay, using explicit button semantics (`type="button"` + labels), Escape/outside-close behavior, larger touch targets, inline panel error messaging, and role-aware summaries with degraded-state guidance.
     - `AdminDashboard.tsx`, `SuperadminDashboard.tsx`, `SectionPanel.tsx`, and consent/update modal actions in `App.tsx` now enforce higher-frequency control sizing (44px-class minimum targets) for mobile and kiosk ergonomics.
     - `index.css` now expands Leaflet zoom control hit areas and focus-visible outlines for keyboard and touch accessibility on operational map surfaces.
     - `Header.tsx` and `AccountManager.tsx` now establish an explicit high-priority stacking context (`z-[1200+]`) so account/profile controls remain clickable above Leaflet map panes and controls.
@@ -500,8 +519,8 @@ Current frontend reality:
   - Avoid removing root width/height guarantees when adjusting dashboard overflow behavior, otherwise right-side viewport gaps can reappear
   - Keep dashboard shells on fixed-height (`h-[100dvh]`) + `overflow-hidden` roots with `min-h-0` main columns so only designated content panes own vertical scroll.
 - Header consistency guardrail:
-  - Shared `Header` now renders a default `Refresh` button beside theme toggle when a dashboard does not provide a custom `rightSlot` (desktop and mobile)
-  - Dashboards with custom right-side controls keep their custom controls
+  - Shared `Header` now routes default top-right actions through `HeaderGlobalActions`, keeping quick inbox, settings, profile, theme, and refresh behavior aligned across elevated dashboards and the guard workspace.
+  - Existing `inbox`, `settings`, and `profile` view keys remain supported as fallback routes or panels even though they are no longer primary sidebar destinations.
 - Role typing/gating centralization is now in place:
   - `DasiaAIO-Frontend/src/types/auth.ts`: defines `Role`, `normalizeRole`, and elevated-role helpers.
     - Role parsing now trims and lowercases role input before validation, then applies legacy `user -> guard` compatibility.
@@ -876,41 +895,30 @@ Warning interpretation (important):
 - Node 20 deprecation warnings may still appear in workflow annotations when third-party actions internally run on Node 20.
 - Those warnings are action-runtime warnings, not a failure of the app runtime itself.
 
-## 14. Release Validation Update (March 2026)
+## 14. Release Validation Update (April 2026)
 
-- Release workflow now validates `prepare -> quality-gate -> {web,desktop,android}` before publish and publishes deterministic artifacts:
-  - `sentinel-web-v<version>.tar.gz`
-  - `sentinel-desktop-windows-v<version>.msi`
-  - `sentinel-desktop-windows-v<version>.exe`
-  - `sentinel-android-v<version>.apk`
-  - `sentinel-android-v<version>.aab`
-- Android release packaging requires signing secrets and no longer allows unsigned fallback artifacts in release workflow execution.
-- Remaining warnings were deprecation notices from upstream GitHub actions runtime and did not block artifact output.
+- Live `workflow_dispatch` run `23929317544` completed `Prepare Release Metadata`, `Quality Gate`, `Build Web Artifact`, `Build Desktop Artifacts`, and `Build Android Artifacts` successfully.
+- The Android job successfully materialized signing material, executed the debug preflight, and uploaded signed APK and AAB artifacts.
+- `Publish GitHub Release` was skipped in that run because publish remains gated to tag-triggered executions (`refs/tags/v*`).
+- Remaining warnings were upstream action-runtime deprecation notices and did not block artifact output.
 
-Latest compliance/docs pass (March 28, 2026):
+Residual release risks:
 
-- Backend compile verification: `cargo check` succeeded after legal-consent endpoint and JWT-claim updates (warnings only; no compile errors).
-- Frontend verification: `npm run build --prefix DasiaAIO-Frontend` succeeded after consent-modal and legal-link updates.
-- Frontend tests: `npm test --prefix DasiaAIO-Frontend -- --runInBand` succeeded (`5/5` tests passing).
-- Documentation verification: GitHub Pages docs now include `download`, `features`, `security`, and `architecture` pages plus updated navigation and landing links.
-
-Residual risks / follow-ups:
-
-- Runtime smoke of `/api/legal/consent` and `/api/legal/consent/status` should still be executed against deployed staging/production with real auth tokens.
-- License posture is now proprietary; downstream redistribution channels should confirm no stale cached MIT artifacts remain.
+- The next tag-driven release should still be observed end-to-end to confirm GitHub Release asset publication with the same secret contract.
+- External store submission and desktop code-signing operations remain downstream responsibilities outside this repository.
 
 ## 15. Hardening and UI Improvement Waves (April 2026)
 
-### Wave 1 — Android Signing Setup
+### Wave 1 — Release Governance and Android Signing Readiness
 
-- Added `scripts/setup-android-signing.ps1`: PowerShell script that generates a production-grade Android release keystore, Base64-encodes it, and emits the four values required as GitHub Secrets.
-- Root `.gitignore` updated to exclude `*.keystore`, `*.jks`, and `sentinel-android-secrets.txt` from version control.
-- `apps/android-capacitor/android/.gitignore` updated — keystore exclusion entries were uncommented to prevent accidental commit of signing material.
-- Four GitHub Secrets are required for Android CI signing in `.github/workflows/release.yml`:
-  - `ANDROID_KEYSTORE_BASE64` — Base64-encoded keystore file contents
-  - `ANDROID_KEY_ALIAS` — key alias within the keystore
-  - `ANDROID_KEYSTORE_PASSWORD` — keystore store password
-  - `ANDROID_KEY_PASSWORD` — key-entry password
+- `scripts/setup-android-signing.ps1` provides the operational path for generating the Android keystore, encoding it, and producing the exact GitHub Actions secret values required by the governed release pipeline.
+- Root `.gitignore` and `apps/android-capacitor/android/.gitignore` prevent accidental commit of keystore material and generated secret files.
+- The governed Android CI signing contract in `.github/workflows/release.yml` is:
+  - `SENTINEL_ANDROID_KEYSTORE_BASE64`
+  - `SENTINEL_UPLOAD_STORE_PASSWORD`
+  - `SENTINEL_UPLOAD_KEY_ALIAS`
+  - `SENTINEL_UPLOAD_KEY_PASSWORD`
+- Release execution fails when any signing secret is missing; unsigned Android fallback is not part of the governed release path.
 
 ### Wave 2 — Dead Code Removal / Dashboard Consolidation
 
@@ -930,6 +938,7 @@ Residual risks / follow-ups:
 #### guards/UserDashboard.tsx
 
 - Inbox section now renders inside `guard-section-frame` container (was bare `p-4`).
+- Mission section now opens with an `Immediate Action` card that summarizes the next guard decision (`Check in`, `Stay on post`, or standby) plus a readiness cue derived from existing shift, connectivity, and location-consent/tracking state so first-viewport content stays action-oriented without new backend data.
 - KPI row: added `sm:grid-cols-2` responsive breakpoint for intermediate screen sizes.
 - Location tracking toggle: minimum touch target raised from `min-h-9` to `min-h-11` (WCAG 2.5.5 compliance); `aria-pressed` state attribute added; corrupted Unicode bullet characters (● ○) replaced with correct glyphs.
 - Accuracy pill: corrupted `·` separator character replaced with correct middle-dot.
@@ -937,6 +946,7 @@ Residual risks / follow-ups:
 - Primary CTA button: corrupted `✓` and `—` characters replaced with correct Unicode.
 - Active nav button: added `outline outline-transparent` + `forced-colors:text-[ButtonText]` for Windows High Contrast mode support.
 - Incident description textarea: height changed from `min-h-[120px]` to `min-h-32`.
+- `dashboard/GuardShiftSwapPanel.tsx` now treats `GET /api/shifts/swap-requests` 404/501/network-unavailable/stale payloads as degraded non-fatal states: request history shows as unavailable, the manual request form remains usable, and helper copy now explains manual target-guard ID entry plus the no-shift fallback path.
 
 #### dashboard/CommandCenterDashboard.tsx
 
@@ -1497,13 +1507,13 @@ A new unified inbox system provides role-scoped action prioritization and workfl
 - **Data Fetched** (Promise.allSettled for resilience):
   - `GET /api/guard-replacement/guard/{userId}/shifts` → upcoming assignments
   - `GET /api/users/{userId}/notifications` → system notifications
-  - `GET /api/shifts/swap-requests` → pending peer shift swaps
+  - `GET /api/shifts/swap-requests` via `src/utils/swapRequests.ts` → pending peer shift swaps when the endpoint is available
 - **InboxItem Mapping**:
   - Shifts within 24h → `(urgent, mission, "Upcoming Shift: location/time")`
   - Swap requests → `(high, shift, "Swap Request: from peer name")`
   - Notifications (unread) → priority varies by type (high for shift-type, normal for others)
 - **TimelineEntry Mapping**: Shifts mapped with status (pending → pending, active → active, etc.), category "Mission Shift"
-- **Features**: Offline banner (navigator.onLine check), error state on all-fail, responsive grid layout
+- **Features**: Offline banner (navigator.onLine check), non-blocking degraded-state notice when swap-request history is unavailable or stale, error state on all-fail, responsive grid layout
 - **Authorization**: Guard can only access own shifts/notifications; self-service check
 
 **SupervisorInboxPanel.tsx** (`src/components/inbox/SupervisorInboxPanel.tsx`, 215 lines)
@@ -1748,53 +1758,20 @@ Notes:
 - Shims at original component paths must be retired after all secondary consumers migrate to domain paths to avoid long-term import ambiguity.
 - Pre-existing `process` name-resolution warning in `DasiaAIO-Frontend/tests/smoke.spec.ts` (Playwright tsconfig scope) remains; does not affect runtime test execution.
 
-## 21. Release Reliability and AI Signal Integrity Update (2026-04-03)
+## 21. First Operational Hardening Wave (2026-04-03)
 
-### Android release signing remediation
+### Release governance
 
-- `scripts/setup-android-signing.ps1` was hardened for Windows PowerShell 5.1 compatibility and operational reliability:
-  - Removed unsupported optional-chaining syntax (`?.Path`) and replaced with explicit path checks.
-  - Replaced non-ASCII console glyphs with ASCII-safe output to avoid encoding-related parser failures on legacy shells.
-  - Updated `keytool` invocation handling so stderr progress output no longer aborts execution when `$ErrorActionPreference` is strict.
-  - Fixed base64 length interpolation in status output.
-- Release secrets were applied to `dwaytu/Capstone-Main` repository Actions secrets:
-  - `SENTINEL_ANDROID_KEYSTORE_BASE64`
-  - `SENTINEL_UPLOAD_STORE_PASSWORD`
-  - `SENTINEL_UPLOAD_KEY_ALIAS`
-  - `SENTINEL_UPLOAD_KEY_PASSWORD`
-- `.github/workflows/release.yml` action references were upgraded to Node24-capable majors:
-  - `actions/checkout@v5`
-  - `actions/setup-node@v5`
-  - `actions/download-artifact@v5`
+- The hardening wave established one governed release path in `.github/workflows/release.yml` for web, desktop, and Android outputs.
+- Android release distribution is now documented and verified as signed-only within that path, using the four `SENTINEL_*` signing secrets and temporary keystore materialization during CI.
+- A successful live manual run (`23929317544`) confirmed prepare, quality gate, web, desktop, and Android execution; publish remained tag-gated.
 
-### AI classifier and confidence reliability updates
+### Decision-support reliability
 
-- `DasiaAIO-Backend/src/services/incident_ai_classifier.rs`:
-  - Added provider-aware LLM configuration with `AI_PROVIDER` (`groq` default) and automatic key resolution from `AI_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY`.
-  - Default Groq endpoint/model path is now first-class (`https://api.groq.com/openai/v1`, `llama-3.1-8b-instant`) while retaining OpenAI compatibility.
-  - Replaced fixed LLM confidence with output-structure-derived confidence logic.
-- `DasiaAIO-Backend/src/handlers/ai.rs`:
-  - Replaced decorative severity-to-confidence constants with signal-based confidence derived from summary content density and severity token alignment.
+- SENTINEL continues to treat analytics and AI outputs as assistive decision inputs rather than autonomous actions.
+- Current hardening work reinforces that operating model by tightening release governance, preserving cross-platform version consistency, and reducing documentation drift around what the system actually guarantees.
 
-### Legacy role-shim cleanup and offline continuity
+### Residual risk
 
-- Backend SQL role filters were normalized to canonical guard role only (`'guard'`), removing `'user'` alias handling across handlers/services.
-- Tracking entity filters were similarly normalized to guard-only entity semantics where legacy aliases were present.
-- `DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx` now queues critical field actions when offline/network-failing using IndexedDB-backed offline queue:
-  - Check-in
-  - Check-out
-  - Schedule request submission
-- `DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx` now owns the support-workflow UI slice previously embedded in `guards/UserDashboard.tsx`, reducing guard dashboard monolith complexity while preserving behavior.
-
-### Validation update
-
-- Backend validation: `cargo check` in `DasiaAIO-Backend` passed (warnings only, no build failures).
-- Frontend validation: `npm run build` in `DasiaAIO-Frontend` passed (Vite warnings only, no build failures).
-- Release pipeline validation:
-  - Workflow dispatch run `23929143321` started successfully after secret and workflow updates.
-  - `Prepare Release Metadata` completed successfully; `Quality Gate` proceeded in-progress at verification time.
-
-### Known risks and follow-up
-
-- Existing Vite dynamic-import chunking warnings for `config.ts`/`api.ts` remain non-blocking but should be refactored in a future bundling pass.
-- Canonical role cleanup assumes migration of legacy `'user'` records to `'guard'` at the data layer; deployments with stale role values should run a data normalization script before strict production enforcement.
+- The next tagged release should be observed to confirm GitHub Release publication with the same verified signing contract.
+- Distribution channels outside GitHub Releases, including mobile store submission and external signing programs, remain outside the current repository scope.

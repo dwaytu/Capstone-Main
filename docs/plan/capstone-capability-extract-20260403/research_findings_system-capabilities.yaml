@@ -1,0 +1,256 @@
+plan_id: capstone-capability-extract-20260403
+objective: Extract verified current high-level system behaviors relevant to capstone documentation.
+focus_area: system-capabilities
+created_at: 2026-04-03
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Identity and access are implemented with JWT access/refresh flows, role/permission checks, legal-consent enforcement, and auth abuse controls.
+  - Workforce, asset, mission, trip, incident, notification, and support workflows are actively wired in backend routes with protected access.
+  - Tracking includes guarded heartbeat ingestion, map snapshots, geofences, proximity alerts, and authenticated websocket updates.
+  - Analytics and AI support combine operational KPIs with persisted prediction/classification/summarization outputs.
+  - Delivery supports web, Android, and desktop wrappers, with release CI quality gates and signed Android artifact requirements.
+
+research_metadata:
+  methodology: "Two-pass hybrid retrieval using semantic_search + grep_search, route/middleware verification via targeted read_file, plus frontend/runtime and CI workflow validation."
+  scope: "Backend route wiring, auth/middleware, operations handlers, AI services, migrations, frontend app/runtime behavior, wrappers, release pipeline, and legal policy docs."
+  confidence: high
+  coverage: 88
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+- file: main.rs
+  path: DasiaAIO-Backend/src/main.rs
+  purpose: Central API route registration and middleware stack.
+  key_elements:
+  - element: route map
+    type: pattern
+    location: DasiaAIO-Backend/src/main.rs:216
+    description: Auth, legal, users, workforce, assets, incidents, tracking, AI, analytics, support, notifications, audit, health, and system routes are active.
+  - element: global middleware layering
+    type: pattern
+    location: DasiaAIO-Backend/src/main.rs:1562
+    description: API rate limiting, request timeout, trace, authz failure audit, presence updates, body limit, security headers, and outer CORS are applied.
+  language: Rust
+  lines: 1608
+- file: auth.rs
+  path: DasiaAIO-Backend/src/handlers/auth.rs
+  purpose: Registration, login, refresh, logout, and password recovery.
+  key_elements:
+  - element: login security controls
+    type: function
+    location: DasiaAIO-Backend/src/handlers/auth.rs:585
+    description: Account and IP lockout windows, event logging, verification/approval checks, token issuance, and session persistence.
+  - element: token rotation/revocation
+    type: function
+    location: DasiaAIO-Backend/src/handlers/auth.rs:851
+    description: Refresh token rotation with session replacement and logout/reset revocation paths.
+  language: Rust
+  lines: 1338
+- file: authz.rs
+  path: DasiaAIO-Backend/src/middleware/authz.rs
+  purpose: Authorization and legal-consent gate logic.
+  key_elements:
+  - element: permission and role guards
+    type: function
+    location: DasiaAIO-Backend/src/middleware/authz.rs:30
+    description: Permission-based and role-minimum enforcement for protected routes.
+  - element: legal consent enforcement
+    type: function
+    location: DasiaAIO-Backend/src/middleware/authz.rs:16
+    description: Blocks protected access until legal consent is accepted, with limited bootstrap exceptions.
+  language: Rust
+  lines: 158
+- file: tracking.rs
+  path: DasiaAIO-Backend/src/handlers/tracking.rs
+  purpose: Operational map, location telemetry, geofences, alerts, and websocket streaming.
+  key_elements:
+  - element: heartbeat and tracking point intake
+    type: function
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1792
+    description: Validates coordinates/accuracy and records telemetry, then evaluates geofence transitions.
+  - element: websocket stream
+    type: function
+    location: DasiaAIO-Backend/src/handlers/tracking.rs:1965
+    description: Authenticated websocket upgrade with role and legal-consent checks, pushing snapshot updates on tracking events.
+  language: Rust
+  lines: 2032
+- file: App.tsx
+  path: DasiaAIO-Frontend/src/App.tsx
+  purpose: Session restore, legal/location consent UX, role-gated app shell, tracking heartbeat dispatch, and update prompts.
+  key_elements:
+  - element: legal/location consent gate
+    type: pattern
+    location: DasiaAIO-Frontend/src/App.tsx:998
+    description: Blocks app usage until legal agreement and location consent flow are completed.
+  - element: runtime heartbeat and update checks
+    type: pattern
+    location: DasiaAIO-Frontend/src/App.tsx:632
+    description: Sends role-gated heartbeats and performs periodic/manual release checks with desktop updater fallback behavior.
+  language: TypeScript
+  lines: 1234
+- file: release.yml
+  path: .github/workflows/release.yml
+  purpose: Multi-platform release workflow.
+  key_elements:
+  - element: quality gate
+    type: pattern
+    location: .github/workflows/release.yml:79
+    description: Runs frontend and backend tests before artifact builds.
+  - element: signed Android release enforcement
+    type: pattern
+    location: .github/workflows/release.yml:321
+    description: Requires signing secrets/keystore and fails release build when missing.
+  language: YAML
+  lines: 450
+
+patterns_found:
+- category: architecture
+  pattern: role-and-permission protected APIs
+  description: Protected endpoints require authenticated JWT plus either min-role or explicit permission checks.
+  examples:
+  - file: DasiaAIO-Backend/src/main.rs
+    location: DasiaAIO-Backend/src/main.rs:294
+    snippet: "User, asset, mission, analytics, tracking, and audit routes are wrapped with authorization middleware."
+  prevalence: common
+- category: security
+  pattern: consent-gated access and transport/session hardening
+  description: Legal consent is enforced in authz/tracking flows and session security includes refresh session persistence/rotation and lockout controls.
+  examples:
+  - file: DasiaAIO-Backend/src/middleware/authz.rs
+    location: DasiaAIO-Backend/src/middleware/authz.rs:16
+    snippet: "Protected routes require accepted legal consent except explicit bootstrap endpoints."
+  prevalence: common
+- category: structure
+  pattern: operational domains with backend-first route modularization
+  description: Workforce, assets, incidents, tracking, AI, analytics, and governance are split by handler domain and composed centrally.
+  examples:
+  - file: DasiaAIO-Backend/src/handlers
+    location: DasiaAIO-Backend/src/handlers/mod.rs:1
+    snippet: "Dedicated handlers exist for incidents, notifications, support, tracking, AI, analytics, shifts, missions, and assets."
+  prevalence: common
+- category: testing
+  pattern: release pipeline quality gate before publish
+  description: Automated frontend and backend tests are required before platform artifact jobs proceed.
+  examples:
+  - file: .github/workflows/release.yml
+    location: .github/workflows/release.yml:79
+    snippet: "Quality-gate job runs tests and gates web/desktop/android jobs via needs dependency."
+  prevalence: occasional
+
+related_architecture:
+  components_relevant_to_domain:
+  - component: API gateway/router layer
+    responsibility: Exposes and protects all domain endpoints.
+    location: DasiaAIO-Backend/src/main.rs
+    relationship_to_domain: domain depends on this
+  - component: auth and policy middleware stack
+    responsibility: Enforces authentication, authorization, consent, rate limits, timeout, and audit logging.
+    location: DasiaAIO-Backend/src/middleware
+    relationship_to_domain: domain depends on this
+  - component: frontend runtime shell
+    responsibility: Session hydration, consent gating, role-based navigation, update prompts, and tracking heartbeat.
+    location: DasiaAIO-Frontend/src/App.tsx
+    relationship_to_domain: this uses domain outputs
+  interfaces_used_by_domain:
+  - interface: REST JSON endpoints under /api/*
+    location: DasiaAIO-Backend/src/main.rs
+    usage_pattern: Frontend calls protected APIs with bearer headers and typed payloads.
+  - interface: Tracking websocket stream
+    location: DasiaAIO-Backend/src/handlers/tracking.rs
+    usage_pattern: Authenticated clients receive map snapshots on event bus updates.
+  data_flow_involving_domain: "User login/refresh establishes session tokens; frontend invokes protected operational APIs; backend persists operational records and derived intelligence; tracking events fan out through websocket snapshots; release metadata is served to clients for update prompts."
+  key_relationships_to_domain:
+  - from: DasiaAIO-Frontend/src/App.tsx
+    to: DasiaAIO-Backend/src/handlers/legal.rs
+    relationship: calls
+  - from: DasiaAIO-Backend/src/main.rs
+    to: DasiaAIO-Backend/src/middleware/authz.rs
+    relationship: imports
+  - from: DasiaAIO-Backend/src/handlers/ai.rs
+    to: DasiaAIO-Backend/src/services
+    relationship: calls
+
+related_technology_stack:
+  languages_used_in_domain:
+  - Rust
+  - TypeScript
+  - SQL
+  - YAML
+  frameworks_used_in_domain:
+  - name: Axum
+    usage_in_domain: Backend HTTP routing, middleware, and websocket upgrade handling.
+  - name: React
+    usage_in_domain: Frontend session/consent/runtime orchestration and dashboard routing.
+  libraries_used_in_domain:
+  - name: SQLx
+    purpose_for_domain: PostgreSQL access for transactional operations, telemetry, and analytics.
+  - name: jsonwebtoken
+    purpose_for_domain: Access/refresh token generation and verification.
+  - name: Tauri plugin updater
+    purpose_for_domain: Desktop in-app update install path.
+  external_apis_used_in_domain:
+  - name: OpenAI-compatible chat completions endpoint
+    integration_point: Incident severity classification service.
+  - name: GitHub Releases API
+    integration_point: Frontend fallback update check.
+
+related_conventions:
+  naming_patterns_in_domain: "Route groups follow /api/<domain>, with alias routes where needed for compatibility."
+  structure_of_domain: "Domain handlers encapsulate operational behavior; main router composes them with middleware by required protection level."
+  error_handling_in_domain: "Handlers return typed app errors; frontend shows resilient user-facing messages and session-expiry fallback."
+  testing_in_domain: "Release path enforces test gate (frontend Jest + backend cargo tests) before artifact publication."
+  documentation_in_domain: "Legal policy docs are versioned markdown files linked directly from consent UX."
+
+related_dependencies:
+  internal:
+  - component: DasiaAIO-Backend/src/db.rs
+    relationship_to_domain: Provides schema bootstrap and compatibility DDL for auth/session/legal data.
+    direction: outbound
+  - component: DasiaAIO-Frontend/src/utils/api.ts
+    relationship_to_domain: Token/session helpers and authenticated fetch behavior.
+    direction: outbound
+  - component: DasiaAIO-Backend/src/services/*
+    relationship_to_domain: AI and predictive computation for analytics support endpoints.
+    direction: outbound
+  external:
+  - name: PostgreSQL
+    purpose_for_domain: Persistence for identity, operations, telemetry, notifications, and AI artifacts.
+  - name: GitHub Actions runners
+    purpose_for_domain: CI quality gates and multi-platform build/publish automation.
+
+domain_security_considerations:
+  sensitive_areas:
+  - area: Session and token lifecycle
+    location: DasiaAIO-Backend/src/handlers/auth.rs
+    concern: Refresh session persistence, rotation, lockout controls, and revocation on logout/reset.
+  - area: Legal consent and policy enforcement
+    location: DasiaAIO-Backend/src/middleware/authz.rs
+    concern: Protected access denied until legal consent accepted.
+  authentication_patterns_in_domain: "Bearer JWT access with refresh rotation and auth throttling."
+  authorization_patterns_in_domain: "Combination of permission gates and minimum-role/self-or-role checks."
+  data_validation_in_domain: "Input validation for credentials, incident fields, coordinates/geofence constraints, and request schemas."
+
+testing_patterns:
+  framework: "Jest (frontend), cargo test (backend), GitHub Actions workflow orchestration"
+  coverage_areas:
+  - Authentication/session restore and token refresh behavior
+  - Dashboard/runtime behavior and role-gated operations
+  - Backend domain logic and endpoint integrity through Rust tests
+  test_organization: "Local tests per project plus centralized release quality gate job."
+  mock_patterns:
+  - Frontend test mocks for consent/location/session helpers
+
+open_questions:
+- question: "Shift swap endpoints currently require authentication at route level but do not appear to enforce actor ownership in handler payload fields."
+  context: "Handler accepts requester/target IDs directly; policy may depend on frontend discipline instead of backend claim binding."
+  type: research
+  affects: ["capstone-capability-extract-20260403"]
+
+gaps:
+- area: "Schema consistency for support tickets"
+  description: "Migration file defines support_tickets with user_id/title/description, while handler logic expects guard_id/subject/message."
+  impact: research_blocker
+  affects: ["capstone-capability-extract-20260403"]

@@ -1,0 +1,605 @@
+plan_id: production-hardening-20260404
+objective: |
+  Transform SENTINEL frontend into production-ready quality by fixing the disabled mobile navigation
+  (guard top priority), replacing direct color references with semantic design tokens, adding professional
+  polish (loading states, unavailable feature handling, banner stacking), fixing admin dashboard issues,
+  and validating the build passes cleanly.
+created_at: "2026-04-04T00:00:00Z"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 3
+  total_dependencies: 10
+  risk_score: low
+
+tldr: |
+  5-wave production hardening plan focused on frontend-only changes:
+  - Wave 1: Enable mobile nav for guards, add missing nav items (Support, Map), hide "Check for Updates" on mobile
+  - Wave 2: Replace direct Tailwind color references with semantic tokens across AdminDashboard, SuperadminDashboard, ArmoredCarDashboard, AuditDashboard
+  - Wave 3: Add skeleton loading states, disable/label unavailable features (Reset Password, Suspend, Bulk Suspend), fix banner z-index stacking
+  - Wave 4: Fix SuperadminDashboard unused state variable and loading text color, LoginPage email restriction note
+  - Wave 5: Full build validation (tsc + vite build), code review for regressions
+
+open_questions: []
+
+pre_mortem:
+  overall_risk_level: low
+  critical_failure_modes:
+    - scenario: Enabling mobile nav breaks guard workspace sticky bar layout
+      likelihood: medium
+      impact: high
+      mitigation: |
+        Guard workspace has its own sticky bottom bar (guardStickySafeBottomOffset). The mobile quick nav
+        uses a separate fixed bottom element. Test with isGuardWorkspaceView=true to ensure both coexist.
+        The existing code already accounts for showMobileQuickNav in bottom offset calculations.
+    - scenario: Semantic token replacements change visual appearance in dark SOC theme
+      likelihood: low
+      impact: medium
+      mitigation: |
+        The SOC theme uses specific color mappings. Color replacements should map to closest semantic equivalents.
+        Run visual comparison before/after. Prefer conservative mappings (e.g., emerald → success, red → danger, indigo → info/primary).
+    - scenario: Hiding unavailable features breaks existing admin workflows
+      likelihood: low
+      impact: medium
+      mitigation: |
+        Don't remove buttons entirely — add visual "Coming Soon" badges and disable click handlers.
+        This preserves the UI layout while preventing confusing error toasts.
+  assumptions:
+    - index.css semantic tokens (success, danger, warning, info, primary) are the authoritative color system
+    - The guard workspace sticky bar (--guard-sticky-region-height) must be preserved when mobile nav is enabled
+    - "Check for Updates" button serves no purpose on mobile (Capacitor handles updates differently)
+    - SuperadminDashboard refreshing state is genuinely unused (grep confirms setRefreshing is called but refreshing is never read in JSX)
+
+implementation_specification:
+  code_structure: |
+    All changes are edits to existing components. No new files or components are created.
+    Changes follow the existing pattern of semantic Tailwind classes and CSS variable tokens.
+  affected_areas:
+    - DasiaAIO-Frontend/src/App.tsx — mobile nav enable, guard nav items, update button visibility
+    - DasiaAIO-Frontend/src/components/AdminDashboard.tsx — semantic color tokens, unavailable feature handling
+    - DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx — unused state, color tokens, loading state, unavailable features
+    - DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx — semantic color tokens
+    - DasiaAIO-Frontend/src/components/AuditDashboard.tsx — semantic color tokens
+    - DasiaAIO-Frontend/src/components/AuditLogViewer.tsx — semantic color tokens
+    - DasiaAIO-Frontend/src/components/dashboard/ReplacementSuggestionPanel.tsx — semantic color tokens
+  component_details:
+    - component: App.tsx mobile navigation
+      responsibility: Enable bottom nav for all roles on mobile, expand guard nav items
+      interfaces:
+        - showMobileQuickNav toggle
+        - mobileNavItems array for guard role
+        - "Check for Updates" button visibility condition
+    - component: AdminDashboard.tsx color tokens
+      responsibility: Replace ~20 direct color references with semantic token equivalents
+      interfaces:
+        - Status pill classes (emerald→success, red→danger, blue→info, indigo→primary)
+        - Action button classes (approve→success, edit→primary, delete→danger)
+    - component: SuperadminDashboard.tsx fixes
+      responsibility: Remove unused refreshing state, fix loading text color, replace direct colors, handle unavailable features
+      interfaces:
+        - Loading spinner uses semantic text-info instead of text-indigo-600
+        - Unavailable actions show "Coming Soon" badge instead of error toast
+  dependencies:
+    - component: App.tsx mobile nav
+      relationship: Guard workspace sticky bar offset must account for mobile nav height
+    - component: Color token changes
+      relationship: All components reference the same CSS variable tokens from index.css
+  integration_points:
+    - Mobile nav integrates with OperationalShell sidebar (hidden on mobile, nav replaces it)
+    - Guard workspace bottom sticky bar must not conflict with mobile nav bar
+    - Semantic tokens must match the SOC dark theme color palette
+
+contracts:
+  - from_task: PROD-01
+    to_task: PROD-05
+    interface: Mobile nav enabled and guard nav items expanded
+    format: showMobileQuickNav = true, guard mobileNavItems includes Support and Map
+  - from_task: PROD-02
+    to_task: PROD-05
+    interface: All direct color classes replaced with semantic tokens
+    format: No remaining text-indigo-*, bg-emerald-*, bg-purple-*, etc. in modified files
+  - from_task: PROD-03
+    to_task: PROD-05
+    interface: Loading states improved, unavailable features handled gracefully
+    format: Skeleton pulse animations, "Coming Soon" badges on unimplemented actions
+  - from_task: PROD-04
+    to_task: PROD-05
+    interface: SuperadminDashboard TS warnings resolved
+    format: No unused variables, clean tsc output for the file
+
+tasks:
+  - id: PROD-01
+    title: Enable mobile navigation and expand guard nav items
+    description: |
+      Fix the #1 mobile usability blocker: bottom navigation is disabled for all roles.
+
+      Changes in App.tsx:
+      1. Change `showMobileQuickNav = false` to `showMobileQuickNav = true` (line ~886)
+      2. Expand guard mobileNavItems from 3 to 5 items:
+         - Keep: Overview, Calendar, Profile
+         - Add: Support (key: 'support'), Map (key: 'map')
+      3. Hide "Check for Updates" button on mobile (add `hidden md:block` or equivalent).
+         The button is at line ~943. On mobile (Capacitor), updates are handled natively.
+         Keep it visible on desktop/web.
+      4. Verify the guardStickySafeBottomOffset calculation still works with mobile nav enabled.
+         The existing code already has the conditional: `showMobileQuickNav ? 'calc(5rem + env(...))' : 'calc(1rem + env(...))'`
+         so enabling the flag should automatically adjust spacing.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/App.tsx
+        description: Root component with mobile nav logic (lines 875-900 for nav config, 1206-1240 for nav render, 943-955 for update button)
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Guard mobile navigation is the #1 blocker for production readiness
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 15
+        focus_area: Mobile navigation enablement
+        verification:
+          - Mobile bottom nav renders on viewport < md breakpoint
+          - Guard role shows 5 nav items (Overview, Calendar, Support, Map, Profile)
+          - Admin/supervisor role still shows 5 items (Dashboard, Calendar, Firearms, Vehicles, Profile)
+          - "Check for Updates" button hidden on mobile, visible on desktop
+          - Guard workspace sticky bar does not overlap with bottom nav
+        acceptance_criteria:
+          - Guards on mobile can navigate between Overview, Calendar, Support, Map, and Profile
+          - All roles see bottom navigation on mobile viewports
+          - Update check button is not visible on mobile screens
+        failure_modes:
+          - scenario: Bottom nav overlaps with guard workspace sticky action bar
+            likelihood: medium
+            impact: high
+            mitigation: Both elements use safe-area-inset calculations. Test overlap by checking guardStickySafeBottomOffset with showMobileQuickNav=true.
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: false
+
+  - id: PROD-02
+    title: Replace direct Tailwind color classes with semantic design tokens
+    description: |
+      Replace hard-coded color classes with semantic token equivalents across admin-facing components.
+      This enforces the design token system and ensures theme consistency.
+
+      Color mapping reference:
+      - emerald-* → success tokens (bg-success-bg, text-success-text, border-success-border, etc.)
+      - red-* → danger tokens (bg-danger-bg, text-danger-text, border-danger-border, etc.)
+      - blue-* → info tokens (bg-info-bg, text-info-text, border-info-border, etc.)
+      - indigo-* → primary tokens (bg-primary, text-primary, hover:bg-primary-hover, etc.)
+      - purple-* → info tokens or a new superadmin-accent if needed (closest semantic match is info)
+      - yellow-/amber-* → warning tokens
+
+      Files to modify (in order):
+      1. AdminDashboard.tsx — Status pills (lines 80, 95, 113-134), action buttons (lines 775-878), shift status pills (lines 1059-1069), form buttons (lines 1105, 1163, 1169)
+      2. SuperadminDashboard.tsx — Same role badge patterns (lines 98, 113, 131-134), action buttons
+      3. ArmoredCarDashboard.tsx — Submit buttons (lines 497, 601, 715) using bg-indigo-600
+      4. AuditDashboard.tsx — Status pill (line 11)
+      5. AuditLogViewer.tsx — Status pill (line 30)
+      6. ReplacementSuggestionPanel.tsx — Unavailable status (line 14)
+
+      Specific replacements for SOC dark theme status pills:
+      - 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30' → 'bg-success-bg text-success-text ring-1 ring-success-border'
+      - 'bg-red-500/15 text-red-300 ring-1 ring-red-500/30' → 'bg-danger-bg text-danger-text ring-1 ring-danger-border'
+      - 'bg-blue-500/15 text-blue-300 ring-1 ring-blue-500/30' → 'bg-info-bg text-info-text ring-1 ring-info-border'
+      - 'bg-purple-500/20 text-purple-300' → 'bg-info-bg text-info-text'
+      - 'bg-indigo-600 hover:bg-indigo-700' → 'bg-primary hover:bg-primary-hover'
+      - 'bg-emerald-600 hover:bg-emerald-700' → 'bg-success hover:bg-success/90'
+      - 'bg-red-600 hover:bg-red-700' → 'bg-danger hover:bg-danger/90'
+
+      For hover states on icon buttons:
+      - 'hover:bg-emerald-500/10 hover:text-emerald-300' → 'hover:bg-success-bg hover:text-success-text'
+      - 'hover:bg-indigo-500/10 hover:text-indigo-400' → 'hover:bg-info-bg hover:text-info-text'
+      - 'hover:bg-red-500/10 hover:text-red-400' → 'hover:bg-danger-bg hover:text-danger-text'
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/index.css
+        description: Design token definitions (CSS variables)
+      - path: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+        description: Admin dashboard with ~30 direct color references
+      - path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+        description: Superadmin dashboard with ~20 direct color references
+      - path: DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx
+        description: Armored car dashboard with 3 indigo button references
+      - path: DasiaAIO-Frontend/src/components/AuditDashboard.tsx
+        description: Audit dashboard with 1 emerald status pill
+      - path: DasiaAIO-Frontend/src/components/AuditLogViewer.tsx
+        description: Audit log with 1 emerald status pill
+      - path: DasiaAIO-Frontend/src/components/dashboard/ReplacementSuggestionPanel.tsx
+        description: Replacement panel with 1 red status class
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Enforces design token system for theme consistency across the platform
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 7 # Note: exceeds guideline but these are all find-and-replace in same pattern
+        estimated_lines: 120
+        focus_area: Semantic color token migration
+        verification:
+          - No remaining text-indigo-*, bg-emerald-*, bg-purple-* in modified files (grep verification)
+          - Visual appearance remains consistent (semantic tokens map to same color intent)
+          - All status pills use the status-*-bg/text/border pattern
+          - All action buttons use primary/success/danger tokens
+        acceptance_criteria:
+          - Zero direct Tailwind color classes (indigo, emerald, purple, red-500) remain in modified files
+          - All colors reference CSS variable tokens from index.css
+          - Visual appearance is maintained (same color intent preserved)
+        failure_modes:
+          - scenario: Semantic tokens render differently in SOC dark theme vs light theme
+            likelihood: medium
+            impact: medium
+            mitigation: Verify against :root CSS variables. The SOC theme overrides these variables so semantic classes will automatically adapt.
+        tech_stack:
+          - Tailwind CSS v4
+          - CSS custom properties
+        test_coverage: null
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: false
+
+  - id: PROD-03
+    title: Hide "Check for Updates" on mobile and fix banner z-index stacking
+    description: |
+      Two related layout fixes for mobile:
+
+      1. The "Check for Updates" button (App.tsx ~line 943) is always visible in production.
+         On mobile, it competes for space with the guard sticky bar and the new mobile nav.
+         Add `hidden md:block` to hide it on mobile viewports. Keep it on desktop where it's useful.
+
+      2. Review z-index stacking order for fixed-position overlays:
+         - Mobile quick nav: z-[64]
+         - Connectivity banner: z-[80]
+         - Global error toast: z-[84]
+         - "Check for Updates" button: z-[60]
+         Verify these don't overlap on mobile. The connectivity banner should appear above the nav bar.
+         The error toast should appear above the connectivity banner.
+
+      NOTE: This task is combined with PROD-01 since both modify App.tsx mobile layout.
+      If PROD-01 handles the update button, this task focuses on z-index audit only.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies: []
+    conflicts_with:
+      - PROD-01
+    context_files:
+      - path: DasiaAIO-Frontend/src/App.tsx
+        description: Fixed-position overlay elements with z-index values (lines 943-1000)
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Mobile layout polish — overlapping banners and buttons create unprofessional appearance
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 10
+        focus_area: Mobile layout z-index stacking
+        verification:
+          - "Check for Updates" button not visible on mobile viewports
+          - Connectivity banner renders above mobile nav bar
+          - Error toast renders above connectivity banner
+          - No overlapping fixed-position elements on mobile
+        acceptance_criteria:
+          - Z-index stacking order produces no visual overlap on mobile
+          - Update button is desktop-only
+        failure_modes:
+          - scenario: Hiding update button removes the only way for desktop web users to check updates
+            likelihood: low
+            impact: low
+            mitigation: Button is only hidden on mobile (hidden md:block). Desktop users retain access.
+        tech_stack:
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: PROD-04
+    title: Handle unavailable admin features gracefully
+    description: |
+      Three admin actions show error toasts saying "not configured" when clicked:
+      - Reset Password (AdminDashboard line 453, SuperadminDashboard line 706)
+      - Suspend User (AdminDashboard line 457, SuperadminDashboard line 714)
+      - Bulk Suspend (AdminDashboard line 513, SuperadminDashboard line 777)
+
+      Instead of showing as normal clickable buttons that produce error messages, these should:
+      1. Add a visual "Coming Soon" indicator (small badge or tooltip)
+      2. Style the buttons as disabled (opacity-50 cursor-not-allowed)
+      3. Remove the error toast — replace with a brief inline tooltip or no-op
+      4. Optionally add `aria-disabled="true"` and remove the click handler
+
+      This prevents users from thinking the system is broken when they click these buttons.
+
+      In AdminDashboard.tsx:
+      - handleResetPassword function (line ~451): Disable the button, add "Coming Soon" label
+      - handleSuspendUser function (line ~455): Same treatment
+      - handleBulkSuspend function (line ~511): Same treatment
+
+      In SuperadminDashboard.tsx:
+      - handleResetPassword (line ~704): same
+      - handleSuspendUser (line ~712): same
+      - handleBulkSuspend (line ~775): same
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies:
+      - PROD-02
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+        description: Admin dashboard with Reset Password, Suspend, Bulk Suspend handlers
+      - path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+        description: Superadmin dashboard with same unavailable action handlers
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Users clicking "Reset Password" and getting an error feels broken, not incomplete
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 60
+        focus_area: Unavailable feature UX
+        verification:
+          - Reset Password button appears disabled with "Coming Soon" indicator
+          - Suspend button appears disabled with "Coming Soon" indicator
+          - Bulk Suspend button appears disabled with "Coming Soon" indicator
+          - No error toasts fire when clicking disabled buttons
+          - Buttons have aria-disabled="true"
+        acceptance_criteria:
+          - Unavailable features are visually distinguished from working features
+          - No confusing "not configured" error messages appear
+          - Existing working actions (Approve, Edit, Delete) are unaffected
+        failure_modes:
+          - scenario: Disabled buttons break table layout in user management sections
+            likelihood: low
+            impact: low
+            mitigation: Only add opacity and cursor styling — don't change button dimensions or layout
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: PROD-05
+    title: Fix SuperadminDashboard unused state and loading state presentation
+    description: |
+      Two targeted fixes in SuperadminDashboard.tsx:
+
+      1. Remove unused `refreshing` state variable (line 230):
+         - `const [refreshing, setRefreshing] = useState<boolean>(false)` is declared
+         - `setRefreshing(true)` is called at line 784 and `setRefreshing(false)` at line 791
+         - But `refreshing` is never read in JSX or any conditional
+         - Remove the state declaration and both setter calls to eliminate the TS warning
+         - If the refresh logic needs the state later, it can be re-added; for now it's dead code
+
+      2. Fix loading indicator color (line 881):
+         - Current: `<div className="text-indigo-600 text-lg font-medium">Loading system data...</div>`
+         - Replace: `<div className="text-info text-lg font-medium">Loading system data...</div>`
+         - This is a direct color reference that should use the semantic token
+
+      3. Optional improvement: Replace "Loading system data..." text with a skeleton pulse animation
+         for a more professional appearance. Use Tailwind's `animate-pulse` with semantic bg colors:
+         ```
+         <div className="space-y-4 animate-pulse">
+           <div className="h-6 w-48 rounded bg-surface-elevated"></div>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+             <div className="h-24 rounded-lg bg-surface-elevated"></div>
+             <div className="h-24 rounded-lg bg-surface-elevated"></div>
+             <div className="h-24 rounded-lg bg-surface-elevated"></div>
+             <div className="h-24 rounded-lg bg-surface-elevated"></div>
+           </div>
+         </div>
+         ```
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: medium
+    status: pending
+    dependencies:
+      - PROD-02
+    conflicts_with:
+      - PROD-04
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+        description: Superadmin dashboard — refreshing state (line 230), loading indicator (line 881)
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Eliminates TS warning and improves perceived loading performance
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 30
+        focus_area: Code quality and loading UX
+        verification:
+          - No TypeScript warnings for unused variables in SuperadminDashboard.tsx
+          - Loading state uses semantic color tokens (no text-indigo-600)
+          - Loading state shows skeleton pulse animation instead of plain text
+          - Dashboard loads correctly after skeleton state
+        acceptance_criteria:
+          - refreshing state variable is removed without breaking any functionality
+          - Loading indicator uses semantic tokens
+          - Skeleton animation provides visual feedback during data fetch
+        failure_modes:
+          - scenario: Removing refreshing state breaks a refresh button that reads it
+            likelihood: low
+            impact: medium
+            mitigation: Grep confirms refreshing is never read in JSX. Only setRefreshing is called. Safe to remove.
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: PROD-06
+    title: Add skeleton loading states to AdminDashboard
+    description: |
+      Replace plain "Loading..." text in AdminDashboard.tsx with skeleton pulse animations
+      matching the same pattern used in PROD-05 for SuperadminDashboard.
+
+      The AdminDashboard has multiple loading states:
+      - Main loading (when initial data is fetching)
+      - shiftsLoading (when shifts tab loads)
+      - missionsLoading (when missions tab loads)
+      - approvalsLoading (when approvals tab loads)
+
+      For each loading state, replace the text indicator with a skeleton that matches
+      the shape of the content that will replace it:
+      - For tabular data: skeleton rows (h-10 w-full rounded) × 5
+      - For stat cards: skeleton cards matching the grid layout
+      - Use animate-pulse with bg-surface-elevated
+
+      This creates a perception of faster loading and looks more professional.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    covers: []
+    priority: low
+    status: pending
+    dependencies:
+      - PROD-02
+      - PROD-04
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+        description: Admin dashboard loading states (lines 190-202 for state declarations)
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Professional loading states improve perceived performance
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 60
+        focus_area: Loading state UX
+        verification:
+          - All loading states show skeleton animations instead of text
+          - Skeleton shapes match the content they replace
+          - animate-pulse uses semantic bg-surface-elevated color
+        acceptance_criteria:
+          - No "Loading..." plain text remains in admin dashboard
+          - Skeleton animations render during data fetches
+          - Content renders correctly after loading completes
+        failure_modes:
+          - scenario: Skeleton dimensions don't match actual content, causing layout shift
+            likelihood: low
+            impact: low
+            mitigation: Use approximate dimensions. Minor CLS is acceptable for loading skeletons.
+        tech_stack:
+          - React 18
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: PROD-07
+    title: Build validation and regression check
+    description: |
+      Validate that all changes from waves 1-3 produce a clean build:
+
+      1. Run `npx tsc --noEmit` — verify zero TypeScript errors
+      2. Run `npm run build` (vite build) — verify successful production bundle
+      3. Grep audit: confirm no remaining direct color classes in modified files:
+         - `grep -r "text-indigo-\|bg-indigo-\|text-emerald-\|bg-emerald-\|text-purple-\|bg-purple-" src/components/AdminDashboard.tsx src/components/admin/SuperadminDashboard.tsx src/components/ArmoredCarDashboard.tsx src/components/AuditDashboard.tsx src/components/AuditLogViewer.tsx`
+      4. Verify showMobileQuickNav is true and guard has 5 nav items
+      5. Verify no unused variable warnings in SuperadminDashboard.tsx
+
+      This is the gating task before any changes are considered complete.
+    wave: 4
+    agent: gem-reviewer
+    prototype: false
+    covers: []
+    priority: high
+    status: pending
+    dependencies:
+      - PROD-01
+      - PROD-02
+      - PROD-03
+      - PROD-04
+      - PROD-05
+      - PROD-06
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/package.json
+        description: Build scripts (build, type-check commands)
+      - path: DasiaAIO-Frontend/tsconfig.json
+        description: TypeScript configuration
+      - path: DasiaAIO-Frontend/vite.config.ts
+        description: Vite build configuration
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Build validation is essential — all changes must compile and bundle
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 0
+        estimated_lines: 0
+        focus_area: Build validation
+        verification:
+          - tsc --noEmit exits 0
+          - vite build exits 0
+          - Grep finds zero direct color references in modified files
+          - No new TypeScript warnings introduced
+        acceptance_criteria:
+          - Clean TypeScript compilation with zero errors
+          - Successful Vite production build
+          - Grep audit confirms semantic token migration is complete
+        failure_modes:
+          - scenario: TypeScript errors from incorrect semantic token class names
+            likelihood: low
+            impact: high
+            mitigation: Tailwind CSS classes are strings — TS won't catch invalid class names. Vite build will succeed. Visual testing catches these.
+        requires_review: true
+        review_depth: full
+        review_security_sensitive: false
+        validation_matrix:
+          - scenario: TypeScript compilation
+            steps:
+              - cd DasiaAIO-Frontend
+              - npx tsc --noEmit
+            expected_result: Exit code 0, zero errors
+          - scenario: Vite production build
+            steps:
+              - cd DasiaAIO-Frontend
+              - npm run build
+            expected_result: Exit code 0, app-dist/ generated
+          - scenario: Semantic token audit
+            steps:
+              - grep for direct color classes in modified files
+            expected_result: Zero matches for indigo, emerald, purple direct colors

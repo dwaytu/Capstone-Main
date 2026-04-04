@@ -1,0 +1,1050 @@
+plan_id: palantir-reframe
+objective: "Deep audit of SENTINEL frontend — map every user-facing surface, data flow, interaction pattern, and API dependency"
+focus_area: frontend-system-audit
+created_at: "2026-04-04"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - SENTINEL has 3 primary workspaces: Guard (UserDashboard), Elevated (SuperadminDashboard+CommandCenter), and Admin (lighter AdminDashboard). All share a common OperationalShell layout.
+  - The CommandCenterDashboard is the real decision surface — it aggregates 8+ data hooks with 15s polling, displays AI predictions (absence risk, replacement suggestions, vehicle maintenance), live ops feed, incident alerts, and an operational map with WebSocket support.
+  - Guard workspace is mobile-first with 5 sections (inbox, mission, resources, support, map) and offline-capable via enqueueOfflineAction. Location heartbeats fire every 20s.
+  - Backend exposes ~120+ API endpoints across 25 handler modules with 6 AI/predictive services, full RBAC via middleware, audit logging on all writes, and a background geofence alert loop.
+  - Real-time: WebSocket only for map tracking; everything else is poll-based (15s CommandCenter, 15s health, 20s guard heartbeat). No server-sent events or push notifications beyond the push-subscribe endpoint.
+
+
+research_metadata:
+  methodology: "hybrid retrieval: semantic_search + grep_search + targeted read_file across frontend components, router, hooks, backend main.rs (all routes), handlers/mod.rs, services/, middleware/"
+  scope: "Full frontend component tree, all backend API routes, all data hooks, real-time patterns, routing structure"
+  confidence: high
+  coverage: 95
+  decision_blockers: 0
+  research_blockers: 0
+
+
+# ============================================================================
+# 1. GUARD WORKSPACE
+# ============================================================================
+guard_workspace:
+  entry_component: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+  route: "/overview"
+  role_access: ["guard"]
+
+  sections:
+    - id: inbox
+      label: "Inbox"
+      component: "GuardInboxPanel"
+      purpose: "Action-oriented inbox for guard-specific notifications and workflow items"
+      operational_value: medium
+
+    - id: mission
+      label: "Mission"
+      purpose: "Primary duty surface — shift status, check-in/out, incident reporting, location tracking"
+      sub_components:
+        - "DashboardCard (duty status banner)"
+        - "StatCard (post, time window, tracking accuracy)"
+        - "Incident report modal"
+        - "Instructions modal"
+        - "Schedule request form"
+        - "Shift swap options"
+      operational_value: high
+
+    - id: resources
+      label: "Resources"
+      component: "GuardResourcesTab"
+      purpose: "View firearm allocations and permits assigned to the guard"
+      operational_value: medium
+
+    - id: support
+      label: "Support"
+      component: "GuardSupportTab"
+      purpose: "Submit and view support tickets"
+      operational_value: low
+
+    - id: map
+      label: "Map"
+      component: "GuardMapTab"
+      purpose: "View own location on OpenStreetMap embed with accuracy indicator"
+      operational_value: medium
+
+  views:
+    - "Duty status banner (On Post / Standby / Awaiting Check In / Completed / Off Duty)"
+    - "Current shift details (client site, time window, elapsed time)"
+    - "Location tracking status (accuracy: High/Medium/Low/No Fix)"
+    - "Today's schedule list"
+    - "Firearm allocations list"
+    - "Permit records list"
+    - "Support tickets list"
+    - "Attendance history"
+    - "OpenStreetMap location embed"
+
+  actions:
+    - "Check In to assigned shift"
+    - "Check Out from active shift"
+    - "Report Incident (title, description, location, priority)"
+    - "Request Schedule (client site, date, start/end time)"
+    - "Submit Support Ticket (subject, message)"
+    - "Toggle Location Tracking on/off"
+    - "Request Location Permission"
+    - "View Instructions overlay"
+    - "Navigate to Profile modal"
+    - "Refresh data (manual pull)"
+    - "Navigate to inbox/settings/profile"
+
+  data_feeds:
+    - endpoint: "GET /api/attendance/{userId}"
+      data: "Attendance records (check-in/out history)"
+      refresh: manual
+    - endpoint: "GET /api/guard-replacement/guard/{userId}/shifts"
+      data: "Guard's assigned shifts"
+      refresh: manual
+    - endpoint: "GET /api/guard-allocations/{userId}"
+      data: "Firearm allocations for this guard"
+      refresh: manual
+    - endpoint: "GET /api/guard-firearm-permits/{userId}"
+      data: "Permit records for this guard"
+      refresh: manual
+    - endpoint: "GET /api/support-tickets/{userId}"
+      data: "Support tickets submitted by this guard"
+      refresh: manual
+    - endpoint: "POST /api/tracking/heartbeat"
+      data: "Location heartbeat (lat, lon, heading, speed, accuracy)"
+      refresh: "Every 20 seconds when tracking enabled"
+    - endpoint: "POST /api/guard-replacement/attendance/check-in"
+      data: "Check-in action"
+      direction: "guard → system"
+    - endpoint: "POST /api/guard-replacement/attendance/check-out"
+      data: "Check-out action"
+      direction: "guard → system"
+    - endpoint: "POST /api/incidents"
+      data: "Incident report"
+      direction: "guard → system"
+    - endpoint: "POST /api/guard-replacement/shifts"
+      data: "Schedule request"
+      direction: "guard → system"
+    - endpoint: "POST /api/support-tickets"
+      data: "Support ticket"
+      direction: "guard → system"
+
+  real_time:
+    websocket: false
+    polling: "Location heartbeat every 20s (when tracking on)"
+    offline_capable: true
+    offline_strategy: "enqueueOfflineAction — queues check-in/out and schedule requests for later sync"
+
+  decision_surfaces:
+    - "Check in / Check out (binary duty state transition)"
+    - "Report incident with priority classification"
+    - "Toggle location tracking (consent-gated)"
+    - "Request schedule changes"
+    - "Submit support tickets"
+
+
+# ============================================================================
+# 2. ELEVATED WORKSPACE (Superadmin / Admin / Supervisor)
+# ============================================================================
+elevated_workspace:
+  entry_component: "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx"
+  route: "/dashboard"
+  role_access: ["superadmin", "admin", "supervisor"]
+  notes: "AdminDashboard.tsx is a lighter version used for admin/supervisor with fewer sections. SuperadminDashboard serves all elevated roles with RBAC gating via canViewUserRow/canEditUserRow."
+
+  sections:
+    - id: dashboard
+      label: "Dashboard (Command Center)"
+      component: "CommandCenterDashboard"
+      purpose: "SOC-style operational overview with real-time aggregated metrics, AI predictions, live feed, and map"
+      operational_value: critical
+
+    - id: approvals
+      label: "Guard Approvals"
+      purpose: "Review and approve/reject pending guard registrations"
+      permission: "approve_guards"
+      operational_value: high
+
+    - id: schedule
+      label: "Guard Schedules"
+      purpose: "Create, edit, delete guard shift schedules. Assign guards to client sites."
+      permission: "schedule_management"
+      operational_value: high
+
+    - id: missions
+      label: "Mission Assignment"
+      purpose: "Create missions with guard/firearm/vehicle allocation using AssignmentPicker"
+      permission: "mission_management"
+      operational_value: high
+
+    - id: analytics
+      label: "Analytics & Reports"
+      component: "AnalyticsDashboard"
+      purpose: "Performance trends, guard reliability, mission statistics"
+      permission: "view_analytics"
+      operational_value: high
+
+    - id: trips
+      label: "Trip Management"
+      component: "TripManagement"
+      purpose: "Manage armored car trips — create, track, end trips; assign drivers"
+      permission: "trip_management"
+      operational_value: medium
+
+    - id: audit-log
+      label: "System Audit Log"
+      component: "AuditDashboard (lazy loaded)"
+      purpose: "Immutable audit trail of all system write operations"
+      permission: "superadmin-only"
+      operational_value: high
+
+    - id: inbox
+      label: "Inbox"
+      components:
+        - "SuperadminInboxPanel (superadmin)"
+        - "AdminInboxPanel (admin)"
+        - "SupervisorInboxPanel (supervisor)"
+      purpose: "Role-specific action inbox — pending items, approvals, notifications"
+      operational_value: medium
+
+  views:
+    - "User management table (with search, role filter, status filter, bulk selection)"
+    - "User online/offline status with precise last-seen timestamps"
+    - "Pending guard approvals list with detail expansion"
+    - "Shift schedule table (all guards)"
+    - "Mission assignment form with resource picker"
+    - "Mission list"
+    - "Notification center (toast-style)"
+    - "Tracking accuracy mode selector"
+    - "Live freshness pill (data staleness indicator)"
+
+  actions:
+    - "View/Edit/Delete users (RBAC: superadmin sees all, admin can't see superadmin, supervisor sees guards only)"
+    - "Create new user"
+    - "Approve/Reject guard registrations"
+    - "Create/Edit/Delete shift schedules"
+    - "Assign missions (guard + firearm + vehicle allocation)"
+    - "Bulk user selection and processing"
+    - "Navigate to analytics, audit, trips, calendar, performance, merit, firearms, allocation, permits, maintenance, armored-cars"
+    - "Set tracking accuracy mode (high/balanced/battery_saver)"
+    - "Edit user modal"
+    - "Edit schedule modal"
+
+  data_feeds:
+    - endpoint: "GET /api/users"
+      data: "All users with roles, status, last_seen_at"
+      refresh: "on section change"
+    - endpoint: "GET /api/users/pending-approvals"
+      data: "Guards pending approval"
+      refresh: "on section change"
+    - endpoint: "GET /api/guard-replacement/shifts"
+      data: "All guard shifts"
+      refresh: "on section change"
+    - endpoint: "GET /api/missions"
+      data: "All missions"
+      refresh: "on section change"
+    - endpoint: "GET /api/firearms"
+      data: "Available firearms for assignment"
+      refresh: "on load"
+    - endpoint: "GET /api/armored-cars"
+      data: "Available vehicles for assignment"
+      refresh: "on load"
+
+
+# ============================================================================
+# 3. COMMAND CENTER DASHBOARD (Heart of the system)
+# ============================================================================
+command_center:
+  component: "DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx"
+  embedded_in: "SuperadminDashboard (dashboard section)"
+  polling_interval: "15 seconds (all data sources refreshed sequentially)"
+
+  data_hooks:
+    - hook: useOpsSummary
+      endpoints:
+        - "GET /api/guard-replacement/shifts"
+        - "GET /api/users/pending-approvals"
+        - "GET /api/firearm-allocations/active"
+        - "GET /api/firearm-allocations/overdue"
+        - "GET /api/trips"
+        - "GET /api/armored-cars"
+        - "GET /api/guard-firearm-permits/expiring"
+      metrics_produced:
+        - activeGuardsOnDuty
+        - guardsAbsentToday
+        - pendingGuardApprovals
+        - firearmsCurrentlyIssued
+        - overdueFirearmReturns
+        - activeArmoredCarTrips
+        - vehiclesInMaintenance
+        - expiringGuardPermits
+
+    - hook: useOpsShifts
+      endpoints:
+        - "GET /api/guard-replacement/shifts"
+      data: "Today's shift operations"
+
+    - hook: useOpsAssets
+      endpoints:
+        - "GET /api/firearms"
+        - "GET /api/armored-cars"
+      data: "Firearms inventory and vehicle fleet status"
+
+    - hook: useServiceHealth
+      endpoints:
+        - "GET /api/health/system"
+      polling: "15 seconds"
+      data: "Database, API gateway, WebSocket, auth service online/offline status"
+
+    - hook: useIncidents
+      endpoints:
+        - "GET /api/incidents/active?page=1&page_size=50"
+      data: "Active incidents with status and priority"
+      actions: "reportIncident (POST /api/incidents), updateStatus (PATCH /api/incidents/:id/status)"
+
+    - hook: usePredictiveAlerts
+      endpoints:
+        - "GET /api/alerts/predictive"
+      data: "AI-generated predictive alerts (info/warning/critical)"
+
+    - hook: useGuardAbsencePrediction
+      endpoints:
+        - "GET /api/ai/guard-absence-risk"
+      data: "Per-guard absence risk (score, level, historical factors)"
+
+    - hook: useReplacementSuggestions
+      endpoints:
+        - "GET /api/tracking/client-sites"
+        - "GET /api/ai/replacement-suggestions?post_id=..."
+      data: "Ranked replacement candidates (reliability score, distance, availability, permit validity)"
+
+    - hook: useVehicleMaintenancePrediction
+      endpoints:
+        - "GET /api/ai/vehicle-maintenance-risk"
+      data: "Per-vehicle maintenance risk (mileage, days since service, recommended action)"
+
+  panels:
+    - name: OperationalSummaryStrip
+      purpose: "8 key operational metrics in a glanceable strip"
+      value: critical
+
+    - name: OperationalMap
+      purpose: "Live map with guard positions, client sites, geofence zones, tracking points"
+      value: critical
+      data_source: "useOperationalMapData (WebSocket + HTTP fallback)"
+
+    - name: GuardDeploymentOverview
+      purpose: "Visual overview of guard deployment across client sites"
+      value: high
+
+    - name: LiveOperationsFeed
+      purpose: "Scrolling feed of recent operations (shifts, vehicles, incidents, equipment)"
+      value: high
+
+    - name: IncidentAlertFeed
+      purpose: "Active incident alerts with severity classification"
+      value: critical
+
+    - name: PredictiveAlertsPanel
+      purpose: "AI-generated predictive alerts for operational risks"
+      value: high
+
+    - name: GuardAbsencePredictionPanel
+      purpose: "Guards at risk of absence with risk scores and historical data"
+      value: high
+
+    - name: ReplacementSuggestionPanel
+      purpose: "AI-ranked replacement candidates for vacant posts"
+      value: high
+
+    - name: VehicleMaintenancePredictionPanel
+      purpose: "Vehicles with maintenance risk scores and recommended actions"
+      value: medium
+
+    - name: IncidentSeverityMonitoringPanel
+      purpose: "Real-time incident severity trend monitoring"
+      value: medium
+
+    - name: IncidentSeverityClassifier
+      purpose: "AI incident severity classification tool"
+      value: medium
+
+    - name: IncidentSummaryGenerator
+      purpose: "AI-powered incident summary generation"
+      value: medium
+
+    - name: TodaysShiftOperations
+      purpose: "Today's shift schedule with status indicators"
+      value: high
+
+    - name: FirearmsStatusPanel
+      purpose: "Firearms inventory status (issued, available, overdue)"
+      value: medium
+
+    - name: SystemStatusBanner
+      purpose: "System health status (Operational/Warning/Critical)"
+      value: high
+
+    - name: QuickActionsPanel
+      purpose: "Shortcut buttons for common actions"
+      value: medium
+
+
+# ============================================================================
+# 4. SECONDARY COMPONENTS
+# ============================================================================
+secondary_components:
+  # --- Standalone page components ---
+  - component: CalendarDashboard
+    file: "DasiaAIO-Frontend/src/components/CalendarDashboard.tsx"
+    route: "/calendar"
+    roles: ["all"]
+    purpose: "Calendar view of schedules and events"
+    operational_value: medium
+
+  - component: PerformanceDashboard
+    file: "DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx"
+    route: "/performance"
+    roles: ["superadmin", "admin", "supervisor"]
+    purpose: "Guard performance metrics and trends"
+    operational_value: high
+
+  - component: MeritScoreDashboard
+    file: "DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx"
+    route: "/merit"
+    roles: ["superadmin", "admin", "supervisor"]
+    purpose: "Guard merit scores, rankings, client evaluations, overtime candidates"
+    operational_value: high
+
+  - component: FirearmInventory
+    file: "DasiaAIO-Frontend/src/components/FirearmInventory.tsx"
+    route: "/firearms"
+    roles: ["superadmin", "admin", "supervisor"]
+    purpose: "CRUD for firearm registry"
+    operational_value: medium
+
+  - component: FirearmAllocation
+    file: "DasiaAIO-Frontend/src/components/FirearmAllocation.tsx"
+    route: "/allocation"
+    roles: ["superadmin", "admin", "supervisor"]
+    purpose: "Issue/return firearms to guards"
+    operational_value: high
+
+  - component: GuardFirearmPermits
+    file: "DasiaAIO-Frontend/src/components/GuardFirearmPermits.tsx"
+    route: "/permits"
+    roles: ["all"]
+    purpose: "Manage/view firearm permits (elevated: CRUD; guard: view own)"
+    operational_value: medium
+
+  - component: FirearmMaintenance
+    file: "DasiaAIO-Frontend/src/components/FirearmMaintenance.tsx"
+    route: "/maintenance"
+    roles: ["superadmin", "admin", "supervisor"]
+    purpose: "Schedule and track firearm maintenance"
+    operational_value: medium
+
+  - component: ArmoredCarDashboard
+    file: "DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx"
+    route: "/armored-cars"
+    roles: ["all"]
+    purpose: "Armored car fleet management (CRUD, allocation, maintenance, driver assignment)"
+    operational_value: medium
+
+  - component: ProfileDashboard
+    file: "DasiaAIO-Frontend/src/components/ProfileDashboard.tsx"
+    route: "/profile"
+    roles: ["all"]
+    purpose: "User profile view/edit with photo upload"
+    operational_value: low
+
+  - component: SettingsView
+    file: "DasiaAIO-Frontend/src/components/settings/SettingsView.tsx"
+    route: "/settings"
+    roles: ["all"]
+    purpose: "Role-specific settings (AdminSettings, SuperadminSettings, SupervisorSettings, GuardSettings, NotificationSettingsSection)"
+    operational_value: low
+
+  - component: AnalyticsDashboard
+    file: "DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx"
+    route: "/analytics"
+    roles: ["superadmin", "admin", "supervisor"]
+    purpose: "Operational analytics and performance trends"
+    operational_value: high
+
+  - component: AuditDashboard
+    file: "DasiaAIO-Frontend/src/components/AuditDashboard.tsx"
+    route: "/audit"
+    roles: ["superadmin"]
+    purpose: "System audit log viewer with filtering, anomaly detection, user activity tracking"
+    operational_value: critical
+
+  - component: TripManagement
+    file: "DasiaAIO-Frontend/src/components/TripManagement.tsx"
+    embedded_in: "SuperadminDashboard (trips section)"
+    purpose: "Armored car trip lifecycle management"
+    operational_value: medium
+
+  # --- Dashboard sub-panels ---
+  - component: ActiveIncidentsPanel
+    purpose: "Panel showing active incidents"
+    operational_value: high
+
+  - component: AssignmentPicker
+    purpose: "Multi-resource picker for mission assignment (guards, firearms, vehicles)"
+    operational_value: high
+    is_decision_surface: true
+
+  - component: MissionTimelinePanel
+    purpose: "Timeline visualization of missions"
+    operational_value: medium
+
+  - component: TopReliableGuardsPanel
+    purpose: "Ranking of most reliable guards"
+    operational_value: medium
+
+  - component: SystemInfrastructureStatus
+    purpose: "Infrastructure health indicators"
+    operational_value: medium
+
+  # --- Inbox panels ---
+  - component: GuardInboxPanel
+    purpose: "Guard-specific action inbox"
+    operational_value: medium
+
+  - component: SupervisorInboxPanel
+    purpose: "Supervisor-specific action inbox"
+    operational_value: medium
+
+  - component: AdminInboxPanel
+    purpose: "Admin-specific action inbox"
+    operational_value: medium
+
+  - component: SuperadminInboxPanel
+    purpose: "Superadmin-specific action inbox"
+    operational_value: medium
+
+  - component: ActionInbox
+    purpose: "Generic inbox widget"
+    operational_value: medium
+
+  - component: WorkflowTimeline
+    purpose: "Timeline visualization for workflow steps"
+    operational_value: low
+
+  # --- Layout ---
+  - component: AppShell
+    file: "DasiaAIO-Frontend/src/components/layout/AppShell.tsx"
+    purpose: "Root authenticated shell — handles auth guard, ToA acceptance, global overlays"
+    operational_value: foundational
+
+  - component: OperationalShell
+    file: "DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx"
+    purpose: "Sidebar + header + content area layout shell for elevated dashboards"
+    operational_value: foundational
+
+  # --- Shared UI ---
+  - component: LoginPage
+    purpose: "Authentication entry point with email verification flow"
+    operational_value: foundational
+
+  - component: ErrorBoundary
+    purpose: "React error boundary for crash isolation"
+    operational_value: foundational
+
+  - component: BugReportButton
+    purpose: "In-app bug report submission"
+    operational_value: low
+
+  - component: NotificationCenter
+    purpose: "Toast notification display system"
+    operational_value: low
+
+  - component: HeaderGlobalActions
+    purpose: "Header action bar (inbox, settings, profile, refresh)"
+    operational_value: medium
+
+  # --- RBAC ---
+  - component: "Allowed / DeniedFallback"
+    purpose: "Declarative RBAC wrappers for permission-gated UI sections"
+    operational_value: foundational
+
+  # --- Visual ---
+  - component: ParticleBackground
+    purpose: "Decorative animated background"
+    operational_value: none
+
+  - component: SentinelLogo
+    purpose: "Brand logo component"
+    operational_value: none
+
+  - component: BentoGrid / BentoCard
+    purpose: "Layout grid components (possibly unused)"
+    operational_value: none
+
+  - component: SecurityBentoGrid
+    purpose: "Security-themed bento layout (possibly unused)"
+    operational_value: none
+
+
+# ============================================================================
+# 5. BACKEND API SURFACE
+# ============================================================================
+backend_api_surface:
+  total_handler_modules: 25
+  total_routes_approximate: 120
+
+  auth_endpoints:
+    - { method: POST, path: "/api/register", note: "+/api/auth/register alias", rate_limited: true }
+    - { method: POST, path: "/api/login", note: "+/api/auth/login alias", rate_limited: true }
+    - { method: POST, path: "/api/verify", note: "email verification", rate_limited: true }
+    - { method: POST, path: "/api/resend-code", rate_limited: true }
+    - { method: POST, path: "/api/forgot-password", rate_limited: true }
+    - { method: POST, path: "/api/verify-reset-code", rate_limited: true }
+    - { method: POST, path: "/api/reset-password", rate_limited: true }
+    - { method: POST, path: "/api/refresh", note: "token refresh", rate_limited: true }
+    - { method: POST, path: "/api/logout", rate_limited: true }
+
+  user_endpoints:
+    - { method: "GET/POST", path: "/api/users", authz: "require_manage_users", audit: true }
+    - { method: GET, path: "/api/users/pending-approvals", authz: "require_guard_approval_management" }
+    - { method: PUT, path: "/api/users/:id/approval", authz: "require_guard_approval_management", audit: true }
+    - { method: GET, path: "/api/user/:id", authz: "require_authenticated" }
+    - { method: PUT, path: "/api/user/:id", authz: "require_authenticated", audit: true }
+    - { method: DELETE, path: "/api/user/:id", authz: "require_manage_users", audit: true }
+    - { method: "PUT/DELETE", path: "/api/user/:id/profile-photo", authz: "require_authenticated", audit: true }
+    - { method: GET, path: "/api/guards", authz: "require_authenticated" }
+
+  guard_operations_endpoints:
+    - { method: "POST/GET", path: "/api/guard-replacement/shifts", authz: "require_schedule_management" }
+    - { method: "PUT/DELETE", path: "/api/guard-replacement/shifts/:shift_id", authz: "require_schedule_management", audit: true }
+    - { method: GET, path: "/api/guard-replacement/guard/:guard_id/shifts", authz: "require_authenticated" }
+    - { method: POST, path: "/api/guard-replacement/attendance/check-in", authz: "require_authenticated", audit: true }
+    - { method: POST, path: "/api/guard-replacement/attendance/check-out", authz: "require_authenticated", audit: true }
+    - { method: GET, path: "/api/attendance/:guard_id", authz: "require_authenticated" }
+    - { method: POST, path: "/api/guard-replacement/detect-no-shows", authz: "require_schedule_management", audit: true }
+    - { method: POST, path: "/api/guard-replacement/request-replacement", authz: "require_authenticated", audit: true }
+    - { method: POST, path: "/api/guard-replacement/accept-replacement", authz: "require_authenticated", audit: true }
+    - { method: POST, path: "/api/guard-replacement/set-availability", authz: "require_authenticated", audit: true }
+    - { method: GET, path: "/api/guard-replacement/availability/:guard_id", authz: "require_authenticated" }
+    - { method: POST, path: "/api/shifts/swap-request", authz: "require_authenticated" }
+    - { method: GET, path: "/api/shifts/swap-requests", authz: "require_authenticated" }
+    - { method: PATCH, path: "/api/shifts/swap-requests/:id/respond", authz: "require_authenticated" }
+
+  incident_endpoints:
+    - { method: POST, path: "/api/incidents", authz: "require_authenticated", audit: true }
+    - { method: GET, path: "/api/incidents", authz: "require_authenticated" }
+    - { method: GET, path: "/api/incidents/active", authz: "require_authenticated" }
+    - { method: PATCH, path: "/api/incidents/:id/status", authz: "require_authenticated", audit: true }
+
+  firearm_endpoints:
+    - { method: "POST/GET", path: "/api/firearms", authz: "require_firearm_management" }
+    - { method: "GET/PUT/DELETE", path: "/api/firearms/:id", authz: "require_firearm_management" }
+    - { method: POST, path: "/api/firearm-allocation/issue", authz: "require_firearm_allocation", audit: true }
+    - { method: POST, path: "/api/firearm-allocation/return", authz: "require_firearm_allocation", audit: true }
+    - { method: GET, path: "/api/guard-allocations/:guard_id", authz: "require_authenticated" }
+    - { method: GET, path: "/api/firearm-allocations/active", authz: "require_firearm_allocation" }
+    - { method: GET, path: "/api/firearm-allocations", authz: "require_firearm_allocation" }
+    - { method: GET, path: "/api/firearm-allocations/overdue", authz: "require_firearm_allocation" }
+    - { method: GET, path: "/api/firearm-maintenance", authz: "require_firearm_management" }
+    - { method: POST, path: "/api/firearm-maintenance/schedule", authz: "require_firearm_management", audit: true }
+    - { method: GET, path: "/api/firearm-maintenance/pending", authz: "require_firearm_management" }
+    - { method: POST, path: "/api/firearm-maintenance/:maintenance_id/complete", authz: "require_firearm_management", audit: true }
+
+  permit_endpoints:
+    - { method: "POST/GET", path: "/api/guard-firearm-permits", authz: "require_firearm_management" }
+    - { method: GET, path: "/api/guard-firearm-permits/expiring", authz: "require_firearm_management" }
+    - { method: POST, path: "/api/guard-firearm-permits/auto-expire", authz: "require_firearm_management", audit: true }
+    - { method: PUT, path: "/api/guard-firearm-permits/:permit_id/revoke", authz: "require_firearm_management", audit: true }
+    - { method: GET, path: "/api/guard-firearm-permits/:guard_id", authz: "require_authenticated" }
+
+  mission_endpoints:
+    - { method: POST, path: "/api/missions/assign", authz: "require_mission_management", audit: true }
+    - { method: GET, path: "/api/missions", authz: "require_mission_management" }
+
+  notification_endpoints:
+    - { method: POST, path: "/api/notifications", authz: "require_notifications_management", audit: true }
+    - { method: GET, path: "/api/users/:user_id/notifications", authz: "require_authenticated" }
+    - { method: GET, path: "/api/users/:user_id/notifications/unread-count", authz: "require_authenticated" }
+    - { method: PUT, path: "/api/users/:user_id/notifications/mark-all-read", authz: "require_authenticated", audit: true }
+    - { method: PUT, path: "/api/notifications/:notification_id/read", authz: "require_authenticated", audit: true }
+    - { method: DELETE, path: "/api/notifications/:notification_id", authz: "require_authenticated", audit: true }
+    - { method: POST, path: "/api/notifications/push-subscribe", authz: "require_authenticated" }
+
+  merit_endpoints:
+    - { method: POST, path: "/api/merit/calculate", authz: "require_merit_manage", audit: true }
+    - { method: GET, path: "/api/merit/:guard_id", authz: "require_authenticated" }
+    - { method: GET, path: "/api/merit/rankings/all", authz: "require_merit_view" }
+    - { method: POST, path: "/api/merit/evaluations/submit", authz: "require_merit_manage", audit: true }
+    - { method: GET, path: "/api/merit/evaluations/:guard_id", authz: "require_authenticated" }
+    - { method: GET, path: "/api/merit/overtime-candidates", authz: "require_merit_view" }
+
+  vehicle_endpoints:
+    - { method: "POST/GET", path: "/api/armored-cars", authz: "require_armored_car_management" }
+    - { method: GET, path: "/api/vehicles", authz: "require_authenticated", note: "alias for armored-cars" }
+    - { method: "GET/PUT/DELETE", path: "/api/armored-cars/:id", authz: "require_armored_car_management" }
+    - { method: POST, path: "/api/car-allocation/issue", authz: "require_armored_car_management", audit: true }
+    - { method: POST, path: "/api/car-allocation/return", authz: "require_armored_car_management", audit: true }
+    - { method: GET, path: "/api/car-allocations/:car_id", authz: "require_armored_car_management" }
+    - { method: GET, path: "/api/car-allocations/active", authz: "require_armored_car_management" }
+    - { method: POST, path: "/api/car-maintenance/schedule", authz: "require_armored_car_management", audit: true }
+    - { method: POST, path: "/api/car-maintenance/:maintenance_id/complete", authz: "require_armored_car_management", audit: true }
+    - { method: GET, path: "/api/car-maintenance/:car_id", authz: "require_armored_car_management" }
+    - { method: POST, path: "/api/driver-assignment/assign", authz: "require_armored_car_management", audit: true }
+    - { method: POST, path: "/api/driver-assignment/:assignment_id/unassign", authz: "require_armored_car_management", audit: true }
+    - { method: GET, path: "/api/car-drivers/:car_id", authz: "require_armored_car_management" }
+
+  trip_endpoints:
+    - { method: POST, path: "/api/trips", authz: "require_trip_management", audit: true }
+    - { method: POST, path: "/api/trips/end", authz: "require_trip_management", audit: true }
+    - { method: GET, path: "/api/trips/car/:car_id", authz: "require_trip_management" }
+    - { method: GET, path: "/api/trips", authz: "require_trip_management" }
+    - { method: GET, path: "/api/trip-management/active", authz: "require_trip_management" }
+    - { method: GET, path: "/api/trip-management/:trip_id", authz: "require_trip_management" }
+    - { method: PUT, path: "/api/trip-management/:trip_id/status", authz: "require_trip_management", audit: true }
+    - { method: POST, path: "/api/trip-management/assign-driver", authz: "require_trip_management", audit: true }
+    - { method: GET, path: "/api/trip-management/driver-assignments", authz: "require_trip_management" }
+
+  audit_endpoints:
+    - { method: GET, path: "/api/audit-logs", authz: "require_superadmin" }
+    - { method: GET, path: "/api/audit/logs", authz: "require_superadmin" }
+    - { method: GET, path: "/api/audit/logs/filter", authz: "require_superadmin" }
+    - { method: GET, path: "/api/audit/user-activity/:id", authz: "require_superadmin" }
+    - { method: GET, path: "/api/audit/anomalies", authz: "require_superadmin" }
+
+  analytics_endpoints:
+    - { method: GET, path: "/api/analytics", authz: "require_analytics_view" }
+    - { method: GET, path: "/api/analytics/trends", authz: "require_analytics_view" }
+    - { method: GET, path: "/api/analytics/guard-reliability", authz: "require_analytics_view" }
+    - { method: PUT, path: "/api/analytics/mission-status", authz: "require_analytics_view", audit: true }
+
+  ai_predictive_endpoints:
+    - { method: GET, path: "/api/alerts/predictive", authz: "require_analytics_view", rate_limited: expensive }
+    - { method: GET, path: "/api/ai/guard-absence-risk", authz: "require_analytics_view", rate_limited: expensive }
+    - { method: GET, path: "/api/ai/replacement-suggestions", authz: "require_analytics_view", rate_limited: expensive }
+    - { method: GET, path: "/api/ai/vehicle-maintenance-risk", authz: "require_analytics_view", rate_limited: expensive }
+    - { method: POST, path: "/api/ai/classify-incident", authz: "require_authenticated", rate_limited: expensive }
+    - { method: POST, path: "/api/ai/summarize-incident", authz: "require_authenticated", rate_limited: expensive }
+
+  tracking_endpoints:
+    - { method: GET, path: "/api/tracking/map-data", authz: "require_tracking_access" }
+    - { method: GET, path: "/api/tracking/ws", note: "WebSocket upgrade — no authz middleware (token in protocol)" }
+    - { method: "GET/POST", path: "/api/tracking/client-sites", authz: "require_tracking_access" }
+    - { method: "PUT/DELETE", path: "/api/tracking/client-sites/:id", authz: "require_tracking_access", audit: true }
+    - { method: GET, path: "/api/tracking/geofences", authz: "require_tracking_access" }
+    - { method: "GET/POST", path: "/api/tracking/client-sites/:id/geofences", authz: "require_tracking_access" }
+    - { method: "PUT/DELETE", path: "/api/tracking/geofences/:id", authz: "require_tracking_access", audit: true }
+    - { method: POST, path: "/api/tracking/heartbeat", authz: "require_tracking_access", audit: true }
+    - { method: POST, path: "/api/tracking/points", authz: "require_tracking_access", audit: true }
+    - { method: GET, path: "/api/tracking/guard-history/:id", authz: "require_tracking_access" }
+    - { method: GET, path: "/api/tracking/guard-path/:id", authz: "require_tracking_access" }
+    - { method: GET, path: "/api/tracking/active-guards", authz: "require_tracking_access" }
+    - { method: POST, path: "/api/tracking/proximity-alerts/check", authz: "require_tracking_access", audit: true }
+
+  training_endpoints:
+    - { method: POST, path: "/api/training-records", authz: "require_schedule_management", audit: true }
+    - { method: GET, path: "/api/training-records/expiring", authz: "require_schedule_management" }
+    - { method: GET, path: "/api/training-records/:guard_id", authz: "require_schedule_management" }
+
+  support_endpoints:
+    - { method: POST, path: "/api/support-tickets", authz: "require_authenticated", audit: true }
+    - { method: GET, path: "/api/support-tickets/:guard_id", authz: "require_authenticated" }
+
+  legal_endpoints:
+    - { method: POST, path: "/api/legal/consent", authz: "require_authenticated" }
+    - { method: GET, path: "/api/legal/consent/status", authz: "require_authenticated" }
+
+  health_endpoints:
+    - { method: GET, path: "/api/health", authz: none }
+    - { method: GET, path: "/api/health/system", authz: none }
+    - { method: GET, path: "/api/system/version", authz: none }
+
+  backend_ai_services:
+    - name: geofence_alert_service
+      type: "background loop (tokio::spawn)"
+      purpose: "Proactive geofence breach detection — runs continuously"
+    - name: guard_prediction_service
+      purpose: "Guard absence risk scoring using historical attendance data"
+    - name: replacement_ai_service
+      purpose: "Guard replacement ranking using reliability, distance, availability, permit validity"
+    - name: vehicle_predictive_service
+      purpose: "Vehicle maintenance risk scoring using mileage, service history"
+    - name: incident_ai_classifier
+      purpose: "Incident severity auto-classification"
+    - name: incident_summary_service
+      purpose: "Incident text summarization"
+
+  middleware_stack:
+    - "security_headers (outermost response headers)"
+    - "CORS (outermost request layer)"
+    - "presence::touch_last_seen (updates user last_seen_at on every request)"
+    - "audit::audit_authz_failures (logs failed authorization attempts)"
+    - "request_timeout::enforce_request_timeout"
+    - "rate_limit::api_rate_limit (global)"
+    - "rate_limit::auth_rate_limit (auth endpoints)"
+    - "rate_limit::expensive_endpoint_rate_limit (AI endpoints)"
+    - "authz::require_* (per-route RBAC)"
+    - "audit::audit_write_requests (per-route write audit)"
+
+
+# ============================================================================
+# 6. REAL-TIME CAPABILITIES
+# ============================================================================
+real_time:
+  websocket:
+    - endpoint: "/api/tracking/ws"
+      consumer: "useOperationalMapData hook"
+      purpose: "Live guard/vehicle tracking point updates on operational map"
+      reconnect: "Exponential backoff, max 8 attempts, 1.5s base, 30s max"
+      auth: "Token passed via WebSocket sub-protocol"
+      fallback: "HTTP polling via GET /api/tracking/map-data"
+      env_gate: "VITE_ENABLE_TRACKING_WS must be 'true'"
+
+  polling:
+    - consumer: "CommandCenterDashboard"
+      interval: "15 seconds"
+      scope: "All 8 data hooks (summary, shifts, assets, health, incidents, predictions)"
+      note: "Sequential refresh — each module refreshes in order"
+
+    - consumer: "useServiceHealth"
+      interval: "15 seconds"
+      endpoint: "GET /api/health/system"
+
+    - consumer: "Guard location heartbeat"
+      interval: "20 seconds"
+      endpoint: "POST /api/tracking/heartbeat"
+      condition: "locationTrackingEnabled && hasLocationConsent"
+
+    - consumer: "OperationalMapPanel"
+      interval: "variable (multiple setInterval calls for map data)"
+
+    - consumer: "LiveFreshnessPill"
+      interval: "1 second (UI clock only)"
+
+  static_until_refresh:
+    - "Guard attendance records (UserDashboard)"
+    - "Guard shift assignments (UserDashboard)"
+    - "Guard firearm allocations (UserDashboard)"
+    - "Guard permit records (UserDashboard)"
+    - "Guard support tickets (UserDashboard)"
+    - "User management table (SuperadminDashboard — refreshes on section change)"
+    - "Pending approvals (SuperadminDashboard — refreshes on section change)"
+    - "Shift schedule table (SuperadminDashboard — refreshes on section change)"
+    - "Mission list (SuperadminDashboard — refreshes on section change)"
+
+  push_notifications:
+    - endpoint: "POST /api/notifications/push-subscribe"
+      status: "Endpoint exists but no evidence of active Push API integration in frontend"
+      gap: true
+
+
+# ============================================================================
+# 7. DATA FLOW MAP
+# ============================================================================
+data_flow:
+  guard_to_system:
+    - "Check-in/Check-out events → attendance_records table"
+    - "Location heartbeats (lat/lon/speed/heading/accuracy) → tracking_points table (every 20s)"
+    - "Incident reports (title/description/location/priority) → incidents table"
+    - "Schedule requests → shifts table"
+    - "Support tickets → support_tickets table"
+    - "Availability status → guard availability"
+    - "Shift swap requests → shift_swaps table"
+
+  system_to_guard:
+    - "Assigned shifts and schedules"
+    - "Firearm allocation records"
+    - "Permit records and expiry dates"
+    - "Support ticket statuses"
+    - "Notification inbox items"
+    - "Duty status derivation (computed client-side from shift data + time)"
+
+  guard_to_supervisor:
+    - "Location tracking points (visible on operational map for supervisors)"
+    - "Check-in/out events (visible in shift operations)"
+    - "Incident reports (visible in incident feed)"
+    - "Support tickets (escalation chain unclear)"
+
+  supervisor_to_admin:
+    - "Guard approval decisions → admin/superadmin visibility"
+    - "Schedule management → visible to higher roles"
+
+  admin_to_system:
+    - "User CRUD (create/edit/delete/suspend)"
+    - "Guard approval (approve/reject registrations)"
+    - "Schedule CRUD (create/edit/delete shifts)"
+    - "Mission assignment (guard + firearm + vehicle allocation)"
+    - "Firearm CRUD (inventory management)"
+    - "Firearm allocation (issue/return)"
+    - "Permit management (create/revoke/auto-expire)"
+    - "Vehicle management (CRUD, allocation, maintenance, driver assignment)"
+    - "Trip management (create, end, status update)"
+    - "Training record management"
+    - "Audit log review (superadmin only)"
+
+  approval_chains:
+    - name: "Guard Registration Approval"
+      flow: "Guard registers → pending_approval status → superadmin/admin/supervisor reviews → approve/reject"
+      endpoint: "PUT /api/users/:id/approval"
+
+    - name: "Shift Swap"
+      flow: "Guard requests swap → system records → other guard/supervisor responds → approved/rejected"
+      endpoint: "POST /api/shifts/swap-request → PATCH /api/shifts/swap-requests/:id/respond"
+
+    - name: "Guard Replacement"
+      flow: "Request replacement → system finds candidates → candidate accepts"
+      endpoint: "POST /api/guard-replacement/request-replacement → POST /api/guard-replacement/accept-replacement"
+
+    - name: "No-Show Detection"
+      flow: "System or supervisor triggers no-show detection → marks absent guards"
+      endpoint: "POST /api/guard-replacement/detect-no-shows"
+
+  ai_intelligence_generated:
+    - name: "Guard Absence Risk Prediction"
+      source: "Historical attendance + late check-ins + leave requests"
+      output: "Per-guard risk score (LOW/MEDIUM/HIGH) with formula"
+      consumer: "GuardAbsencePredictionPanel"
+
+    - name: "Replacement Guard Suggestions"
+      source: "Reliability score + distance to post + availability + permit validity"
+      output: "Ranked candidate list with composite score"
+      consumer: "ReplacementSuggestionPanel"
+
+    - name: "Vehicle Maintenance Risk"
+      source: "Mileage since service + days since service + maintenance history count"
+      output: "Per-vehicle risk score with recommended action"
+      consumer: "VehicleMaintenancePredictionPanel"
+
+    - name: "Predictive Alerts"
+      source: "Aggregated operational anomalies"
+      output: "Categorized alerts (info/warning/critical)"
+      consumer: "PredictiveAlertsPanel"
+
+    - name: "Incident Severity Classification"
+      source: "Incident text input"
+      output: "Auto-classified severity level"
+      consumer: "IncidentSeverityClassifier"
+
+    - name: "Incident Summary Generation"
+      source: "Incident description text"
+      output: "AI-generated executive summary"
+      consumer: "IncidentSummaryGenerator"
+
+    - name: "Geofence Alerts"
+      source: "Guard tracking points vs site geofence boundaries"
+      output: "Enter/exit alerts with distance"
+      consumer: "Operational map + alert feed"
+      note: "Runs as background server loop — proactive, not on-demand"
+
+  intelligence_gaps:
+    - area: "Cross-shift pattern analysis"
+      description: "No analysis of what guard combinations or shift patterns lead to incidents — could surface 'high-risk shift configurations'"
+
+    - area: "Response time analytics"
+      description: "No measurement of time from incident report to status change (investigating → resolved). MTTR for incidents is untracked."
+
+    - area: "Guard fatigue/overwork detection"
+      description: "No tracking of consecutive shifts, total weekly hours, or rest periods between shifts. Could predict burnout and coverage gaps."
+
+    - area: "Client site risk scoring"
+      description: "No historical incident density per client site. Could rank sites by danger level to inform guard allocation and equipment decisions."
+
+    - area: "Supervisor decision latency"
+      description: "No tracking of how long approvals, schedule changes, or swap requests sit unactioned. Could surface neglected action items."
+
+    - area: "Firearm chain-of-custody timeline"
+      description: "Issue/return events exist but no continuous timeline visualization showing who had what firearm and when."
+
+    - area: "Real-time push to guards"
+      description: "Guards have no real-time push channel. Schedule changes, incident alerts, and swap approvals require manual refresh or inbox check."
+
+    - area: "Geofence breach real-time notification"
+      description: "Backend generates geofence alerts in background loop but there's no push mechanism to notify supervisors immediately in the browser."
+
+    - area: "Armored car route tracking"
+      description: "Trips have lifecycle management but no GPS route tracking or route deviation alerts during active trips."
+
+    - area: "Training compliance integration"
+      description: "Training records exist but aren't surfaced in guard deployment decisions. A guard with expired training could be assigned to a post requiring it."
+
+
+# ============================================================================
+# 8. ROUTE STRUCTURE
+# ============================================================================
+route_structure:
+  guard_routes:
+    - { path: "/overview", component: "UserDashboard", role: "guard" }
+
+  elevated_routes:
+    - { path: "/dashboard", component: "SuperadminDashboard", roles: "superadmin, admin, supervisor" }
+    - { path: "/approvals", component: "SuperadminDashboard", roles: "superadmin, admin, supervisor" }
+    - { path: "/schedule", component: "SuperadminDashboard", roles: "superadmin, admin, supervisor" }
+    - { path: "/missions", component: "SuperadminDashboard", roles: "superadmin, admin, supervisor" }
+    - { path: "/trips", component: "SuperadminDashboard", roles: "superadmin, admin, supervisor" }
+
+  all_authenticated_routes:
+    - { path: "/calendar", component: "CalendarDashboard", roles: "all" }
+    - { path: "/permits", component: "GuardFirearmPermits", roles: "all" }
+    - { path: "/armored-cars", component: "ArmoredCarDashboard", roles: "all" }
+    - { path: "/profile", component: "ProfileDashboard", roles: "all" }
+    - { path: "/settings", component: "SettingsView", roles: "all" }
+    - { path: "/shift-swaps", component: "placeholder div", roles: "all", note: "UNIMPLEMENTED" }
+    - { path: "/notifications", component: "placeholder div", roles: "all", note: "UNIMPLEMENTED" }
+    - { path: "/support", component: "placeholder div", roles: "all", note: "UNIMPLEMENTED" }
+    - { path: "/inbox", component: "SuperadminDashboard", roles: "all" }
+
+  elevated_only_routes:
+    - { path: "/performance", component: "PerformanceDashboard", roles: "superadmin, admin, supervisor" }
+    - { path: "/merit", component: "MeritScoreDashboard", roles: "superadmin, admin, supervisor" }
+    - { path: "/firearms", component: "FirearmInventory", roles: "superadmin, admin, supervisor" }
+    - { path: "/allocation", component: "FirearmAllocation", roles: "superadmin, admin, supervisor" }
+    - { path: "/maintenance", component: "FirearmMaintenance", roles: "superadmin, admin, supervisor" }
+    - { path: "/analytics", component: "AnalyticsDashboard", roles: "superadmin, admin, supervisor" }
+
+  superadmin_only_routes:
+    - { path: "/audit", component: "AuditDashboard", roles: "superadmin" }
+
+  unimplemented_routes:
+    - "/shift-swaps (renders placeholder div)"
+    - "/notifications (renders placeholder div)"
+    - "/support (renders placeholder div)"
+
+  login_redirect:
+    guard: "/overview"
+    elevated: "/dashboard"
+
+
+open_questions:
+  - question: "What is the actual guard inbox content? GuardInboxPanel/SupervisorInboxPanel/AdminInboxPanel — need to read these to understand workflow prioritization."
+    context: "Inbox panels exist per role but their data source and action types weren't deeply examined."
+    type: nice_to_know
+    affects: ["inbox-redesign"]
+
+  - question: "Is the AccountManager.tsx component used anywhere?"
+    context: "Found in components root but not in the router. May be dead code or accessed via internal navigation."
+    type: nice_to_know
+    affects: ["cleanup"]
+
+  - question: "What does the AnalyticsDashboard actually display vs the CommandCenterDashboard?"
+    context: "Both seem to show operational analytics. Need to understand overlap/differentiation."
+    type: research
+    affects: ["analytics-consolidation"]
+
+
+gaps:
+  - area: "Shift Swaps route"
+    description: "Route /shift-swaps renders a placeholder <div>Shift Swaps</div> — backend endpoints exist but frontend is unimplemented"
+    impact: research_blocker
+    affects: ["guard-experience"]
+
+  - area: "Notifications route"
+    description: "Route /notifications renders a placeholder <div>Notifications</div> — backend notification CRUD exists but notifications page is unimplemented"
+    impact: research_blocker
+    affects: ["notification-system"]
+
+  - area: "Support route"
+    description: "Route /support renders a placeholder <div>Support</div> — guard has support tab but standalone support page is unimplemented"
+    impact: nice_to_know
+    affects: ["support-system"]
+
+  - area: "Push notification integration"
+    description: "POST /api/notifications/push-subscribe exists but no frontend Push API or service worker integration found"
+    impact: research_blocker
+    affects: ["real-time-experience"]

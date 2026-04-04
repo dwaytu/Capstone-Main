@@ -1,0 +1,915 @@
+plan_id: palantir-reframe
+objective: >
+  Transform SENTINEL from a dashboard collection into an operational intelligence system.
+  Frontend-only changes — guard-first, no backend modifications. 10 deliverables across 4 waves.
+created_at: "2026-04-04T00:00:00Z"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+plan_metrics:
+  wave_1_task_count: 3
+  total_dependencies: 7
+  risk_score: low
+
+tldr: |
+  10 tasks across 4 waves to transform the guard experience and operational dashboards.
+  Wave 1 (parallel): Guard Mission tab overhaul, Map tab cleanup, Support tab reorganization.
+  Wave 2 (parallel): AI panel action buttons, Sidebar role-scoping, Command center layout priority.
+  Wave 3 (parallel): Dead state cleanup, Resource tab polish, Login page streamline, Consistent empty states.
+  Wave 4: Integration test — browser-test all roles end-to-end.
+  All tasks are frontend-only. No backend changes. SuperadminDashboard is out of scope.
+
+open_questions: []
+
+pre_mortem:
+  overall_risk_level: low
+  critical_failure_modes:
+    - scenario: UserDashboard.tsx mission section refactor breaks check-in/check-out flow
+      likelihood: medium
+      impact: critical
+      mitigation: >
+        Extract view markup only — do not touch state logic, handlers, or data fetching.
+        Verify check-in/out buttons remain wired to existing handleCheckIn/handleCheckOut handlers.
+        Browser test wave 4 specifically validates check-in flow.
+    - scenario: Sidebar role-scoping accidentally hides menu items from elevated roles
+      likelihood: low
+      impact: high
+      mitigation: >
+        Modify only the GUARD_NAV array in navigation.ts. Leave ELEVATED_NAV unchanged.
+        Existing shellNavigation.test.tsx covers elevated role nav items.
+    - scenario: CommandCenterDashboard layout reorder loses AI panels
+      likelihood: low
+      impact: medium
+      mitigation: >
+        Reorder SectionPanel blocks only — no component removal. All existing panels must remain.
+  assumptions:
+    - All existing backend endpoints remain available and unchanged
+    - No new npm dependencies are needed — all changes use existing component library
+    - Guard check-in/out state machine in UserDashboard.tsx is not refactored (view extraction only)
+    - SecurityBentoGrid is used in CalendarDashboard, not LoginPage — LoginPage uses ParticleBackground
+    - SuperadminDashboard.tsx (1,751 lines) is completely out of scope
+    - ArmoredCarDashboard.tsx and TripManagement.tsx are not modified
+
+implementation_specification:
+  code_structure: |
+    All changes are in DasiaAIO-Frontend/src/components/ and DasiaAIO-Frontend/src/config/.
+    No new top-level components created — refactors touch existing files.
+    Guard Mission tab: extract 3 zones in-place within UserDashboard.tsx mission section.
+    Sidebar: modify GUARD_NAV array in navigation.ts and mobileNavItems in AppShell.tsx.
+    Command Center: reorder SectionPanel blocks in CommandCenterDashboard.tsx.
+    Login: remove ParticleBackground import and usage in LoginPage.tsx.
+  affected_areas:
+    - DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx (mission section markup)
+    - DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/GuardAbsencePredictionPanel.tsx
+    - DasiaAIO-Frontend/src/components/dashboard/VehicleMaintenancePredictionPanel.tsx
+    - DasiaAIO-Frontend/src/config/navigation.ts
+    - DasiaAIO-Frontend/src/components/layout/AppShell.tsx
+    - DasiaAIO-Frontend/src/components/LoginPage.tsx
+    - DasiaAIO-Frontend/src/components/Sidebar.tsx
+  component_details:
+    - component: Guard Mission Tab (UserDashboard.tsx mission section)
+      responsibility: >
+        Condense 6 cards into 3 zones: StatusHero (duty status + location + timer + tracking badge),
+        QuickActions (check-in/out + incident report + instructions — 3 large tap targets),
+        TodaysSchedule (shift list, compact). Remove duplicate duty status card, verbose readiness note,
+        and separate KPI row.
+      interfaces:
+        - Same props as current UserDashboard — no interface changes
+    - component: Guard Map Tab (GuardMapTab.tsx)
+      responsibility: >
+        Remove 3 KPI stat cards above map. Map iframe shows at full viewport height.
+        Small overlay badge for accuracy + last update inside the map container.
+      interfaces:
+        - GuardMapTabProps unchanged — remove internal stat rendering
+    - component: Guard Support Tab (GuardSupportTab.tsx)
+      responsibility: >
+        Move emergency contacts to top (already partially done with Quick Contacts).
+        Collapse schedule request and ticket forms into expandable accordion sections.
+        Add "Recent Attendance" display at bottom.
+      interfaces:
+        - GuardSupportTabProps — add optional attendanceRecords prop
+    - component: Sidebar Role-Scoping (navigation.ts + AppShell.tsx)
+      responsibility: >
+        Reduce GUARD_NAV to 4 items: Overview, Map, Schedule, Support.
+        Update mobileNavItems in AppShell.tsx to match.
+      interfaces:
+        - getSidebarNav() return type unchanged
+    - component: Command Center Layout (CommandCenterDashboard.tsx)
+      responsibility: >
+        Move Active Incidents + Shift Coverage SectionPanels to the top.
+        Demote decorative panels (system status stat cards) below operational content.
+      interfaces:
+        - CommandCenterDashboardProps unchanged
+    - component: AI Panel Action Buttons (GuardAbsencePredictionPanel.tsx, VehicleMaintenancePredictionPanel.tsx)
+      responsibility: >
+        Add action buttons to AI prediction items that navigate to relevant views.
+        "Predicted absent → View guard schedule" / "Maintenance due → View vehicle record"
+      interfaces:
+        - Add optional onAction callback prop to both panels
+  dependencies:
+    - component: UserDashboard mission section
+      relationship: Renders GuardMapTab, GuardSupportTab, GuardResourcesTab as child tabs
+    - component: AppShell
+      relationship: Imports getSidebarNav from navigation.ts to build sidebar items
+    - component: CommandCenterDashboard
+      relationship: Renders GuardAbsencePredictionPanel and VehicleMaintenancePredictionPanel
+  integration_points:
+    - Guard workspace tab navigation in UserDashboard.tsx (navItems array)
+    - Sidebar rendering in AppShell via OperationalShell and Sidebar components
+    - Command center section ordering in CommandCenterDashboard.tsx
+
+contracts:
+  - from_task: w1-t1
+    to_task: w4-t1
+    interface: Guard Mission tab renders 3 zones with check-in/out still functional
+    format: Visual layout — browser test verifies zone presence and button operability
+  - from_task: w1-t2
+    to_task: w4-t1
+    interface: Guard Map tab shows full-viewport map without stat cards
+    format: Visual layout — browser test verifies map fills container
+  - from_task: w1-t3
+    to_task: w4-t1
+    interface: Guard Support tab has contacts at top, forms collapsed
+    format: Visual layout — browser test verifies contact section is first child
+  - from_task: w2-t1
+    to_task: w4-t1
+    interface: AI panels have clickable action buttons
+    format: Button elements with correct navigation callbacks
+  - from_task: w2-t2
+    to_task: w4-t1
+    interface: Guard sidebar shows only 4 items; elevated roles unchanged
+    format: getSidebarNav('guard') returns exactly 4 items
+  - from_task: w2-t3
+    to_task: w4-t1
+    interface: Command center shows incidents + shifts above decorative panels
+    format: DOM order verified by browser test
+
+tasks:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WAVE 1: Guard workspace overhaul (parallel — different files)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - id: w1-t1
+    title: "Guard Mission Tab Overhaul — 3-Zone Layout"
+    description: |
+      Refactor the mission section of UserDashboard.tsx from 6 scattered cards to 3 clear zones.
+
+      Zone 1 — StatusHero: Merge the "Current duty status" banner and KPI row into a single
+      prominent strip showing duty status (color-coded), location, shift time window, elapsed time,
+      and a tracking badge (green dot = active). Remove the verbose missionReadinessNote paragraph.
+
+      Zone 2 — QuickActions: Keep the existing Check In/Out button (largest), Report Incident button,
+      and View Instructions button. Arrange them as 3 large tap targets in a row/grid.
+      DO NOT change any onClick handlers or state logic — markup only.
+
+      Zone 3 — TodaysSchedule: Keep the existing shift list with check-in/out buttons per shift.
+      Remove the separate "Field Tracking toggle" card — integrate the toggle as a small inline
+      button inside the StatusHero tracking badge area.
+
+      CRITICAL: This is VIEW EXTRACTION ONLY. Do not refactor state, hooks, handlers, or data
+      fetching. The handleCheckIn, handleCheckOut, toggleLocationTracking functions must remain
+      wired to the same elements. Only restructure the JSX layout within the mission section.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "1,157 lines — mission section spans ~lines 870-1100. Contains duty status banner, KPI row, field tracking toggle, today's shifts list, check-in/out buttons."
+      - path: DasiaAIO-Frontend/src/components/dashboard/ui/StatCard.tsx
+        description: "Reusable stat card component used in KPI rows"
+      - path: DasiaAIO-Frontend/src/components/dashboard/ui/DashboardCard.tsx
+        description: "Card wrapper used for Today's Shifts section"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 1
+        estimated_lines: 200
+        focus_area: Guard mission tab layout restructure
+        verification:
+          - "StatusHero zone renders duty status, location, time, tracking badge in one strip"
+          - "QuickActions zone has 3 tap targets: check-in/out, report incident, view instructions"
+          - "TodaysSchedule zone shows shift list with per-shift check-in/out buttons"
+          - "No duplicate duty status display exists"
+          - "Field tracking toggle is inline within StatusHero, not a separate card"
+          - "All check-in/out handlers still fire correctly"
+        acceptance_criteria:
+          - "Guard sees 3 distinct zones on Mission tab instead of 6 cards"
+          - "Check-in/check-out flow works identically to before"
+          - "Location tracking toggle is accessible and functional"
+          - "Page renders without console errors"
+        failure_modes:
+          - scenario: Check-in handler disconnected during JSX restructure
+            likelihood: medium
+            impact: critical
+            mitigation: Keep all onClick handlers referencing same functions — do not rename or relocate handler definitions
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4 (semantic tokens)
+        test_coverage: null
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: false
+
+  - id: w1-t2
+    title: "Guard Map Tab Cleanup — Full Viewport Map"
+    description: |
+      Simplify GuardMapTab.tsx by removing the stat cards that appear above the map.
+      The current layout shows a SectionHeader + an iframe map at 360px height.
+
+      Changes:
+      1. Increase map iframe height from h-[360px] to h-[calc(100dvh-14rem)] so it fills
+         the available viewport below the header.
+      2. Move the coordinate/accuracy info bar to overlay the map as a compact pill
+         (absolute positioned at bottom-left of map container).
+      3. Keep the "Open Full Map" and "Expand/Collapse" buttons below the map.
+      4. Map should be visible by default (no "Expand Live Map" click required).
+
+      DO NOT change props interface or any data flow.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+        description: "94 lines — iframe map with stat cards and expand/collapse toggle"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 60
+        focus_area: Map tab simplification
+        verification:
+          - "No StatCard components render in GuardMapTab"
+          - "Map iframe fills available viewport height"
+          - "Coordinate overlay appears inside map container"
+          - "Expand/Collapse and Open Full Map buttons remain functional"
+        acceptance_criteria:
+          - "Map fills the viewport below the header"
+          - "No KPI cards appear above the map"
+          - "Location accuracy info overlays the map as a compact pill"
+        failure_modes:
+          - scenario: Map height calc causes overflow on small screens
+            likelihood: low
+            impact: medium
+            mitigation: Use min-h-[280px] as floor and max-h-[80dvh] as cap
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: w1-t3
+    title: "Guard Support Tab Reorganization"
+    description: |
+      Restructure GuardSupportTab.tsx to prioritize emergency contacts and reduce scroll fatigue.
+
+      Changes:
+      1. Emergency contacts section (Quick Contacts) stays at TOP — already there, good.
+      2. Convert the schedule request form and support ticket form from always-visible to
+         collapsible accordion sections (use existing useState toggles scheduleOpen/ticketOpen
+         which are already in the component but not fully utilized).
+      3. Ensure the "Field Instructions" button triggers onInstructionsOpen (already wired).
+      4. GuardShiftSwapPanel stays as-is below the forms.
+
+      DO NOT change any form submission logic, state, or API calls.
+      This is a layout/visibility restructure within existing component boundaries.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+        description: "232 lines — Quick Contacts at top, then schedule form, ticket form, shift swap panel"
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+        description: "Child component for shift swap — do not modify"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 80
+        focus_area: Support tab layout restructure
+        verification:
+          - "Quick Contacts renders as first section"
+          - "Schedule request form is collapsed by default, expandable"
+          - "Support ticket form is collapsed by default, expandable"
+          - "All form submissions still work when expanded"
+          - "aria-expanded attributes on accordion headers"
+        acceptance_criteria:
+          - "Emergency contacts are the first visible element"
+          - "Forms are collapsed by default, reducing initial scroll"
+          - "Expanding a form reveals its full contents and submit button"
+          - "Form submissions work identically to before"
+        failure_modes:
+          - scenario: Collapsed form prevents submission
+            likelihood: low
+            impact: high
+            mitigation: Forms only hide via display — form state remains mounted. Test submit after expand/collapse cycle.
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WAVE 2: Command center + sidebar (parallel — different files)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - id: w2-t1
+    title: "Action Buttons on AI Prediction Panels"
+    description: |
+      Add contextual action buttons to the AI prediction panels in CommandCenterDashboard.
+
+      GuardAbsencePredictionPanel.tsx (127 lines):
+      - Add an optional `onViewGuard?: (guardId: string) => void` callback prop.
+      - For each prediction item, add a small "View Profile" button that calls onViewGuard
+        with the guard's ID.
+
+      VehicleMaintenancePredictionPanel.tsx (116 lines):
+      - Add an optional `onViewVehicle?: (vehicleId: string) => void` callback prop.
+      - For each prediction item, add a small "View Record" button that calls onViewVehicle
+        with the vehicle's ID.
+
+      CommandCenterDashboard.tsx:
+      - Wire the new callbacks. onViewGuard navigates to guard schedule view.
+        onViewVehicle navigates to armored-cars view.
+      - Use the existing `quickActions` prop pattern or call onNavigate if available.
+        If no navigation callback exists in CommandCenterDashboard, the buttons should
+        be rendered but logging console.info for now (wiring depends on parent).
+
+      Keep the panels functional if callbacks are not provided (optional props).
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    priority: medium
+    status: pending
+    dependencies:
+      - w1-t1
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardAbsencePredictionPanel.tsx
+        description: "127 lines — renders guard absence predictions with guard names"
+      - path: DasiaAIO-Frontend/src/components/dashboard/VehicleMaintenancePredictionPanel.tsx
+        description: "116 lines — renders vehicle maintenance predictions"
+      - path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+        description: "331 lines — parent that renders both AI panels"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 80
+        focus_area: AI panel actionability
+        verification:
+          - "GuardAbsencePredictionPanel renders 'View Profile' button per prediction"
+          - "VehicleMaintenancePredictionPanel renders 'View Record' button per prediction"
+          - "Buttons call provided callbacks or are no-ops when callbacks undefined"
+          - "Existing panel rendering unchanged when no callbacks provided"
+        acceptance_criteria:
+          - "Each AI prediction item has an actionable button"
+          - "Buttons are visually consistent with existing SOC theme"
+          - "Panels remain fully functional without the optional callback"
+        failure_modes:
+          - scenario: Panel breaks when callback prop is undefined
+            likelihood: low
+            impact: medium
+            mitigation: Guard with optional chaining — onViewGuard?.(id)
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: w2-t2
+    title: "Sidebar Role-Scoping — Guard Gets 4 Items"
+    description: |
+      Reduce the guard sidebar from 6 items to 4 focused items:
+      Overview, Map, Schedule, Support.
+
+      navigation.ts changes:
+      - Modify GUARD_NAV to contain exactly:
+        { view: 'dashboard', label: 'Overview', group: 'MAIN MENU' }
+        { view: 'map', label: 'Map', group: 'MAIN MENU' }
+        { view: 'schedule', label: 'Schedule', group: 'MAIN MENU' }
+        { view: 'support', label: 'Support', group: 'MAIN MENU' }
+      - Remove 'calendar', 'firearms', 'permits' from GUARD_NAV.
+        (Guards still access firearms/permits via the Resources tab inside their dashboard.)
+
+      AppShell.tsx changes:
+      - Update mobileNavItems for guard role to match: Overview, Map, Schedule, Support.
+        Remove 'calendar' and 'profile' from mobile nav (profile accessible via header icon).
+
+      DO NOT modify ELEVATED_NAV or any elevated role logic.
+      DO NOT modify getSidebarNav function logic — only the GUARD_NAV data array.
+
+      Verify existing test: shellNavigation.test.tsx guard assertions may need updating.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    priority: high
+    status: pending
+    dependencies:
+      - w1-t1
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/config/navigation.ts
+        description: "GUARD_NAV array (lines 32-39) — currently 6 items. ELEVATED_NAV unchanged."
+      - path: DasiaAIO-Frontend/src/components/layout/AppShell.tsx
+        description: "mobileNavItems for guard (lines 94-100) — currently Overview, Calendar, Support, Profile"
+      - path: DasiaAIO-Frontend/src/__tests__/shellNavigation.test.tsx
+        description: "Test for getSidebarNav — guard assertions need updating"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 3
+        estimated_lines: 40
+        focus_area: Sidebar role scoping
+        verification:
+          - "getSidebarNav('guard') returns exactly 4 items"
+          - "getSidebarNav('admin') returns same items as before (unchanged)"
+          - "getSidebarNav('supervisor') returns same items as before (unchanged)"
+          - "Mobile nav for guard shows 4 items"
+          - "shellNavigation.test.tsx passes with updated guard assertions"
+        acceptance_criteria:
+          - "Guard sidebar shows exactly: Overview, Map, Schedule, Support"
+          - "Admin/supervisor/superadmin sidebar is unchanged"
+          - "Guard mobile bottom nav shows 4 items matching sidebar"
+          - "Existing tests pass (with guard test updated)"
+        failure_modes:
+          - scenario: Elevated roles accidentally lose nav items
+            likelihood: low
+            impact: high
+            mitigation: Only modify GUARD_NAV array — ELEVATED_NAV is a separate const
+        tech_stack:
+          - React 18
+          - TypeScript
+        test_coverage: "Update shellNavigation.test.tsx"
+        requires_review: true
+        review_depth: standard
+        review_security_sensitive: false
+
+  - id: w2-t3
+    title: "Command Center Layout Priority — Incidents + Shifts at Top"
+    description: |
+      Reorder the SectionPanel blocks in CommandCenterDashboard.tsx so that
+      operationally critical content appears first:
+
+      New order:
+      1. System Status Banner (keep at top — quick health summary)
+      2. Live Operations section (incidents feed + alert feed) — move UP from position 4
+      3. Operations Management section (shifts + absence predictions + replacements) — move UP from position 5
+      4. Tactical View (map + deployment grid) — move DOWN from position 2
+      5. System Status section (summary strip + quick actions) — move DOWN from position 3
+      6. Asset Readiness section (keep at bottom)
+
+      This is pure DOM reordering of existing SectionPanel blocks.
+      DO NOT modify any component props, data flow, or state logic.
+      All panels must remain — nothing is removed.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    priority: medium
+    status: pending
+    dependencies:
+      - w1-t1
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+        description: "331 lines — 6 SectionPanel blocks in JSX return. Reorder only."
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 50
+        focus_area: Command center information hierarchy
+        verification:
+          - "First SectionPanel after banner contains incident/alert feeds"
+          - "Second SectionPanel contains shift operations + AI predictions"
+          - "All 6 SectionPanels still render"
+          - "No component props changed"
+        acceptance_criteria:
+          - "Incidents and shift coverage appear above map and decorative panels"
+          - "All existing panels remain visible and functional"
+          - "No data flow or state changes"
+        failure_modes:
+          - scenario: Panel loses context due to reordering React keys
+            likelihood: low
+            impact: low
+            mitigation: SectionPanels have no keyed state — reorder is safe
+        tech_stack:
+          - React 18
+          - TypeScript
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WAVE 3: Polish + cleanup (parallel — small independent changes)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - id: w3-t1
+    title: "Dead State Cleanup — Remove Empty Counters and Vacuous Cards"
+    description: |
+      Audit and fix dead/empty states across the guard dashboard components:
+
+      GuardResourcesTab.tsx:
+      - Already conditionally renders "Expiring Soon" vs "Permit Status: All Clear" — good.
+      - Add: When firearmItems.length === 0 AND permitItems.length === 0, show a single
+        contextual empty state: "No resources allocated. Contact your supervisor for assignments."
+        instead of rendering 3 stat cards all showing zeros.
+
+      UserDashboard.tsx mission section:
+      - The "No shifts scheduled for today" empty state is fine — keep it.
+      - Remove the "Recent Attendance" card rendering from mission section entirely
+        (attendance is not mission-critical information).
+
+      General rule applied in each file: If a counter value is 0 and the card adds no
+      actionable information, collapse it. If a section has no items, show ONE contextual
+      message instead of multiple empty cards.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    priority: medium
+    status: pending
+    dependencies:
+      - w1-t1
+      - w1-t3
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+        description: "114 lines — stat cards + firearm/permit lists"
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Mission section — check for attendance card to remove"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 40
+        focus_area: Dead state elimination
+        verification:
+          - "Empty resource tab shows contextual message instead of zero-value stat cards"
+          - "No 'Recent Attendance' section in mission tab"
+          - "Non-empty states render normally (regression check)"
+        acceptance_criteria:
+          - "No zero-value stat cards appear when data is empty"
+          - "Contextual empty states explain what the guard should do"
+          - "Normal states with data are unaffected"
+        failure_modes:
+          - scenario: Conditional rendering breaks non-empty case
+            likelihood: low
+            impact: medium
+            mitigation: Test with both empty and populated data sets
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: w3-t2
+    title: "Guard Resource Tab Polish — Unified Scannable List"
+    description: |
+      Simplify GuardResourcesTab.tsx to present firearms and permits in a single
+      unified list instead of separate sections with a divider.
+
+      Changes:
+      1. Replace the separate "Assigned Firearms" DashboardCard and "Permits" DashboardCard
+         with a single "Your Resources" section.
+      2. Render firearms and permits as items in one list, with a type badge (🔫 Firearm / 📋 Permit)
+         on each row to distinguish them.
+      3. Keep the stat cards at top but only show them when there ARE items (per w3-t1 changes).
+      4. Add a footer note: "Contact your supervisor for allocation changes or permit renewals."
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    priority: low
+    status: pending
+    dependencies:
+      - w1-t1
+    conflicts_with:
+      - w3-t1
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+        description: "114 lines — separate firearms and permits sections"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 80
+        focus_area: Resource tab unification
+        verification:
+          - "Single list renders both firearms and permits"
+          - "Each item has a type badge distinguishing firearms from permits"
+          - "Footer note about supervisor contact is present"
+          - "Empty state handled gracefully"
+        acceptance_criteria:
+          - "Firearms and permits appear in one scannable list"
+          - "Type badges clearly distinguish item types"
+          - "Footer guidance text is visible"
+        failure_modes:
+          - scenario: Mixed list confuses item types
+            likelihood: low
+            impact: low
+            mitigation: Type badge + different accent color per type
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: w3-t3
+    title: "Login Page Streamline — Remove ParticleBackground on Mobile"
+    description: |
+      Optimize LoginPage.tsx for performance and professionalism.
+
+      Changes:
+      1. Conditionally render ParticleBackground: show it only on desktop (lg: breakpoint).
+         Use a media query hook or simply wrap in a div with "hidden lg:block".
+      2. Reduce particleCount from 65 to 30 even on desktop for better performance.
+      3. The SecurityBentoGrid is NOT in LoginPage (it's in CalendarDashboard) — no change needed there.
+
+      DO NOT change any form logic, validation, or authentication flow.
+      This is purely a visual performance optimization.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    priority: low
+    status: pending
+    dependencies: []
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/LoginPage.tsx
+        description: "706 lines — ParticleBackground at line 683 with particleCount={65}"
+      - path: DasiaAIO-Frontend/src/components/ParticleBackground.tsx
+        description: "Canvas particle animation component"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 1
+        estimated_lines: 10
+        focus_area: Login page performance
+        verification:
+          - "ParticleBackground not rendered on mobile viewports"
+          - "ParticleBackground renders on desktop with reduced particle count"
+          - "Login form remains fully functional"
+          - "No layout shift when particles are hidden"
+        acceptance_criteria:
+          - "Mobile login loads without particle animation"
+          - "Desktop login shows subtle particle effect (30 particles)"
+          - "Login flow is completely unaffected"
+        failure_modes:
+          - scenario: Hidden particles leave blank space on mobile
+            likelihood: low
+            impact: low
+            mitigation: ParticleBackground is absolutely positioned — hiding it leaves no gap
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  - id: w3-t4
+    title: "Consistent Empty States Across Components"
+    description: |
+      Replace generic "No data available" messages with contextual empty states.
+
+      Audit these components for empty/no-data states and replace with actionable messages:
+
+      1. GuardResourcesTab.tsx — already addressed in w3-t1/w3-t2
+      2. GuardSupportTab.tsx — ticket list empty state:
+         "No support tickets yet. Use the form above to report an issue."
+      3. GuardMapTab.tsx — no-embed-url state:
+         "Enable location tracking from Mission to see your position on the map."
+         (Already has this — verify and keep.)
+      4. UserDashboard.tsx — no-shifts state:
+         "No shifts scheduled for today. Check the Schedule tab for upcoming assignments."
+         (Already has similar — verify and keep.)
+
+      Only modify components where the empty state message is currently generic ("No data" / "N/A").
+      Keep all existing good empty states unchanged.
+    wave: 3
+    agent: gem-implementer
+    prototype: false
+    priority: low
+    status: pending
+    dependencies:
+      - w1-t1
+      - w1-t3
+    conflicts_with:
+      - w3-t1
+      - w3-t2
+    context_files:
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+        description: "Check ticket list empty state message"
+      - path: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+        description: "Check no-map-url empty state message"
+      - path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        description: "Check no-shifts empty state message"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: small
+        estimated_files: 2
+        estimated_lines: 30
+        focus_area: Empty state messaging
+        verification:
+          - "No component shows 'No data available' or 'N/A' as an empty state"
+          - "Each empty state provides contextual guidance"
+          - "Empty states use consistent styling (soc-empty-state class or equivalent)"
+        acceptance_criteria:
+          - "All empty states provide actionable context"
+          - "Visual consistency across empty states"
+        failure_modes:
+          - scenario: Missed a generic empty state in a component
+            likelihood: medium
+            impact: low
+            mitigation: Browser test in w4-t1 will visually catch remaining generic states
+        tech_stack:
+          - React 18
+          - TypeScript
+          - Tailwind CSS v4
+        test_coverage: null
+        requires_review: false
+        review_depth: null
+        review_security_sensitive: false
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # WAVE 4: Integration test (validates all waves)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - id: w4-t1
+    title: "Integration Test — All Roles End-to-End Browser Validation"
+    description: |
+      Write and execute Playwright browser tests that validate the transformation
+      across all 4 roles: guard, supervisor, admin, superadmin.
+
+      Test scenarios:
+
+      Guard role:
+      1. Login as guard (guard / guard123)
+      2. Verify sidebar shows exactly 4 items: Overview, Map, Schedule, Support
+      3. Verify Mission tab has 3 zones: StatusHero, QuickActions, TodaysSchedule
+      4. Verify Map tab has no stat cards, map fills viewport
+      5. Verify Support tab has contacts at top, forms collapsed
+      6. Verify Resource tab (via Mission) shows unified list or contextual empty state
+      7. Verify check-in button is present and clickable
+
+      Supervisor/Admin role:
+      1. Login as admin (admin / admin123)
+      2. Verify sidebar has full elevated menu (>4 items)
+      3. Verify Command Center shows incidents section before map section
+      4. Verify AI prediction panels have action buttons
+      5. Navigate to a prediction action button — verify it doesn't error
+
+      Superadmin role:
+      1. Login as superadmin (Dwight / december262001)
+      2. Verify dashboard loads without errors (no modifications expected)
+
+      Login page:
+      1. Verify ParticleBackground not visible at mobile viewport (375px)
+      2. Verify ParticleBackground visible at desktop viewport (1440px)
+    wave: 4
+    agent: gem-browser-tester
+    prototype: false
+    priority: high
+    status: pending
+    dependencies:
+      - w1-t1
+      - w1-t2
+      - w1-t3
+      - w2-t1
+      - w2-t2
+      - w2-t3
+      - w3-t1
+      - w3-t2
+      - w3-t3
+      - w3-t4
+    conflicts_with: []
+    context_files:
+      - path: DasiaAIO-Frontend/playwright.config.ts
+        description: "Playwright configuration"
+      - path: DasiaAIO-Frontend/tests/
+        description: "Existing Playwright test directory"
+    planning_pass: 1
+    planning_history:
+      - pass: 1
+        reason: Initial plan
+        timestamp: "2026-04-04T00:00:00Z"
+        estimated_effort: medium
+        estimated_files: 1
+        estimated_lines: 250
+        focus_area: End-to-end validation of all changes
+        verification:
+          - "All test scenarios pass"
+          - "No console errors during any role's session"
+          - "Screenshots captured for visual regression baseline"
+        acceptance_criteria:
+          - "Guard sidebar shows exactly 4 items"
+          - "Guard Mission tab has 3 zones visible"
+          - "Guard Map tab fills viewport"
+          - "Guard Support tab has contacts first"
+          - "Command Center shows incidents above map"
+          - "AI panels have action buttons"
+          - "Login ParticleBackground respects viewport size"
+          - "Superadmin dashboard loads without errors"
+        failure_modes:
+          - scenario: Test environment lacks seeded data
+            likelihood: medium
+            impact: medium
+            mitigation: Use existing test credentials from production-transformation-state. Tests check structure, not data values.
+        validation_matrix:
+          - scenario: Guard workspace navigation
+            steps:
+              - Login as guard
+              - Verify sidebar items count = 4
+              - Click each sidebar item
+              - Verify no console errors
+            expected_result: All 4 views load without errors
+          - scenario: Guard Mission tab zones
+            steps:
+              - Navigate to Mission tab
+              - Count distinct zone sections
+              - Check for check-in button
+            expected_result: 3 zones visible, check-in button present
+          - scenario: Command Center layout order
+            steps:
+              - Login as admin
+              - Navigate to dashboard
+              - Get DOM order of SectionPanels
+            expected_result: Incidents section appears before Tactical View section
+          - scenario: Login page particles
+            steps:
+              - Set viewport to 375x812
+              - Navigate to login
+              - Check ParticleBackground visibility
+            expected_result: ParticleBackground hidden at mobile viewport
+        environment: development
+        requires_approval: false
+        devops_security_sensitive: false
+
+planning_pass: 1
+planning_history:
+  - pass: 1
+    reason: "Initial plan creation from gem-critic reality check constraints"
+    timestamp: "2026-04-04T00:00:00Z"
