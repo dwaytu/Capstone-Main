@@ -189,6 +189,7 @@ Client access governance hardening:
 - `DasiaAIO-Frontend/src/utils/location.ts` now uses CORS-compatible IP geolocation providers (`ipinfo.io` with `geolocation-db.com` fallback) plus short-lived caching to avoid repeated blocked external requests when precise GPS is unavailable.
 - Elevated dashboard layout uses a fixed-shell contract: sidebar is fixed, app shell is viewport-locked (`h-[100dvh]`), and only main content regions own vertical scrolling.
 - `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now enforces `main` as a `min-h-0 overflow-hidden` container with a dedicated `overflow-y-auto` content pane, preventing nested body/document scroll drift.
+- `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` now owns desktop sidebar collapse state and persists user preference in `localStorage` via `dasi.sidebar.collapsed`, while `DasiaAIO-Frontend/src/components/Sidebar.tsx` applies synchronized fixed-width transitions (`18rem` expanded, `4rem` collapsed) and retains full-label behavior for the mobile drawer.
 - Shared elevated dashboard roots (`FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, `PerformanceDashboard`, `MeritScoreDashboard`, `ArmoredCarDashboard`, `CalendarDashboard`, `ProfileDashboard`) now use `h-[100dvh]` + `overflow-hidden` shells and `min-h-0` main columns to eliminate overlap/clipping between fixed sidebar and content.
 - Global shell styling in `DasiaAIO-Frontend/src/index.css` now locks `html/body/#root` to full height with hidden document overflow and moves atmospheric gradient rendering to a fixed background layer (`body::before`) so decorative layers no longer interfere with scrollable content.
 - Frontend theming now uses an expanded semantic token contract in `DasiaAIO-Frontend/src/index.css` covering dual light/dark palettes, component surfaces, interactive states, role badges, overlays, and status tones (`.soc-*` utility classes) for consistent SOC visual behavior.
@@ -200,6 +201,7 @@ Client access governance hardening:
 - Elevated and guard shells now use a shared header global-actions contract (`DasiaAIO-Frontend/src/components/shared/HeaderGlobalActions.tsx`) that keeps sidebar navigation focused on primary destinations while moving quick inbox, settings, refresh, theme, and profile controls into the fixed top-right header.
 - `DasiaAIO-Frontend/src/components/shared/useOverlayController.ts` now centralizes mutually exclusive header overlay state so quick inbox, settings drawer, and profile menu share Escape/outside-close behavior and focus restoration patterns.
 - `DasiaAIO-Frontend/src/components/NotificationPanel.tsx` now functions as a compact role-aware quick inbox instead of a sidebar destination. It surfaces high-priority items, degraded-state notices, and a fallback action to the full `inbox` view without removing existing view-state support. The panel now sanitizes incomplete user context and malformed summary items before render so header overlays cannot crash the elevated or guard shell during partial-load states.
+- `DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx` now explicitly maps route-derived `activeView='inbox'` to `activeSection='inbox'` in its view-sync effect, with an updater-safe state comparison. This keeps elevated-role "View Full Inbox" header actions synchronized with `/inbox` route navigation and reliably renders role-specific inbox panels.
 - `DasiaAIO-Frontend/src/components/settings/SettingsPanel.tsx` and `DasiaAIO-Frontend/src/components/settings/RoleSettingsContent.tsx` now provide a shared slide-over settings surface in the header while preserving the full `settings` route as a fallback screen for direct view navigation and recovery flows.
 - Elevated sidebar navigation (`DasiaAIO-Frontend/src/config/navigation.ts`) now restores `Calendar` as a first-class destination for `superadmin`, `admin`, and `supervisor` roles, while mobile elevated bottom tabs remain focused on `Dashboard`, `Approvals`, `Schedule`, and `Alerts` with `More` overflow.
 - URL-accessible elevated routes intentionally excluded from sidebar chrome are now explicitly documented in `DasiaAIO-Frontend/src/router/routes.ts` via `ELEVATED_URL_ONLY_ROUTES` (`/permits`, `/inbox`, `/profile`, `/support`, `/shift-swaps`, `/notifications`, `/trips`).
@@ -215,6 +217,7 @@ Client access governance hardening:
 - Modal behavior was normalized with reusable overlay/panel patterns (`.soc-modal-backdrop`, `.soc-modal-panel`) and applied across schedule/user edit dialogs, trip details, calendar event details, bug report dialog, and approval drawers so dialogs consistently appear above dashboard chrome.
 - Scroll and safe-area handling were tightened by applying `soc-scroll-area` plus bottom safe-area padding in shared content panes (`OperationalShell`, `ProfileDashboard`) to keep profile/account forms fully visible and scrollable on mobile devices.
 - Operational map presentation was refined to avoid UI obstruction: Leaflet pane z-order was constrained in `index.css`, map containers now isolate stacking contexts, and loading overlays are non-interactive (`pointer-events-none`) so map feedback no longer blocks surrounding dashboard interactions.
+- `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx` now consumes `OperationalEventContext` so selecting entries in command-center live operations or incident alert feeds opens a dismissible event detail card directly on the map surface; for guard-type events, the map performs best-effort active-telemetry matching to focus and emphasize the related guard marker when available.
 - Global mobile quick navigation in `App.tsx` is disabled for guard routing, and guard navigation is now single-sourced inside `UserDashboard.tsx` through a dedicated bottom-nav field shell to avoid redundant controls.
 - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` was redesigned to a mission-first guard workspace with a single-column mobile layout, persistent field action dock (`Report Incident`, `Check In/Check Out`, `View Instructions`), assignment-focused top summary cards, a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`), and shared top-right header actions for quick inbox, settings, and profile access.
 - Guard resilience UX now includes explicit loading/sync states, offline and partial-sync banners with retry, and protected action feedback messages for field-critical workflows.
@@ -1374,6 +1377,17 @@ Verified in this session (Docker runtime):
       - `Operational Map`, `Guard Deployment Overview`, `Live Operations Feed`, `Incident Alert Feed`, `Today's Shifts`, `Firearms Status`
       - `Guard Absence Prediction`, `Smart Guard Replacement`, `Predictive Vehicle Maintenance`, `Incident Severity Classifier`, `Incident Summary Generator`
     - Requested architecture document created: `architecture.md`.
+  - Command-center AI action behavior hardening (latest):
+    - Frontend — `DasiaAIO-Frontend/src/components/dashboard/IncidentSeverityClassifier.tsx`:
+      - Replaced placeholder `alert()` handlers in recommended-action chips with `useOperationalEvent().selectEvent(...)` targeting the current incident id.
+      - Clicking a recommended action now drives the existing map/detail operational flow instead of opening a dead-end browser dialog.
+    - Frontend — `DasiaAIO-Frontend/src/components/dashboard/IncidentSummaryGenerator.tsx`:
+      - Replaced placeholder `alert()` handlers with clipboard actions (`navigator.clipboard.writeText`).
+      - `Include`/`report`-style actions now copy a formatted incident brief (incident title, risk level, confidence, summary, explanation/key phrases when available).
+      - Other suggested actions copy the generated summary text and provide in-component confirmation (`Copied ✓`) plus polite status feedback.
+    - Validation:
+      - Frontend build passes after behavior update (`npm run build`).
+      - Workspace diagnostics report no errors in modified files.
   - RBAC and layout hardening pass (latest):
     - Backend authorization updates:
       - `/api/audit-logs`, `/api/audit/logs`, `/api/audit/logs/filter`, `/api/audit/user-activity/:id`, `/api/audit/anomalies` now require superadmin route and handler gates.
