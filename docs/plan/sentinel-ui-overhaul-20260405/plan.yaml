@@ -1,0 +1,1266 @@
+# ════════════════════════════════════════════════════════════════════════════════
+# SENTINEL UI/UX Overhaul — Wave-Based DAG Execution Plan
+# ════════════════════════════════════════════════════════════════════════════════
+# Vertical-slice rollout: smallest safe slices, browser-validation gates per phase.
+# 5 phases × 14 waves × 29 tasks.
+# ════════════════════════════════════════════════════════════════════════════════
+
+plan_id: sentinel-ui-overhaul-20260405
+plan_path: docs/plan/sentinel-ui-overhaul-20260405/plan.yaml
+prd_path: docs/PRD-UI-OVERHAUL-20260405.yaml
+design_path: docs/DESIGN.md
+objective: "UI/UX overhaul for SENTINEL authenticated dashboards and role workspaces — vertical-slice rollout with browser-validation gates"
+complexity: complex
+created_at: "2026-04-05"
+created_by: gem-planner
+status: pending_approval
+research_confidence: high
+
+planning_pass: 2
+planning_history:
+  - pass: 1
+    reason: "Initial plan from PRD + DESIGN.md + live audit findings + 7 user decisions"
+    timestamp: "2026-04-05T00:00:00Z"
+  - pass: 2
+    reason: "Critic review fixes: phantom routes corrected (supervisor /map+/incidents → /approvals+/allocation, /vehicles → /armored-cars, /alerts → /notifications), T019 file list expanded (3→7), dependency chains added (T002→T003→T004, T020←T018, T023←T022), T026/T027 false conflicts removed, T023 references existing GuardSupportTab.tsx"
+    timestamp: "2026-04-05T01:00:00Z"
+
+# ── Metrics ────────────────────────────────────────────────────────────────────
+plan_metrics:
+  total_tasks: 29
+  total_waves: 14
+  wave_1_task_count: 4
+  total_dependencies: 43
+  risk_score: 6                # 1–10, lower is better
+  estimated_touch_files: 30
+
+# ── Pre-Mortem ─────────────────────────────────────────────────────────────────
+pre_mortem:
+  overall_risk_level: medium
+  critical_failure_modes:
+    - scenario: "Shell migration breaks existing page functionality (missing props, event handlers, state)"
+      likelihood: medium
+      impact: high
+      mitigation: "Migrate one page at a time. Keep LegacyPage bridge pattern for props. Browser-validate after each batch."
+    - scenario: "Navigation role filtering removes items users need or exposes items they shouldn't see"
+      likelihood: medium
+      impact: critical
+      mitigation: "Test every role's sidebar items against PRD AC-003 counts in validation gate. Unit-test getSidebarNav per role."
+    - scenario: "Guard route hardening breaks deep links or browser back-button behavior"
+      likelihood: low
+      impact: medium
+      mitigation: "Use Navigate with replace prop. Test forward/back navigation in browser validation."
+    - scenario: "EmptyState/LoadingSkeleton adoption causes visual regressions in populated-data views"
+      likelihood: low
+      impact: medium
+      mitigation: "EmptyState shows only when data.length === 0. Never replaces loaded content. Conditional rendering only."
+    - scenario: "Analytics SVG charts cause performance degradation on large datasets"
+      likelihood: medium
+      impact: medium
+      mitigation: "Paginate source data server-side. SVG charts render max 12–20 data points. Apply CSS containment."
+    - scenario: "CSP change works in dev but breaks production font loading"
+      likelihood: low
+      impact: high
+      mitigation: "Validate with production build (npm run build + npx vite preview) not just dev server."
+    - scenario: "Mobile bottom nav overlaps guard sticky region or obscures page content"
+      likelihood: medium
+      impact: medium
+      mitigation: "Guard role never sees elevated mobile nav. Add bottom padding equal to nav height. Test on 375px viewport."
+  assumptions:
+    - "Existing support_tickets table schema is sufficient for guard ticket system"
+    - "Guard equipment checklist uses static list (no backend API) — MVP approach per open question"
+    - "Support ticket detail shows status + resolution notes, not a conversation thread"
+    - "'More' mobile bottom nav item opens a bottom-sheet drawer component"
+    - "No backend API changes required except possibly guard support ticket creation endpoint"
+    - "All pages currently using inline Sidebar+Header can be refactored to pass props through OperationalShell"
+
+open_questions:
+  - "Guard equipment checklist: static list or backend API? (Assuming static for MVP)"
+  - "Support ticket replies visible to guard? (Assuming status + resolution only, no thread)"
+  - "Mobile 'More' bottom nav: bottom-sheet drawer or full navigation page? (Assuming drawer)"
+
+# ── Implementation Specification ───────────────────────────────────────────────
+implementation_specification:
+  code_structure: |
+    All changes are frontend-only in DasiaAIO-Frontend/src/.
+    New shared components: components/shared/EmptyState.tsx, components/shared/LoadingSkeleton.tsx.
+    New guard components: components/guards/OffDutyPanel.tsx, components/guards/SupportTickets.tsx.
+    Router changes centralized in router/index.tsx and router/guards.tsx.
+    Navigation config centralized in config/navigation.ts.
+    No new top-level directories, no new dependencies, no architectural departures.
+  affected_areas:
+    - "Router and route guards — router/index.tsx, router/guards.tsx"
+    - "Navigation configuration — config/navigation.ts"
+    - "Layout shell — layout/OperationalShell.tsx, layout/AppShell.tsx"
+    - "11 legacy dashboard pages needing shell migration"
+    - "Guard workspace — guards/UserDashboard.tsx"
+    - "New shared components — shared/EmptyState.tsx, shared/LoadingSkeleton.tsx"
+    - "Analytics + Audit pages — full redesign"
+    - "CSP meta tag — index.html"
+  component_details:
+    - component: "shared/EmptyState"
+      responsibility: "Reusable zero-data state with icon, title, subtitle, optional action button"
+      interfaces:
+        - "EmptyStateProps { icon: LucideIcon; title: string; subtitle: string; actionLabel?: string; onAction?: () => void }"
+    - component: "shared/LoadingSkeleton"
+      responsibility: "Consistent loading placeholder for dashboard cards, tables, KPI tiles"
+      interfaces:
+        - "LoadingSkeletonProps { variant: 'card' | 'table' | 'kpi' | 'hero'; count?: number }"
+    - component: "guards/OffDutyPanel"
+      responsibility: "Guard off-duty state: upcoming schedule, availability toggle, equipment checklist"
+      interfaces:
+        - "OffDutyPanelProps { user: User; schedule?: Shift[]; onToggleAvailability: (available: boolean) => void }"
+    - component: "guards/SupportTickets"
+      responsibility: "Guard support ticket list, create form, and detail view"
+      interfaces:
+        - "SupportTicketsProps { userId: string }"
+  dependencies:
+    - component: "EmptyState"
+      relationship: "Consumed by all dashboard + resource pages for zero-data rendering"
+    - component: "LoadingSkeleton"
+      relationship: "Consumed by all pages as loading placeholder before data arrives"
+    - component: "OperationalShell"
+      relationship: "Wraps every authenticated page except guard workspace (UserDashboard)"
+    - component: "config/navigation.ts"
+      relationship: "Provides role-filtered NavItem[] to Sidebar via getSidebarNav()"
+  integration_points:
+    - "Router guards (RoleGuard) enforce role-based route access with guard→/overview redirect"
+    - "Navigation config feeds sidebar items through OperationalShell → Sidebar"
+    - "AppShell provides mobile bottom nav for elevated roles"
+    - "Existing /api/support-tickets endpoints for guard ticket system"
+    - "Existing schedule/shift APIs for guard off-duty panel"
+
+# ── Contracts ──────────────────────────────────────────────────────────────────
+contracts:
+  - from_task: T006
+    to_task: T009
+    interface: "Updated getSidebarNav() returns role-filtered NavItem[] with clean labels and group sections"
+    format: "NavItem { view: string; label: string; group: string; icon?: string; permission?: Permission }"
+  - from_task: T006
+    to_task: T010
+    interface: "Same navigation config contract as T009"
+    format: "getSidebarNav(role) → NavItem[]"
+  - from_task: T006
+    to_task: T011
+    interface: "Same navigation config contract — FirearmInventory uses shell nav instead of hardcoded array"
+    format: "getSidebarNav(role) → NavItem[]"
+  - from_task: T006
+    to_task: T013
+    interface: "Navigation config provides mobile bottom nav item definitions"
+    format: "Elevated role mobile items derived from getSidebarNav with priority subset"
+  - from_task: T015
+    to_task: T018
+    interface: "EmptyState component exported and importable"
+    format: "import EmptyState from '../shared/EmptyState'"
+  - from_task: T015
+    to_task: T019
+    interface: "EmptyState component exported and importable"
+    format: "import EmptyState from '../shared/EmptyState'"
+  - from_task: T016
+    to_task: T018
+    interface: "LoadingSkeleton component exported and importable"
+    format: "import LoadingSkeleton from '../shared/LoadingSkeleton'"
+  - from_task: T023
+    to_task: T024
+    interface: "SupportTickets component with list/create views ready for detail view extension"
+    format: "Internal component state for selected ticket ID, ticket data type"
+
+# ════════════════════════════════════════════════════════════════════════════════
+# TASKS
+# ════════════════════════════════════════════════════════════════════════════════
+
+tasks:
+
+  # ┌──────────────────────────────────────────────────────────────────────────┐
+  # │ PHASE 1: PRODUCTION CREDIBILITY                          Waves 1–2     │
+  # └──────────────────────────────────────────────────────────────────────────┘
+
+  - task_id: T001
+    title: "Fix CSP and font loading for production"
+    description: |
+      Verify and fix the Content-Security-Policy meta tag in index.html to ensure
+      Google Fonts (Rajdhani + Space Grotesk) load in production builds. The CSP
+      already has fonts.googleapis.com in style-src and fonts.gstatic.com in font-src.
+      Verify the @import directive in src/index.css resolves correctly in production
+      builds. If fonts fail to load, check for missing @import, incorrect CSP
+      directives, or build-time CSS processing stripping the import. Test with
+      production build (npm run build + npx vite preview), not just dev server.
+    agent: gem-implementer
+    wave: 1
+    status: pending
+    dependencies: []
+    files:
+      - "DasiaAIO-Frontend/index.html"
+      - "DasiaAIO-Frontend/src/index.css"
+    acceptance: |
+      Production build loads Rajdhani for headings and Space Grotesk for body text
+      without console CSP errors. CSP meta tag includes fonts.googleapis.com in
+      style-src and fonts.gstatic.com in font-src. Visual confirmation via browser
+      DevTools computed font-family. Covers AC-001.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 20
+    covers: ["AC-001"]
+
+  - task_id: T002
+    title: "Fix /inbox route — remove guard access to SuperadminDashboard"
+    description: |
+      In router/index.tsx, the /inbox route is inside the ALL_ROLES guard and renders
+      SuperadminDashboard for every role — including guards. Fix:
+      1. Move /inbox route from ALL_ROLES section to ELEVATED_ROLES section.
+      2. Move /armored-cars from ALL_ROLES to ELEVATED_ROLES (guards should not see it per AC-004).
+      3. Verify /permits and /calendar remain accessible to guards (they should per existing design).
+    agent: gem-implementer
+    wave: 1
+    status: pending
+    dependencies: []
+    files:
+      - "DasiaAIO-Frontend/src/router/index.tsx"
+    acceptance: |
+      /inbox is only accessible to superadmin, admin, supervisor. /armored-cars is
+      only accessible to elevated roles. Guard navigating to either gets caught by
+      route guard (fixed in T004). No permission-error UI shown. Covers AC-004 partially.
+    conflicts_with: ["T003", "T004"]
+    risk: medium
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 30
+    covers: ["AC-004"]
+
+  - task_id: T003
+    title: "Replace stub routes with redirects"
+    description: |
+      In router/index.tsx, three routes render bare <div> text:
+        { path: '/shift-swaps', element: <div>Shift Swaps</div> }
+        { path: '/notifications', element: <div>Notifications</div> }
+        { path: '/support', element: <div>Support</div> }
+      Replace with meaningful redirects:
+        - /shift-swaps → <Navigate to="/calendar" replace /> (schedule context)
+        - /notifications → <Navigate to="/dashboard" replace /> (header bell handles notifications)
+        - /support → role-conditional: guards → /overview, elevated → /dashboard
+      These are placeholder redirects until full features exist.
+    agent: gem-implementer
+    wave: 1
+    status: pending
+    dependencies: ["T002"]
+    files:
+      - "DasiaAIO-Frontend/src/router/index.tsx"
+    acceptance: |
+      No route renders bare <div> text. Each stub route redirects to a proper page.
+      /shift-swaps → /calendar. /notifications → /dashboard. /support redirects
+      by role. No blank text nodes visible. Build passes.
+    conflicts_with: ["T002", "T004"]
+    risk: low
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 20
+    covers: []
+
+  - task_id: T004
+    title: "Guard route hardening — silent redirect to /overview"
+    description: |
+      Update the RoleGuard component in router/guards.tsx so that when a guard-role
+      user attempts to access any elevated-role route, they are silently redirected
+      to /overview. Currently RoleGuard may render nothing or a blank page for
+      unauthorized roles.
+
+      Changes:
+      1. In RoleGuard: if user role is 'guard' and current route is not in guard-allowed
+         routes, <Navigate to="/overview" replace />.
+      2. Guard-allowed routes: /overview, /calendar, /permits, /profile, /settings.
+      3. All other routes (/dashboard, /approvals, /schedule, /missions, /trips,
+         /performance, /merit, /firearms, /allocation, /maintenance, /analytics,
+         /audit, /inbox, /armored-cars) redirect guards to /overview.
+      4. Ensure redirect is silent — no error flash, no permission UI.
+    agent: gem-implementer
+    wave: 1
+    status: pending
+    dependencies: ["T003"]
+    files:
+      - "DasiaAIO-Frontend/src/router/guards.tsx"
+      - "DasiaAIO-Frontend/src/router/index.tsx"
+    acceptance: |
+      Guard navigating to /dashboard, /inbox, /firearms, /analytics, /audit,
+      /armored-cars, or any other elevated-role route is silently redirected to
+      /overview. No permission-error screen. No flash of admin content. Browser
+      back button works. Covers AC-004.
+    conflicts_with: ["T002", "T003"]
+    risk: medium
+    estimated_effort: small
+    estimated_files: 2
+    estimated_lines: 40
+    covers: ["AC-004"]
+
+  - task_id: T005
+    title: "Validation Gate 1 — production credibility"
+    description: |
+      Browser validation after Phase 1:
+      1. npm run build succeeds with zero errors
+      2. tsc --noEmit returns 0 type errors
+      3. Production preview: Rajdhani renders for headings, Space Grotesk for body
+      4. Login as guard → lands on /overview, not /dashboard
+      5. Guard: navigate to /inbox → redirects to /overview silently
+      6. Guard: navigate to /armored-cars → redirects to /overview silently
+      7. Guard: navigate to /firearms, /analytics, /audit → redirect to /overview
+      8. Superadmin: /inbox, /armored-cars, /analytics, /audit all accessible
+      9. Navigate to /shift-swaps → redirects to /calendar
+      10. Navigate to /notifications → redirects to /dashboard
+      11. Navigate to /support → role-appropriate redirect
+    agent: gem-browser-tester
+    wave: 2
+    status: pending
+    dependencies: ["T001", "T002", "T003", "T004"]
+    files: []
+    acceptance: |
+      All 11 checks pass. Screenshots captured for font rendering and route
+      redirects. Any failures documented with browser console output and
+      reproduction steps. Covers AC-001, AC-004, AC-013 validation.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 0
+    estimated_lines: 0
+    covers: ["AC-001", "AC-004", "AC-013"]
+    validation_matrix:
+      - scenario: "Font loading in production build"
+        steps:
+          - "npm run build"
+          - "npx vite preview"
+          - "Open browser, inspect heading font-family"
+        expected_result: "Rajdhani on headings, Space Grotesk on body text"
+      - scenario: "Guard route hardening"
+        steps:
+          - "Login as guard"
+          - "Navigate to /inbox, /armored-cars, /firearms, /analytics, /audit"
+        expected_result: "All redirect to /overview silently, no error UI"
+      - scenario: "Stub route redirects"
+        steps:
+          - "Navigate to /shift-swaps, /notifications, /support"
+        expected_result: "All redirect to meaningful pages, no bare text"
+
+  # ┌──────────────────────────────────────────────────────────────────────────┐
+  # │ PHASE 2: SHELL & NAVIGATION                             Waves 3–6     │
+  # └──────────────────────────────────────────────────────────────────────────┘
+
+  - task_id: T006
+    title: "Navigation config — clean labels, role sections, sidebar filtering"
+    description: |
+      Refactor config/navigation.ts to implement DESIGN.md §3.3 sidebar spec:
+
+      Superadmin (~8 items):
+        Core: Dashboard, Approvals, Schedule
+        Intelligence: Analytics, Audit
+        Resources: Firearms, Armored Cars
+        System: Settings
+
+      Admin (~7 items):
+        Core: Dashboard, Approvals, Schedule
+        Operations: Allocation
+        Resources: Firearms, Armored Cars, Maintenance
+
+      Supervisor (~5 items):
+        Core: Dashboard, Schedule
+        Field: Missions
+        Operations: Approvals, Allocation
+
+      Guard: empty array (guard uses bottom nav, no sidebar).
+
+      Changes to config/navigation.ts:
+      1. Update NavItem type to include icon field (Lucide icon name string)
+      2. Restructure ELEVATED_NAV into role-specific arrays or enhance filtering
+      3. Clean all labels: single words, no prefixes, no developer artifacts
+      4. Add group sections: Core, Intelligence, Operations, Resources, Field, System
+      5. Ensure getSidebarNav('guard') returns []
+    agent: gem-implementer
+    wave: 3
+    status: pending
+    dependencies: ["T005"]
+    files:
+      - "DasiaAIO-Frontend/src/config/navigation.ts"
+    acceptance: |
+      getSidebarNav('superadmin') returns ~8 items: Dashboard, Approvals, Schedule,
+      Analytics, Audit, Firearms, Armored Cars, Settings — with group labels.
+      getSidebarNav('admin') returns ~7 items. getSidebarNav('supervisor') returns ~5
+      (Dashboard, Schedule, Missions, Approvals, Allocation).
+      getSidebarNav('guard') returns []. All labels clean single words. Covers AC-003.
+    conflicts_with: []
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 1
+    estimated_lines: 120
+    covers: ["AC-003"]
+
+  - task_id: T007
+    title: "Wrap AnalyticsDashboard in OperationalShell"
+    description: |
+      AnalyticsDashboard currently renders without any navigation chrome — it's
+      wrapped in bare <SuspenseWrapper> in the router, not LegacyPage. Fix:
+      1. Change router to use LegacyPage wrapper: <LegacyPage Component={AnalyticsDashboard} />
+      2. Update AnalyticsDashboard to accept and use legacy props (user, onViewChange, activeView)
+      3. Wrap content in OperationalShell with role-filtered nav items from getSidebarNav
+      4. Manage mobile menu state for sidebar drawer
+    agent: gem-implementer
+    wave: 3
+    status: pending
+    dependencies: ["T005"]
+    files:
+      - "DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx"
+      - "DasiaAIO-Frontend/src/router/index.tsx"
+    acceptance: |
+      /analytics renders with sidebar and header visible. Navigation from analytics
+      to other pages works. Sidebar shows role-appropriate items. No standalone
+      Sidebar or Header imports. Covers AC-002 for analytics.
+    conflicts_with: ["T008"]
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 80
+    covers: ["AC-002"]
+
+  - task_id: T008
+    title: "Wrap AuditDashboard in OperationalShell"
+    description: |
+      AuditDashboard currently renders without navigation chrome (same issue as
+      AnalyticsDashboard). Apply identical shell-wrapping pattern from T007:
+      1. Use LegacyPage wrapper in router
+      2. Accept legacy props in AuditDashboard
+      3. Wrap in OperationalShell with role-filtered nav
+    agent: gem-implementer
+    wave: 3
+    status: pending
+    dependencies: ["T005"]
+    files:
+      - "DasiaAIO-Frontend/src/components/AuditDashboard.tsx"
+      - "DasiaAIO-Frontend/src/router/index.tsx"
+    acceptance: |
+      /audit renders with sidebar and header visible. Navigation works. No standalone
+      Sidebar or Header imports. Covers AC-002 for audit.
+    conflicts_with: ["T007"]
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 80
+    covers: ["AC-002"]
+
+  - task_id: T009
+    title: "Shell migrate CalendarView and ProfileDashboard"
+    description: |
+      CalendarDashboard and ProfileDashboard currently use inline Sidebar+Header
+      imports. Refactor both to use OperationalShell:
+      1. Remove direct Sidebar and Header imports
+      2. Wrap page content in OperationalShell component
+      3. Wire navigation items from getSidebarNav(role) using updated config from T006
+      4. Ensure all existing functionality (calendar events, profile editing) is preserved
+    agent: gem-implementer
+    wave: 4
+    status: pending
+    dependencies: ["T006", "T007"]
+    files:
+      - "DasiaAIO-Frontend/src/components/CalendarDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/ProfileDashboard.tsx"
+    acceptance: |
+      /calendar and /profile render inside OperationalShell with sidebar and header.
+      No direct Sidebar or Header imports in either file. Existing page functionality
+      preserved. Covers AC-002.
+    conflicts_with: []
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 100
+    covers: ["AC-002"]
+
+  - task_id: T010
+    title: "Shell migrate PerformanceDashboard and MeritScoreDashboard"
+    description: |
+      Replace inline Sidebar+Header in PerformanceDashboard and MeritScoreDashboard
+      with OperationalShell. Same pattern as T009.
+    agent: gem-implementer
+    wave: 4
+    status: pending
+    dependencies: ["T006", "T007"]
+    files:
+      - "DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx"
+    acceptance: |
+      /performance and /merit render inside OperationalShell. No direct Sidebar or
+      Header imports. Existing functionality preserved. Covers AC-002.
+    conflicts_with: []
+    risk: low
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 100
+    covers: ["AC-002"]
+
+  - task_id: T011
+    title: "Shell migrate Firearm pages + remove hardcoded nav"
+    description: |
+      FirearmInventory has its own hardcoded navigation array — remove it. Migrate
+      all 3 firearm pages to OperationalShell:
+      1. FirearmInventory.tsx — remove internal nav array, use shell sidebar
+      2. FirearmAllocation.tsx — replace inline shell with OperationalShell
+      3. FirearmMaintenance.tsx — replace inline shell with OperationalShell
+    agent: gem-implementer
+    wave: 4
+    status: pending
+    dependencies: ["T006", "T007"]
+    files:
+      - "DasiaAIO-Frontend/src/components/FirearmInventory.tsx"
+      - "DasiaAIO-Frontend/src/components/FirearmAllocation.tsx"
+      - "DasiaAIO-Frontend/src/components/FirearmMaintenance.tsx"
+    acceptance: |
+      All 3 firearm pages render inside OperationalShell. FirearmInventory no longer
+      defines its own nav array. Sidebar nav comes from shell. Covers AC-002, AC-012.
+    conflicts_with: []
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 150
+    covers: ["AC-002", "AC-012"]
+
+  - task_id: T012
+    title: "Shell migrate ArmoredCarDashboard and GuardFirearmPermits"
+    description: |
+      Migrate remaining legacy-shell pages to OperationalShell:
+      1. ArmoredCarDashboard.tsx — replace inline Sidebar+Header
+      2. GuardFirearmPermits.tsx — replace inline Sidebar+Header
+      Remove any direct Sidebar or Header imports.
+    agent: gem-implementer
+    wave: 4
+    status: pending
+    dependencies: ["T006", "T007"]
+    files:
+      - "DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/GuardFirearmPermits.tsx"
+    acceptance: |
+      /armored-cars and /permits render inside OperationalShell. No direct Sidebar
+      or Header imports. Covers AC-002.
+    conflicts_with: []
+    risk: low
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 80
+    covers: ["AC-002"]
+
+  - task_id: T013
+    title: "Mobile bottom nav redesign for elevated roles"
+    description: |
+      Implement DESIGN.md §3.5 elevated-role mobile bottom nav in AppShell.tsx:
+      1. Show 5-tab bottom bar below 768px for superadmin/admin/supervisor
+      2. Tabs: Dashboard (LayoutDashboard), Approvals (ClipboardCheck),
+         Schedule (Calendar), Notifications (Bell), More (MoreHorizontal)
+      3. Active tab: --color-info icon+text. Inactive: text-text-secondary
+      4. "More" opens bottom-sheet drawer with remaining nav items
+      5. z-index: 64 (--z-mobile-nav)
+      6. Do NOT show for guard role — guard has specialized bottom region
+      7. Replace existing hardcoded mobileNavItems in AppShell.tsx
+    agent: gem-implementer
+    wave: 5
+    status: pending
+    dependencies: ["T006"]
+    files:
+      - "DasiaAIO-Frontend/src/components/layout/AppShell.tsx"
+    acceptance: |
+      Elevated roles see 5-tab bottom nav on mobile (<768px). Guard sees no change.
+      Active tab highlighted with info color. "More" opens overlay with remaining items.
+      Touch targets ≥44px. Covers AC-007.
+    conflicts_with: []
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 1
+    estimated_lines: 150
+    covers: ["AC-007"]
+
+  - task_id: T014
+    title: "Validation Gate 2 — shell and navigation"
+    description: |
+      Browser validation after Phase 2:
+      1. Login as superadmin → sidebar shows ~8 items with clean single-word labels
+      2. Login as admin → sidebar shows ~7 items, no Analytics/Audit
+      3. Login as supervisor → sidebar shows ~5 items (Dashboard, Schedule, Missions, Approvals, Allocation)
+      4. Login as guard → no sidebar visible
+      5. Navigate to /analytics → renders in OperationalShell with sidebar
+      6. Navigate to /audit → renders in OperationalShell with sidebar
+      7. Navigate to /calendar, /performance, /merit, /firearms, /armored-cars → all in OperationalShell
+      8. FirearmInventory has no hardcoded nav (inspect source)
+      9. Mobile (<768px): elevated roles see 5-tab bottom nav
+      10. tsc --noEmit passes, npm run build succeeds
+    agent: gem-browser-tester
+    wave: 6
+    status: pending
+    dependencies: ["T009", "T010", "T011", "T012", "T013"]
+    files: []
+    acceptance: |
+      All 10 checks pass. Every authenticated page renders in OperationalShell.
+      Sidebar items match PRD role counts. Screenshots captured per role.
+      Covers AC-002, AC-003, AC-007, AC-012, AC-015 validation.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 0
+    estimated_lines: 0
+    covers: ["AC-002", "AC-003", "AC-007", "AC-012", "AC-015"]
+    validation_matrix:
+      - scenario: "Superadmin sidebar items"
+        steps:
+          - "Login as superadmin"
+          - "Count sidebar items, verify labels"
+        expected_result: "~8 items: Dashboard, Approvals, Schedule, Analytics, Audit, Firearms, Armored Cars, Settings"
+      - scenario: "All pages in OperationalShell"
+        steps:
+          - "Visit each authenticated route as superadmin"
+          - "Verify sidebar + header present on every page"
+        expected_result: "No page renders without navigation shell"
+      - scenario: "Mobile bottom nav"
+        steps:
+          - "Set viewport to 375px width"
+          - "Login as admin"
+          - "Verify bottom nav tabs"
+        expected_result: "5 tabs visible: Dashboard, Approvals, Schedule, Notifications, More"
+
+  # ┌──────────────────────────────────────────────────────────────────────────┐
+  # │ PHASE 3: SHARED COMPONENTS + DASHBOARD POLISH            Waves 7–9     │
+  # └──────────────────────────────────────────────────────────────────────────┘
+
+  - task_id: T015
+    title: "Create shared EmptyState component"
+    description: |
+      Create components/shared/EmptyState.tsx — a reusable zero-data state component.
+      Props: icon (Lucide component), title (string), subtitle (string),
+      actionLabel? (string), onAction? (() => void).
+
+      Visual spec:
+      - Centered layout with py-12 padding
+      - Icon: 48px, text-text-tertiary
+      - Title: text-lg font-semibold text-text-primary
+      - Subtitle: text-sm text-text-secondary, max-w-sm
+      - Action button: standard primary button style if actionLabel provided
+      - Uses semantic Tailwind tokens only (bg-surface, text-text-*, border-border)
+      - WCAG 2.2 AA: 4.5:1 contrast, forced-colors compatible
+    agent: gem-implementer
+    wave: 7
+    status: pending
+    dependencies: ["T014"]
+    files:
+      - "DasiaAIO-Frontend/src/components/shared/EmptyState.tsx"
+    acceptance: |
+      Component renders with icon, title, subtitle. Action button shows when
+      actionLabel provided and calls onAction on click. Meets 4.5:1 contrast.
+      Works in forced-colors mode (icon uses currentColor). Covers AC-008 foundation.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 60
+    covers: ["AC-008"]
+
+  - task_id: T016
+    title: "Create shared LoadingSkeleton component"
+    description: |
+      Create components/shared/LoadingSkeleton.tsx with skeleton loading variants:
+      - 'card': rounded rectangle matching .soc-dashboard-card dimensions
+      - 'table': header row + 5 data rows with alternating widths
+      - 'kpi': 4-column grid of small rectangles matching .soc-kpi
+      - 'hero': full-width tall rectangle matching hero zone
+      - count prop: number of skeleton instances (default 1)
+
+      Uses animate-pulse with bg-surface-elevated. Respects prefers-reduced-motion
+      (pause animation). role="status" with aria-label="Loading" for accessibility.
+    agent: gem-implementer
+    wave: 7
+    status: pending
+    dependencies: ["T014"]
+    files:
+      - "DasiaAIO-Frontend/src/components/shared/LoadingSkeleton.tsx"
+    acceptance: |
+      All 4 variants render. Reduced-motion pauses animation. Screen reader announces
+      "Loading". Visual consistency with existing skeleton patterns. Covers AC-014.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 80
+    covers: ["AC-014"]
+
+  - task_id: T017
+    title: "Chrome consolidation — remove per-page refresh and duplicate strips"
+    description: |
+      Audit dashboard pages and remove duplicate chrome per DESIGN.md §2.3:
+      1. Remove per-page refresh buttons from SuperadminDashboard, CommandCenterDashboard,
+         and any other page that defines its own. Refresh is handled by Header onRefresh.
+      2. Remove duplicate avatar/status strips from page bodies — Header provides this.
+      3. Remove per-page connection status indicators — AppShell connectivity banner handles this.
+      4. Verify Header.tsx onRefresh callback works for data refresh use case.
+    agent: gem-implementer
+    wave: 7
+    status: pending
+    dependencies: ["T014"]
+    files:
+      - "DasiaAIO-Frontend/src/components/shared/Header.tsx"
+      - "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/superadmin/CommandCenterDashboard.tsx"
+    acceptance: |
+      No dashboard page renders its own refresh button, avatar strip, or connectivity
+      indicator. Header provides single refresh mechanism via onRefresh prop. No visual
+      duplication. Covers AC-012.
+    conflicts_with: []
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 100
+    covers: ["AC-012"]
+
+  - task_id: T018
+    title: "Apply EmptyState + LoadingSkeleton to admin dashboards"
+    description: |
+      Replace bare "No data" / "No items" text in admin dashboards with EmptyState:
+      1. CommandCenterDashboard — empty approvals, empty incidents, empty deployments
+      2. SuperadminDashboard — empty approval queue, empty schedule, empty system alerts
+      3. AdminDashboard — empty operations panels
+
+      Each empty state must have:
+      - Contextual Lucide icon (ClipboardX for approvals, Calendar for schedule, etc.)
+      - Specific title ("No pending approvals")
+      - Helpful subtitle ("All guard requests have been processed")
+      - Optional action ("View history")
+
+      Apply LoadingSkeleton for loading states in data-fetching sections.
+    agent: gem-implementer
+    wave: 8
+    status: pending
+    dependencies: ["T015", "T016", "T017"]
+    files:
+      - "DasiaAIO-Frontend/src/components/superadmin/CommandCenterDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/admin/AdminDashboard.tsx"
+    acceptance: |
+      Zero-data states show shared EmptyState with relevant icon, title, subtitle.
+      Loading states use LoadingSkeleton. No bare "No data" strings. Covers AC-008.
+    conflicts_with: ["T020"]
+    risk: low
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 120
+    covers: ["AC-008"]
+
+  - task_id: T019
+    title: "Apply EmptyState to resource and operational pages"
+    description: |
+      Apply shared EmptyState component to zero-data states in:
+      1. FirearmInventory — "No firearms registered"
+      2. ArmoredCarDashboard — "No vehicles in fleet"
+      3. CalendarDashboard — "No events scheduled"
+      4. PerformanceDashboard — "No performance data available"
+      5. MeritScoreDashboard — "No merit scores recorded"
+      6. AnalyticsDashboard — "No analytics data yet"
+      7. AuditDashboard — "No audit entries found"
+
+      Apply LoadingSkeleton for loading states where applicable.
+    agent: gem-implementer
+    wave: 8
+    status: pending
+    dependencies: ["T015", "T016"]
+    files:
+      - "DasiaAIO-Frontend/src/components/FirearmInventory.tsx"
+      - "DasiaAIO-Frontend/src/components/ArmoredCarDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/CalendarDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/PerformanceDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/AuditDashboard.tsx"
+    acceptance: |
+      All 7 pages show EmptyState for zero-data (checked per file). No bare "No data"
+      text remains in any resource or operational page. Covers AC-008.
+    conflicts_with: []
+    risk: low
+    estimated_effort: medium
+    estimated_files: 7
+    estimated_lines: 140
+    covers: ["AC-008"]
+
+  - task_id: T020
+    title: "Dashboard hierarchy — hero/KPI/action-detail zones"
+    description: |
+      Restructure dashboard layouts per DESIGN.md §2.2 zone model:
+
+      CommandCenterDashboard:
+      - Hero zone: system health overview card (full-width, .command-panel)
+      - KPI row: 4 tiles (active guards, pending approvals, open incidents, system uptime)
+      - Action/detail: 2-col grid — approval queue (left) + incident feed (right)
+
+      SuperadminDashboard:
+      - Hero zone: role-contextual status banner or remove if sections handle
+      - KPI row: 4 summary tiles
+      - Action/detail: management tables + operational panels
+
+      AdminDashboard:
+      - Hero zone: operations status
+      - KPI row: scheduling + allocation metrics
+      - Action/detail: approval queue + resource status
+
+      Apply .soc-section-title headers to each zone. Max 6 cards above fold.
+      No more than 2 equally-weighted panel rows at same hierarchy level.
+    agent: gem-implementer
+    wave: 8
+    status: pending
+    dependencies: ["T017", "T018"]
+    files:
+      - "DasiaAIO-Frontend/src/components/superadmin/CommandCenterDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/admin/AdminDashboard.tsx"
+    acceptance: |
+      Each dashboard has visible hero zone (or intentionally omitted), KPI row, and
+      action/detail zones. Section headers present. Visual weight tiers clear. Max 6
+      cards above fold on 1440px viewport. Covers AC-011.
+    conflicts_with: ["T018"]
+    risk: medium
+    estimated_effort: large
+    estimated_files: 3
+    estimated_lines: 250
+    covers: ["AC-011"]
+
+  - task_id: T021
+    title: "Validation Gate 3 — shared components and dashboard polish"
+    description: |
+      Browser validation after Phase 3:
+      1. Navigate to a page with no data → EmptyState component shows (icon, title, subtitle)
+      2. Trigger loading state → LoadingSkeleton visible (if observable)
+      3. CommandCenterDashboard: hero → KPI row → action/detail zones visible
+      4. No per-page refresh buttons remain outside the Header
+      5. No duplicate avatar or status strips on any page
+      6. .soc-section-title headers on each dashboard section
+      7. tsc --noEmit passes, npm run build succeeds
+    agent: gem-browser-tester
+    wave: 9
+    status: pending
+    dependencies: ["T018", "T019", "T020"]
+    files: []
+    acceptance: |
+      All 7 checks pass. Empty states are action-oriented with contextual copy.
+      Dashboard hierarchy is visually clear. No duplicate chrome. Screenshots
+      captured. Covers AC-008, AC-011, AC-012 validation.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 0
+    estimated_lines: 0
+    covers: ["AC-008", "AC-011", "AC-012"]
+    validation_matrix:
+      - scenario: "EmptyState on zero-data page"
+        steps:
+          - "Login as admin"
+          - "Navigate to a page with no data"
+        expected_result: "EmptyState with icon, title, subtitle — not bare text"
+      - scenario: "Dashboard hierarchy"
+        steps:
+          - "Login as superadmin, open CommandCenterDashboard"
+          - "Verify hero zone, KPI row, action/detail sections"
+        expected_result: "Clear 3-zone layout, section headers visible, max 6 cards above fold"
+
+  # ┌──────────────────────────────────────────────────────────────────────────┐
+  # │ PHASE 4: GUARD UX                                       Waves 10–12   │
+  # └──────────────────────────────────────────────────────────────────────────┘
+
+  - task_id: T022
+    title: "Guard off-duty state — schedule, availability, equipment checklist"
+    description: |
+      Create components/guards/OffDutyPanel.tsx and integrate into UserDashboard:
+
+      1. Upcoming schedule section:
+         - Fetch from existing schedule API (or show EmptyState: "No shifts scheduled")
+         - Show next 3–5 upcoming shifts with date, time, location
+      2. Availability toggle:
+         - On/off toggle with clear visual state (green=available, muted=unavailable)
+         - Store in component state for MVP (no backend persistence yet)
+         - Label: "Available for callout"
+      3. Equipment checklist:
+         - Static items: Uniform, Flashlight, Two-Way Radio, ID Badge, PPE Kit
+         - Checkboxes with persistent localStorage state
+         - Progress indicator: "3/5 items ready"
+
+      Integration: UserDashboard renders OffDutyPanel when guard has no active mission.
+      All touch targets ≥44px. WCAG 2.2 AA contrast.
+    agent: gem-implementer
+    wave: 10
+    status: pending
+    dependencies: ["T021"]
+    files:
+      - "DasiaAIO-Frontend/src/components/guards/OffDutyPanel.tsx"
+      - "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+    acceptance: |
+      Off-duty panel shows when guard has no active mission. Schedule section present
+      (or EmptyState). Availability toggle works visually. Equipment checklist items
+      checkable with localStorage persistence. Progress indicator accurate.
+      Touch targets ≥44px. Covers AC-005.
+    conflicts_with: ["T023"]
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 200
+    covers: ["AC-005"]
+
+  - task_id: T023
+    title: "Guard support ticket system — list and create"
+    description: |
+      Create components/guards/SupportTickets.tsx with list + create functionality.
+      NOTE: An existing GuardSupportTab.tsx exists at components/dashboard/GuardSupportTab.tsx
+      with partial ticket list/create. This task replaces it with a complete implementation.
+      The old file should be deprecated (removed or re-exported from the new component).
+
+      1. Ticket list view:
+         - Fetch guard's tickets from /api/support-tickets (filtered by user_id)
+         - Display: title/description preview, category badge, status badge, created date
+         - Status badges: submitted (warning), in_progress (info), resolved (success), closed (muted)
+         - Sort by most recent first
+         - EmptyState when no tickets: "No support tickets" with Create action
+
+      2. Create ticket form:
+         - Category dropdown: Equipment, Schedule, Safety, General, Other
+         - Description textarea: required, min 10 chars
+         - Submit button: POST to /api/support-tickets
+         - Validation: required fields highlighted
+         - Success: return to list, show new ticket
+
+      Integration: Add "Support" tab to UserDashboard bottom nav or as a section.
+      All form elements meet WCAG 2.2 AA (labels, error states, contrast).
+    agent: gem-implementer
+    wave: 10
+    status: pending
+    dependencies: ["T021", "T022"]
+    files:
+      - "DasiaAIO-Frontend/src/components/guards/SupportTickets.tsx"
+      - "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+      - "DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx"
+    acceptance: |
+      Guard can view ticket list with status badges. Create form validates and
+      submits. New ticket appears in list. EmptyState for zero tickets. All form
+      controls labeled. Touch targets ≥44px. Covers AC-006 partially.
+    conflicts_with: ["T022"]
+    risk: medium
+    estimated_effort: medium
+    estimated_files: 2
+    estimated_lines: 250
+    covers: ["AC-006"]
+
+  - task_id: T024
+    title: "Guard support ticket — detail view and status tracking"
+    description: |
+      Extend SupportTickets.tsx with ticket detail view:
+
+      1. Tap on ticket → full detail view:
+         - Category, description, created date
+         - Status badge (prominent)
+         - If resolved: show resolution_notes and resolved_at timestamp
+      2. Status timeline visualization:
+         - Vertical timeline: Submitted → In Progress → Resolved
+         - Completed steps in success color, pending in muted
+      3. Back button → returns to ticket list
+      4. Graceful handling if ticket not found or API error
+    agent: gem-implementer
+    wave: 11
+    status: pending
+    dependencies: ["T023"]
+    files:
+      - "DasiaAIO-Frontend/src/components/guards/SupportTickets.tsx"
+    acceptance: |
+      Ticket detail view shows all fields. Status timeline renders with visual states.
+      Resolution notes visible when resolved. Back navigation works. Error states
+      handled. Covers AC-006 fully.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 120
+    covers: ["AC-006"]
+
+  - task_id: T025
+    title: "Validation Gate 4 — guard UX"
+    description: |
+      Browser validation after Phase 4:
+      1. Login as guard → no active mission → off-duty panel visible
+      2. Off-duty: schedule section present (data or EmptyState)
+      3. Availability toggle: click → visual state changes
+      4. Equipment checklist: check items → progress updates, persist on refresh
+      5. Support tab: ticket list loads (empty or with data)
+      6. Create ticket: fill form, submit → ticket appears in list with status badge
+      7. Tap ticket → detail view with category, description, status timeline
+      8. Detail view: back button returns to list
+      9. Guard still cannot access /dashboard, /inbox, /firearms
+      10. Touch targets ≥44px on all guard interactive elements
+    agent: gem-browser-tester
+    wave: 12
+    status: pending
+    dependencies: ["T022", "T024"]
+    files: []
+    acceptance: |
+      All 10 checks pass. Guard workspace is functional for off-duty and support
+      scenarios. Touch targets verified. Screenshots captured. Covers AC-005,
+      AC-006, AC-004 re-validation.
+    conflicts_with: []
+    risk: low
+    estimated_effort: small
+    estimated_files: 0
+    estimated_lines: 0
+    covers: ["AC-005", "AC-006", "AC-004"]
+    validation_matrix:
+      - scenario: "Guard off-duty panel"
+        steps:
+          - "Login as guard with no active mission"
+          - "Verify schedule, availability toggle, equipment checklist"
+        expected_result: "All 3 sections render. Toggle and checklist interactive."
+      - scenario: "Guard support ticket CRUD"
+        steps:
+          - "Open support tab"
+          - "Create ticket with Equipment category"
+          - "Verify it appears in list"
+          - "Tap to view details"
+        expected_result: "Full CRUD flow works. Status badges visible. Detail shows timeline."
+
+  # ┌──────────────────────────────────────────────────────────────────────────┐
+  # │ PHASE 5: ANALYTICS/AUDIT REDESIGN + FINAL               Waves 13–14   │
+  # └──────────────────────────────────────────────────────────────────────────┘
+
+  - task_id: T026
+    title: "Analytics page redesign — SVG charts, filters, scannable layout"
+    description: |
+      Full redesign of AnalyticsDashboard within OperationalShell (wrapped in T007):
+
+      1. Hero zone: primary aggregate metric (e.g., Total Incidents This Month)
+         - Full-width .command-panel with large number + trend indicator
+      2. KPI row: 4 tiles (deployment count, incident rate, response time avg, guard utilization)
+      3. SVG charts (native SVG, NO recharts):
+         - Bar chart: incidents by type/category
+         - Line chart: trend over configurable time range
+         - Implement as simple React components rendering <svg> with <rect>/<path>
+      4. Filter controls: date range picker, category dropdown, status filter
+      5. Metric cards: scannable grid using .soc-dashboard-card
+      6. Responsive: 2-col desktop → 1-col mobile
+
+      Use existing /api/analytics data. Cap chart data points at 12–20 for performance.
+    agent: gem-implementer
+    wave: 13
+    status: pending
+    dependencies: ["T025"]
+    files:
+      - "DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx"
+    acceptance: |
+      /analytics shows hero metric, KPI row (4 tiles), bar chart, line chart, and
+      filter controls. Charts render actual API data. Layout responsive. Not a flat
+      stat block. SVG charts render without external libraries. Covers AC-009.
+    conflicts_with: []
+    risk: high
+    estimated_effort: large
+    estimated_files: 1
+    estimated_lines: 300
+    covers: ["AC-009"]
+
+  - task_id: T027
+    title: "Audit page redesign — timeline, search, filters"
+    description: |
+      Full redesign of AuditDashboard within OperationalShell (wrapped in T008):
+
+      1. Search bar: text input with debounced full-text search of audit entries
+      2. Filter controls: date range, action type dropdown, user filter, severity filter
+      3. Timeline / table view:
+         - Chronological entries, most recent first
+         - Each entry: timestamp (formatted), user name+avatar, action description,
+           target resource, severity badge
+         - Table uses .table-glass + .thead-glass styling
+      4. Entry detail: expandable row (click to expand) showing full payload/context
+      5. Pagination: API-backed pagination with page controls
+      6. EmptyState when no results match filters
+      7. Responsive: full table on desktop, card-based entries on mobile
+
+      Use existing /api/audit-logs endpoint.
+    agent: gem-implementer
+    wave: 13
+    status: pending
+    dependencies: ["T025"]
+    files:
+      - "DasiaAIO-Frontend/src/components/AuditDashboard.tsx"
+    acceptance: |
+      /audit shows search bar, filter controls, timeline/table with formatted entries.
+      Expandable details work. Not a raw log dump. Entries scannable with clear
+      hierarchy. Responsive. Pagination works. Covers AC-010.
+    conflicts_with: []
+    risk: high
+    estimated_effort: large
+    estimated_files: 1
+    estimated_lines: 300
+    covers: ["AC-010"]
+
+  - task_id: T028
+    title: "Code review — security, quality, accessibility"
+    description: |
+      Full review of all changes from T001–T027:
+      1. Security: no XSS vectors, no raw innerHTML, no unsanitized user input in DOM,
+         CSRF tokens intact, API calls use proper auth headers
+      2. Quality: consistent TypeScript types, no `any` casts, proper error boundaries,
+         useEffect cleanup, no memory leaks
+      3. Accessibility: WCAG 2.2 AA compliance, 4.5:1 text contrast, 3:1 UI contrast,
+         focus visible on all interactive elements, forced-colors mode check, reduced-motion
+         support, proper aria-labels and roles, heading hierarchy preserved
+      4. Performance: no unnecessary re-renders (check React.memo, useMemo usage), proper
+         lazy loading, bundle size impact
+      5. Architecture: no circular imports, proper Tailwind token usage (no hex values),
+         no Sidebar/Header imports outside OperationalShell
+    agent: gem-reviewer
+    wave: 14
+    status: pending
+    dependencies: ["T026", "T027"]
+    files: []
+    acceptance: |
+      Review report delivered with findings by severity (critical, high, medium, low).
+      Critical and high findings must be remediated. No new security vulnerabilities.
+      Covers AC-013, AC-014.
+    conflicts_with: []
+    risk: low
+    estimated_effort: medium
+    estimated_files: 0
+    estimated_lines: 0
+    covers: ["AC-013", "AC-014"]
+    review_depth: full
+    review_security_sensitive: true
+
+  - task_id: T029
+    title: "Final validation — all roles, all pages, accessibility, build"
+    description: |
+      Comprehensive end-to-end browser validation:
+      1. Build: tsc --noEmit returns 0 errors
+      2. Build: npm run build succeeds with clean output
+      3. Superadmin: login → dashboard → navigate all sidebar items → all pages load in shell
+      4. Admin: login → dashboard → sidebar shows ~7 items → navigate all → correct access
+      5. Supervisor: login → dashboard → sidebar shows ~5 items → navigate all → correct access
+      6. Guard: login → /overview → off-duty panel → support tickets → no admin routes accessible
+      7. Empty states: force zero-data on at least 2 pages → EmptyState renders
+      8. Analytics: hero + KPIs + charts + filters visible
+      9. Audit: search + filters + timeline visible
+      10. Mobile (375px): elevated bottom nav, guard bottom region, card stacking
+      11. Accessibility: tab through 5+ pages, verify focus ring visible, no traps
+      12. Forced-colors mode: spot check 3 pages — icons use currentColor, no invisible elements
+      13. No console errors on any page for any role
+    agent: gem-browser-tester
+    wave: 14
+    status: pending
+    dependencies: ["T028"]
+    files: []
+    acceptance: |
+      All 13 checks pass. Full screenshot set for all 4 roles. No regressions.
+      Build clean. Accessibility spot check passed. Covers AC-001 through AC-015
+      final sign-off.
+    conflicts_with: []
+    risk: low
+    estimated_effort: medium
+    estimated_files: 0
+    estimated_lines: 0
+    covers: ["AC-001", "AC-002", "AC-003", "AC-004", "AC-005", "AC-006", "AC-007", "AC-008", "AC-009", "AC-010", "AC-011", "AC-012", "AC-013", "AC-014", "AC-015"]
+    validation_matrix:
+      - scenario: "Full role sweep — superadmin"
+        steps:
+          - "Login as superadmin"
+          - "Navigate every sidebar item"
+          - "Verify shell, content, no errors"
+        expected_result: "All pages load in OperationalShell, no console errors"
+      - scenario: "Full role sweep — guard"
+        steps:
+          - "Login as guard"
+          - "Verify off-duty, support, route hardening"
+          - "Attempt /dashboard, /inbox → redirect to /overview"
+        expected_result: "Guard workspace functional, admin routes blocked"
+      - scenario: "Mobile responsive"
+        steps:
+          - "Viewport 375px"
+          - "Test elevated bottom nav, card stacking, touch targets"
+        expected_result: "Bottom nav visible for elevated, cards stack, targets ≥44px"
+      - scenario: "Accessibility"
+        steps:
+          - "Tab through 5 pages"
+          - "Enable forced-colors mode"
+          - "Check contrast on EmptyState, charts"
+        expected_result: "Focus visible everywhere, no invisible elements in forced-colors"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATION GATES — Summary of phase-end browser checks
+# ═══════════════════════════════════════════════════════════════════════════════
+
+validation_gates:
+  - after_wave: 2
+    phase: "Phase 1 — Production Credibility"
+    task: T005
+    checks:
+      - "tsc --noEmit returns 0 errors"
+      - "npm run build succeeds"
+      - "Browser: Rajdhani headings + Space Grotesk body render in production build"
+      - "Browser: guard cannot access /inbox, /armored-cars, /firearms, /analytics, /audit"
+      - "Browser: /shift-swaps, /notifications, /support redirect properly"
+      - "Browser: no bare <div> text stubs on any route"
+
+  - after_wave: 6
+    phase: "Phase 2 — Shell & Navigation"
+    task: T014
+    checks:
+      - "tsc --noEmit returns 0 errors"
+      - "npm run build succeeds"
+      - "Browser: all authenticated pages render in OperationalShell"
+      - "Browser: sidebar is role-filtered (superadmin ~8, admin ~7, supervisor ~5, guard 0)"
+      - "Browser: labels are clean single words — no DG/AP/CL prefixes"
+      - "Browser: mobile bottom nav for elevated roles shows 5 tabs"
+      - "Browser: guard mobile nav is unchanged"
+
+  - after_wave: 9
+    phase: "Phase 3 — Shared Components & Polish"
+    task: T021
+    checks:
+      - "tsc --noEmit returns 0 errors"
+      - "npm run build succeeds"
+      - "Browser: zero-data pages show EmptyState component"
+      - "Browser: loading states use LoadingSkeleton"
+      - "Browser: dashboards have clear hero/KPI/detail zones"
+      - "Browser: no per-page refresh buttons or duplicate chrome"
+
+  - after_wave: 12
+    phase: "Phase 4 — Guard UX"
+    task: T025
+    checks:
+      - "tsc --noEmit returns 0 errors"
+      - "npm run build succeeds"
+      - "Browser: guard off-duty panel shows schedule, availability, equipment"
+      - "Browser: guard support ticket list + create + detail works"
+      - "Browser: touch targets ≥44px on all guard controls"
+      - "Browser: guard still cannot access admin routes"
+
+  - after_wave: 14
+    phase: "Phase 5 — Analytics/Audit Redesign & Final"
+    task: T029
+    checks:
+      - "tsc --noEmit returns 0 errors"
+      - "npm run build succeeds"
+      - "Browser: /analytics has SVG charts, filters, hero, KPI tiles"
+      - "Browser: /audit has search, filters, timeline/table, expandable entries"
+      - "Browser: all 4 roles validated — correct access, correct sidebar, correct landing"
+      - "Browser: accessibility — focus visible, contrast, forced-colors spot check"
+      - "Browser: no console errors on any page for any role"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAVE SUMMARY — Execution order and parallelism
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Wave  1: T001 ║ T002→T003→T004 (T001 parallel, T002-04 serial on router)
+# Wave  2: T005 (validation gate 1)
+# Wave  3: T006 ║ T007→T008 (T006 parallel, T007-08 serial on router)
+# Wave  4: T009 ║ T010 ║ T011 ║ T012 (all parallel, distinct files)
+# Wave  5: T013 (mobile nav)
+# Wave  6: T014 (validation gate 2)
+# Wave  7: T015 ║ T016 ║ T017 (all parallel, new files + distinct pages)
+# Wave  8: T018 ║ T019 ║ T020 (T018+T020 conflict, T019 parallel)
+# Wave  9: T021 (validation gate 3)
+# Wave 10: T022 ║ T023 (parallel but conflict on UserDashboard — serial)
+# Wave 11: T024 (detail view)
+# Wave 12: T025 (validation gate 4)
+# Wave 13: T026 ║ T027 (parallel but conflict flagged — serial for safety)
+# Wave 14: T028 → T029 (review then final validation)
+#
+# Maximum parallelism in Wave 4: 4 concurrent tasks (shell migrations).
+# Total estimated duration: proportional to longest serial chain (14 waves).
+# ═══════════════════════════════════════════════════════════════════════════════

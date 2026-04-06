@@ -1,0 +1,737 @@
+plan_id: guard-ux-research
+objective: Deep research into guard-specific UX, route permissions, and guard support experience
+focus_area: guard-ux-routes-support
+created_at: "2026-04-05"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Guards access 10 routes via ALL_ROLES + 1 guard-only route (/overview). Three ALL_ROLES routes render placeholder <div> stubs (/shift-swaps, /notifications, /support). The /inbox route renders SuperadminDashboard for guards — a significant role leakage.
+  - Guard workspace has 5 sections (inbox, mission, resources, support, map) managed via internal state tabs, not routes. Support tab is fully functional (schedule requests, support tickets with backend CRUD, shift swaps). Not a stub.
+  - Backend support tickets API is minimal: create + list-by-guard only. No update/resolve/close/delete endpoints. No admin dashboard for ticket management. DB schema supports richer workflows (category, priority, assigned_to, resolution_notes) that the API ignores.
+  - Access denied UX is clean: RoleGuard renders an inline AccessDenied component (no redirect). Catch-all route redirects to /dashboard (not /overview for guards).
+  - Off-duty state shows "OFF DUTY" banner + "No shifts scheduled for today" empty state. No useful off-duty content (no upcoming schedule, training, equipment checklist). Guard is left with a mostly empty screen.
+
+research_metadata:
+  methodology: "hybrid retrieval: semantic_search + grep_search, sequential file reads of router, guards, UserDashboard, GuardSupportTab, GuardResourcesTab, GuardMapTab, AppShell, navigation config, backend handlers, models, migrations, permissions"
+  scope: "Full guard route access path, all guard workspace tabs, support feature backend+frontend, permission error handling, off-duty experience, mobile + sticky navigation"
+  confidence: high
+  coverage: 95
+  decision_blockers: 1
+  research_blockers: 0
+
+files_analyzed:
+  - file: index.tsx
+    path: DasiaAIO-Frontend/src/router/index.tsx
+    purpose: Central route definitions with RoleGuard wrappers
+    key_elements:
+      - element: ELEVATED_ROLES
+        type: variable
+        location: "index.tsx:105"
+        description: "['superadmin', 'admin', 'supervisor'] — guards excluded"
+      - element: ALL_ROLES
+        type: variable
+        location: "index.tsx:107"
+        description: "['superadmin', 'admin', 'supervisor', 'guard'] — shared routes"
+      - element: GUARD_ONLY
+        type: variable
+        location: "index.tsx:108"
+        description: "['guard'] — guard-exclusive routes"
+      - element: SUPERADMIN_ONLY
+        type: variable
+        location: "index.tsx:109"
+        description: "['superadmin'] — superadmin-exclusive routes"
+      - element: catch-all route
+        type: pattern
+        location: "index.tsx:175"
+        description: "Navigate to /dashboard replace — does NOT redirect guards to /overview"
+    language: TypeScript
+    lines: 178
+
+  - file: guards.tsx
+    path: DasiaAIO-Frontend/src/router/guards.tsx
+    purpose: Authentication and role authorization wrapper components
+    key_elements:
+      - element: AuthGuard
+        type: function
+        location: "guards.tsx:5"
+        description: "Checks isLoggedIn; redirects to /login if not. Shows loading skeleton while checking."
+      - element: RoleGuard
+        type: function
+        location: "guards.tsx:32"
+        description: "Checks user.role against allowed roles array. Renders AccessDenied inline if mismatch."
+      - element: AccessDenied
+        type: function
+        location: "guards.tsx:42"
+        description: "Static 'Access Denied' card with border-danger styling. Text: 'Contact a superadmin.' No redirect."
+    language: TypeScript
+    lines: 62
+
+  - file: routes.ts
+    path: DasiaAIO-Frontend/src/router/routes.ts
+    purpose: Route path constants and legacy view-to-route mapping
+    key_elements:
+      - element: ROUTES
+        type: variable
+        location: "routes.ts:1"
+        description: "23 route path constants defined"
+      - element: VIEW_TO_ROUTE
+        type: variable
+        location: "routes.ts:29"
+        description: "Maps legacy string view keys to route paths"
+    language: TypeScript
+    lines: 62
+
+  - file: navigation.ts
+    path: DasiaAIO-Frontend/src/config/navigation.ts
+    purpose: Sidebar navigation item definitions scoped by role
+    key_elements:
+      - element: ELEVATED_NAV
+        type: variable
+        location: "navigation.ts:12"
+        description: "15 nav items for superadmin/admin/supervisor with permission gates"
+      - element: GUARD_NAV
+        type: variable
+        location: "navigation.ts:31"
+        description: "4 items: overview (Mission), resources, support, map — all MAIN MENU group"
+      - element: getSidebarNav
+        type: function
+        location: "navigation.ts:40"
+        description: "Returns role-appropriate nav items. Guards get GUARD_NAV only."
+    language: TypeScript
+    lines: 62
+
+  - file: AppShell.tsx
+    path: DasiaAIO-Frontend/src/components/layout/AppShell.tsx
+    purpose: Root layout with auth gate, modals, and mobile bottom nav
+    key_elements:
+      - element: mobileNavItems (guard)
+        type: variable
+        location: "AppShell.tsx:94-100"
+        description: "Guard mobile bottom nav: Overview, Calendar, Support, Profile (4 items)"
+      - element: mobileNavItems (elevated)
+        type: variable
+        location: "AppShell.tsx:101-108"
+        description: "Elevated mobile bottom nav: Dashboard, Calendar, Firearms, Vehicles, Profile (5 items)"
+      - element: isGuardWorkspaceView
+        type: variable
+        location: "AppShell.tsx:92"
+        description: "True when guard is NOT on inbox/settings/profile — suppresses AppShell bottom nav in favor of guard sticky nav"
+    language: TypeScript
+    lines: ~510
+
+  - file: UserDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+    purpose: Guard workspace — full tabbed field operations dashboard
+    key_elements:
+      - element: GuardSection type
+        type: type
+        location: "UserDashboard.tsx:72"
+        description: "Union: 'inbox' | 'mission' | 'resources' | 'support' | 'map'"
+      - element: navItems
+        type: variable
+        location: "UserDashboard.tsx:~868"
+        description: "Sticky nav tabs: Mission, Resources, Support, Map (inbox accessed via header)"
+      - element: dutyStatus
+        type: variable
+        location: "UserDashboard.tsx:~530"
+        description: "Computed: 'Off Duty' | 'On Post' | 'Standby' | 'Awaiting Check In' | 'Completed'"
+      - element: refreshData
+        type: function
+        location: "UserDashboard.tsx:~260"
+        description: "Fetches attendance, shifts, firearms, permits, support tickets in parallel"
+    language: TypeScript
+    lines: ~1350
+
+  - file: GuardSupportTab.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+    purpose: Support tab with schedule requests, support tickets, shift swaps
+    key_elements:
+      - element: Emergency Contacts card
+        type: pattern
+        location: "GuardSupportTab.tsx:77-80"
+        description: "Informational — points to bottom bar"
+      - element: Field Instructions button
+        type: pattern
+        location: "GuardSupportTab.tsx:83-96"
+        description: "Opens instructions modal"
+      - element: Schedule Change Request form
+        type: pattern
+        location: "GuardSupportTab.tsx:99-161"
+        description: "Collapsible form: client site, date, start/end time"
+      - element: Support Tickets section
+        type: pattern
+        location: "GuardSupportTab.tsx:164-230"
+        description: "Collapsible 'New Ticket' form + ticket history list"
+      - element: GuardShiftSwapPanel
+        type: pattern
+        location: "GuardSupportTab.tsx:232-236"
+        description: "Embedded shift swap management component"
+    language: TypeScript
+    lines: 242
+
+  - file: GuardResourcesTab.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/GuardResourcesTab.tsx
+    purpose: Resource snapshot showing allocated firearms and permits
+    key_elements:
+      - element: StatCard row
+        type: pattern
+        location: "GuardResourcesTab.tsx:66-91"
+        description: "3 stat cards: Allocated Firearms, Active Permits, Expiring Soon / All Clear"
+      - element: empty state
+        type: pattern
+        location: "GuardResourcesTab.tsx:43-51"
+        description: "Shows 'No resources allocated' with supervisor contact guidance"
+    language: TypeScript
+    lines: 135
+
+  - file: GuardMapTab.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx
+    purpose: Live map showing guard GPS position via OpenStreetMap embed
+    key_elements:
+      - element: map iframe
+        type: pattern
+        location: "GuardMapTab.tsx:39-55"
+        description: "OpenStreetMap embed with lat/lng overlay"
+      - element: empty state
+        type: pattern
+        location: "GuardMapTab.tsx:67-82"
+        description: "'Location Not Active' with 'Go to Mission' CTA"
+    language: TypeScript
+    lines: 87
+
+  - file: support_tickets.rs
+    path: DasiaAIO-Backend/src/handlers/support_tickets.rs
+    purpose: Backend support ticket handlers
+    key_elements:
+      - element: get_guard_tickets
+        type: function
+        location: "support_tickets.rs:17"
+        description: "GET /api/support-tickets/:guard_id — returns tickets for one guard"
+      - element: create_ticket
+        type: function
+        location: "support_tickets.rs:37"
+        description: "POST /api/support-tickets — creates ticket with guard_id, subject, message"
+    language: Rust
+    lines: 72
+
+  - file: add_support_tickets.sql
+    path: DasiaAIO-Backend/migrations/add_support_tickets.sql
+    purpose: DB migration creating support_tickets table
+    key_elements:
+      - element: support_tickets table
+        type: pattern
+        location: "add_support_tickets.sql:2"
+        description: "Columns: id, user_id, title, description, category, priority, status, assigned_to, resolution_notes, created_at, updated_at, resolved_at"
+    language: SQL
+    lines: 20
+
+  - file: permissions.ts
+    path: DasiaAIO-Frontend/src/utils/permissions.ts
+    purpose: Frontend RBAC permission definitions
+    key_elements:
+      - element: guard permissions
+        type: variable
+        location: "permissions.ts:49"
+        description: "Guard has ONLY 'view_guard_workspace' — no firearm, analytics, approval, or audit permissions"
+    language: TypeScript
+    lines: 60
+
+  - file: utils.rs (role_permissions)
+    path: DasiaAIO-Backend/src/utils.rs
+    purpose: Backend RBAC permission definitions
+    key_elements:
+      - element: guard backend permissions
+        type: variable
+        location: "utils.rs:280-282"
+        description: "Guard has: create_support_ticket, manage_notifications, view_merit"
+    language: Rust
+    lines: ~300
+
+patterns_found:
+  - category: architecture
+    pattern: "Role-based route nesting with RoleGuard wrapper"
+    description: "Routes are grouped into tiers (ELEVATED_ROLES, GUARD_ONLY, ALL_ROLES, SUPERADMIN_ONLY). Each tier wraps children in a <RoleGuard roles={...}> layout route. Role check is inline (no redirect) — renders AccessDenied component."
+    examples:
+      - file: DasiaAIO-Frontend/src/router/index.tsx
+        location: "index.tsx:118-131"
+        snippet: |
+          { element: <RoleGuard roles={ELEVATED_ROLES} />, children: [...] }
+          { element: <RoleGuard roles={GUARD_ONLY} />, children: [...] }
+          { element: <RoleGuard roles={ALL_ROLES} />, children: [...] }
+    prevalence: common
+
+  - category: architecture
+    pattern: "Guard workspace uses internal tab state, not sub-routes"
+    description: "UserDashboard manages its own tabs (GuardSection type) via useState. Tab switches don't change the URL — guard stays on /overview for all tabs. Only inbox/support/map can be activated via activeView prop from router."
+    examples:
+      - file: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+        location: "UserDashboard.tsx:72"
+        snippet: "type GuardSection = 'inbox' | 'mission' | 'resources' | 'support' | 'map'"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Dual navigation systems for guards"
+    description: "Guards have TWO navigation mechanisms: (1) AppShell mobile bottom nav (Overview, Calendar, Support, Profile) and (2) guard sticky nav at bottom of UserDashboard (Mission, Resources, Support, Map). The AppShell bottom nav is hidden when isGuardWorkspaceView=true."
+    examples:
+      - file: DasiaAIO-Frontend/src/components/layout/AppShell.tsx
+        location: "AppShell.tsx:92-100"
+        snippet: "const isGuardWorkspaceView = normalizedRole === 'guard' && !['inbox', 'settings', 'profile'].includes(activeView)"
+    prevalence: common
+
+  - category: error_handling
+    pattern: "Inline AccessDenied rendering (no redirect)"
+    description: "When a guard navigates to an unauthorized route (e.g., /dashboard, /analytics), RoleGuard renders AccessDenied in-place. No redirect occurs. The page shell (AppShell) is still rendered around it."
+    examples:
+      - file: DasiaAIO-Frontend/src/router/guards.tsx
+        location: "guards.tsx:35-37"
+        snippet: "if (!user || !roles.includes(user.role)) { return <AccessDenied /> }"
+    prevalence: common
+
+  - category: naming
+    pattern: "Schema/API field name mismatch"
+    description: "DB migration uses 'user_id' and 'title'+'description' for support tickets. Backend handler uses 'guard_id' and 'subject'+'message'. The Rust model has guard_id/subject/message. Misalignment between migration columns and API model."
+    examples:
+      - file: DasiaAIO-Backend/migrations/add_support_tickets.sql
+        location: "add_support_tickets.sql:4"
+        snippet: "user_id VARCHAR(255) REFERENCES users(id)"
+      - file: DasiaAIO-Backend/src/models.rs
+        location: "models.rs:578-587"
+        snippet: "pub guard_id: String, pub subject: String, pub message: String"
+    prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: AppShell
+      responsibility: "Auth gate, ToA modal, connectivity banners, mobile bottom nav, global overlays"
+      location: DasiaAIO-Frontend/src/components/layout/AppShell.tsx
+      relationship_to_domain: "Provides guard mobile bottom nav + hides it when guard workspace view is active"
+    - component: UserDashboard
+      responsibility: "Guard tabbed workspace — mission, resources, support, map, inbox"
+      location: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+      relationship_to_domain: "Primary guard experience entry point"
+    - component: PanicButton
+      responsibility: "1-tap SOS with GPS + offline queue"
+      location: DasiaAIO-Frontend/src/components/guards/PanicButton.tsx
+      relationship_to_domain: "Always visible in guard workspace"
+    - component: EmergencyContactsBar
+      responsibility: "Emergency contact quick-access pills"
+      location: DasiaAIO-Frontend/src/components/guards/EmergencyContactsBar.tsx
+      relationship_to_domain: "Part of guard sticky region"
+
+  interfaces_used_by_domain:
+    - interface: fetchJsonOrThrow
+      location: DasiaAIO-Frontend/src/utils/api.ts
+      usage_pattern: "All guard API calls go through this with auth headers"
+    - interface: enqueueOfflineAction
+      location: DasiaAIO-Frontend/src/utils/offlineQueue.ts
+      usage_pattern: "Offline-first pattern for check-in, check-out, incidents, tickets"
+
+  data_flow_involving_domain: |
+    Guard login → navigate to /overview → UserDashboard mounts →
+    refreshData() fetches 5 parallel API calls (attendance, shifts, firearms, permits, support-tickets) →
+    Tab content renders based on activeSection state →
+    Actions (check-in, check-out, incident, ticket) POST to backend or enqueue offline
+
+  key_relationships_to_domain:
+    - from: AppShell
+      to: UserDashboard
+      relationship: "renders via Outlet; provides auth context"
+    - from: UserDashboard
+      to: GuardSupportTab
+      relationship: "renders as child when activeSection === 'support'"
+    - from: UserDashboard
+      to: GuardResourcesTab
+      relationship: "renders as child when activeSection === 'resources'"
+    - from: UserDashboard
+      to: GuardMapTab
+      relationship: "renders as child when activeSection === 'map'"
+    - from: UserDashboard
+      to: GuardInboxPanel
+      relationship: "renders as child when activeSection === 'inbox'"
+
+related_conventions:
+  naming_patterns_in_domain: "guard-section-frame, guard-kpi-row, guard-sticky-region CSS classes. GuardXxxTab component naming."
+  structure_of_domain: "Monolithic UserDashboard with sub-tab components passed props from parent state"
+  error_handling_in_domain: "try/catch with offline fallback via enqueueOfflineAction. sanitizeErrorMessage for display. logError for console."
+  testing_in_domain: "guardDashboardRedesign.test.tsx exists with assertions for tab structure, sticky nav, section rendering"
+  documentation_in_domain: "AGENTS.md has guard-specific rules section. Session memory has redesign audit."
+
+related_dependencies:
+  internal:
+    - component: offlineQueue
+      relationship_to_domain: "All guard actions fall back to offline queue"
+      direction: outbound
+    - component: location utilities
+      relationship_to_domain: "GPS tracking, consent, permission state"
+      direction: outbound
+    - component: AuthContext
+      relationship_to_domain: "User object, login state, ToA acceptance"
+      direction: inbound
+  external:
+    - name: lucide-react
+      purpose_for_domain: "MapPin icon in GuardMapTab empty state"
+
+# ============================================================
+# GUARD ROUTE ACCESS MATRIX
+# ============================================================
+guard_route_access_matrix:
+  guard_only_routes:
+    - path: /overview
+      component: UserDashboard
+      role_guard: "GUARD_ONLY ['guard']"
+      status: functional
+      notes: "Guard home — full tabbed workspace"
+
+  all_roles_routes_guard_can_access:
+    - path: /calendar
+      component: CalendarDashboard
+      role_guard: "ALL_ROLES"
+      status: functional
+      notes: "Shared calendar view. Uses getSidebarNav which gives guard GUARD_NAV (no admin items)."
+    - path: /permits
+      component: GuardFirearmPermits
+      role_guard: "ALL_ROLES"
+      status: functional
+      notes: "Guard can view own permits — appropriate for guard role"
+    - path: /armored-cars
+      component: ArmoredCarDashboard
+      role_guard: "ALL_ROLES"
+      status: concern
+      notes: "Guard can access armored car dashboard. May expose management-level vehicle data."
+    - path: /profile
+      component: ProfileDashboard
+      role_guard: "ALL_ROLES"
+      status: functional
+      notes: "User profile — appropriate"
+    - path: /settings
+      component: SettingsView
+      role_guard: "ALL_ROLES"
+      status: functional
+      notes: "App settings — appropriate"
+    - path: /shift-swaps
+      component: "<div>Shift Swaps</div>"
+      role_guard: "ALL_ROLES"
+      status: stub
+      notes: "Renders a plain <div> with text 'Shift Swaps'. No real component."
+    - path: /notifications
+      component: "<div>Notifications</div>"
+      role_guard: "ALL_ROLES"
+      status: stub
+      notes: "Renders a plain <div> with text 'Notifications'. No real component."
+    - path: /support
+      component: "<div>Support</div>"
+      role_guard: "ALL_ROLES"
+      status: stub
+      notes: "Renders a plain <div> with text 'Support'. No real component. Ironic since GuardSupportTab exists inside UserDashboard."
+    - path: /inbox
+      component: SuperadminDashboard
+      role_guard: "ALL_ROLES"
+      status: critical_bug
+      notes: "Guard accessing /inbox gets SuperadminDashboard rendered with their user object. Role leakage — admin component rendered for guard."
+
+  elevated_only_routes_guard_blocked:
+    - path: /dashboard
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /approvals
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /schedule
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /missions
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /trips
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /performance
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /merit
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /firearms
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /allocation
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /maintenance
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+    - path: /analytics
+      role_guard: "ELEVATED_ROLES"
+      guard_result: "AccessDenied component"
+
+  superadmin_only_routes_guard_blocked:
+    - path: /audit
+      role_guard: "SUPERADMIN_ONLY"
+      guard_result: "AccessDenied component"
+
+  catch_all:
+    path: "*"
+    behavior: "Navigate to /dashboard replace"
+    guard_impact: "Guard hitting unknown URL goes to /dashboard → sees AccessDenied. Should redirect to /overview instead."
+
+# ============================================================
+# GUARD TAB INVENTORY
+# ============================================================
+guard_tab_inventory:
+  tabs_in_sticky_nav:
+    - key: mission
+      label: Mission
+      quality: good
+      description: |
+        Status Hero banner (duty status color-coded), location tracking toggle,
+        check-in/check-out buttons, incident report modal, field instructions modal,
+        today's shifts list with per-shift check-in/out.
+      off_duty_content: "Shows 'OFF DUTY' banner + 'No shifts scheduled for today' empty state + 'Check the Support tab for schedule requests'"
+      issues:
+        - "Off-duty state is mostly empty — no upcoming schedule, training, or useful content"
+
+    - key: resources
+      label: Resources
+      quality: good
+      description: |
+        3 stat cards (Allocated Firearms, Active Permits, Expiring/All Clear) +
+        detailed resource list with firearm models/serials and permit types/expiry.
+        Empty state: "No resources allocated — contact supervisor"
+      issues:
+        - "Read-only — guard can't take any action"
+
+    - key: support
+      label: Support
+      quality: good
+      description: |
+        Fully functional tab with 4 sections:
+        1. Emergency contacts (informational pointer to bottom bar)
+        2. Field Instructions quick-open button
+        3. Schedule Change Request (collapsible form)
+        4. Support Tickets (collapsible new ticket form + ticket history list)
+        5. GuardShiftSwapPanel (embedded swap management)
+      issues:
+        - "NOT a stub — contrary to user report. All forms submit to real backend endpoints."
+        - "Three forms on one tab is a lot of content"
+
+    - key: map
+      label: Map
+      quality: acceptable
+      description: |
+        OpenStreetMap iframe embed with lat/lng overlay.
+        Empty state: 'Location Not Active' with 'Go to Mission' button.
+      issues:
+        - "Map uses OSM embed iframe, not Leaflet (which is available as a Vite chunk)"
+        - "No other guard/incident markers — only shows own position"
+
+  tabs_via_header_only:
+    - key: inbox
+      label: Inbox
+      quality: good
+      description: |
+        GuardInboxPanel showing upcoming shifts, swap requests, and notifications
+        aggregated into a prioritized inbox feed. Accessed via header action, not sticky nav.
+
+# ============================================================
+# SUPPORT FEATURE STATUS
+# ============================================================
+support_feature_status:
+  frontend:
+    guard_support_tab:
+      status: fully_functional
+      location: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+      features:
+        - "Schedule Change Request form (client site, date, start/end time)"
+        - "Support Ticket creation form (subject, message)"
+        - "Support Ticket history list with status badges"
+        - "GuardShiftSwapPanel with shift swap management"
+      submits_to:
+        - "POST /api/guard-replacement/shifts (schedule requests)"
+        - "POST /api/support-tickets (support tickets)"
+
+    standalone_support_route:
+      status: stub
+      location: "DasiaAIO-Frontend/src/router/index.tsx:148"
+      renders: "<div>Support</div>"
+      notes: "Guard can navigate to /support but gets empty div. The real support UI lives inside UserDashboard's support tab, not at this route."
+
+  backend:
+    api_endpoints:
+      - method: POST
+        path: "/api/support-tickets"
+        handler: "handlers::support_tickets::create_ticket"
+        auth: "require_authenticated (any logged-in user)"
+        audit: "audit_write_requests middleware applied"
+        status: functional
+      - method: GET
+        path: "/api/support-tickets/:guard_id"
+        handler: "handlers::support_tickets::get_guard_tickets"
+        auth: "require_authenticated + require_self_or_min_role(supervisor)"
+        status: functional
+
+    missing_endpoints:
+      - "PUT /api/support-tickets/:id — update ticket status (resolve, close, assign)"
+      - "DELETE /api/support-tickets/:id — delete ticket"
+      - "GET /api/support-tickets — list all tickets (admin view)"
+      - "GET /api/support-tickets/:id — single ticket detail"
+
+    db_schema_vs_api_gap:
+      db_columns_unused_by_api:
+        - "category (default 'bug') — API doesn't send/receive this"
+        - "priority (default 'medium') — API doesn't send/receive this"
+        - "assigned_to — no assignment endpoint"
+        - "resolution_notes — no resolve endpoint"
+        - "resolved_at — no resolve endpoint"
+        - "title/description — API uses subject/message instead (naming mismatch)"
+      db_column_name_vs_api:
+        - db: "user_id"
+          api: "guard_id"
+          notes: "FK references users(id) as user_id, but handler writes to guard_id column. Possible runtime error if columns don't match."
+
+    backend_permissions:
+      guard: ["create_support_ticket", "manage_notifications", "view_merit"]
+      supervisor: ["view_support_tickets", "create_support_ticket"]
+      admin: ["view_support_tickets", "create_support_ticket"]
+      superadmin: ["view_support_tickets", "create_support_ticket"]
+      notes: "Guard can create but NOT view_support_tickets permission. However, the API endpoint uses require_self_or_min_role which allows guards to view their own tickets."
+
+# ============================================================
+# PERMISSION ERROR UX
+# ============================================================
+permission_error_ux:
+  mechanism: "RoleGuard wrapper component renders AccessDenied inline"
+  redirect_behavior: "No redirect — guard stays on the URL, sees AccessDenied component within AppShell"
+  access_denied_component:
+    location: DasiaAIO-Frontend/src/router/guards.tsx
+    elements:
+      - "h1: 'Access Denied'"
+      - "p: 'You do not have permission to open this section. If this looks incorrect, contact a superadmin.'"
+    styling: "rounded-2xl border border-danger-border bg-surface p-6 shadow-xl"
+    accessibility: "Uses <main> with id='maincontent', tabIndex=-1"
+  issues:
+    - "No navigation hint or button to go back to /overview"
+    - "Guard could get stuck on AccessDenied if they mistype a URL"
+    - "Catch-all sends guards to /dashboard (which shows AccessDenied) instead of /overview"
+
+# ============================================================
+# OFF-DUTY STATE ANALYSIS
+# ============================================================
+off_duty_state:
+  trigger: "No shifts in scheduleItems for today (activeShifts.length === 0)"
+  what_shows:
+    status_hero: "'OFF DUTY' banner with gray styling (bg-surface border-border text-text-tertiary)"
+    shifts_area: "'No shifts scheduled for today' empty state card with 'Check the Support tab for schedule requests'"
+    tracking: "Location tracking section hidden when dutyStatus is 'Off Duty' (missionReadinessNote suppressed)"
+    tabs: "All 4 tabs still visible and navigable"
+  what_is_missing:
+    - "No upcoming shift schedule (tomorrow, this week)"
+    - "No training or certification reminders"
+    - "No equipment checklist or readiness self-check"
+    - "No shift swap or availability management"
+    - "No recent activity summary / attendance history"
+    - "No way to mark availability or request additional shifts"
+  current_off_duty_usability: |
+    Guard sees a nearly empty Mission tab with just the OFF DUTY banner and empty shifts card.
+    They can switch to Resources (read-only), Support (submit tickets/schedule requests), or Map (empty if not tracking).
+    The experience is hollow — no proactive content for off-duty guards.
+
+# ============================================================
+# GUARD NAVIGATION INVENTORY
+# ============================================================
+guard_navigation:
+  appshell_mobile_bottom_nav:
+    visible_when: "Guard is on non-workspace routes (inbox, settings, profile)"
+    items:
+      - key: overview
+        label: Overview
+        route: /overview
+      - key: calendar
+        label: Calendar
+        route: /calendar
+      - key: support
+        label: Support
+        route: /support
+        issue: "Navigates to /support ROUTE which is a stub <div>. Should navigate to /overview with support tab active."
+      - key: profile
+        label: Profile
+        route: /profile
+
+  guard_sticky_nav:
+    visible_when: "Guard is on /overview (workspace view)"
+    location: "guard-sticky-region at bottom of UserDashboard"
+    items:
+      - key: mission
+        label: Mission
+      - key: resources
+        label: Resources
+      - key: support
+        label: Support
+        notes: "This one works — activates GuardSupportTab within UserDashboard"
+      - key: map
+        label: Map
+
+  header_actions:
+    - action: "Navigate to Inbox"
+      triggered_by: "Header bell icon"
+      result: "Sets activeSection to 'inbox' within UserDashboard"
+    - action: "Navigate to Settings"
+      triggered_by: "Header gear icon"
+      result: "Routes to /settings (AppShell route, exits guard workspace)"
+    - action: "Profile modal"
+      triggered_by: "Header avatar"
+      result: "Opens inline profile modal within guard workspace"
+    - action: "Refresh"
+      triggered_by: "Header refresh button"
+      result: "Calls refreshData(false)"
+
+  navigation_leakage_issues:
+    - issue: "/inbox route renders SuperadminDashboard for guards"
+      severity: critical
+      details: "Guard clicking any link that navigates to /inbox route (not the header inbox action) gets SuperadminDashboard component with their user object. The SuperadminDashboard likely renders admin-level content."
+    - issue: "/armored-cars accessible to guards"
+      severity: medium
+      details: "Guards can view the full ArmoredCarDashboard. May expose vehicle fleet management data they don't need."
+    - issue: "AppShell bottom nav 'Support' button navigates to stub route"
+      severity: medium
+      details: "When guard is on calendar/settings/profile, the mobile bottom nav 'Support' goes to /support (stub div) instead of /overview?tab=support"
+    - issue: "Catch-all route sends guards to /dashboard (AccessDenied)"
+      severity: low
+      details: "Should send guards to /overview. Currently guard hitting /* gets /dashboard → AccessDenied."
+
+# ============================================================
+# ROUTE PERMISSION HARDENING RECOMMENDATIONS
+# (factual gaps only — not implementation suggestions)
+# ============================================================
+
+open_questions:
+  - question: "Does the support_tickets table use 'user_id' or 'guard_id' as the column name?"
+    context: "Migration defines 'user_id', but the Rust model uses 'guard_id'. The SQL in the handler references 'guard_id'. If the actual deployed column is 'user_id', the handler would fail at runtime."
+    type: decision_blocker
+    affects: ["support-ticket-api"]
+  - question: "Should guards have access to /armored-cars?"
+    context: "Currently in ALL_ROLES. Guards can view the full vehicle dashboard. Need product decision on whether this is intentional."
+    type: research
+    affects: ["route-hardening"]
+  - question: "Is the /inbox route for guards intentionally rendering SuperadminDashboard?"
+    context: "This appears to be a bug. The guard inbox (GuardInboxPanel) exists inside UserDashboard but the /inbox route renders SuperadminDashboard for all roles."
+    type: research
+    affects: ["route-hardening"]
+
+gaps:
+  - area: "Support ticket lifecycle management"
+    description: "Backend has only create + list endpoints. DB schema supports full lifecycle (assigned_to, resolution_notes, resolved_at, status transitions) but no endpoints expose this. Frontend has no admin-side ticket management."
+    impact: decision_blocker
+    affects: ["support-feature-completeness"]
+  - area: "Guard off-duty experience"
+    description: "Off-duty guards see nearly empty screens. No upcoming schedule, training, availability management, or proactive content."
+    impact: research_blocker
+    affects: ["guard-dashboard-redesign"]
+  - area: "Route/navigation consistency for guards"
+    description: "Three separate 'Support' entry points with different behaviors: (1) sticky nav tab works, (2) mobile bottom nav goes to stub route, (3) /support route is a div stub."
+    impact: research_blocker
+    affects: ["guard-navigation-redesign"]
+  - area: "Admin support ticket dashboard"
+    description: "No UI for supervisors/admins to view, triage, assign, or resolve guard support tickets. Backend has view_support_tickets permission but no admin-facing endpoint or component."
+    impact: nice_to_know
+    affects: ["support-feature-completeness"]

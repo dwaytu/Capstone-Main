@@ -1,0 +1,806 @@
+plan_id: ui-shell-audit
+objective: "Map all frontend routing, navigation, shell architecture, and role-based UI differentiation"
+focus_area: routing_navigation_shell
+created_at: "2026-04-05"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Router uses react-router v7 createBrowserRouter with AppShell as the auth-gated layout; 23 route paths defined in ROUTES constant, mapped through RoleGuard wrappers with 4 role tiers.
+  - Two distinct shell patterns coexist: OperationalShell (used by SuperadminDashboard, AdminDashboard, SettingsView) and a manual Sidebar+Header pattern (used by Calendar, Performance, Merit, Firearms, Allocation, Permits, Maintenance, ArmoredCars, Profile). Guard uses its own custom layout with no sidebar.
+  - Sidebar labels are clean readable strings (e.g., "Dashboard", "Approvals", "Calendar") but the sidebar renders a 2-char glyph badge with each label. User-reported "DGDashboard" is the glyph "DG" prepended to "Dashboard" visually — this is a rendering concatenation in the glyph+label layout, not a broken label.
+  - Significant architecture inconsistency: ~8 page components manually compose Sidebar+Header instead of using OperationalShell; FirearmInventory hardcodes its own nav items array instead of using getSidebarNav(); AnalyticsDashboard and AuditDashboard render zero shell chrome (no sidebar, no header — they rely on being inside AppShell's Outlet).
+  - Mobile bottom nav is rendered by AppShell for non-guard roles (5 items: Dashboard, Calendar, Firearms, Vehicles, Profile) and is absent for guards (guard sticky nav replaces it).
+
+research_metadata:
+  methodology: "hybrid retrieval: semantic_search + grep_search + targeted file reads across router, navigation config, layout shells, and all dashboard components"
+  scope: "All frontend routing, sidebar, shell layout, mobile nav, role guards, and navigation label definitions"
+  confidence: high
+  coverage: 95
+  decision_blockers: 0
+  research_blockers: 0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COMPLETE ROUTE TABLE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+route_table:
+  source_file: "DasiaAIO-Frontend/src/router/index.tsx"
+  route_definitions: "DasiaAIO-Frontend/src/router/routes.ts"
+  guard_definitions: "DasiaAIO-Frontend/src/router/guards.tsx"
+
+  role_groups:
+    ELEVATED_ROLES: [superadmin, admin, supervisor]
+    ALL_ROLES: [superadmin, admin, supervisor, guard]
+    SUPERADMIN_ONLY: [superadmin]
+    GUARD_ONLY: [guard]
+
+  routes:
+    # ── Unauthenticated ──────────────────────────────────────────────────
+    - path: "/"
+      component: "Navigate → /dashboard"
+      roles: "*"
+      in_sidebar: false
+      notes: "Root redirect"
+
+    - path: "/login"
+      component: "LoginPage"
+      roles: "unauthenticated"
+      in_sidebar: false
+      notes: "Lazy loaded. On guard login navigates to /overview, elevated to /dashboard"
+
+    # ── Authenticated (inside AppShell) ──────────────────────────────────
+
+    # ELEVATED_ROLES group
+    - path: "/dashboard"
+      component: "SuperadminDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Dashboard"
+      sidebar_glyph: "DG"
+      sidebar_group: "MAIN MENU"
+      notes: "Elevated-role home. Uses OperationalShell."
+
+    - path: "/approvals"
+      component: "SuperadminDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Approvals"
+      sidebar_glyph: "AP"
+      sidebar_group: "MAIN MENU"
+      sidebar_permission: "approve_guards"
+      notes: "Same component as /dashboard; activeView maps to internal approvals section"
+
+    - path: "/schedule"
+      component: "SuperadminDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Schedule"
+      sidebar_glyph: "SC"
+      sidebar_group: "OPERATIONS"
+      notes: "Same component; internal schedule section"
+
+    - path: "/missions"
+      component: "SuperadminDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Missions"
+      sidebar_glyph: "MS"
+      sidebar_group: "OPERATIONS"
+      notes: "Same component; internal missions section"
+
+    - path: "/trips"
+      component: "SuperadminDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Trip Management"
+      sidebar_glyph: "TR"
+      sidebar_group: "OPERATIONS"
+      notes: "Same component; internal trips section"
+
+    - path: "/performance"
+      component: "PerformanceDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Performance"
+      sidebar_glyph: "PF"
+      sidebar_group: "OPERATIONS"
+      notes: "Uses manual Sidebar+Header shell (not OperationalShell)"
+
+    - path: "/merit"
+      component: "MeritScoreDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Merit Scores"
+      sidebar_glyph: "MR"
+      sidebar_group: "OPERATIONS"
+      notes: "Uses manual Sidebar+Header shell"
+
+    - path: "/firearms"
+      component: "FirearmInventory"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Firearms"
+      sidebar_glyph: "FA"
+      sidebar_group: "RESOURCES"
+      sidebar_permission: "manage_firearms"
+      notes: "Uses manual Sidebar+Header. HARDCODES its own nav items (does not use getSidebarNav)"
+
+    - path: "/allocation"
+      component: "FirearmAllocation"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Allocation"
+      sidebar_glyph: "AS"
+      sidebar_group: "RESOURCES"
+      sidebar_permission: "manage_allocations"
+      notes: "Uses manual Sidebar+Header shell"
+
+    - path: "/permits"
+      component: "GuardFirearmPermits"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: true
+      sidebar_label: "Permits"
+      sidebar_glyph: "PM"
+      sidebar_group: "RESOURCES"
+      sidebar_permission: "manage_permits"
+      notes: "ALL_ROLES route. Uses manual Sidebar+Header shell."
+
+    - path: "/maintenance"
+      component: "FirearmMaintenance"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Maintenance"
+      sidebar_glyph: "MT"
+      sidebar_group: "RESOURCES"
+      sidebar_permission: "manage_maintenance"
+      notes: "Uses manual Sidebar+Header shell"
+
+    - path: "/armored-cars"
+      component: "ArmoredCarDashboard"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: true
+      sidebar_label: "Armored Cars"
+      sidebar_glyph: "AC"
+      sidebar_group: "RESOURCES"
+      sidebar_permission: "manage_armored_cars"
+      notes: "ALL_ROLES route. Uses manual Sidebar+Header shell."
+
+    - path: "/analytics"
+      component: "AnalyticsDashboard"
+      roles: [superadmin, admin, supervisor]
+      in_sidebar: true
+      sidebar_label: "Analytics"
+      sidebar_glyph: "AN"
+      sidebar_group: "MAIN MENU"
+      sidebar_permission: "view_analytics"
+      notes: "NO SHELL CHROME — no Sidebar or Header rendered inside the component. Relies entirely on being inside AppShell's Outlet."
+
+    - path: "/audit"
+      component: "AuditDashboard"
+      roles: [superadmin]
+      in_sidebar: true
+      sidebar_label: "System Audit Log"
+      sidebar_glyph: "AL"
+      sidebar_group: "MAIN MENU"
+      sidebar_permission: "view_audit_logs"
+      notes: "SUPERADMIN ONLY. NO SHELL CHROME — no Sidebar or Header. Relies on AppShell Outlet."
+
+    # GUARD_ONLY group
+    - path: "/overview"
+      component: "UserDashboard"
+      roles: [guard]
+      in_sidebar: false
+      notes: "Guard home. Custom layout (no sidebar, sticky bottom nav + EmergencyContactsBar + PanicButton)"
+
+    # ALL_ROLES group
+    - path: "/calendar"
+      component: "CalendarDashboard"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: true
+      sidebar_label: "Calendar"
+      sidebar_glyph: "CL"
+      sidebar_group: "MAIN MENU"
+      notes: "Uses manual Sidebar+Header shell"
+
+    - path: "/profile"
+      component: "ProfileDashboard"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: false
+      notes: "Uses manual Sidebar+Header shell. Not in sidebar nav — accessed via HeaderGlobalActions."
+
+    - path: "/settings"
+      component: "SettingsView"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: false
+      notes: "Uses OperationalShell. Not in sidebar nav — accessed via HeaderGlobalActions."
+
+    - path: "/shift-swaps"
+      component: "div (stub: 'Shift Swaps')"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: false
+      notes: "STUB — renders plain div, not a real component"
+
+    - path: "/notifications"
+      component: "div (stub: 'Notifications')"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: false
+      notes: "STUB — renders plain div, not a real component"
+
+    - path: "/support"
+      component: "div (stub: 'Support')"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: false
+      notes: "STUB — renders plain div, not a real component"
+
+    - path: "/inbox"
+      component: "SuperadminDashboard"
+      roles: [superadmin, admin, supervisor, guard]
+      in_sidebar: false
+      notes: "ALL_ROLES route but renders SuperadminDashboard which assumes elevated role. Guard accessing /inbox will see SuperadminDashboard's OperationalShell — potential UX issue."
+
+    - path: "*"
+      component: "Navigate → /dashboard"
+      roles: "*"
+      in_sidebar: false
+      notes: "Catch-all redirect inside AppShell"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NAVIGATION ITEMS PER ROLE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+navigation:
+  config_file: "DasiaAIO-Frontend/src/config/navigation.ts"
+
+  sidebar_nav_by_role:
+    superadmin:
+      source: "ELEVATED_NAV filtered by permissions (superadmin has all)"
+      items:
+        - { view: dashboard, label: "Dashboard", group: "MAIN MENU", glyph: "DG" }
+        - { view: approvals, label: "Approvals", group: "MAIN MENU", glyph: "AP" }
+        - { view: calendar, label: "Calendar", group: "MAIN MENU", glyph: "CL" }
+        - { view: analytics, label: "Analytics", group: "MAIN MENU", glyph: "AN" }
+        - { view: audit-log, label: "System Audit Log", group: "MAIN MENU", glyph: "AL" }
+        - { view: trips, label: "Trip Management", group: "OPERATIONS", glyph: "TR" }
+        - { view: schedule, label: "Schedule", group: "OPERATIONS", glyph: "SC" }
+        - { view: missions, label: "Missions", group: "OPERATIONS", glyph: "MS" }
+        - { view: performance, label: "Performance", group: "OPERATIONS", glyph: "PF" }
+        - { view: merit, label: "Merit Scores", group: "OPERATIONS", glyph: "MR" }
+        - { view: firearms, label: "Firearms", group: "RESOURCES", glyph: "FA" }
+        - { view: allocation, label: "Allocation", group: "RESOURCES", glyph: "AS" }
+        - { view: permits, label: "Permits", group: "RESOURCES", glyph: "PM" }
+        - { view: maintenance, label: "Maintenance", group: "RESOURCES", glyph: "MT" }
+        - { view: armored-cars, label: "Armored Cars", group: "RESOURCES", glyph: "AC" }
+
+    admin:
+      source: "ELEVATED_NAV filtered — admin lacks view_audit_logs"
+      items:
+        - { view: dashboard, label: "Dashboard", group: "MAIN MENU", glyph: "DG" }
+        - { view: approvals, label: "Approvals", group: "MAIN MENU", glyph: "AP" }
+        - { view: calendar, label: "Calendar", group: "MAIN MENU", glyph: "CL" }
+        - { view: analytics, label: "Analytics", group: "MAIN MENU", glyph: "AN" }
+        # audit-log is EXCLUDED (admin lacks view_audit_logs)
+        - { view: trips, label: "Trip Management", group: "OPERATIONS", glyph: "TR" }
+        - { view: schedule, label: "Schedule", group: "OPERATIONS", glyph: "SC" }
+        - { view: missions, label: "Missions", group: "OPERATIONS", glyph: "MS" }
+        - { view: performance, label: "Performance", group: "OPERATIONS", glyph: "PF" }
+        - { view: merit, label: "Merit Scores", group: "OPERATIONS", glyph: "MR" }
+        - { view: firearms, label: "Firearms", group: "RESOURCES", glyph: "FA" }
+        - { view: allocation, label: "Allocation", group: "RESOURCES", glyph: "AS" }
+        - { view: permits, label: "Permits", group: "RESOURCES", glyph: "PM" }
+        - { view: maintenance, label: "Maintenance", group: "RESOURCES", glyph: "MT" }
+        - { view: armored-cars, label: "Armored Cars", group: "RESOURCES", glyph: "AC" }
+
+    supervisor:
+      source: "ELEVATED_NAV filtered — supervisor lacks view_audit_logs and manage_users"
+      items:
+        - { view: dashboard, label: "Dashboard", group: "MAIN MENU", glyph: "DG" }
+        - { view: approvals, label: "Approvals", group: "MAIN MENU", glyph: "AP" }
+        - { view: calendar, label: "Calendar", group: "MAIN MENU", glyph: "CL" }
+        - { view: analytics, label: "Analytics", group: "MAIN MENU", glyph: "AN" }
+        # audit-log EXCLUDED
+        - { view: trips, label: "Trip Management", group: "OPERATIONS", glyph: "TR" }
+        - { view: schedule, label: "Schedule", group: "OPERATIONS", glyph: "SC" }
+        - { view: missions, label: "Missions", group: "OPERATIONS", glyph: "MS" }
+        - { view: performance, label: "Performance", group: "OPERATIONS", glyph: "PF" }
+        - { view: merit, label: "Merit Scores", group: "OPERATIONS", glyph: "MR" }
+        - { view: firearms, label: "Firearms", group: "RESOURCES", glyph: "FA" }
+        - { view: allocation, label: "Allocation", group: "RESOURCES", glyph: "AS" }
+        - { view: permits, label: "Permits", group: "RESOURCES", glyph: "PM" }
+        - { view: maintenance, label: "Maintenance", group: "RESOURCES", glyph: "MT" }
+        - { view: armored-cars, label: "Armored Cars", group: "RESOURCES", glyph: "AC" }
+
+    guard:
+      source: "GUARD_NAV (static array, no permission filtering)"
+      items:
+        - { view: overview, label: "Mission", group: "MAIN MENU" }
+        - { view: resources, label: "Resources", group: "MAIN MENU" }
+        - { view: support, label: "Support", group: "MAIN MENU" }
+        - { view: map, label: "Map", group: "MAIN MENU" }
+      notes: |
+        Guard nav is NOT part of a sidebar. These items render in the guard-sticky-region
+        bottom nav inside UserDashboard. The items are also hardcoded in guard component,
+        not pulled from GUARD_NAV for the bottom nav (they're defined inline).
+
+  mobile_bottom_nav:
+    source: "DasiaAIO-Frontend/src/components/layout/AppShell.tsx"
+    non_guard:
+      items:
+        - { key: dashboard, label: "Dashboard" }
+        - { key: calendar, label: "Calendar" }
+        - { key: firearms, label: "Firearms" }
+        - { key: armored-cars, label: "Vehicles" }
+        - { key: profile, label: "Profile" }
+      rendered_when: "!isGuardWorkspaceView — shows on mobile (<md breakpoint)"
+      css_class: "grid grid-cols-5 gap-1"
+    guard:
+      items:
+        - { key: overview, label: "Overview" }
+        - { key: calendar, label: "Calendar" }
+        - { key: support, label: "Support" }
+        - { key: profile, label: "Profile" }
+      rendered_when: "isGuardWorkspaceView — but AppShell does NOT render this nav. Guard has its own bottom nav in UserDashboard."
+      notes: "mobileNavItems are defined in AppShell but the guard bottom nav in AppShell is suppressed ({!isGuardWorkspaceView}) — guard uses guard-sticky-region instead."
+
+  sidebar_label_rendering:
+    description: |
+      Sidebar.tsx renders each nav item as:
+        [glyph badge] [label text]
+      The glyph is a 2-char code (e.g., "DG", "AP", "CL") inside a small square badge (11px font, 5x5 box, border, bg-surface-elevated).
+      The label follows as regular text.
+      
+      User-reported "DGDashboard" / "APApprovals" / "CLCalendar":
+      This is the visual concatenation of the glyph badge + label.
+      The glyph is rendered as `<span>DG</span>` and the label as `<span>Dashboard</span>`.
+      There IS a gap-2 between them, but on some viewport widths or with certain accessibility tools, 
+      these may appear concatenated. The labels themselves are CORRECT strings.
+
+    glyph_map:
+      dashboard: "DG"
+      overview: "DG"
+      approvals: "AP"
+      calendar: "CL"
+      analytics: "AN"
+      audit-log: "AL"
+      trips: "TR"
+      schedule: "SC"
+      missions: "MS"
+      performance: "PF"
+      merit: "MR"
+      firearms: "FA"
+      allocation: "AS"
+      permits: "PM"
+      maintenance: "MT"
+      armored-cars: "AC"
+      support: "CT"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SHELL / LAYOUT ARCHITECTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+shell_architecture:
+  outer_wrapper:
+    component: "AppShell"
+    file: "DasiaAIO-Frontend/src/components/layout/AppShell.tsx"
+    responsibilities:
+      - "Auth gate (redirects to /login if not logged in)"
+      - "Loading skeleton"
+      - "Terms of Agreement modal (blocking)"
+      - "Location consent upgrade modal"
+      - "What's New modal"
+      - "Release update modal"
+      - "Connectivity banner (offline/backend unreachable)"
+      - "Location permission banner"
+      - "Mobile bottom nav (non-guard only)"
+      - "Check for Updates button (desktop, non-guard, non-dev)"
+      - "ToastContainer"
+    renders: "<Outlet /> for child routes"
+    does_NOT_render: "No Sidebar, no Header — those are per-component responsibility"
+
+  elevated_shell_pattern_A:
+    name: "OperationalShell"
+    file: "DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx"
+    structure: |
+      <div flex h-[100dvh]>
+        <skip-link />
+        <Sidebar items={navItems} ... />
+        <main>
+          <Header title={...} badgeLabel={...} ... />
+          <div soc-scroll-area>
+            {error banner}
+            {children}
+          </div>
+        </main>
+      </div>
+    used_by:
+      - "SuperadminDashboard (admin/SuperadminDashboard.tsx)"
+      - "AdminDashboard (AdminDashboard.tsx) — legacy, not routed"
+      - "SettingsView (settings/SettingsView.tsx)"
+    sidebar_source: "getSidebarNav(user.role)"
+    header_source: "shared/Header.tsx"
+
+  elevated_shell_pattern_B:
+    name: "Manual Sidebar+Header (legacy pattern)"
+    structure: |
+      <div flex h-[100dvh]>
+        <skip-link />  -- sometimes missing
+        <Sidebar items={navItems} ... />
+        <main>
+          <Header title={...} ... />
+          <div overflow-y-auto>
+            {content}
+          </div>
+        </main>
+      </div>
+    used_by:
+      - "CalendarDashboard"
+      - "PerformanceDashboard"
+      - "MeritScoreDashboard"
+      - "FirearmInventory"
+      - "FirearmAllocation"
+      - "GuardFirearmPermits"
+      - "FirearmMaintenance"
+      - "ArmoredCarDashboard"
+      - "ProfileDashboard"
+    sidebar_source: "getSidebarNav(user.role) — EXCEPT FirearmInventory which hardcodes navItems"
+    header_source: "Header.tsx (shim) → shared/Header.tsx"
+    issues:
+      - "Duplicates shell chrome (Sidebar+Header) in every component"
+      - "Skip link may be missing in some components"
+      - "No shared scroll area styling (soc-scroll-area)"
+      - "No shared error banner pattern"
+
+  no_shell_pattern:
+    name: "Bare component (no chrome)"
+    used_by:
+      - "AnalyticsDashboard — renders content only, no Sidebar/Header"
+      - "AuditDashboard — renders content only, no Sidebar/Header"
+    notes: |
+      These components render inside AppShell's <Outlet> but AppShell does NOT provide Sidebar/Header.
+      Result: when navigating to /analytics or /audit, the user sees content with NO sidebar, NO header,
+      NO navigation. This is a SIGNIFICANT issue — these pages have no way to navigate away
+      except browser back button.
+
+  guard_shell:
+    name: "Guard custom layout"
+    file: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+    structure: |
+      <div min-h-[100dvh]>
+        <skip-link />
+        <header (custom, not shared/Header)>
+          "Field Operations" + user name
+          HeaderGlobalActions (inbox, settings, profile, refresh)
+        </header>
+        <main guard-sticky-main>
+          {section content based on activeSection}
+        </main>
+        <div guard-sticky-region>
+          <EmergencyContactsBar />
+          <nav guard-sticky-nav>
+            [Mission] [Resources] [Support] [Map]
+          </nav>
+        </div>
+        <PanicButton />
+      </div>
+    notes:
+      - "No sidebar at all — guard uses bottom sticky nav"
+      - "Custom inline header (not shared/Header.tsx)"
+      - "activeSection is internal state, not URL-driven (except initial resolve from activeView prop)"
+      - "Sections: inbox, mission, resources, support, map"
+      - "EmergencyContactsBar always visible above nav"
+      - "PanicButton (64px) always visible bottom-right"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ROLE-BASED UI DIFFERENTIATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+role_differentiation:
+  how_role_is_used:
+    - "normalizeRole() converts 'user' → 'guard' and lowercases role strings"
+    - "RoleGuard component in router checks user.role against allowed roles array"
+    - "getSidebarNav() filters ELEVATED_NAV by permission-based access"
+    - "can() in utils/permissions.ts checks role→permission mapping"
+    - "Allowed/DeniedFallback RBAC components wrap fine-grained sections"
+    - "AppShell checks normalizedRole === 'guard' for mobile nav variant and guard sticky region logic"
+
+  elevated_roles_share_same_component: true
+  explanation: |
+    superadmin, admin, and supervisor all use SuperadminDashboard.tsx as their home page.
+    The component internally checks role permissions to show/hide:
+    - canManageUsers (superadmin, admin)
+    - canViewUserRow/canEditUserRow (hierarchy-based)
+    - isSuperadminViewer, isAdminViewer, isSupervisorViewer for edit controls
+    Sidebar items are filtered by getSidebarNav which uses the can() permission checker.
+
+  guard_fully_separate: true
+  explanation_guard: |
+    Guard uses UserDashboard.tsx — a completely different component with its own layout,
+    its own header, its own bottom nav, and no sidebar. It has sections (mission, resources,
+    support, map, inbox) managed via internal state.
+
+  inbox_role_differentiation:
+    superadmin: "SuperadminInboxPanel"
+    admin: "AdminInboxPanel"
+    supervisor: "SupervisorInboxPanel"
+    guard: "GuardInboxPanel (inside UserDashboard)"
+    notes: "Each role has a dedicated inbox panel component. Guard inbox is within UserDashboard's section system."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ISSUES AND CONCERNS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+issues_found:
+  critical:
+    - issue: "AnalyticsDashboard and AuditDashboard have NO navigation shell chrome"
+      detail: |
+        These components render bare content with no Sidebar, no Header, no back navigation.
+        User navigating to /analytics or /audit has no way to navigate to other pages
+        without using browser back button. Likely a migration gap when routes were extracted
+        from SuperadminDashboard's internal sections.
+      files:
+        - "DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx"
+        - "DasiaAIO-Frontend/src/components/AuditDashboard.tsx"
+
+    - issue: "/inbox route renders SuperadminDashboard for ALL roles including guard"
+      detail: |
+        In router/index.tsx, /inbox is in the ALL_ROLES group but renders SuperadminDashboard.
+        When a guard navigates to /inbox, they see OperationalShell with elevated sidebar nav.
+        The inbox content itself switches (GuardInboxPanel vs SuperadminInboxPanel),
+        but the SHELL displayed is the elevated-role OperationalShell — guard sees the full
+        admin sidebar when on /inbox page. This is a role leak in the UI chrome.
+      files:
+        - "DasiaAIO-Frontend/src/router/index.tsx:154"
+
+  high:
+    - issue: "Shell duplication across ~9 page components"
+      detail: |
+        CalendarDashboard, PerformanceDashboard, MeritScoreDashboard, FirearmInventory,
+        FirearmAllocation, GuardFirearmPermits, FirearmMaintenance, ArmoredCarDashboard,
+        ProfileDashboard all manually compose Sidebar+Header instead of using OperationalShell.
+        This causes maintenance burden and inconsistency.
+
+    - issue: "FirearmInventory hardcodes its own nav items"
+      detail: |
+        FirearmInventory.tsx defines a local navItems array instead of calling getSidebarNav().
+        This array is missing the 'audit-log' item and does not perform permission filtering.
+        Any changes to navigation config will not propagate to this component.
+      file: "DasiaAIO-Frontend/src/components/FirearmInventory.tsx:44-58"
+
+    - issue: "3 route stubs render plain divs"
+      detail: |
+        /shift-swaps, /notifications, /support render `<div>Shift Swaps</div>` etc.
+        These have no shell chrome and no functionality. They exist in ALL_ROLES routing
+        but are dead ends.
+      file: "DasiaAIO-Frontend/src/router/index.tsx:148-150"
+
+  medium:
+    - issue: "Guard bottom nav in AppShell is defined but never rendered"
+      detail: |
+        AppShell defines mobileNavItems for guard with [Overview, Calendar, Support, Profile]
+        but the rendering condition {!isGuardWorkspaceView} suppresses it for guards.
+        Guard uses its own nav in UserDashboard. The AppShell guard nav items are dead code.
+
+    - issue: "Calendar route allows guard role but CalendarDashboard renders elevated sidebar"
+      detail: |
+        /calendar is in ALL_ROLES but CalendarDashboard uses getSidebarNav(user.role).
+        For guard role, this returns GUARD_NAV (Mission, Resources, Support, Map),
+        which is a SIDEBAR nav for guard — but guard layout normally has no sidebar.
+        Guard on /calendar will see an unfamiliar sidebar layout.
+
+    - issue: "Permits and ArmoredCars routes allow guard but render elevated-style shell"
+      detail: |
+        /permits and /armored-cars are ALL_ROLES routes. Their components use manual 
+        Sidebar+Header layout with getSidebarNav(user.role). For guards this returns 
+        GUARD_NAV as sidebar items, creating an inconsistent UX compared to the guard's 
+        normal bottom-nav layout.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# KEY FILE PATHS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+files_analyzed:
+  - file: "App.tsx"
+    path: "DasiaAIO-Frontend/src/App.tsx"
+    purpose: "Root component — wraps AuthProvider + UIProvider + LocationProvider + RouterProvider"
+    language: tsx
+    lines: 21
+
+  - file: "router/index.tsx"
+    path: "DasiaAIO-Frontend/src/router/index.tsx"
+    purpose: "createBrowserRouter with route tree, lazy imports, role guards, and bridge wrappers"
+    key_elements:
+      - { element: "ELEVATED_ROLES", type: constant, location: "index.tsx:97", description: "['superadmin','admin','supervisor']" }
+      - { element: "ALL_ROLES", type: constant, location: "index.tsx:98", description: "['superadmin','admin','supervisor','guard']" }
+      - { element: "SUPERADMIN_ONLY", type: constant, location: "index.tsx:99", description: "['superadmin']" }
+      - { element: "GUARD_ONLY", type: constant, location: "index.tsx:100", description: "['guard']" }
+      - { element: "useLegacyProps", type: function, location: "index.tsx:48", description: "Bridge hook: extracts auth + converts onViewChange to navigate()" }
+      - { element: "LegacyPage", type: function, location: "index.tsx:80", description: "Wrapper that passes legacy props to components" }
+    language: tsx
+    lines: 175
+
+  - file: "router/routes.ts"
+    path: "DasiaAIO-Frontend/src/router/routes.ts"
+    purpose: "ROUTES constant object and VIEW_TO_ROUTE mapping"
+    language: ts
+    lines: 62
+
+  - file: "router/guards.tsx"
+    path: "DasiaAIO-Frontend/src/router/guards.tsx"
+    purpose: "AuthGuard and RoleGuard components + AccessDenied fallback"
+    language: tsx
+    lines: 60
+
+  - file: "config/navigation.ts"
+    path: "DasiaAIO-Frontend/src/config/navigation.ts"
+    purpose: "ELEVATED_NAV and GUARD_NAV arrays + getSidebarNav() role-filtered factory"
+    key_elements:
+      - { element: "ELEVATED_NAV", type: constant, location: "navigation.ts:12", description: "15-item nav array for elevated roles with permission gates" }
+      - { element: "GUARD_NAV", type: constant, location: "navigation.ts:30", description: "4-item nav array for guards (Mission, Resources, Support, Map)" }
+      - { element: "getSidebarNav", type: function, location: "navigation.ts:40", description: "Returns role-filtered nav items" }
+    language: ts
+    lines: 62
+
+  - file: "layout/AppShell.tsx"
+    path: "DasiaAIO-Frontend/src/components/layout/AppShell.tsx"
+    purpose: "Auth-gated outer shell with modals, banners, mobile bottom nav, and Outlet"
+    language: tsx
+    lines: ~520
+
+  - file: "layout/OperationalShell.tsx"
+    path: "DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx"
+    purpose: "Reusable shell with Sidebar + Header + scrollable content area"
+    language: tsx
+    lines: 88
+
+  - file: "Sidebar.tsx"
+    path: "DasiaAIO-Frontend/src/components/Sidebar.tsx"
+    purpose: "Desktop sidebar with glyph badges, scroll persistence, and group sections"
+    key_elements:
+      - { element: "navGlyphs", type: constant, location: "Sidebar.tsx:22", description: "view→glyph map (DG, AP, CL, etc.)" }
+      - { element: "SidebarItem", type: interface, location: "Sidebar.tsx:5", description: "{ view, label, group? }" }
+    language: tsx
+    lines: 200
+
+  - file: "SidebarBrand.tsx"
+    path: "DasiaAIO-Frontend/src/components/SidebarBrand.tsx"
+    purpose: "SENTINEL branding + system status indicator in sidebar header"
+    language: tsx
+    lines: ~45
+
+  - file: "shared/Header.tsx"
+    path: "DasiaAIO-Frontend/src/components/shared/Header.tsx"
+    purpose: "Shared page header with title, badge, hamburger menu, and HeaderGlobalActions"
+    language: tsx
+    lines: 68
+
+  - file: "Header.tsx"
+    path: "DasiaAIO-Frontend/src/components/Header.tsx"
+    purpose: "Compatibility shim — re-exports shared/Header"
+    language: tsx
+    lines: 3
+
+  - file: "admin/SuperadminDashboard.tsx"
+    path: "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx"
+    purpose: "Elevated-role home — uses OperationalShell, manages internal sections (dashboard, approvals, schedule, missions, trips, audit-log)"
+    language: tsx
+    lines: ~1880
+
+  - file: "guards/UserDashboard.tsx"
+    path: "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx"
+    purpose: "Guard workspace — custom layout with bottom nav, EmergencyContactsBar, PanicButton"
+    language: tsx
+    lines: ~1200
+
+  - file: "utils/permissions.ts"
+    path: "DasiaAIO-Frontend/src/utils/permissions.ts"
+    purpose: "Role→Permission map and can()/canAny()/canAll() checkers"
+    language: ts
+    lines: 62
+
+  - file: "types/auth.ts"
+    path: "DasiaAIO-Frontend/src/types/auth.ts"
+    purpose: "Role types, normalizeRole(), isElevatedRole()"
+    language: ts
+    lines: 32
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LIVE AUDIT EVIDENCE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+live_audit_evidence:
+  directory: "DasiaAIO-Frontend/output/playwright/role-ui-review/"
+  screenshots_found: 50+
+  screenshot_files:
+    admin:
+      - admin-dashboard.png
+      - admin-approvals.png
+      - admin-analytics.png
+      - admin-allocation.png
+      - admin-firearms.png
+      - admin-calendar.png
+      - admin-armored-cars.png
+      - admin-merit.png
+      - admin-maintenance.png
+      - admin-missions.png
+      - admin-performance.png
+    supervisor:
+      - supervisor-dashboard.png
+      - supervisor-trips.png
+      - supervisor-schedule.png
+      - supervisor-profile.png
+      - supervisor-performance.png
+      - supervisor-missions.png
+      - supervisor-merit.png
+      - supervisor-maintenance.png
+      - supervisor-firearms.png
+    guard:
+      - "guard screenshots present (truncated list)"
+  report_json: "Not found at expected path"
+  notes: "Screenshots exist for role-based validation but no report.json was found in the directory listing."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PATTERNS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+patterns_found:
+  - category: architecture
+    pattern: "Dual shell pattern"
+    description: "Two competing shell composition approaches: OperationalShell (clean) and manual Sidebar+Header (legacy)"
+    examples:
+      - file: "admin/SuperadminDashboard.tsx"
+        location: "admin/SuperadminDashboard.tsx:831"
+        snippet: "<OperationalShell user={user} title={sectionTitle} ...>"
+      - file: "CalendarDashboard.tsx"
+        location: "CalendarDashboard.tsx:466"
+        snippet: "<Sidebar ... /> ... <Header ... />"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Guard-specific custom layout"
+    description: "Guard completely bypasses sidebar-based navigation — uses sticky bottom nav + emergency contacts + panic button"
+    examples:
+      - file: "guards/UserDashboard.tsx"
+        location: "guards/UserDashboard.tsx:866"
+        snippet: "<div className='relative min-h-[100dvh]...'> custom header + guard-sticky-region"
+    prevalence: common
+
+  - category: naming
+    pattern: "Legacy view-string based navigation"
+    description: "Components use onViewChange(string) + activeView string props, bridged to URL routes via VIEW_TO_ROUTE mapping and useLegacyProps hook"
+    examples:
+      - file: "router/index.tsx"
+        location: "router/index.tsx:48-58"
+        snippet: "function useLegacyProps() { ... onViewChange = (view) => navigate(VIEW_TO_ROUTE[view]) }"
+    prevalence: common
+
+  - category: error_handling
+    pattern: "Per-component error state"
+    description: "Each dashboard maintains its own error state and displays inline error banners rather than a shared error boundary"
+    prevalence: common
+
+open_questions:
+  - question: "Should AnalyticsDashboard and AuditDashboard be given their own OperationalShell wrapping?"
+    context: "These are the only two page-level components that render zero navigation chrome"
+    type: decision_blocker
+    affects: [ui-shell-refactor]
+
+  - question: "Should /inbox for guards render inside guard layout instead of SuperadminDashboard?"
+    context: "Guards see elevated-role sidebar when they navigate to /inbox"
+    type: decision_blocker
+    affects: [guard-inbox-routing]
+
+  - question: "Should legacy Sidebar+Header pages be migrated to OperationalShell?"
+    context: "9 components duplicate shell chrome; OperationalShell provides skip-link, error banner, and scroll styling"
+    type: decision_blocker
+    affects: [shell-consolidation]
+
+gaps:
+  - area: "Mobile guard navigation completeness"
+    description: "Guard has 4 bottom nav items (Mission/Resources/Support/Map) but routes to /calendar, /permits, /armored-cars also allow guard — these pages are not accessible from guard nav"
+    impact: research_blocker
+    affects: [guard-navigation]
+
+  - area: "Settings shell for guard"
+    description: "SettingsView wraps in OperationalShell for all roles. Guard on /settings sees sidebar with GUARD_NAV items, breaking usual guard-no-sidebar pattern."
+    impact: nice_to_know
+    affects: [guard-ui-consistency]

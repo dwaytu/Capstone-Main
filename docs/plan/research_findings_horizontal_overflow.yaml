@@ -1,0 +1,395 @@
+plan_id: horizontal-overflow-audit
+objective: "Find approvals table and guard support tab components causing horizontal overflow on admin and guard dashboards"
+focus_area: "frontend/table-overflow"
+created_at: "2026-04-05T00:00:00Z"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - The approvals table lives in SuperadminDashboard.tsx (line 1325). It uses min-w-[820px] inside an overflow-auto wrapper — safe for scroll but the 3-button action column (Details/Approve/Reject) uses flex-wrap which can cause clipping at tight widths.
+  - The user management table (same file, line 1079) uses min-w-[980px] with a desktop-only md:table strategy + mobile card fallback. Its action column has 5 icon buttons with no wrapping/overflow guard.
+  - GuardSupportTab and GuardShiftSwapPanel use card-based layouts (no tables), and are unlikely to cause horizontal overflow themselves.
+  - UserDashboard.tsx main content has guard-sticky-main class with padding-bottom: calc(var(--guard-sticky-region-height) + env(safe-area-inset-bottom)) — properly accounts for the guard sticky region.
+  - The guard-sticky-region-height is 8.5rem; guard-main-reserved-height is 4.25rem.
+
+research_metadata:
+  methodology: "hybrid retrieval: grep_search + semantic file reads"
+  scope: "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx, DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx, DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx, DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx, DasiaAIO-Frontend/src/index.css"
+  confidence: high
+  coverage: 95
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+
+- file: SuperadminDashboard.tsx
+  path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+  purpose: "Admin/superadmin dashboard with user management, approvals, schedules, missions, analytics"
+  language: tsx
+  lines: ~1900
+  key_elements:
+
+  - element: "Pending Approvals Table"
+    type: pattern
+    location: "SuperadminDashboard.tsx:1319-1383"
+    description: |
+      OUTER WRAPPER (line 1319):
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full animate-fade-in">
+      SECTION (line 1324):
+        <section className="w-full table-glass rounded-2xl p-6 md:p-8">
+      SCROLL WRAPPER (line 1326):
+        <div className="overflow-auto">
+      TABLE (line 1327):
+        <table className="w-full border-collapse min-w-[820px]">
+      TABLE HEADERS (lines 1330-1334):
+        Guard Name | Requested Role | Submitted Date | Status | Actions
+        All use: className="px-4 py-3 text-left font-semibold text-text-primary border-b-2 border-border text-sm uppercase tracking-wider"
+      ACTION BUTTONS COLUMN (lines 1362-1373):
+        <td className="px-4 py-3">
+          <div className="flex flex-wrap gap-2">
+            <button className="soc-btn soc-btn-neutral">Details</button>
+            <button className="soc-btn soc-btn-success disabled:opacity-60">Approve</button>
+            <button className="soc-btn soc-btn-danger disabled:opacity-60">Reject</button>
+          </div>
+        </td>
+      OVERFLOW HANDLING:
+        - Parent div has overflow-auto (horizontal scroll enabled)
+        - Table has min-w-[820px] (forces minimum width, scrolls below 820px)
+        - Action buttons use flex-wrap which will wrap on narrow cells
+      POTENTIAL ISSUE:
+        - The min-w-[820px] combined with p-6 md:p-8 padding means the effective minimum
+          viewport for no-scroll is ~820px + 48px (p-6) = ~868px on mobile, ~884px on md+
+        - The 3 action buttons (Details/Approve/Reject) in flex-wrap may clip if the Actions
+          column gets squeezed — soc-btn classes may have min-width or padding that pushes out
+
+  - element: "User Management Desktop Table"
+    type: pattern
+    location: "SuperadminDashboard.tsx:1079-1218"
+    description: |
+      SCROLL WRAPPER (line 1077):
+        <div className="soc-scroll-area flex-1 min-h-0 overflow-auto">
+      TABLE (line 1079):
+        <table className="hidden w-full min-w-[980px] md:table">
+      TABLE HEADERS (7 columns, lines 1081-1098):
+        Select | User Details | Username | Role | Status | Last Login | Actions
+        All use: className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-text-tertiary"
+        Actions header is text-right aligned
+      ACTION BUTTONS COLUMN (lines 1146-1214):
+        <td className="px-5 py-3.5">
+          <div className="flex items-center justify-end gap-1">
+            [Approve icon button] — conditional, only if pendingApproval
+            [Edit icon button]
+            [Reset Password icon button] — disabled/coming soon
+            [Suspend icon button] — disabled/coming soon
+            [Delete icon button] — conditional via Allowed component
+          </div>
+        </td>
+        All icon buttons: className="min-h-11 min-w-11 rounded-lg p-2 ..."
+      OVERFLOW HANDLING:
+        - Table is hidden on mobile (hidden ... md:table)
+        - min-w-[980px] forces scroll on viewports < 980px
+        - soc-scroll-area provides overflow-auto
+        - 5 icon buttons at 44px each = 220px + gaps, plus px-5 padding = ~230px minimum
+          for action column alone
+      POTENTIAL ISSUE:
+        - With 7 columns and min-w-[980px], the action column with up to 5 icon buttons
+          (Approve + Edit + Reset + Suspend + Delete = 220px+) can push total needed width
+          beyond 980px, meaning horizontal scroll even at the declared min-width
+        - No max-width or truncation on "User Details" column (name + email) — long names
+          can expand this column and push action buttons off-screen
+
+  - element: "User Management Mobile Card View"
+    type: pattern
+    location: "SuperadminDashboard.tsx:1219-1300"
+    description: |
+      CONTAINER (line 1219):
+        <div className="space-y-3 p-4 md:hidden">
+      Each user card:
+        <article className="rounded-xl border border-border-subtle bg-background p-4">
+      ACTION BUTTONS ROW (line 1256):
+        <div className="mt-3 flex flex-wrap gap-2">
+          Approve / Edit / Reset / Suspend / Delete buttons
+          All use: className="min-h-11 rounded-md border ... px-2.5 py-1.5 text-xs font-semibold"
+      OVERFLOW HANDLING:
+        - flex-wrap handles button wrapping
+        - Article has p-4 but no overflow-x control
+      POTENTIAL ISSUE:
+        - If 5 buttons total width exceeds container, flex-wrap handles it
+        - Generally safe but buttons may wrap to 2 rows on narrow screens
+
+- file: GuardSupportTab.tsx
+  path: DasiaAIO-Frontend/src/components/dashboard/GuardSupportTab.tsx
+  purpose: "Guard support workspace with emergency contacts, field instructions, schedule requests, support tickets, shift swaps"
+  language: tsx
+  lines: 242
+  key_elements:
+
+  - element: "Section Frame"
+    type: pattern
+    location: "GuardSupportTab.tsx:73"
+    description: |
+      CONTAINER:
+        <section className="guard-section-frame" aria-label="Guard support workspace">
+      guard-section-frame CSS (index.css:1202):
+        display: flex; flex-direction: column; gap: var(--space-4);
+      OVERFLOW HANDLING: None explicit — relies on parent overflow-y-auto
+      POTENTIAL ISSUE: No horizontal overflow protection. Content width depends on children.
+
+  - element: "Schedule Change Request Form"
+    type: pattern
+    location: "GuardSupportTab.tsx:104-164"
+    description: |
+      Collapsible form using DashboardCard wrapper.
+      Form: className="mt-2 grid grid-cols-1 gap-3"
+      Inputs: className="w-full rounded-lg ..." — all full-width
+      OVERFLOW HANDLING: grid-cols-1 keeps single column, w-full on inputs — safe
+
+  - element: "Support Tickets Section"
+    type: pattern
+    location: "GuardSupportTab.tsx:167-231"
+    description: |
+      Collapsible form + ticket list using DashboardCard wrapper.
+      Tickets rendered as <ul><li> cards.
+      OVERFLOW HANDLING: Standard card layout, no tables — safe
+
+  - element: "GuardShiftSwapPanel embed"
+    type: pattern
+    location: "GuardSupportTab.tsx:233-237"
+    description: |
+      <GuardShiftSwapPanel currentUserId={userId} currentUserRole={userRole} shiftOptions={shiftSwapOptions} />
+      Rendered at the bottom of the support tab — see GuardShiftSwapPanel.tsx analysis
+
+- file: GuardShiftSwapPanel.tsx
+  path: DasiaAIO-Frontend/src/components/dashboard/GuardShiftSwapPanel.tsx
+  purpose: "Shift swap request form and request history list for guards"
+  language: tsx
+  lines: 369
+  key_elements:
+
+  - element: "Panel Container"
+    type: pattern
+    location: "GuardShiftSwapPanel.tsx:191"
+    description: |
+      <section className="rounded-2xl border border-border bg-surface p-4" aria-labelledby="swap-panel-heading">
+      OVERFLOW HANDLING: No explicit overflow control on this section
+
+  - element: "New Swap Request Form"
+    type: pattern
+    location: "GuardShiftSwapPanel.tsx:205-280"
+    description: |
+      Form: className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
+      Most fields span sm:col-span-2 (full width)
+      Inputs: className="mt-1 w-full rounded-lg ..."
+      OVERFLOW HANDLING: Full-width inputs, responsive grid — safe
+
+  - element: "Swap Request List"
+    type: pattern
+    location: "GuardShiftSwapPanel.tsx:296-365"
+    description: |
+      <ul className="mt-2 space-y-2" aria-label="Shift swap requests">
+      Each request:
+        <li className="rounded-lg border border-border-subtle bg-surface-elevated p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            ... requester info (min-w-0 flex-1) ...
+            ... status badge + Accept/Decline buttons ...
+          </div>
+      Accept/Decline buttons:
+        <div className="flex gap-2">
+          <button className="swap-response-btn swap-response-accept">Accept</button>
+          <button className="swap-response-btn swap-response-decline">Decline</button>
+        </div>
+      OVERFLOW HANDLING:
+        - flex-wrap on outer container — wraps if needed
+        - min-w-0 on text container prevents text from pushing out
+        - Buttons are separate flex row inside the right column
+      POTENTIAL ISSUE:
+        - If requester name or shift ID is very long, the monospace font-mono shiftId
+          could push the card wider. "overflow-wrap: anywhere" is not present.
+
+- file: UserDashboard.tsx
+  path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+  purpose: "Guard dashboard with mission, resources, support, and map tabs"
+  language: tsx
+  lines: ~1280
+  key_elements:
+
+  - element: "Main Content Area"
+    type: pattern
+    location: "UserDashboard.tsx:893-896"
+    description: |
+      <main
+        id="maincontent"
+        tabIndex={-1}
+        className="guard-sticky-main mx-auto h-[calc(100dvh-var(--guard-main-reserved-height))] w-full max-w-5xl overflow-y-auto px-4 pt-4"
+      >
+      CSS (index.css:1214-1216):
+        .guard-sticky-main {
+          padding-bottom: calc(var(--guard-sticky-region-height) + env(safe-area-inset-bottom, 0px));
+        }
+      CSS VARIABLES (index.css:151-153):
+        --guard-sticky-region-height: 8.5rem;
+        --guard-main-reserved-height: 4.25rem;
+      OVERFLOW HANDLING:
+        - overflow-y-auto on main
+        - No overflow-x control (could allow horizontal overflow from children)
+        - h-[calc(100dvh-4.25rem)] constrains height
+        - padding-bottom: calc(8.5rem + safe-area) correctly accounts for sticky region
+      POTENTIAL ISSUE:
+        - No overflow-x: hidden on main — if any child exceeds max-w-5xl or viewport,
+          horizontal scroll will appear on the main element
+
+  - element: "Support Tab Rendering"
+    type: pattern
+    location: "UserDashboard.tsx:1129-1147"
+    description: |
+      {!isInitialLoading && activeSection === 'support' ? (
+        <GuardSupportTab
+          userId={user.id}
+          userRole={user.role}
+          onInstructionsOpen={() => setInstructionsOpen(true)}
+          scheduleForm={scheduleForm}
+          setScheduleForm={setScheduleForm}
+          scheduleSubmitting={scheduleSubmitting}
+          scheduleStatus={scheduleStatus}
+          onScheduleSubmit={handleScheduleSubmit}
+          ticketForm={ticketForm}
+          setTicketForm={setTicketForm}
+          ticketSubmitting={ticketSubmitting}
+          ticketStatus={ticketStatus}
+          onTicketSubmit={handleTicketSubmit}
+          ticketItems={ticketItems}
+          shiftSwapOptions={shiftSwapOptions}
+        />
+      ) : null}
+      OVERFLOW HANDLING:
+        - GuardSupportTab is rendered inside <section className="guard-section-frame">
+        - guard-section-frame is flexbox column — no overflow-x protection
+        - Content is contained by max-w-5xl on the main but no clipping
+
+  - element: "Guard Sticky Region"
+    type: pattern
+    location: "UserDashboard.tsx:1159-1194"
+    description: |
+      <div className="guard-sticky-region" data-testid="guard-sticky-region">
+        <EmergencyContactsBar />
+        <section className="guard-sticky-inner">
+          <nav> ... 4-column grid nav ... </nav>
+        </section>
+      </div>
+      CSS (index.css:1220-1227):
+        .guard-sticky-region { position: fixed; left:0; right:0; bottom:0; z-index:42; padding: ... }
+      BOTTOM PADDING ACCOUNTING:
+        - guard-sticky-main has padding-bottom: calc(8.5rem + safe-area) ✅
+        - guard-main-reserved-height: 4.25rem used for header height deduction ✅
+        - These values correctly prevent content from being hidden under the sticky region
+
+- file: index.css
+  path: DasiaAIO-Frontend/src/index.css
+  purpose: "Global CSS with design tokens, guard layout classes, component utilities"
+  language: css
+  lines: ~1400
+  key_elements:
+
+  - element: "Guard Layout CSS Variables"
+    type: variable
+    location: "index.css:151-153"
+    description: |
+      --guard-sticky-region-height: 8.5rem;
+      --guard-main-reserved-height: 4.25rem;
+
+  - element: "guard-section-frame class"
+    type: pattern
+    location: "index.css:1202-1205"
+    description: |
+      .guard-section-frame {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+      }
+
+  - element: "guard-sticky-main class"
+    type: pattern
+    location: "index.css:1214-1216"
+    description: |
+      .guard-sticky-main {
+        padding-bottom: calc(var(--guard-sticky-region-height) + env(safe-area-inset-bottom, 0px));
+      }
+
+  - element: "guard-sticky-region class"
+    type: pattern
+    location: "index.css:1220-1227"
+    description: |
+      .guard-sticky-region {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        z-index: var(--z-guard-sticky-region);
+        padding: 0 var(--space-2) calc(0.5rem + env(safe-area-inset-bottom, 0px));
+      }
+
+patterns_found:
+
+- category: architecture
+  pattern: "Table with min-width + overflow-auto wrapper"
+  description: "Both admin tables use a min-width on the <table> with an overflow-auto wrapper div to enable horizontal scrolling"
+  examples:
+  - file: SuperadminDashboard.tsx
+    location: "line 1326-1327"
+    snippet: '<div className="overflow-auto"><table className="w-full border-collapse min-w-[820px]">'
+  - file: SuperadminDashboard.tsx
+    location: "line 1079"
+    snippet: '<table className="hidden w-full min-w-[980px] md:table">'
+  prevalence: common
+
+- category: architecture
+  pattern: "Desktop table + mobile card responsive pattern"
+  description: "User management table uses hidden/md:table to show table on desktop and card views on mobile"
+  examples:
+  - file: SuperadminDashboard.tsx
+    location: "line 1079 + line 1219"
+    snippet: '<table className="hidden w-full min-w-[980px] md:table"> ... <div className="space-y-3 p-4 md:hidden">'
+  prevalence: occasional
+
+- category: architecture
+  pattern: "Card-based layout for guard components"
+  description: "Guard support and shift swap panels use card-based layouts (no tables), wrapped in guard-section-frame flex column"
+  examples:
+  - file: GuardSupportTab.tsx
+    location: "line 73"
+    snippet: '<section className="guard-section-frame">'
+  - file: GuardShiftSwapPanel.tsx
+    location: "line 191"
+    snippet: '<section className="rounded-2xl border border-border bg-surface p-4">'
+  prevalence: common
+
+- category: structure
+  pattern: "Fixed bottom sticky region with CSS variable height"
+  description: "Guard dashboard uses a fixed-position bottom area with height tracked via CSS variable for padding compensation"
+  examples:
+  - file: index.css
+    location: "line 151, 1214, 1220"
+    snippet: "--guard-sticky-region-height: 8.5rem; .guard-sticky-main { padding-bottom: calc(var(--guard-sticky-region-height) + env(safe-area-inset-bottom, 0px)); }"
+  prevalence: common
+
+open_questions:
+
+- question: "What are the actual computed widths of soc-btn classes?"
+  context: "The approvals table action buttons use soc-btn soc-btn-neutral/success/danger — need to verify their padding/min-width to determine if 3 buttons fit within the Actions column at min-w-[820px]"
+  type: nice_to_know
+  affects: ["approvals-table-overflow"]
+
+- question: "Does the outer dashboard container have overflow-x: hidden?"
+  context: "The approvals section wrapper is flex-1 p-4 md:p-8 overflow-y-auto w-full — but no overflow-x handling. If the table's min-width exceeds the container, horizontal scrollbar appears on the section, not the overflow-auto div"
+  type: research
+  affects: ["admin-dashboard-overflow"]
+
+gaps:
+
+- area: "soc-btn class definitions"
+  description: "The soc-btn, soc-btn-neutral, soc-btn-success, soc-btn-danger classes are referenced in the approvals table but their CSS definitions were not fully inspected. Need to check min-width/padding."
+  impact: nice_to_know
+  affects: ["approvals-table-overflow"]
+
+- area: "Table-glass and thead-glass class definitions"
+  description: "Used in the approvals table wrapper — may add extra padding/borders that contribute to overflow"
+  impact: nice_to_know
+  affects: ["approvals-table-overflow"]

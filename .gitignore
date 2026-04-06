@@ -17,6 +17,7 @@ __pycache__/
 sentinel-android-secrets.txt
 
 # Generated app dependencies/build outputs
+node_modules/
 apps/android-capacitor/node_modules/
 apps/desktop-tauri/node_modules/
 apps/desktop-tauri/src-tauri/target/

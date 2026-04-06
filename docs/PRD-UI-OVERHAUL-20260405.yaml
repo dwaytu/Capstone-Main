@@ -1,0 +1,214 @@
+# Product Requirements Document — SENTINEL Authenticated UI/UX Overhaul
+# Created: 2026-04-05
+# Source: Live audit findings (2026-04-05), 4x gem-researcher reports, 7 user decisions
+prd_id: PRD-UI-OVERHAUL-20260405
+version: 1.0.0
+
+user_stories:
+  - as_a: superadmin
+    i_want: a command-center dashboard with clear hierarchy and system-wide visibility
+    so_that: I can make operational decisions at a glance without sifting through equally-weighted panels
+  - as_a: admin
+    i_want: my sidebar to show only operations management items (approvals, scheduling, allocation, firearms, vehicles)
+    so_that: I am not distracted by audit or analytics tools I rarely use
+  - as_a: supervisor
+    i_want: a live-coordination focused workspace with map, incidents, schedule, and missions front-and-center
+    so_that: I can respond to field situations without navigating irrelevant management pages
+  - as_a: guard
+    i_want: a field-first mobile workspace that never shows me admin pages or permission errors
+    so_that: I can focus on my mission with quick access to SOS, incidents, and shift info
+  - as_a: guard (off-duty)
+    i_want: to see my upcoming schedule, toggle my availability, and review my equipment checklist
+    so_that: downtime is productive and I am field-ready for my next shift
+  - as_a: guard
+    i_want: a full support ticket system where I can create, track, and categorize tickets
+    so_that: I can report issues and see their resolution status without contacting supervisors directly
+  - as_a: elevated-role user (mobile)
+    i_want: a bottom navigation bar with Dashboard, Approvals, Schedule, Alerts, and More
+    so_that: the most frequent admin actions are reachable in one tap on mobile
+  - as_a: any authenticated user
+    i_want: proper typography (Space Grotesk + Rajdhani) loading in production
+    so_that: the UI looks intentional and professional instead of falling back to system fonts
+  - as_a: any authenticated user
+    i_want: empty pages to show action-oriented states with clear guidance
+    so_that: zero-data screens feel purposeful rather than broken
+  - as_a: operations lead
+    i_want: analytics and audit pages integrated into the navigation shell with charts, filters, and scannable layouts
+    so_that: these tools support decision-making instead of presenting raw stat dumps
+
+scope:
+  in_scope:
+    - Production CSP/font fix to ensure Rajdhani and Space Grotesk load in all deployments
+    - Unified OperationalShell adoption — eliminate all inline Sidebar+Header patterns
+    - Role-filtered sidebar navigation with clean single-word labels
+    - Guard route hardening — silent redirect to /overview for unauthorized routes
+    - Guard off-duty state — upcoming schedule, availability toggle, equipment checklist
+    - Guard full support ticket system — create, list, status tracking, categories
+    - Mobile bottom nav redesign for elevated roles (Dashboard/Approvals/Schedule/Alerts/More)
+    - Shared EmptyState component with action-oriented copy for all zero-data pages
+    - Shared LoadingSkeleton component for consistent loading states
+    - Analytics page redesign with charts, filters, scannable card layout within OperationalShell
+    - Audit page redesign with timeline view, filters, search within OperationalShell
+    - Dashboard hierarchy improvements — hero metrics, tiered panel weights, reduced chrome
+    - Navigation label cleanup — remove DG/AP/CL prefixes, use clean single words
+    - Remove duplicated nav arrays from FirearmInventory and similar components
+    - Fix /inbox route to not render SuperadminDashboard for guards
+    - Fix stub routes (/shift-swaps, /notifications) to redirect or render proper content
+    - Superadmin/admin/supervisor visual differentiation via filtered navigation + tailored landing views
+    - Reduce repeated chrome (per-page refresh buttons, repeated avatar/status strips)
+    - Table and data grid polish (glass styling consistency, hover states, responsive overflow)
+    - Micro-interaction refinements (section entrances, loading transitions)
+  out_of_scope:
+    - Backend API changes beyond what guard support tickets require
+    - New database migrations (use existing schema columns that are underutilized)
+    - Changes to the guard PanicButton, EmergencyContactsBar, or offline queue
+    - Tauri desktop or Capacitor Android shell changes
+    - Changes to login/registration page
+    - New feature development (AI, prediction, geofence)
+    - Third-party library additions (no recharts, no animation libraries)
+    - Changes to the existing CSS custom property names or Tailwind config structure
+
+acceptance_criteria:
+  - criterion: AC-001 Production typography loads correctly
+    verification: Google Fonts @import resolves in production. Rajdhani renders for headings, Space Grotesk for body text. CSP meta tag includes fonts.googleapis.com in style-src and fonts.gstatic.com in font-src.
+  - criterion: AC-002 All authenticated pages use OperationalShell
+    verification: No page imports Sidebar or Header independently. AnalyticsDashboard, AuditDashboard, and all resource pages render within OperationalShell with sidebar and header visible.
+  - criterion: AC-003 Sidebar navigation is role-filtered with clean labels
+    verification: Superadmin sees ~8 items, admin ~7, supervisor ~5. No guard sees sidebar. Labels are single clean words (Dashboard, Approvals, Calendar) with no DG/AP/CL prefixes.
+  - criterion: AC-004 Guards cannot reach admin pages
+    verification: Navigating to /armored-cars, /firearms, /analytics, /audit, /inbox as guard silently redirects to /overview. No permission-error UI is ever shown to guard role.
+  - criterion: AC-005 Guard off-duty state is useful
+    verification: When no active mission exists, guard workspace shows upcoming schedule (or empty-state with schedule context), availability toggle, and equipment checklist section.
+  - criterion: AC-006 Guard support ticket system works end-to-end
+    verification: Guard can create a ticket with category and description, see ticket list with status badges, and view individual ticket details. Backend uses existing support_tickets table columns.
+  - criterion: AC-007 Mobile bottom nav matches role priorities
+    verification: Elevated roles see Dashboard/Approvals/Schedule/Alerts/More on mobile. Guard mobile nav is unchanged.
+  - criterion: AC-008 Empty states are action-oriented
+    verification: Every page that can show zero data has a shared EmptyState component with icon, title, subtitle, and optional action button. No bare "No data" or "No items found" strings remain.
+  - criterion: AC-009 Analytics page is a decision tool
+    verification: /analytics renders within OperationalShell with at least 2 SVG chart types, filter controls, and scannable metric cards with hierarchy. Not a flat stat block.
+  - criterion: AC-010 Audit page is scannable
+    verification: /audit renders within OperationalShell with timeline/table view, search/filter controls, and clear entry formatting. Not a raw log dump.
+  - criterion: AC-011 Dashboard hierarchy is improved
+    verification: Each role's dashboard has a clear hero section (primary metrics), a secondary action zone, and a tertiary detail zone. No more than 2 equally-weighted panel rows at the same level.
+  - criterion: AC-012 No redundant chrome
+    verification: Per-page refresh buttons are consolidated into the shell header. Avatar/status strips appear only in the Header, not duplicated per page. No duplicate sidebar nav definitions in individual components.
+  - criterion: AC-013 Build passes with zero type errors
+    verification: tsc --noEmit returns 0 errors. npm run build succeeds. No new lint warnings introduced.
+  - criterion: AC-014 WCAG 2.2 AA compliance maintained
+    verification: All new components meet 4.5:1 text contrast, 3:1 UI component contrast. Focus visible on all interactive elements. Touch targets ≥44px. Forced-colors and reduced-motion supported.
+  - criterion: AC-015 Role-specific navigation validation
+    verification: Browser-based validation confirms each of the 4 roles sees only their designated navigation items and landing page.
+
+needs_clarification:
+  - question: Should the guard equipment checklist pull from a backend API or use a static list?
+    context: No equipment/inventory API exists currently. A static checklist per guard type could work as MVP.
+    impact: Determines whether a backend endpoint is needed in scope.
+    status: open
+    owner: product-owner
+  - question: Should support ticket responses from admin/supervisor be visible to the guard?
+    context: The support_tickets table has resolution_notes and resolved_at columns but no reply thread.
+    impact: Determines if a ticket detail view needs a conversation thread UI or just status + resolution.
+    status: open
+    owner: product-owner
+  - question: Should the "More" item in mobile bottom nav open a sheet/drawer or navigate to a menu page?
+    context: A bottom sheet is more native-feeling on mobile but requires a new component.
+    impact: Affects mobile UX complexity.
+    status: open
+    owner: product-owner
+
+features:
+  - name: Production Typography Fix
+    overview: Ensure CSP meta tag in index.html allows Google Fonts in all deployment contexts.
+    status: planned
+  - name: Unified Shell Migration
+    overview: Migrate all authenticated pages to OperationalShell. Remove inline Sidebar+Header patterns.
+    status: planned
+  - name: Role-Filtered Navigation
+    overview: Filter sidebar items by logged-in role. Clean labels, grouped sections.
+    status: planned
+  - name: Guard Route Hardening
+    overview: Silent redirect for guards accessing elevated-role pages. Fix /inbox role leak.
+    status: planned
+  - name: Guard Off-Duty Workspace
+    overview: Add schedule preview, availability toggle, and equipment checklist to guard off-duty state.
+    status: planned
+  - name: Guard Support Ticket System
+    overview: Full ticket CRUD within guard workspace tab. Leverages existing support_tickets schema.
+    status: planned
+  - name: Mobile Navigation Redesign
+    overview: Elevated-role mobile bottom nav with Dashboard/Approvals/Schedule/Alerts/More.
+    status: planned
+  - name: Shared State Components
+    overview: Create reusable EmptyState and LoadingSkeleton components used across all pages.
+    status: planned
+  - name: Analytics Page Redesign
+    overview: Rebuild /analytics within OperationalShell with SVG charts, filters, scannable cards.
+    status: planned
+  - name: Audit Page Redesign
+    overview: Rebuild /audit within OperationalShell with timeline view, search, filters.
+    status: planned
+  - name: Dashboard Hierarchy Improvements
+    overview: Establish hero/action/detail zones in all role dashboards. Reduce panel weight parity.
+    status: planned
+  - name: Chrome Consolidation
+    overview: Remove per-page refresh buttons, duplicated nav arrays, repeated avatar strips.
+    status: planned
+
+state_machines:
+  - name: ShellMigrationState
+    states:
+      - inline_shell
+      - operational_shell
+    transitions:
+      - from: inline_shell
+        to: operational_shell
+        trigger: Component refactored to use OperationalShell wrapper instead of importing Sidebar+Header
+  - name: SupportTicketState
+    states:
+      - draft
+      - submitted
+      - in_progress
+      - resolved
+      - closed
+    transitions:
+      - from: draft
+        to: submitted
+        trigger: Guard submits ticket via support form
+      - from: submitted
+        to: in_progress
+        trigger: Admin/supervisor picks up ticket (future scope if not in current backend)
+      - from: in_progress
+        to: resolved
+        trigger: Resolution notes added and status changed
+      - from: resolved
+        to: closed
+        trigger: Auto-close after 7 days or manual close
+
+errors:
+  - code: ERR_ROUTE_DENIED
+    message: Silent redirect — no error shown to user for unauthorized route access
+  - code: ERR_FONT_LOAD
+    message: CSP blocks font loading — fallback to system fonts with degraded typography
+
+decisions:
+  - decision: Navigation labels use clean single words (Dashboard, Approvals, Calendar)
+    rationale: User decision. Prefixed labels (DGDashboard) reduce product quality and are developer artifacts.
+  - decision: Role differentiation via filtered sidebar, not distinct layouts
+    rationale: User decision. Filtered items provide differentiation without maintaining 4 separate shell components.
+  - decision: Guard unauthorized routes silently redirect to /overview
+    rationale: User decision. Guards should never see admin UI or permission-error screens.
+  - decision: Guard off-duty shows schedule + availability + equipment checklist
+    rationale: User decision. Converts downtime into practical field-readiness.
+  - decision: Mobile bottom nav for elevated roles prioritizes Dashboard/Approvals/Schedule/Alerts/More
+    rationale: User decision. Current items (Calendar/Firearms/Vehicles) are low-frequency for mobile admin use.
+  - decision: Analytics and Audit get full redesign within OperationalShell
+    rationale: User decision. Current dense stat blocks do not support decision-making.
+  - decision: Guard support is a full ticket system
+    rationale: User decision. Backend schema already has category, priority, resolution columns that are unused.
+  - decision: OperationalShell is the single authenticated shell
+    rationale: Research found 2 competing shell patterns causing inconsistent chrome. Standardization reduces maintenance and ensures consistent navigation.
+  - decision: No shared EmptyState component exists — one must be created
+    rationale: Research found only 4 of 15 pages have proper empty states. A shared component enforces quality.
+
+changes: []

@@ -1,0 +1,654 @@
+plan_id: nav-css-research
+objective: "Research the CSS design system, navigation labels, mobile navigation, and empty/loading/error state patterns"
+focus_area: css_nav_mobile
+created_at: "2026-04-05"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Sidebar nav defined in `src/config/navigation.ts` with 15 elevated items (3 groups) and 4 guard items. Labels use 2-letter glyph codes (DG, AP, etc.) rendered from `navGlyphs` in Sidebar.tsx.
+  - Mobile bottom nav is hardcoded in AppShell.tsx (not extracted): guards get 4 items (Overview/Calendar/Support/Profile), elevated roles get 5 (Dashboard/Calendar/Firearms/Vehicles/Profile). Touch targets are `min-h-11` (44px). Guard workspace suppresses mobile nav in favor of guard-sticky-region.
+  - CSS design system is comprehensive (~1500 lines in index.css): full light/dark token parity, 60+ utility classes, z-index stack, forced-colors support, prefers-reduced-motion, soc-skeleton/soc-empty-state shared classes. No shared `<EmptyState>` React component exists — each page inlines its own empty text.
+  - Loading states: `DashboardLoadingState` and `TableLoadingState` shared components exist but only 4 pages use them. Most pages have ad-hoc `loading` boolean. A global `ErrorBoundary` wraps the app, but section-level error boundaries are not used.
+  - CSP meta tag is complete and correct: includes fonts.googleapis.com, fonts.gstatic.com, basemaps.cartocdn.com, railway.app for connect-src.
+
+research_metadata:
+  methodology: "hybrid retrieval: semantic_search + grep_search + read_file across navigation config, Sidebar.tsx, AppShell.tsx, index.css, index.html, ErrorBoundary, DashboardLoadingState, permissions.ts, routes.ts"
+  scope: "All frontend navigation definitions, CSS design system, state pattern usage across ~25 page components"
+  confidence: high
+  coverage: 92
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: navigation.ts
+    path: DasiaAIO-Frontend/src/config/navigation.ts
+    purpose: "Central nav item definitions for sidebar, per role"
+    key_elements:
+      - element: NavItem
+        type: interface
+        location: "navigation.ts:4-8"
+        description: "{ view: string, label: string, group: 'MAIN MENU' | 'OPERATIONS' | 'RESOURCES', permission?: Permission }"
+      - element: ELEVATED_NAV
+        type: variable
+        location: "navigation.ts:10-28"
+        description: "15 nav items for superadmin/admin/supervisor; filtered by role permissions at runtime"
+      - element: GUARD_NAV
+        type: variable
+        location: "navigation.ts:30-35"
+        description: "4 nav items for guard role: overview, resources, support, map"
+      - element: getSidebarNav
+        type: function
+        location: "navigation.ts:41-57"
+        description: "getSidebarNav(roleInput: unknown, options: NavOptions = {}): NavItem[] — filters ELEVATED_NAV by permission or returns GUARD_NAV"
+    language: TypeScript
+    lines: 57
+
+  - file: Sidebar.tsx
+    path: DasiaAIO-Frontend/src/components/Sidebar.tsx
+    purpose: "Desktop sidebar component with grouped nav items, 2-letter glyph icons, scroll persistence"
+    key_elements:
+      - element: SidebarItem
+        type: interface
+        location: "Sidebar.tsx:5-8"
+        description: "{ view: string, label: string, group?: string }"
+      - element: navGlyphs
+        type: variable
+        location: "Sidebar.tsx:22-40"
+        description: "Maps view keys to 2-letter display codes shown in sidebar glyph badges"
+      - element: Sidebar
+        type: function
+        location: "Sidebar.tsx:42-200"
+        description: "FC: renders grouped nav with mobile overlay/drawer, scroll persistence, system health indicator"
+    language: TypeScript
+    lines: 200
+
+  - file: AppShell.tsx
+    path: DasiaAIO-Frontend/src/components/layout/AppShell.tsx
+    purpose: "Root layout: auth gate, ToA modal, location consent, mobile bottom nav, connectivity banner"
+    key_elements:
+      - element: mobileNavItems (guard)
+        type: variable
+        location: "AppShell.tsx:94-100"
+        description: "Guard mobile nav: overview, calendar, support, profile"
+      - element: mobileNavItems (elevated)
+        type: variable
+        location: "AppShell.tsx:101-108"
+        description: "Elevated mobile nav: dashboard, calendar, firearms, armored-cars (labeled 'Vehicles'), profile"
+      - element: mobileSafeBottomOffset
+        type: variable
+        location: "AppShell.tsx:116"
+        description: "calc(5rem + env(safe-area-inset-bottom, 0px))"
+      - element: guardStickySafeBottomOffset
+        type: variable
+        location: "AppShell.tsx:117-119"
+        description: "Uses --guard-sticky-region-height for guard views, falls back to mobileSafeBottomOffset"
+    language: TypeScript
+    lines: 510
+
+  - file: OperationalShell.tsx
+    path: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+    purpose: "Shared shell for elevated-role pages: sidebar + header + main content area with error banner"
+    key_elements:
+      - element: OperationalShell
+        type: function
+        location: "OperationalShell.tsx:24-86"
+        description: "FC: renders sidebar, header, scrollable main area with optional error string, skip-link"
+    language: TypeScript
+    lines: 86
+
+  - file: routes.ts
+    path: DasiaAIO-Frontend/src/router/routes.ts
+    purpose: "Central route and view-to-route mapping"
+    key_elements:
+      - element: ROUTES
+        type: variable
+        location: "routes.ts:1-25"
+        description: "23 route constants"
+      - element: VIEW_TO_ROUTE
+        type: variable
+        location: "routes.ts:38-61"
+        description: "Maps sidebar view key strings to route paths. 21 entries."
+    language: TypeScript
+    lines: 61
+
+  - file: permissions.ts
+    path: DasiaAIO-Frontend/src/utils/permissions.ts
+    purpose: "Role-permission mapping and permission check utilities"
+    key_elements:
+      - element: Permission
+        type: type
+        location: "permissions.ts:3-14"
+        description: "12 permissions: manage_users, view_audit_logs, approve_guards, view_analytics, manage_firearms, manage_allocations, manage_permits, manage_maintenance, manage_armored_cars, view_guard_workspace"
+      - element: rolePermissions
+        type: variable
+        location: "permissions.ts:16-47"
+        description: "Maps each role to its permission set"
+    language: TypeScript
+    lines: 58
+
+  - file: index.css
+    path: DasiaAIO-Frontend/src/index.css
+    purpose: "Complete CSS design system: tokens, utility classes, animations, forced-colors, reduced-motion"
+    key_elements:
+      - element: ":root custom properties"
+        type: pattern
+        location: "index.css:3-148"
+        description: "Light mode tokens: colors, spacing, radii, shadows, z-index"
+      - element: ".dark custom properties"
+        type: pattern
+        location: "index.css:169-275"
+        description: "Dark mode overrides for every color, shadow, accent"
+      - element: "utility classes"
+        type: pattern
+        location: "index.css:436-1350"
+        description: "60+ soc-* utility classes for cards, buttons, chips, sidebar, modals, alerts, loading, empty states, status badges, etc."
+      - element: "animations/keyframes"
+        type: pattern
+        location: "index.css:1350-1500"
+        description: "10 keyframe animations: fade-in-up, radar-sweep, status-pulse, map-ping, shimmer, pulse-critical, sentinel-beam-*, sentinel-ring-expand"
+      - element: "forced-colors support"
+        type: pattern
+        location: "index.css:1330-1348"
+        description: "@media (forced-colors: active) — ButtonBorder, ButtonFace, ButtonText, Canvas, CanvasText"
+      - element: "prefers-reduced-motion"
+        type: pattern
+        location: "index.css:1352-1360"
+        description: "Disables all animations and transitions for reduced-motion preference"
+    language: CSS
+    lines: ~1500
+
+  - file: index.html
+    path: DasiaAIO-Frontend/index.html
+    purpose: "HTML entry point with CSP meta tag"
+    key_elements:
+      - element: CSP meta tag
+        type: pattern
+        location: "index.html:7"
+        description: "Full CSP policy"
+    language: HTML
+    lines: 16
+
+  - file: ErrorBoundary.tsx
+    path: DasiaAIO-Frontend/src/components/ErrorBoundary.tsx
+    purpose: "React class error boundary wrapper with section label and retry button"
+    key_elements:
+      - element: ErrorBoundary
+        type: class
+        location: "ErrorBoundary.tsx:15"
+        description: "Class component wrapping the entire app in App.tsx. Shows 'Section error detected' with retry button."
+    language: TypeScript
+    lines: 79
+
+  - file: DashboardLoadingState.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/ui/DashboardLoadingState.tsx
+    purpose: "Shared skeleton loading components for dashboards and tables"
+    key_elements:
+      - element: SkeletonBlock
+        type: function
+        location: "DashboardLoadingState.tsx:7"
+        description: "Reusable animated skeleton block with aria-hidden"
+      - element: DashboardLoadingState
+        type: function
+        location: "DashboardLoadingState.tsx:18"
+        description: "Full-page dashboard skeleton: hero cards, metric section, rail section"
+      - element: TableLoadingState
+        type: function
+        location: "DashboardLoadingState.tsx:111"
+        description: "Table skeleton with configurable rows/columns"
+    language: TypeScript
+    lines: 150
+
+patterns_found:
+  - category: navigation
+    pattern: "Sidebar nav labels use full English names"
+    description: "Navigation labels in ELEVATED_NAV and GUARD_NAV are spelled out (Dashboard, Approvals, Calendar, Analytics, etc.) but the sidebar renders 2-letter glyph codes (DG, AP, CL, AN) as visual icons next to the label."
+    examples:
+      - file: navigation.ts
+        location: "navigation.ts:12"
+        snippet: "{ view: 'dashboard', label: 'Dashboard', group: 'MAIN MENU' }"
+      - file: Sidebar.tsx
+        location: "Sidebar.tsx:22-23"
+        snippet: "dashboard: 'DG', overview: 'DG', approvals: 'AP'"
+    prevalence: common
+
+  - category: navigation
+    pattern: "Mobile nav hardcoded in AppShell, not driven by navigation.ts"
+    description: "Mobile bottom nav items are defined inline in AppShell.tsx as plain {key, label} objects, completely separate from getSidebarNav(). No icons, no permission checks, no groups."
+    examples:
+      - file: AppShell.tsx
+        location: "AppShell.tsx:94-108"
+        snippet: "const mobileNavItems = normalizedRole === 'guard' ? [{key:'overview',label:'Overview'}, ...] : [{key:'dashboard',label:'Dashboard'}, ...]"
+    prevalence: common
+
+  - category: navigation
+    pattern: "Guard workspace hides mobile bottom nav"
+    description: "When isGuardWorkspaceView is true, the mobile bottom nav is not rendered — the guard-sticky-region (emergency contacts bar + nav) replaces it."
+    examples:
+      - file: AppShell.tsx
+        location: "AppShell.tsx:475"
+        snippet: "{!isGuardWorkspaceView ? (<nav aria-label='Mobile quick navigation' ...>) : null}"
+    prevalence: common
+
+  - category: loading
+    pattern: "DashboardLoadingState shared component exists but underused"
+    description: "Only 3 pages use the shared loading skeleton: CommandCenterDashboard, AnalyticsDashboard, AdminDashboard (TableLoadingState), SuperadminDashboard (TableLoadingState). Other pages (ArmoredCarDashboard, PerformanceDashboard, MeritScoreDashboard, CalendarDashboard, Profile, etc.) use inline loading booleans with button-level 'Sending...' text or no skeleton."
+    examples:
+      - file: CommandCenterDashboard.tsx
+        location: "CommandCenterDashboard.tsx:237"
+        snippet: "<DashboardLoadingState title='COMMAND CENTER' subtitle='Loading...' />"
+      - file: ArmoredCarDashboard.tsx
+        location: "ArmoredCarDashboard.tsx:508"
+        snippet: "{loading ? 'Adding...' : 'Add Vehicle'}"
+    prevalence: occasional
+
+  - category: empty_state
+    pattern: "No shared EmptyState React component; each page inlines empty messages"
+    description: "The CSS class .soc-empty-state exists and is used in 7 places, but most pages use ad-hoc inline text like 'No vehicles found' without the shared class. No standard EmptyState component with icon + title + description + action button exists."
+    examples:
+      - file: CalendarDashboard.tsx
+        location: "CalendarDashboard.tsx:682"
+        snippet: '<p className="soc-empty-state">No upcoming events.</p>'
+      - file: ArmoredCarDashboard.tsx
+        location: "ArmoredCarDashboard.tsx:513"
+        snippet: '<div className="text-center py-8 text-text-secondary text-sm">No vehicles found</div>'
+    prevalence: common
+
+  - category: error_handling
+    pattern: "Single global ErrorBoundary at app root; OperationalShell error prop for inline errors"
+    description: "ErrorBoundary wraps the entire app in App.tsx. OperationalShell accepts an optional error string prop shown as a danger banner above content. No component-level error boundaries wrap individual pages."
+    examples:
+      - file: App.tsx
+        location: "App.tsx:10"
+        snippet: '<ErrorBoundary sectionLabel="application" onRetry={() => window.location.reload()}>'
+      - file: OperationalShell.tsx
+        location: "OperationalShell.tsx:79-81"
+        snippet: "{error && (<div className='mb-4 rounded-lg border border-danger-border ...'>{error}</div>)}"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Touch targets meet WCAG 2.5.8 minimum"
+    description: "Mobile nav buttons use min-h-11 (44px). Sidebar mobile close button uses min-h-11 min-w-11. Guard sticky nav items also meet minimum."
+    examples:
+      - file: AppShell.tsx
+        location: "AppShell.tsx:484"
+        snippet: 'className="min-h-11 w-full rounded-md px-2 py-2 text-xs font-semibold ..."'
+    prevalence: common
+
+  - category: architecture
+    pattern: "Staggered entrance animations via animate-section-enter"
+    description: "CSS class defined in index.css but only used in 1 component (CommandCenterDashboard). Other dashboards don't use staggered entry."
+    examples:
+      - file: CommandCenterDashboard.tsx
+        location: "CommandCenterDashboard.tsx:249"
+        snippet: 'className="animate-section-enter soc-surface p-4 md:p-5"'
+    prevalence: rare
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: AppShell
+      responsibility: "Root layout with auth gate, modals, mobile nav, connectivity"
+      location: "src/components/layout/AppShell.tsx"
+      relationship_to_domain: "Owns mobile bottom nav definition and rendering"
+    - component: OperationalShell
+      responsibility: "Desktop sidebar + header + content layout for elevated roles"
+      location: "src/components/layout/OperationalShell.tsx"
+      relationship_to_domain: "Consumes sidebar nav items from parent, provides error slot"
+    - component: Sidebar
+      responsibility: "Grouped nav list with glyphs, scroll persistence, system health"
+      location: "src/components/Sidebar.tsx"
+      relationship_to_domain: "Renders SidebarItem[] with navGlyphs mapping for visual codes"
+    - component: getSidebarNav
+      responsibility: "Build role-filtered nav item list"
+      location: "src/config/navigation.ts"
+      relationship_to_domain: "Single source of truth for sidebar nav items and role filtering"
+  interfaces_used_by_domain:
+    - interface: NavItem
+      location: "src/config/navigation.ts:4"
+      usage_pattern: "view + label + group + optional permission"
+    - interface: SidebarItem
+      location: "src/components/Sidebar.tsx:5"
+      usage_pattern: "view + label + optional group — less strict than NavItem, used by OperationalShell"
+  data_flow_involving_domain: |
+    1. Router determines active page → page component calls getSidebarNav(role) → gets NavItem[]
+    2. Page component passes items to OperationalShell → OperationalShell passes to Sidebar
+    3. AppShell independently defines mobileNavItems based on normalizedRole (no shared source)
+    4. Sidebar renders items grouped by item.group with navGlyphs[view] for icon badge
+    5. VIEW_TO_ROUTE maps view strings to URL paths for both sidebar clicks and mobile nav clicks
+
+related_technology_stack:
+  languages_used_in_domain:
+    - TypeScript
+    - CSS
+  frameworks_used_in_domain:
+    - name: React 18
+      usage_in_domain: "Component rendering, hooks"
+    - name: Tailwind CSS v4
+      usage_in_domain: "Utility classes via @import 'tailwindcss' in index.css"
+  libraries_used_in_domain:
+    - name: react-router v7
+      purpose_in_domain: "URL routing via useNavigate, useLocation, VIEW_TO_ROUTE"
+
+related_conventions:
+  naming_patterns_in_domain: "soc-* prefix for all custom CSS utility classes; --color-* for token variables; 2-letter uppercase glyphs for nav icons"
+  structure_of_domain: "Navigation config in src/config/, layout shells in src/components/layout/, shared UI in src/components/dashboard/ui/"
+  error_handling_in_domain: "Global ErrorBoundary at app root; OperationalShell error prop; individual pages manage own error/loading state strings"
+  testing_in_domain: "Route tests in router/__tests__/routes.test.ts verify VIEW_TO_ROUTE mappings; guard tests verify auth loading states"
+  documentation_in_domain: "AGENTS.md and COPILOT.md document key conventions (no truncate on headers, token classes, z-index stack)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DETAILED FINDINGS SECTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+sidebar_navigation_labels:
+  elevated_nav_items:
+    MAIN_MENU:
+      - { view: dashboard, label: Dashboard, glyph: DG, permission: null, roles: [superadmin, admin, supervisor] }
+      - { view: approvals, label: Approvals, glyph: AP, permission: approve_guards, roles: [superadmin, admin, supervisor] }
+      - { view: calendar, label: Calendar, glyph: CL, permission: null, roles: [superadmin, admin, supervisor] }
+      - { view: analytics, label: Analytics, glyph: AN, permission: view_analytics, roles: [superadmin, admin, supervisor] }
+      - { view: audit-log, label: System Audit Log, glyph: AL, permission: view_audit_logs, roles: [superadmin] }
+    OPERATIONS:
+      - { view: trips, label: Trip Management, glyph: TR, permission: null, roles: [superadmin, admin, supervisor] }
+      - { view: schedule, label: Schedule, glyph: SC, permission: null, roles: [superadmin, admin, supervisor] }
+      - { view: missions, label: Missions, glyph: MS, permission: null, roles: [superadmin, admin, supervisor] }
+      - { view: performance, label: Performance, glyph: PF, permission: null, roles: [superadmin, admin, supervisor] }
+      - { view: merit, label: Merit Scores, glyph: MR, permission: null, roles: [superadmin, admin, supervisor] }
+    RESOURCES:
+      - { view: firearms, label: Firearms, glyph: FA, permission: manage_firearms, roles: [superadmin, admin, supervisor] }
+      - { view: allocation, label: Allocation, glyph: AS, permission: manage_allocations, roles: [superadmin, admin, supervisor] }
+      - { view: permits, label: Permits, glyph: PM, permission: manage_permits, roles: [superadmin, admin, supervisor] }
+      - { view: maintenance, label: Maintenance, glyph: MT, permission: manage_maintenance, roles: [superadmin, admin, supervisor] }
+      - { view: armored-cars, label: Armored Cars, glyph: AC, permission: manage_armored_cars, roles: [superadmin, admin, supervisor] }
+
+  guard_nav_items:
+    MAIN_MENU:
+      - { view: overview, label: Mission, glyph: DG }
+      - { view: resources, label: Resources, glyph: NV }
+      - { view: support, label: Support, glyph: CT }
+      - { view: map, label: Map, glyph: NV }
+
+  note_on_glyphs: |
+    'resources' and 'map' views have no entry in navGlyphs and fall back to 'NV' (generic).
+    'overview' reuses glyph 'DG' from 'dashboard'.
+
+mobile_bottom_nav:
+  guard_items:
+    - { key: overview, label: Overview }
+    - { key: calendar, label: Calendar }
+    - { key: support, label: Support }
+    - { key: profile, label: Profile }
+  elevated_items:
+    - { key: dashboard, label: Dashboard }
+    - { key: calendar, label: Calendar }
+    - { key: firearms, label: Firearms }
+    - { key: armored-cars, label: Vehicles }
+    - { key: profile, label: Profile }
+  touch_targets: "min-h-11 (44px) on all nav buttons, meets WCAG 2.5.8"
+  grid_layout: "grid-cols-4 for guard (4 items), grid-cols-5 for elevated (5 items)"
+  guard_workspace_interaction: |
+    When isGuardWorkspaceView is true (guard role on non-inbox/settings/profile views),
+    the mobile bottom nav is hidden entirely. The guard-sticky-region takes its place
+    with emergency contacts bar + inline nav. The guard-sticky-region uses z-index 42
+    (below mobile-nav z-index 64 and drawer z-index 48).
+  discrepancies_sidebar_vs_mobile:
+    guard:
+      - "Sidebar has 'Mission' label; mobile has 'Overview' — same view key 'overview'"
+      - "Sidebar has 'Resources' and 'Map'; mobile has 'Calendar' and 'Profile' instead"
+      - "Mobile nav adds 'Calendar' and 'Profile' not in guard sidebar"
+    elevated:
+      - "Sidebar has 15 items; mobile shows only 5 (Dashboard, Calendar, Firearms, Vehicles, Profile)"
+      - "Mobile labels 'armored-cars' as 'Vehicles' vs sidebar's 'Armored Cars'"
+      - "Mobile gives no access to: Approvals, Analytics, Audit, Trips, Schedule, Missions, Performance, Merit, Allocation, Permits, Maintenance"
+
+empty_loading_error_inventory:
+  shared_loading_components:
+    - component: DashboardLoadingState
+      location: "src/components/dashboard/ui/DashboardLoadingState.tsx"
+      used_by:
+        - CommandCenterDashboard
+        - AnalyticsDashboard
+    - component: TableLoadingState
+      location: "src/components/dashboard/ui/DashboardLoadingState.tsx"
+      used_by:
+        - AdminDashboard
+        - SuperadminDashboard
+    - component: SkeletonBlock
+      location: "src/components/dashboard/ui/DashboardLoadingState.tsx"
+      used_by: "DashboardLoadingState and TableLoadingState internally"
+    - component: "AppShell loading skeleton"
+      location: "src/components/layout/AppShell.tsx:59-71"
+      used_by: "Global auth loading"
+
+  shared_empty_state_components:
+    - component: "None (CSS class only)"
+      description: "soc-empty-state CSS class exists for dashed-border empty blocks. No React component."
+      css_usage_count: 7
+
+  shared_error_components:
+    - component: ErrorBoundary
+      location: "src/components/ErrorBoundary.tsx"
+      used_by: "App.tsx root only"
+    - component: "OperationalShell error prop"
+      location: "src/components/layout/OperationalShell.tsx"
+      used_by: "Pages that pass error string to shell"
+
+  pages_with_proper_loading_skeleton:
+    - CommandCenterDashboard
+    - AnalyticsDashboard
+    - AdminDashboard (tables only)
+    - SuperadminDashboard (tables only)
+
+  pages_with_only_inline_loading:
+    - ArmoredCarDashboard (button text 'Adding...', 'Allocating...', 'Scheduling...')
+    - LoginPage (button text 'Verifying...', 'Sending...', 'Resetting...')
+    - CalendarDashboard
+    - PerformanceDashboard
+    - MeritScoreDashboard
+    - FirearmInventory
+    - FirearmAllocation
+    - FirearmMaintenance
+    - GuardFirearmPermits
+    - ProfileDashboard
+    - UserDashboard (guard)
+    - AuditLogViewer
+    - AuditDashboard
+    - TripManagement
+
+  pages_with_empty_state_text:
+    - CalendarDashboard ("No upcoming events." — uses soc-empty-state)
+    - ArmoredCarDashboard ("No vehicles found" — inline)
+    - PerformanceDashboard ("No performance data available" — inline)
+    - MeritScoreDashboard ("No merit scores available yet" — inline)
+    - FirearmAllocation ("No allocations found" — inline)
+    - FirearmMaintenance ("No maintenance records found" — inline)
+    - GuardFirearmPermits ("No permits found" — inline)
+    - AuditLogViewer ("No audit events found for the selected filters" — inline)
+    - AnalyticsDashboard ("No analytics data available" — inline)
+    - AdminDashboard ("No schedules found" — inline)
+    - SuperadminDashboard ("No schedules found", "No missions found" — inline)
+    - ActionInbox (soc-empty-state class)
+    - GuardInboxPanel (soc-empty-state class)
+    - WorkflowTimeline (soc-empty-state class)
+    - Timeline ("No events scheduled today" — soc-empty-state)
+    - ActivityFeed (soc-empty-state with configurable emptyLabel)
+
+  pages_without_visible_empty_state: []
+
+css_design_tokens:
+  spacing:
+    - "--space-unit: 8px"
+    - "--space-1 through --space-6 (0.25rem to 1.5rem)"
+  radii:
+    - "--radius-card: 10px"
+    - "--radius-sm: 0.5rem"
+    - "--radius-md: 0.75rem"
+    - "--radius-lg: 1rem"
+    - "--radius-pill: 999px"
+  colors_light:
+    background: "#f5f7fb"
+    surface: "#ffffff"
+    surface_elevated: "#f3f6fb"
+    surface_hover: "#eef3f9"
+    text_primary: "#111827"
+    text_secondary: "#6b7280"
+    text_tertiary: "#94a3b8"
+    border: "#e5e7eb"
+    border_subtle: "#e8edf5"
+    border_elevated: "#c7d2e0"
+    info: "#2563eb"
+    success: "#16a34a"
+    warning: "#ca8a04"
+    danger: "#dc2626"
+    primary: "#0f4ccf"
+    accent: "#0891b2"
+  colors_dark:
+    background: "#0b1220"
+    surface: "#111827"
+    surface_elevated: "#172133"
+    surface_hover: "#1c2940"
+    text_primary: "#e5e7eb"
+    text_secondary: "#9ca3af"
+    info: "#38bdf8"
+    success: "#22c55e"
+    warning: "#eab308"
+    danger: "#ef4444"
+    primary: "#38bdf8"
+    accent: "#22d3ee"
+  shadows:
+    - "--shadow-bento (subtle card shadow)"
+    - "--shadow-bento-hover (elevated card hover)"
+    - "--shadow-elevated (high elevation)"
+    - "--shadow-modal (dialog/modal shadow)"
+  z_index_stack:
+    - "--z-base: 0"
+    - "--z-map: 5"
+    - "--z-sticky: 20"
+    - "--z-header: 30"
+    - "--z-drawer-backdrop: 40"
+    - "--z-guard-sticky-region: 42"
+    - "--z-drawer: 48"
+    - "--z-floating: 60"
+    - "--z-mobile-nav: 64"
+    - "--z-toast: 80"
+    - "--z-banner: 82"
+    - "--z-rate-limit: 84"
+    - "--z-overlay: 100"
+    - "--z-modal-inbox: 104"
+    - "--z-modal-settings: 106"
+    - "--z-modal-profile: 108"
+    - "--z-modal: 110"
+
+  utility_classes:
+    typography:
+      - "soc-page-title (22px, 800 weight, uppercase)"
+      - "soc-section-title (16px, 700 weight, uppercase)"
+      - "soc-card-title (14px, 700 weight, uppercase)"
+      - "soc-body (13px)"
+      - "soc-label (11px, 700, uppercase, 0.12em tracking)"
+    cards:
+      - "command-panel (gradient surface + inset info glow)"
+      - "soc-dashboard-card (gradient surface + hover lift)"
+      - "bento-card (similar gradient surface + hover lift)"
+      - "status-live-card (subtle card with hover)"
+      - "soc-surface (rounded, bordered, bento shadow)"
+      - "soc-kpi (gradient card with label/value pattern)"
+    buttons:
+      - "soc-btn (uppercase, rounded, info-tinted)"
+      - "soc-btn-primary (gradient primary → primary-hover)"
+      - "soc-btn-secondary (elevated surface)"
+      - "soc-btn-success / soc-btn-danger / soc-btn-neutral"
+      - "terminal-login-btn (gradient blue, glow effects)"
+    status:
+      - "status-bar-success / warning / critical / info (inset left border)"
+      - "status-light + status-light-success/info/warning/danger (dot with glow)"
+      - "status-light-pulse (pulsing animation)"
+      - "soc-chip + status-warning/danger/success/info/neutral (pill badges)"
+      - "status-badge + status-badge-pending/accepted/declined (shift swap badges)"
+    sidebar:
+      - "soc-sidebar-shell (frosted glass background)"
+      - "soc-sidebar-accent (gradient accent line)"
+      - "soc-sidebar-heading (muted section label)"
+      - "soc-sidebar-nav-item / soc-sidebar-nav-item-active (nav button + active state)"
+      - "soc-sidebar-logout (danger-soft styled)"
+    roles:
+      - "soc-role-chip / soc-role-chip-admin / soc-role-chip-guard"
+    alerts:
+      - "soc-alert-error / soc-alert-success"
+      - "soc-auth-alert-success / soc-auth-alert-error"
+      - "soc-warning-banner"
+    modals:
+      - "soc-modal-backdrop / soc-modal-panel"
+    tables:
+      - "table-glass / thead-glass"
+    loading:
+      - "soc-skeleton (shimmer animation)"
+      - "soc-empty-state (dashed border, centered text)"
+    guard:
+      - "guard-section-frame / guard-kpi-row / guard-sticky-main / guard-sticky-region / guard-sticky-inner / guard-sticky-nav / guard-sticky-action-row"
+    tones:
+      - "tone-guard-surface / tone-vehicle-surface / tone-mission-surface / tone-maintenance-surface / tone-analytics-surface"
+      - "soc-chip.tone-guard/vehicle/mission/maintenance/analytics"
+    animations:
+      - "animate-section-enter (staggered fade-in-up)"
+      - "soc-animated-entry (single fade-in-up)"
+      - "login-radar-sweep / login-atmosphere (login page effects)"
+      - "map-grid-surface / map-radar-sweep / map-radar-ping (map effects)"
+      - "critical-glow (pulsing danger card)"
+    misc:
+      - "skip-link (accessible skip navigation)"
+      - "sr-only (screen reader only)"
+      - "soc-scroll-area (scroll gutter + overscroll contain)"
+      - "soc-section-badge (info pill badge)"
+      - "soc-avatar-gradient"
+      - "soc-dropdown-surface / soc-menu-item / soc-menu-item-danger"
+      - "soc-notification-trigger / soc-notification-unread / soc-notification-read"
+      - "soc-link-button"
+      - "soc-icon-muted"
+      - "soc-settings-drawer"
+      - "soc-timeline-item (vertical timeline with left line)"
+
+  animations_keyframes:
+    - "pulse-critical (danger glow oscillation, 1.8s)"
+    - "fade-in-up (opacity + translateY, 240ms)"
+    - "radar-sweep (360deg rotation, 12s and 8s variants)"
+    - "status-pulse (opacity + scale, 2.4s)"
+    - "map-ping (expanding ring, 2.8s)"
+    - "shimmer (background position slide, 1.4s)"
+    - "sentinel-ring-expand (scale 1→2.25, opacity fade)"
+    - "sentinel-beam-rotate (3-step 360deg, 2.6s)"
+    - "sentinel-beam-opacity (3-step opacity, 2.6s)"
+    - "sentinel-iris-pulse (opacity bounce)"
+    - "sentinel-focus-ring-pulse (scale + opacity)"
+
+csp_meta_tag:
+  raw_content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.up.railway.app wss://*.up.railway.app https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+  status: "Correct. Includes Google Fonts (style-src + font-src), CartoDB tiles (connect-src), Railway (connect-src + wss), OpenStreetMap tiles (connect-src)."
+
+open_questions:
+  - question: "Should mobile bottom nav items be driven by navigation.ts instead of hardcoded in AppShell?"
+    context: "Currently sidebar and mobile nav are defined independently, creating label discrepancies (e.g. 'Mission' vs 'Overview', 'Armored Cars' vs 'Vehicles')"
+    type: nice_to_know
+    affects: []
+  - question: "Guard sidebar nav includes 'Resources' and 'Map' views — do these have corresponding route pages?"
+    context: "'resources' and 'map' are not in VIEW_TO_ROUTE and have no glyph entries"
+    type: research
+    affects: []
+
+gaps:
+  - area: "Shared EmptyState component"
+    description: "No reusable React EmptyState component exists. Each page inlines empty-state text with inconsistent styling (some use soc-empty-state class, many don't)."
+    impact: nice_to_know
+    affects: []
+  - area: "Loading skeleton coverage"
+    description: "Only 4 of ~15 page-level components use shared DashboardLoadingState or TableLoadingState. Most pages show no visual loading feedback beyond button text changes."
+    impact: research_blocker
+    affects: []
+  - area: "Section-level error boundaries"
+    description: "Only one global ErrorBoundary exists. A crash in any page component takes down the entire app view rather than isolating to that section."
+    impact: nice_to_know
+    affects: []
+  - area: "animate-section-enter underuse"
+    description: "The staggered entrance animation class is defined but only used in CommandCenterDashboard. Other dashboards don't benefit from the polished entrance."
+    impact: nice_to_know
+    affects: []

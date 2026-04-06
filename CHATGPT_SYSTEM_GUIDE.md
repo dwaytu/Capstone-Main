@@ -489,6 +489,7 @@ Current frontend reality:
   - `DasiaAIO-Frontend/src/App.tsx` now shows a version-scoped "What's New" dialog after release upgrades, populated from `VITE_WHATS_NEW` and persisted so each version is shown once.
   - `DasiaAIO-Frontend/src/App.tsx` now includes connectivity resilience UX: online/offline listeners, recurring backend health probe, and a persistent disconnected banner when backend/network is unavailable.
   - Mobile bottom quick-navigation in `App.tsx` is currently disabled for guard routing so guard navigation remains single-sourced in `UserDashboard.tsx`.
+  - Elevated-role mobile bottom tabs are now primary in `DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx` (`Dashboard`, `Approvals`, `Schedule`, `Alerts`, `More`), while `DasiaAIO-Frontend/src/components/layout/AppShell.tsx` only provides fallback mobile tabs for non-OperationalShell routes to avoid duplicate mobile navigation bars.
   - `UserDashboard.tsx` now uses a mission-first guard shell with no sidebar, persistent action buttons, a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`), and shared top-right header actions for quick inbox, settings, and profile access.
   - Floating runtime notices in `App.tsx` (update/location/error banners) account for safe-area offsets without depending on bottom quick-nav spacing.
   - Core shell touch-target tuning:

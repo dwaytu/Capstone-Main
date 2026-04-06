@@ -8,6 +8,8 @@
 	"settings": {
 		"java.configuration.updateBuildConfiguration": "automatic",
 		"workbench.browser.openLocalhostLinks": true,
-		"workbench.browser.enableChatTools": true
+		"workbench.browser.enableChatTools": true,
+		"chatgpt.openOnStartup": false,
+		"chatgpt.runCodexInWindowsSubsystemForLinux": true
 	}
 }

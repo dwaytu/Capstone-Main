@@ -1,0 +1,652 @@
+plan_id: dashboard-audit
+objective: "Deep-dive into all dashboard and page components to catalog structure, quality, patterns, and improvement opportunities"
+focus_area: dashboard_components
+created_at: "2026-04-05T00:00:00Z"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - 22 page/dashboard components totaling ~8,500 lines; 3 mega-components (SuperadminDashboard 1780, AdminDashboard 1140, UserDashboard 1165) contain duplicated sub-components (UserAvatar, RoleBadge, StatusIndicator, utility functions).
+  - Shell inconsistency: AdminDashboard and SuperadminDashboard use OperationalShell; 8 resource pages (Firearms, Permits, Maintenance, etc.) import Sidebar+Header directly with hardcoded navItems; AnalyticsDashboard/AuditDashboard/TripManagement are shell-less embedded content panels.
+  - Loading/empty/error state quality varies wildly: CommandCenter and Analytics have exemplary DashboardLoadingState; resource pages use bare "Loading..." text with hardcoded indigo-600 color (off-token); 2 stub components (GuardSchedule, ReportsAnalytics) render a single div.
+  - 5 resource pages (FirearmInventory, FirearmAllocation, FirearmMaintenance, GuardFirearmPermits, ArmoredCarDashboard) duplicate a hardcoded navItems array instead of using getSidebarNav() from config/navigation.
+  - Mobile responsiveness: All major dashboards use responsive grid classes (grid-cols-1 md:grid-cols-3); CalendarDashboard is the most responsive with dedicated mobile filter toggles. Resource table pages have overflow-x-auto but no card-based mobile layout.
+
+research_metadata:
+  methodology: "Hybrid retrieval (file_search + grep_search + read_file); relationship discovery via import tracing; sequential analysis of 22 component files"
+  scope: "All dashboard, page, and view components under DasiaAIO-Frontend/src/components/"
+  confidence: high
+  coverage: 95
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: CommandCenterDashboard.tsx
+    path: components/dashboard/CommandCenterDashboard.tsx
+    purpose: "Superadmin real-time operational command center — the primary SOC view"
+    key_elements:
+      - element: CommandCenterDashboard
+        type: function
+        location: "CommandCenterDashboard.tsx:43"
+        description: "Main FC component; takes quickActions prop; uses 9 custom hooks for live data"
+      - element: 15s auto-refresh cycle
+        type: pattern
+        location: "CommandCenterDashboard.tsx:71-98"
+        description: "Sequential refresh of all data hooks every 15 seconds with cancellation"
+      - element: isBootstrapping guard
+        type: pattern
+        location: "CommandCenterDashboard.tsx:62-66"
+        description: "Shows DashboardLoadingState while all hooks are loading simultaneously"
+    language: TypeScript/React
+    lines: 393
+
+  - file: AdminDashboard.tsx
+    path: components/AdminDashboard.tsx
+    purpose: "Admin role dashboard — user management, approvals, schedule management"
+    key_elements:
+      - element: AdminDashboard
+        type: function
+        location: "AdminDashboard.tsx:163"
+        description: "1140-line mega-component; manages users, approvals, schedules; uses OperationalShell"
+      - element: UserAvatar / RoleBadge / StatusIndicator
+        type: class
+        location: "AdminDashboard.tsx:88-135"
+        description: "Inline sub-components DUPLICATED from SuperadminDashboard"
+      - element: fetchUsers / fetchApprovals / fetchShifts
+        type: function
+        location: "AdminDashboard.tsx:~200-350"
+        description: "Direct fetch calls to /api/users, /api/users/pending, /api/guard-replacement/shifts"
+    language: TypeScript/React
+    lines: 1140
+
+  - file: SuperadminDashboard.tsx
+    path: components/admin/SuperadminDashboard.tsx
+    purpose: "Superadmin full management view — all AdminDashboard features plus trips, analytics, audit, missions"
+    key_elements:
+      - element: SuperadminDashboard
+        type: function
+        location: "admin/SuperadminDashboard.tsx:192"
+        description: "1780-line mega-component; largest in codebase; combines every admin view plus inbox panels"
+      - element: Duplicated utilities
+        type: pattern
+        location: "admin/SuperadminDashboard.tsx:50-180"
+        description: "isUserOnline, truncateText, getRelativeLastLogin, getPreciseLastSeen, getUserDerivedStatus, UserAvatar, RoleBadge, StatusIndicator — all duplicated from AdminDashboard"
+      - element: Lazy-loaded AuditDashboard
+        type: pattern
+        location: "admin/SuperadminDashboard.tsx:30"
+        description: "Uses React.lazy() for AuditDashboard — only lazy load in the codebase"
+    language: TypeScript/React
+    lines: 1780
+
+  - file: UserDashboard.tsx (guard)
+    path: components/guards/UserDashboard.tsx
+    purpose: "Guard workspace — mission briefing, check-in/out, incidents, resources, support, map"
+    key_elements:
+      - element: UserDashboard
+        type: function
+        location: "guards/UserDashboard.tsx:109"
+        description: "1165-line guard experience; tab-based (inbox, mission, resources, support, map)"
+      - element: Offline queue integration
+        type: pattern
+        location: "guards/UserDashboard.tsx:~120-130"
+        description: "Uses enqueueOfflineAction/getPendingCount for offline-first guard actions"
+      - element: Location tracking
+        type: pattern
+        location: "guards/UserDashboard.tsx:~145-155"
+        description: "GPS consent, accuracy modes, location permission state management"
+      - element: PanicButton + EmergencyContactsBar
+        type: pattern
+        location: "guards/UserDashboard.tsx imports"
+        description: "Fixed-position emergency UI elements for guard safety"
+    language: TypeScript/React
+    lines: 1165
+
+  - file: CalendarDashboard.tsx
+    path: components/CalendarDashboard.tsx
+    purpose: "Operational calendar — shifts, trips, missions, maintenance events on a monthly grid"
+    key_elements:
+      - element: CalendarDashboard
+        type: function
+        location: "CalendarDashboard.tsx:157"
+        description: "822-line component; fetches 4 event types; role-aware (admin sees all, guard sees own)"
+      - element: Custom calendar grid
+        type: pattern
+        location: "CalendarDashboard.tsx:~600-750"
+        description: "Hand-rolled month grid with event dots and day selection"
+      - element: Operational state mapping
+        type: function
+        location: "CalendarDashboard.tsx:95-107"
+        description: "Maps event status to scheduled/active/attention/completed with action recommendations"
+    language: TypeScript/React
+    lines: 822
+
+  - file: PerformanceDashboard.tsx
+    path: components/PerformanceDashboard.tsx
+    purpose: "Guard reliability metrics — attendance, mission performance, permit compliance rankings"
+    key_elements:
+      - element: PerformanceDashboard
+        type: function
+        location: "PerformanceDashboard.tsx:28"
+        description: "161-line component; single API call; displays table with progress bars"
+    language: TypeScript/React
+    lines: 161
+
+  - file: MeritScoreDashboard.tsx
+    path: components/MeritScoreDashboard.tsx
+    purpose: "Guard merit scoring — rankings, individual score breakdown, evaluation submission, SVG trend chart"
+    key_elements:
+      - element: MeritScoreDashboard
+        type: function
+        location: "MeritScoreDashboard.tsx:131"
+        description: "502-line component; rankings list + guard detail + evaluation form"
+      - element: RatingTrendChart
+        type: function
+        location: "MeritScoreDashboard.tsx:70-110"
+        description: "Native SVG polyline chart for client rating trends over time"
+    language: TypeScript/React
+    lines: 502
+
+  - file: AnalyticsDashboard.tsx
+    path: components/AnalyticsDashboard.tsx
+    purpose: "Operational intelligence — overview stats, KPI tracking, resource utilization, mission insights"
+    key_elements:
+      - element: AnalyticsDashboard
+        type: function
+        location: "AnalyticsDashboard.tsx:72"
+        description: "441-line shell-less panel; richest use of shared UI components (StatCard, MetricStatCard, DashboardCard)"
+      - element: DashboardLoadingState usage
+        type: pattern
+        location: "AnalyticsDashboard.tsx:100-107"
+        description: "Exemplary loading state with hero cards + lower sections skeleton"
+      - element: Operational insights engine
+        type: pattern
+        location: "AnalyticsDashboard.tsx:155-200"
+        description: "Dynamic insights generated from KPI delta analysis"
+    language: TypeScript/React
+    lines: 441
+
+  - file: AuditDashboard.tsx
+    path: components/AuditDashboard.tsx
+    purpose: "Audit log viewer — filterable log table + AI anomaly detection + user activity heatmap + timeline"
+    key_elements:
+      - element: AuditDashboard
+        type: function
+        location: "AuditDashboard.tsx:40"
+        description: "436-line shell-less panel; uses custom hooks (useAuditLogs, useAuditIntelligence)"
+      - element: Anomaly detection
+        type: pattern
+        location: "AuditDashboard.tsx:55-75"
+        description: "AI-powered anomaly fetching with 45s auto-refresh interval"
+      - element: Heatmap + Timeline
+        type: pattern
+        location: "AuditDashboard.tsx:95-120"
+        description: "24-hour activity heatmap and operational story timeline from log data"
+    language: TypeScript/React
+    lines: 436
+
+  - file: ProfileDashboard.tsx
+    path: components/ProfileDashboard.tsx
+    purpose: "User profile/account settings page wrapper"
+    key_elements:
+      - element: ProfileDashboard
+        type: function
+        location: "ProfileDashboard.tsx:14"
+        description: "56-line thin wrapper; imports own Sidebar+Header; delegates to ProfileModalContent"
+    language: TypeScript/React
+    lines: 56
+
+  - file: FirearmInventory.tsx
+    path: components/FirearmInventory.tsx
+    purpose: "Firearm inventory CRUD — list all firearms, add new firearms"
+    key_elements:
+      - element: FirearmInventory
+        type: function
+        location: "FirearmInventory.tsx:25"
+        description: "231-line component; hardcoded navItems; direct Sidebar+Header import; CRUD forms"
+    language: TypeScript/React
+    lines: 231
+
+  - file: FirearmAllocation.tsx
+    path: components/FirearmAllocation.tsx
+    purpose: "Firearm allocation management — issue firearms to guards"
+    key_elements:
+      - element: FirearmAllocation
+        type: function
+        location: "FirearmAllocation.tsx:35"
+        description: "279-line component; hardcoded navItems; fetches guards+firearms for allocation form"
+    language: TypeScript/React
+    lines: 279
+
+  - file: FirearmMaintenance.tsx
+    path: components/FirearmMaintenance.tsx
+    purpose: "Firearm maintenance records — table of maintenance history"
+    key_elements:
+      - element: FirearmMaintenance
+        type: function
+        location: "FirearmMaintenance.tsx:23"
+        description: "146-line read-only table; hardcoded navItems; overdue highlighting"
+    language: TypeScript/React
+    lines: 146
+
+  - file: GuardFirearmPermits.tsx
+    path: components/GuardFirearmPermits.tsx
+    purpose: "Firearm permit records — permit status table"
+    key_elements:
+      - element: GuardFirearmPermits
+        type: function
+        location: "GuardFirearmPermits.tsx:26"
+        description: "145-line read-only table; hardcoded navItems; expiry highlighting"
+    language: TypeScript/React
+    lines: 145
+
+  - file: ArmoredCarDashboard.tsx
+    path: components/ArmoredCarDashboard.tsx
+    purpose: "Armored car fleet management — inventory, allocations, maintenance, trips in tabbed view"
+    key_elements:
+      - element: ArmoredCarDashboard
+        type: function
+        location: "ArmoredCarDashboard.tsx:87"
+        description: "766-line component; hardcoded navItems; 4-tab UI (inventory, allocations, maintenance, trips)"
+      - element: Sequential N+1 maintenance fetch
+        type: pattern
+        location: "ArmoredCarDashboard.tsx:155-170"
+        description: "Fetches maintenance per-car in a loop — N+1 API problem"
+    language: TypeScript/React
+    lines: 766
+
+  - file: TripManagement.tsx
+    path: components/TripManagement.tsx
+    purpose: "Active trip monitoring — trip list with status updates and detail drill-down"
+    key_elements:
+      - element: TripManagement
+        type: function
+        location: "TripManagement.tsx:39"
+        description: "317-line shell-less panel; 30s auto-refresh; trip status transitions"
+    language: TypeScript/React
+    lines: 317
+
+  - file: GuardSchedule.tsx
+    path: components/GuardSchedule.tsx
+    purpose: "Guard schedule view — STUB"
+    key_elements:
+      - element: GuardSchedule
+        type: function
+        location: "GuardSchedule.tsx:3"
+        description: "7-line stub with a single div and h2; uses hardcoded text-gray-800 (off-token)"
+    language: TypeScript/React
+    lines: 7
+
+  - file: ReportsAnalytics.tsx
+    path: components/ReportsAnalytics.tsx
+    purpose: "Reports & Analytics — STUB"
+    key_elements:
+      - element: ReportsAnalytics
+        type: function
+        location: "ReportsAnalytics.tsx:3"
+        description: "7-line stub with a single div and h2; uses hardcoded text-gray-800 (off-token)"
+    language: TypeScript/React
+    lines: 7
+
+  - file: GuardSupportTab.tsx
+    path: components/dashboard/GuardSupportTab.tsx
+    purpose: "Guard support workspace tab — emergency contacts, field instructions, schedule requests, tickets, shift swaps"
+    key_elements:
+      - element: GuardSupportTab
+        type: function
+        location: "GuardSupportTab.tsx:52"
+        description: "223-line tab panel; collapsible forms; uses shared DashboardCard and SectionHeader"
+    language: TypeScript/React
+    lines: 223
+
+  - file: SettingsDashboard.tsx
+    path: components/settings/SettingsDashboard.tsx
+    purpose: "Settings page layout wrapper — title, description, children slot"
+    key_elements:
+      - element: SettingsDashboard
+        type: function
+        location: "settings/SettingsDashboard.tsx:10"
+        description: "17-line presentational wrapper component"
+    language: TypeScript/React
+    lines: 17
+
+  - file: OperationalShell.tsx
+    path: components/layout/OperationalShell.tsx
+    purpose: "Shared page shell providing Sidebar + Header + scroll area + error display"
+    key_elements:
+      - element: OperationalShell
+        type: function
+        location: "layout/OperationalShell.tsx:24"
+        description: "80-line wrapper; includes skip-link, Sidebar, Header, scroll area, error banner"
+    language: TypeScript/React
+    lines: 80
+
+  - file: DashboardLoadingState.tsx
+    path: components/dashboard/ui/DashboardLoadingState.tsx
+    purpose: "Skeleton loading states for dashboard pages"
+    key_elements:
+      - element: DashboardLoadingState
+        type: function
+        location: "dashboard/ui/DashboardLoadingState.tsx"
+        description: "138-line file with DashboardLoadingState and TableLoadingState skeleton components"
+    language: TypeScript/React
+    lines: 138
+
+patterns_found:
+  - category: architecture
+    pattern: "Shell duplication — two patterns coexist"
+    description: |
+      AdminDashboard and SuperadminDashboard use the OperationalShell wrapper (which includes Sidebar, Header, skip-link).
+      8 standalone resource pages (FirearmInventory, FirearmAllocation, FirearmMaintenance, GuardFirearmPermits,
+      ArmoredCarDashboard, PerformanceDashboard, MeritScoreDashboard, ProfileDashboard, CalendarDashboard)
+      import Sidebar and Header directly, re-implementing the shell pattern each time.
+      3 components (AnalyticsDashboard, AuditDashboard, TripManagement) are shell-less content panels
+      rendered inside a parent shell.
+    examples:
+      - file: FirearmInventory.tsx
+        location: "FirearmInventory.tsx:5-6"
+        snippet: "import Sidebar from './Sidebar'\nimport Header from './Header'"
+      - file: AdminDashboard.tsx
+        location: "AdminDashboard.tsx:8"
+        snippet: "import OperationalShell from './layout/OperationalShell'"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Hardcoded navItems arrays in resource pages"
+    description: |
+      FirearmInventory, FirearmAllocation, FirearmMaintenance, GuardFirearmPermits, and ArmoredCarDashboard
+      each contain an identical hardcoded navItems array (~14 items). These do not use getSidebarNav() from
+      config/navigation.ts. Any nav structure change must be updated in 6+ places.
+    examples:
+      - file: FirearmInventory.tsx
+        location: "FirearmInventory.tsx:38-52"
+        snippet: "const navItems = [\n  { view: 'dashboard', label: 'Dashboard', group: 'MAIN MENU' },\n  ..."
+      - file: FirearmMaintenance.tsx
+        location: "FirearmMaintenance.tsx:31-45"
+        snippet: "const navItems = [ ... ] // identical array"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Duplicated utility functions and sub-components across AdminDashboard and SuperadminDashboard"
+    description: |
+      The following are copy-pasted between AdminDashboard.tsx and admin/SuperadminDashboard.tsx:
+      - isUserOnline()
+      - truncateText()
+      - getRelativeLastLogin()
+      - getPreciseLastSeen()
+      - getUserDerivedStatus()
+      - UserAvatar component
+      - RoleBadge component
+      - StatusIndicator component
+      - PendingApprovalUser interface
+      - User interface
+      Total: ~120 lines duplicated verbatim.
+    examples:
+      - file: AdminDashboard.tsx
+        location: "AdminDashboard.tsx:55-135"
+        snippet: "const isUserOnline = ... const UserAvatar ... const RoleBadge ... const StatusIndicator ..."
+      - file: admin/SuperadminDashboard.tsx
+        location: "admin/SuperadminDashboard.tsx:50-175"
+        snippet: "const isUserOnline = ... const UserAvatar ... const RoleBadge ... const StatusIndicator ... (identical)"
+    prevalence: common
+
+  - category: error_handling
+    pattern: "Inconsistent loading/empty/error states across components"
+    description: |
+      Quality tiers observed:
+      GOOD: CommandCenterDashboard (DashboardLoadingState skeleton), AnalyticsDashboard (skeleton + error + empty + retry),
+            AuditDashboard (loading spinner + error display), TripManagement (error with retry button)
+      ADEQUATE: CalendarDashboard (text loading + error display), UserDashboard (isInitialLoading + syncError)
+      POOR: PerformanceDashboard, MeritScoreDashboard (text "Loading..." only, no error UI)
+      MINIMAL: FirearmInventory/Allocation/Maintenance/Permits (bare text "Loading firearms/allocations/etc..."
+               with hardcoded text-indigo-600 color; no error display on fetch failure — silently swallowed)
+      MISSING: GuardSchedule (7-line stub, no data fetching at all), ReportsAnalytics (7-line stub)
+    examples:
+      - file: AnalyticsDashboard.tsx
+        location: "AnalyticsDashboard.tsx:100-125"
+        snippet: "DashboardLoadingState + error alert with retry + null/empty guard"
+      - file: FirearmInventory.tsx
+        location: "FirearmInventory.tsx:140-142"
+        snippet: "text-indigo-600 text-lg font-medium — hardcoded color, no skeleton"
+    prevalence: common
+
+  - category: naming
+    pattern: "Off-token color usage in older components"
+    description: |
+      Several components use raw Tailwind colors (text-indigo-600, bg-red-50, text-gray-800,
+      bg-green-50, border-green-200) instead of semantic token classes (text-text-primary, bg-danger-bg,
+      text-danger-text, etc.). This breaks theme consistency.
+    examples:
+      - file: FirearmInventory.tsx
+        location: "FirearmInventory.tsx:140"
+        snippet: "text-indigo-600 text-lg font-medium"
+      - file: GuardSchedule.tsx
+        location: "GuardSchedule.tsx:4"
+        snippet: "text-gray-800"
+      - file: FirearmInventory.tsx
+        location: "FirearmInventory.tsx:148"
+        snippet: "bg-red-50 border border-red-200 text-red-700"
+    prevalence: occasional
+
+  - category: architecture
+    pattern: "N+1 API calls in ArmoredCarDashboard"
+    description: |
+      ArmoredCarDashboard fetches maintenance records in a for-loop per car, creating N+1 API calls.
+      No batch endpoint is used.
+    examples:
+      - file: ArmoredCarDashboard.tsx
+        location: "ArmoredCarDashboard.tsx:155-170"
+        snippet: "for (const car of carsData) { fetch(`/api/car-maintenance/${car.id}`) }"
+    prevalence: rare
+
+  - category: structure
+    pattern: "Mega-components with multiple concerns"
+    description: |
+      SuperadminDashboard (1780 lines) and AdminDashboard (1140 lines) contain:
+      - User management table + search/filter/bulk ops
+      - Approval workflow
+      - Schedule management
+      - Command center embedding
+      - Sub-component definitions (avatars, badges, indicators)
+      Each could be decomposed into focused modules.
+    examples:
+      - file: admin/SuperadminDashboard.tsx
+        location: "admin/SuperadminDashboard.tsx:1-1780"
+        snippet: "Single file containing user table, approvals, shifts, analytics, trips, audit, missions, inbox panels"
+    prevalence: occasional
+
+  - category: testing
+    pattern: "useEffect without cleanup on some fetches"
+    description: |
+      Some fetch effects (PerformanceDashboard, MeritScoreDashboard, FirearmInventory) use bare useEffect
+      without AbortController or isCancelled flag. CommandCenterDashboard and AuditDashboard correctly
+      implement cancellation patterns.
+    examples:
+      - file: PerformanceDashboard.tsx
+        location: "PerformanceDashboard.tsx:37-39"
+        snippet: "useEffect(() => { fetchPerformance() }, [])"
+      - file: AuditDashboard.tsx
+        location: "AuditDashboard.tsx:55-75"
+        snippet: "let disposed = false; ... return () => { disposed = true; ... }"
+    prevalence: occasional
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: OperationalShell
+      responsibility: "Shared page layout wrapper providing Sidebar + Header + skip-link + scroll area"
+      location: "components/layout/OperationalShell.tsx"
+      relationship_to_domain: "Should be used by all dashboard pages but only 3 use it"
+    - component: DashboardLoadingState
+      responsibility: "Skeleton loading UI for dashboard bootstrapping"
+      location: "components/dashboard/ui/DashboardLoadingState.tsx"
+      relationship_to_domain: "Used by CommandCenter and Analytics; should be used by all pages"
+    - component: getSidebarNav
+      responsibility: "Role-aware navigation item generator"
+      location: "config/navigation.ts"
+      relationship_to_domain: "Used by modern dashboards; 5 resource pages bypass it with hardcoded arrays"
+
+  data_flow_involving_domain: |
+    Most dashboards fetch directly from API_BASE_URL via fetch() or fetchJsonOrThrow().
+    CommandCenterDashboard uses 9 specialized hooks (useOpsSummary, useOpsShifts, etc.)
+    that encapsulate API calls and expose loading/error/refresh states.
+    AnalyticsDashboard and AuditDashboard use dedicated hooks.
+    Resource pages (Firearms, etc.) use raw fetch() without custom hooks.
+
+  key_relationships_to_domain:
+    - from: AdminDashboard
+      to: CommandCenterDashboard
+      relationship: "Embeds CommandCenterDashboard as its 'dashboard' view"
+    - from: SuperadminDashboard
+      to: CommandCenterDashboard
+      relationship: "Embeds CommandCenterDashboard as its 'dashboard' view"
+    - from: SuperadminDashboard
+      to: AnalyticsDashboard
+      relationship: "Embeds AnalyticsDashboard as 'analytics' view"
+    - from: SuperadminDashboard
+      to: AuditDashboard
+      relationship: "Lazy-loads AuditDashboard as 'audit-log' view"
+    - from: SuperadminDashboard
+      to: TripManagement
+      relationship: "Embeds TripManagement as 'trips' view"
+    - from: UserDashboard
+      to: GuardSupportTab
+      relationship: "Renders GuardSupportTab as 'support' tab"
+    - from: UserDashboard
+      to: GuardResourcesTab
+      relationship: "Renders GuardResourcesTab as 'resources' tab"
+    - from: UserDashboard
+      to: GuardMapTab
+      relationship: "Renders GuardMapTab as 'map' tab"
+
+related_conventions:
+  naming_patterns_in_domain: |
+    Dashboards: <Purpose>Dashboard.tsx (AdminDashboard, PerformanceDashboard, etc.)
+    Tabs: Guard<Purpose>Tab.tsx (GuardSupportTab, GuardResourcesTab, GuardMapTab)
+    Shell-less panels embedded inside parent dashboards have no naming suffix convention.
+    Shim/compatibility re-exports use the original name (SuperadminDashboard.tsx, UserDashboard.tsx, GuardDashboard.tsx).
+  structure_of_domain: |
+    components/ — flat structure with some domain grouping:
+      admin/ — SuperadminDashboard.tsx
+      guards/ — UserDashboard.tsx, PanicButton.tsx, EmergencyContactsBar.tsx
+      dashboard/ — CommandCenterDashboard + all SOC panels + ui/ kit
+      layout/ — OperationalShell.tsx
+      settings/ — SettingsDashboard, SettingsView, role-specific settings
+      inbox/ — Role-specific inbox panels
+      profile/ — ProfileModalContent
+      shared/ — Header (note: two Headers exist — ./Header.tsx and ./shared/Header.tsx)
+  error_handling_in_domain: |
+    Best practice: fetchJsonOrThrow + try/catch + error state + retry UI (AnalyticsDashboard, TripManagement)
+    Common: try/catch + logError + silently set empty array (Firearm pages)
+    Custom hooks: useAuditLogs, useOpsSummary etc. encapsulate error state within the hook.
+  documentation_in_domain: "Minimal; no JSDoc on components; some inline comments on complex logic"
+
+related_dependencies:
+  internal:
+    - component: OperationalShell
+      relationship_to_domain: "Shared layout that should wrap all pages"
+      direction: inbound
+    - component: config/navigation.ts (getSidebarNav)
+      relationship_to_domain: "Provides role-aware nav items"
+      direction: inbound
+    - component: context/AuthContext (User type)
+      relationship_to_domain: "Provides user identity for role-based rendering"
+      direction: inbound
+    - component: utils/api (fetchJsonOrThrow, getAuthHeaders)
+      relationship_to_domain: "Shared HTTP utilities"
+      direction: inbound
+    - component: hooks/useOpsSummary, useOpsShifts, etc.
+      relationship_to_domain: "Data hooks for CommandCenterDashboard"
+      direction: inbound
+    - component: dashboard/ui/* (StatCard, DashboardCard, SectionHeader, etc.)
+      relationship_to_domain: "Shared UI primitives for SOC panels"
+      direction: inbound
+  external:
+    - name: lucide-react
+      purpose_for_domain: "Icon library used in CommandCenterDashboard and shared UI"
+    - name: react-router
+      purpose_for_domain: "useNavigate in SuperadminDashboard for route-based navigation"
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: "User management tables"
+      location: "AdminDashboard.tsx, SuperadminDashboard.tsx"
+      concern: "Display user emails, phone numbers, license numbers; role-based row visibility is enforced"
+    - area: "Approval workflow"
+      location: "AdminDashboard.tsx:~400-500, SuperadminDashboard.tsx:~400-550"
+      concern: "approve/reject calls use getAuthHeaders() for auth; no CSRF token visible"
+    - area: "Firearm allocation"
+      location: "FirearmAllocation.tsx:130-160"
+      concern: "Issues firearms to guards via POST; uses Content-Type + auth headers"
+  authentication_patterns_in_domain: "All API calls use getAuthHeaders() which reads JWT from storage"
+  authorization_patterns_in_domain: |
+    AdminDashboard: canViewUserRow() restricts visible users by viewer role.
+    CalendarDashboard: isAdmin check determines all-shifts vs my-shifts API.
+    Resource pages: No explicit role checks in component — rely on backend RBAC.
+  data_validation_in_domain: "Form inputs use required attribute; no client-side validation beyond that"
+
+open_questions:
+  - question: "Which Header.tsx is canonical — ./Header.tsx or ./shared/Header.tsx?"
+    context: "OperationalShell imports from ../shared/Header, but 8 resource pages import from ./Header. These may be different components."
+    type: research
+    affects: ["shell-consolidation"]
+
+  - question: "Are GuardSchedule and ReportsAnalytics stubs intentionally retained or should they be removed/replaced?"
+    context: "Both are 7-line components with hardcoded gray text and no functionality. Calendar appears to have absorbed schedule functionality."
+    type: nice_to_know
+    affects: ["cleanup"]
+
+  - question: "Should AnalyticsDashboard accept user/onLogout props or remain a shell-less FC?"
+    context: "Currently defined as FC (no props). This works because it's embedded inside SuperadminDashboard's shell. If ever rendered standalone, it would need shell props."
+    type: nice_to_know
+    affects: ["shell-consolidation"]
+
+gaps:
+  - area: "AlertsCenter component not examined"
+    description: "AlertsCenter.tsx exists but was not in the research scope. May contain dashboard-like patterns."
+    impact: nice_to_know
+    affects: []
+
+  - area: "NotificationCenter/NotificationPanel not examined"
+    description: "Notification components exist and are imported by SuperadminDashboard but not analyzed in this research."
+    impact: nice_to_know
+    affects: []
+
+  - area: "Inbox panels not individually examined"
+    description: "GuardInboxPanel, SupervisorInboxPanel, AdminInboxPanel, SuperadminInboxPanel exist and are rendered inside their respective dashboards. Individual structure not analyzed."
+    impact: nice_to_know
+    affects: []
+
+# =====================================================================
+# QUALITY ASSESSMENT SUMMARY
+# =====================================================================
+# Component                    | Loading    | Empty      | Error      | Shell          | Mobile    | A11y
+# -----------------------------|------------|------------|------------|----------------|-----------|-------------
+# CommandCenterDashboard       | GOOD       | GOOD       | GOOD       | Embedded       | GOOD      | GOOD
+# AdminDashboard               | ADEQUATE   | ADEQUATE   | ADEQUATE   | OperationalShell| GOOD     | GOOD (skip-link via shell)
+# SuperadminDashboard          | ADEQUATE   | ADEQUATE   | ADEQUATE   | OperationalShell| GOOD     | GOOD (skip-link via shell)
+# UserDashboard (guard)        | GOOD       | ADEQUATE   | GOOD       | Custom         | GOOD      | GOOD (emergency UI)
+# CalendarDashboard            | ADEQUATE   | GOOD       | GOOD       | Direct Sidebar | GOOD      | ADEQUATE (skip-link present)
+# PerformanceDashboard         | POOR       | ADEQUATE   | MISSING    | Direct Sidebar | GOOD      | ADEQUATE (skip-link present)
+# MeritScoreDashboard          | POOR       | ADEQUATE   | ADEQUATE   | Direct Sidebar | GOOD      | POOR (no skip-link)
+# AnalyticsDashboard           | GOOD       | GOOD       | GOOD       | Shell-less     | GOOD      | N/A (embedded)
+# AuditDashboard               | ADEQUATE   | ADEQUATE   | ADEQUATE   | Shell-less     | ADEQUATE  | N/A (embedded)
+# ProfileDashboard             | N/A        | N/A        | N/A        | Direct Sidebar | GOOD      | ADEQUATE (skip-link present)
+# FirearmInventory             | POOR       | ADEQUATE   | POOR       | Direct Sidebar | ADEQUATE  | POOR (no skip-link, no main id)
+# FirearmAllocation            | POOR       | ADEQUATE   | POOR       | Direct Sidebar | ADEQUATE  | POOR (no skip-link, no main id)
+# FirearmMaintenance           | POOR       | ADEQUATE   | MISSING    | Direct Sidebar | ADEQUATE  | POOR (no skip-link, no main id)
+# GuardFirearmPermits          | POOR       | ADEQUATE   | MISSING    | Direct Sidebar | ADEQUATE  | POOR (no skip-link, no main id)
+# ArmoredCarDashboard          | POOR       | ADEQUATE   | ADEQUATE   | Direct Sidebar | GOOD      | ADEQUATE (skip-link present)
+# TripManagement               | ADEQUATE   | ADEQUATE   | GOOD       | Shell-less     | ADEQUATE  | N/A (embedded)
+# GuardSchedule                | STUB       | STUB       | STUB       | None           | NONE      | NONE
+# ReportsAnalytics             | STUB       | STUB       | STUB       | None           | NONE      | NONE
+# GuardSupportTab              | N/A        | ADEQUATE   | N/A        | Tab panel      | GOOD      | GOOD
+# SettingsDashboard            | N/A        | N/A        | N/A        | Wrapper        | GOOD      | GOOD
+#
+# KEY CONSOLIDATION OPPORTUNITIES:
+# 1. Migrate all 8 Sidebar+Header pages to OperationalShell (eliminates ~200 lines of boilerplate)
+# 2. Extract shared user utilities (UserAvatar, RoleBadge, StatusIndicator, etc.) to components/shared/
+# 3. Replace 5 hardcoded navItems arrays with getSidebarNav() calls
+# 4. Add DashboardLoadingState to all pages that currently show bare "Loading..." text
+# 5. Fix off-token colors (text-indigo-600, bg-red-50, text-gray-800) to use semantic tokens
+# 6. Remove or replace 2 stub components (GuardSchedule, ReportsAnalytics)
+# 7. Add AbortController/cleanup to fetch useEffects in 6 components
+# 8. Fix N+1 maintenance fetch in ArmoredCarDashboard
