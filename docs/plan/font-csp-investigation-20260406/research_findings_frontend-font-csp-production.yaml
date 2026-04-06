@@ -1,0 +1,296 @@
+plan_id: font-csp-investigation-20260406
+objective: Investigate production Rajdhani font loading signal for SENTINEL frontend and determine defect vs measurement artifact.
+focus_area: DasiaAIO-Frontend font and CSP production gating
+created_at: 2026-04-06T03:26:00Z
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Frontend source allows Google Fonts in CSP and imports both Rajdhani and Space Grotesk from one Google Fonts stylesheet.
+  - Rajdhani is imported only at weights 600 and 700, while the failing QA check uses FontFaceSet.check with an implicit 400-weight descriptor.
+  - Playwright evidence for 20260406-110438 shows no CSP font errors or request failures; only rajdhaniLoaded is false in the current assertion logic.
+  - Live browser probe confirms Rajdhani 700 check is true while Rajdhani 400 check is false on the login page.
+
+research_metadata:
+  methodology: Hybrid retrieval via semantic_search and grep_search, targeted read_file on source and evidence files, relationship discovery via vscode_listCodeUsages, external API semantics via fetch_webpage (MDN), and live runtime verification via run_in_terminal Playwright probes.
+  scope: Frontend CSS, frontend HTML CSP meta, Playwright artifact evidence under output/playwright/20260406-110438/fonts-csp, QA script logic in run-live-focused-qa.mjs, and backend CSP header middleware context for potential override paths.
+  confidence: high
+  coverage: 96
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: index.css
+    path: DasiaAIO-Frontend/src/index.css
+    purpose: Global style and typography definition, including Google Fonts import and heading/body font families.
+    key_elements:
+      - element: Google Fonts import
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:2
+        description: Imports Rajdhani with weights 600 and 700 only, and Space Grotesk with weights 400/500/600/700.
+      - element: heading font-family rule
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:383
+        description: h1-h4 use Rajdhani first, then Space Grotesk fallback.
+      - element: body font-family rule
+        type: pattern
+        location: DasiaAIO-Frontend/src/index.css:341
+        description: body uses Space Grotesk first.
+    language: css
+    lines: 1666
+
+  - file: index.html
+    path: DasiaAIO-Frontend/index.html
+    purpose: SPA entry document with CSP meta policy.
+    key_elements:
+      - element: CSP meta policy
+        type: pattern
+        location: DasiaAIO-Frontend/index.html:8
+        description: style-src includes https://fonts.googleapis.com and font-src includes https://fonts.gstatic.com.
+    language: html
+    lines: 16
+
+  - file: LoginPage.tsx
+    path: DasiaAIO-Frontend/src/components/LoginPage.tsx
+    purpose: Login screen structure where heading typography is rendered.
+    key_elements:
+      - element: mission heading
+        type: pattern
+        location: DasiaAIO-Frontend/src/components/LoginPage.tsx:487
+        description: h1 is rendered for login title and uses font-bold class (computed 700 in live probe).
+    language: typescript
+    lines: 519
+
+  - file: run-live-focused-qa.mjs
+    path: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs
+    purpose: Live-focused Playwright QA harness with font/CSP gate.
+    key_elements:
+      - element: rajdhaniLoaded check
+        type: function
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs:684
+        description: Uses document.fonts.check('16px "Rajdhani"') with implicit normal/400 descriptor.
+      - element: passFontsLoaded gate
+        type: variable
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs:709
+        description: Requires both rajdhaniLoaded and spaceGroteskLoaded to be true.
+      - element: checklist publication
+        type: pattern
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs:933
+        description: Exposes pass/fail as googleFontsRajdhaniAndSpaceGroteskWithoutCspErrors.
+    language: javascript
+    lines: 1022
+
+  - file: fonts-csp-runtime.json
+    path: DasiaAIO-Frontend/output/playwright/20260406-110438/fonts-csp/fonts-csp-runtime.json
+    purpose: Captured runtime evidence for fonts/CSP probe.
+    key_elements:
+      - element: rajdhaniLoaded false
+        type: variable
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/fonts-csp/fonts-csp-runtime.json:4
+        description: Rajdhani check is false while Space Grotesk is true.
+      - element: cspConsoleErrors and fontRequestFailures empty
+        type: variable
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/fonts-csp/fonts-csp-runtime.json:11
+        description: No captured CSP console blocking or font request failures.
+    language: json
+    lines: 17
+
+  - file: live-focused-qa-summary.json
+    path: DasiaAIO-Frontend/output/playwright/20260406-110438/live-focused-qa-summary.json
+    purpose: Aggregated QA checklist outcome for production run.
+    key_elements:
+      - element: font/CSP checklist fail
+        type: variable
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/live-focused-qa-summary.json:7
+        description: Checklist item fails because fontsLoaded=false while noCspErrors=true.
+      - element: fontInfo snapshot
+        type: variable
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/live-focused-qa-summary.json:14
+        description: rajdhaniLoaded false, spaceGroteskLoaded true, with Google Fonts stylesheet entry present.
+    language: json
+    lines: 2146
+
+  - file: security_headers.rs
+    path: DasiaAIO-Backend/src/middleware/security_headers.rs
+    purpose: Backend API security headers middleware that can emit CSP header on backend responses.
+    key_elements:
+      - element: content_security_policy default
+        type: function
+        location: DasiaAIO-Backend/src/middleware/security_headers.rs:16
+        description: Defaults to restrictive default-src 'none' unless SECURITY_CSP is configured.
+      - element: header insertion
+        type: pattern
+        location: DasiaAIO-Backend/src/middleware/security_headers.rs:43
+        description: Inserts Content-Security-Policy header into backend responses.
+    language: rust
+    lines: 56
+
+  - file: main.rs
+    path: DasiaAIO-Backend/src/main.rs
+    purpose: Backend router assembly and middleware chain.
+    key_elements:
+      - element: security headers middleware layer
+        type: pattern
+        location: DasiaAIO-Backend/src/main.rs:1584
+        description: Applies security headers middleware to backend routes.
+    language: rust
+    lines: 1610
+
+patterns_found:
+  - category: testing
+    pattern: FontFaceSet.check invoked with implicit 400 weight for Rajdhani.
+    description: The gate checks Rajdhani using a descriptor that defaults to normal/400, while imported Rajdhani weights are 600 and 700.
+    examples:
+      - file: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs:684
+        snippet: const rajdhaniLoaded = supportsFontsApi ? document.fonts.check('16px "Rajdhani"') : false;
+      - file: DasiaAIO-Frontend/src/index.css
+        location: DasiaAIO-Frontend/src/index.css:2
+        snippet: family=Rajdhani:wght@600;700
+    prevalence: common
+
+  - category: structure
+    pattern: CSP meta allowlist includes Google Fonts domains in frontend entrypoint.
+    description: Current frontend policy explicitly permits fonts.googleapis.com for styles and fonts.gstatic.com for font files.
+    examples:
+      - file: DasiaAIO-Frontend/index.html
+        location: DasiaAIO-Frontend/index.html:8
+        snippet: style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;
+    prevalence: common
+
+  - category: architecture
+    pattern: QA gate conflates font availability check with CSP-blocking check.
+    description: passOverall depends on both font descriptor checks and noCspErrors, so a descriptor mismatch alone flips the checklist fail state.
+    examples:
+      - file: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs:709
+        snippet: result.passFontsLoaded = Boolean(result.fontInfo?.rajdhaniLoaded && result.fontInfo?.spaceGroteskLoaded);
+      - file: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs
+        location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs:711
+        snippet: result.passOverall = result.passFontsLoaded && result.passNoCspErrors;
+    prevalence: common
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: Global typography and import layer
+      responsibility: Declares font imports and page-wide heading/body font stacks.
+      location: DasiaAIO-Frontend/src/index.css
+      relationship_to_domain: domain depends on this
+    - component: Login page heading
+      responsibility: Renders h1 text that uses heading typography rules.
+      location: DasiaAIO-Frontend/src/components/LoginPage.tsx
+      relationship_to_domain: domain depends on this
+    - component: Live QA font/CSP probe
+      responsibility: Computes font booleans and emits checklist pass/fail.
+      location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs
+      relationship_to_domain: this uses domain outputs
+    - component: Backend security header middleware
+      responsibility: Adds CSP header for backend API responses.
+      location: DasiaAIO-Backend/src/middleware/security_headers.rs
+      relationship_to_domain: related but separate serving path for investigated frontend host
+  interfaces_used_by_domain:
+    - interface: document.fonts.check
+      location: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs:684
+      usage_pattern: Font readiness probe using CSS font shorthand descriptor.
+    - interface: meta http-equiv Content-Security-Policy
+      location: DasiaAIO-Frontend/index.html:8
+      usage_pattern: Frontend CSP policy embedded in document head.
+  data_flow_involving_domain: index.css imports Google Fonts stylesheet; login page renders heading/body text with declared families; Playwright probe reads FontFaceSet status and runtime console/request failures; summary checklist computes pass/fail from those values.
+  key_relationships_to_domain:
+    - from: runFontAndCspCheck
+      to: summary.checklist.googleFontsRajdhaniAndSpaceGroteskWithoutCspErrors
+      relationship: calls
+    - from: LoginPage h1
+      to: global h1/h2/h3/h4 CSS rule
+      relationship: composes
+    - from: frontend index.html CSP meta
+      to: Google Fonts stylesheet request
+      relationship: permits
+
+related_technology_stack:
+  languages_used_in_domain:
+    - CSS
+    - HTML
+    - TypeScript
+    - JavaScript
+    - Rust
+  frameworks_used_in_domain:
+    - name: React 18
+      usage_in_domain: Login UI rendering for heading/body typography.
+    - name: Playwright
+      usage_in_domain: Runtime font/CSP verification harness.
+  libraries_used_in_domain:
+    - name: Google Fonts CSS API
+      purpose_in_domain: Provides Rajdhani and Space Grotesk @font-face declarations.
+  external_apis_used_in_domain:
+    - name: FontFaceSet API
+      integration_point: document.fonts.check and document.fonts.load in browser runtime checks.
+
+related_conventions:
+  naming_patterns_in_domain: Timestamped Playwright output directories with scenario-specific runtime and screenshot artifacts.
+  structure_of_domain: Font policy is split between global CSS import, CSP meta in entry HTML, and QA check script logic.
+  error_handling_in_domain: QA scripts treat CSP console errors and request failures as hard-fail signals.
+  testing_in_domain: Headless Playwright checks write structured JSON evidence and screenshots under output/playwright.
+  documentation_in_domain: AGENTS.md explicitly states Google Fonts CSP requirements and typography intent.
+
+related_dependencies:
+  internal:
+    - component: DasiaAIO-Frontend/src/index.css
+      relationship_to_domain: Source of imported font weights and font-family assignments.
+      direction: outbound
+    - component: DasiaAIO-Frontend/src/components/LoginPage.tsx
+      relationship_to_domain: Runtime heading element whose computed style drives actual Rajdhani usage.
+      direction: outbound
+    - component: DasiaAIO-Frontend/output/playwright/20260406-110438/run-live-focused-qa.mjs
+      relationship_to_domain: Applies gating logic using font and CSP runtime signals.
+      direction: inbound
+  external:
+    - name: https://fonts.googleapis.com
+      purpose_for_domain: Hosted stylesheet containing Rajdhani and Space Grotesk declarations.
+    - name: https://fonts.gstatic.com
+      purpose_for_domain: Hosted font binaries referenced by Google Fonts CSS.
+
+domain_security_considerations:
+  sensitive_areas:
+    - area: Frontend CSP policy for style and font origins
+      location: DasiaAIO-Frontend/index.html:8
+      concern: Overly restrictive style-src/font-src would block external font resources.
+    - area: Backend CSP header default
+      location: DasiaAIO-Backend/src/middleware/security_headers.rs:16
+      concern: Default policy is default-src 'none' for backend responses if SECURITY_CSP is unset.
+  authentication_patterns_in_domain: Not applicable to this font-loading investigation.
+  authorization_patterns_in_domain: Not applicable to this font-loading investigation.
+  data_validation_in_domain: Not applicable to this font-loading investigation.
+
+testing_patterns:
+  framework: Playwright (Node.js mjs harnesses)
+  coverage_areas:
+    - Runtime font readiness booleans via FontFaceSet API
+    - CSP-related console error capture
+    - Font-related request failure capture
+    - Evidence screenshot and JSON artifact generation
+  test_organization: Timestamped output directories with one script per run and generated summary/runtime files.
+  mock_patterns:
+    - No mocks in the investigated live-focused run; checks execute against production URL.
+
+open_questions:
+  - question: Which non-ephemeral script path is the canonical source for the font/CSP gate logic?
+    context: Investigated logic resides in timestamped output directories, which complicates durable patch targeting.
+    type: decision_blocker
+    affects: [font-csp-investigation-20260406]
+
+  - question: Should the gate validate exact heading-weight descriptor readiness or only no-CSP-blocking plus visual/computed-style evidence?
+    context: FontFaceSet.check semantics are descriptor-dependent and can return true/false without directly proving visual family substitution intent.
+    type: research
+    affects: [font-csp-investigation-20260406]
+
+gaps:
+  - area: Canonical QA harness ownership
+    description: No stable tests/ or scripts/ path was identified for the same gate logic; current checks are found in output/playwright timestamped scripts.
+    impact: research_blocker
+    affects: [font-csp-investigation-20260406]
+
+  - area: Persisted evidence for live probe command output
+    description: Additional verification (Rajdhani 700 true, Rajdhani 400 false, heading computed weight 700) was captured in terminal output, not persisted as a workspace artifact file.
+    impact: nice_to_know
+    affects: [font-csp-investigation-20260406]

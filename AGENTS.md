@@ -83,7 +83,7 @@ apps/desktop-tauri/      Tauri wrapper for desktop (Windows/macOS/Linux)
 - **No fake telemetry**: Monitoring nodes ticker was removed. Do not re-add decorative status indicators.
 
 ## Map & Theme Conventions
-- **Map tiles are theme-aware**: `OperationalMapPanel.tsx` uses CartoDB `dark_all` in dark mode and `voyager` in light mode via `useTheme()`. Do not hardcode a single tile URL.
+- **Map tiles are theme-aware**: `OperationalMapPanel.tsx` uses CartoDB `dark_all` in dark mode and `rastertiles/voyager` in light mode via `useTheme()`. Do not hardcode a single tile URL.
 - **CSP policy** in `index.html` must include `https://fonts.googleapis.com` in `style-src` and `https://*.basemaps.cartocdn.com` in `connect-src` for fonts and map tiles to load.
 - **Typography**: Space Grotesk (body) + Rajdhani (headings) loaded via `@import` in `index.css`. If CSP `style-src` is modified, ensure `fonts.googleapis.com` remains allowed.
 - **Status bar indicators** use `inset 5px 0 0 0` box-shadow (not border) for colored left accents.
