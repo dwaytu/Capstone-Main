@@ -14,6 +14,23 @@ When the user asks for QA, UI review, browser testing, acceptance validation, re
 1. `SENTINEL QA lead`
 2. `Gem Team orchestrator prompter`
 
+## SENTINEL Development Team Memory
+
+The repo now has a repo-specific delivery squad layered on top of the broader Gem model:
+
+- `sentinel-orchestrator`
+- `sentinel-planner`
+- `sentinel-backend-engineer`
+- `sentinel-frontend-engineer`
+- `sentinel-qa-lead`
+- `sentinel-security-reviewer`
+- `sentinel-release-manager`
+
+Default behavior:
+- use `sentinel-orchestrator` for repo-local implementation coordination
+- use `sentinel-qa-lead` for acceptance, browser validation, and release-readiness checks
+- keep Gem Team as a fallback or compatibility layer for existing plan-driven workflows and broader orchestration prompts
+
 ## Gem Team Memory
 
 Gem Team is the repo's preferred multi-agent orchestration framework for spec-driven work.
@@ -45,7 +62,7 @@ If recent QA artifacts exist under `DasiaAIO-Frontend/output/playwright/`, use t
 
 ## Orchestrator Prompting Mode
 
-When drafting a prompt for `gem-orchestrator`:
+When drafting a prompt for `gem-orchestrator` or `sentinel-orchestrator`:
 - Translate user intent into spec-first work, not direct implementation.
 - Include scope, in-scope/out-of-scope boundaries, non-negotiable constraints, acceptance criteria, and validation gates.
 - Reference the repo-local instruction and skill files that Gem Team should consult.

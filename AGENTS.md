@@ -107,6 +107,8 @@ apps/desktop-tauri/      Tauri wrapper for desktop (Windows/macOS/Linux)
 
 When working inside this workspace, treat the following `.github` files as the explicit routing table for repo-local AI guidance. These files are supplementary to `AGENTS.md`; they do not replace it.
 
+- **Preferred repo-specific development team**: read `.github/agents/README.md` and use `sentinel-orchestrator` plus the `sentinel-*` specialists for planning, implementation, QA, security review, and release work.
+- **Bounded self-improvement / proactivity for the SENTINEL team**: read `.github/agents/self-improvement/README.md` and `.github/agents/self-improvement/boundaries.md`.
 - **Persistent Codex QA / Gem Team memory**: read `.github/instructions/codex-qa-gem-team.instructions.md`.
 - **Capstone paper maintenance**: read `.github/instructions/capstone-paper-maintenance.instructions.md` when editing `SENTINEL - Group 8.md`.
 - **Frontend implementation or review**: read `.github/instructions/sentinel-frontend.instructions.md` first.
@@ -122,4 +124,4 @@ When working inside this workspace, treat the following `.github` files as the e
 
 If a task overlaps multiple areas, apply the most specific routing first, then layer the supporting `.github/instructions/*` or `.github/skills/*` files that match the risk area.
 
-Unless the user explicitly chooses another workflow, treat Gem Team as the preferred multi-agent orchestration framework for substantial planning, QA handoff, and spec-driven execution in this repo.
+Unless the user explicitly chooses another workflow, treat the SENTINEL Development Team as the preferred repo-specific layer on top of Gem Team. Start with `sentinel-orchestrator`; fall back to `gem-*` agents when the broader framework is the better fit.

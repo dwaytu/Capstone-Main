@@ -1382,7 +1382,7 @@ The storyboard describes the user-facing flow of major screens and role actions 
 
 - The system will visualize guard, vehicle, and site data through a Leaflet-based operational map with theme-aware basemap tiles.
 - Live updates and proximity alerts will support real-time monitoring activities.
-- Client-site management controls (add, edit, delete) are available to elevated command roles (superadmin, administrator, and supervisor) for operational location governance.
+- Client-site management controls (add, edit, delete) are restricted to supervisor command workflows, while guard and administrative roles retain role-scoped map visibility without unauthorized tracking-management calls.
 
 Activity Diagrams (Role-Based)
 
