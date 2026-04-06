@@ -62,6 +62,8 @@ apps/desktop-tauri/      Tauri wrapper for desktop (Windows/macOS/Linux)
 - **Platform detection**: `window.Capacitor` / `window.__TAURI__` — only available after mount.
 - **CSS variable dependency**: All Tailwind colors depend on `--color-*` vars in `index.css`; changes cascade everywhere.
 - **Manual chunk splitting**: Leaflet and lucide-react are separate Vite chunks — lazy-loading may cause hydration issues.
+- **Firearm allocations API path**: use `/api/firearm-allocations` for list-style fetches. `/api/firearms/allocations` can be captured by `/api/firearms/:id` and surface noisy 404s in live polling.
+- **Shift-swap feed parity**: some backend deployments may not expose `/api/shifts/swap-requests`; frontend is expected to degrade to unavailable mode without repeated polling noise.
 
 ## Release Governance
 
