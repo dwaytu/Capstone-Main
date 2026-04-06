@@ -1344,11 +1344,15 @@ The storyboard describes the user-facing flow of major screens and role actions 
 - Guards will view personal schedules, check-in controls, and assigned resources.
 - Each role will access shared header actions for quick Inbox, settings, and profile workflows so urgent tasks and operator controls remain available without expanding sidebar navigation.
 - Elevated resource dashboards reuse the same header action contract and preserve `Inbox` and `Settings` as valid fallback routes, while the sidebar remains restricted to primary operational destinations.
+- Elevated sidebar navigation now includes `Calendar` as a primary destination for superadmin, administrator, and supervisor command workflows.
+- Elevated URL-accessible deep-link routes intentionally kept outside the sidebar include `/permits`, `/inbox`, `/profile`, `/support`, `/shift-swaps`, `/notifications`, and `/trips`.
 - Elevated-role mobile navigation now prioritizes `Dashboard`, `Approvals`, `Schedule`, `Alerts`, and `More` through shell-level tabs, while guard navigation remains mission-focused and single-sourced in the dedicated guard bottom workflow region.
 - Elevated inbox workflows now normalize approval data from the backend-managed `/api/users/pending-approvals` contract, ensuring quick Inbox surfaces remain functional when approval payloads are returned as envelope objects.
 - Elevated operational Inbox summaries now source firearm assignment data from `/api/firearm-allocations` with controlled fallback behavior, eliminating deprecated-path 404 noise previously observed in live production console traces.
 - Shift-swap feed polling now degrades to an explicit unavailable state after unsupported-route responses, so guard-facing workflows retain manual request paths without repeated backend error chatter while backend parity catches up.
 - Operational map theming now uses Carto `dark_all` in dark mode and `rastertiles/voyager` in light mode to maintain reliable base-tile rendering across live command dashboards.
+- Command-center AI alert, severity, and summary cards now use semantic status tokens for text/background/border rendering to preserve readable contrast in both light and dark themes.
+- Analytics chart labels and axis text now use theme-token-driven SVG text colors so KPI chart annotations remain readable in dark-mode command views.
 - During local Vite-based development and browser validation, the web client suppresses cached service-worker control on localhost so shell and navigation changes are evaluated against the latest source build; production deployments continue to retain the push/offline service worker.
 - Development runtime configuration now aligns Vite HMR websocket host/port with localhost browser sessions to prevent stale integrated-browser UI from persisting after shell/navigation updates.
 - Elevated administrator and superadmin shells now use one shared refresh action in the header instead of duplicating command buttons, which reduces operator clutter and keeps global actions visually consistent across dashboard modules.
@@ -1378,6 +1382,7 @@ The storyboard describes the user-facing flow of major screens and role actions 
 
 - The system will visualize guard, vehicle, and site data through a Leaflet-based operational map with theme-aware basemap tiles.
 - Live updates and proximity alerts will support real-time monitoring activities.
+- Client-site management controls (add, edit, delete) are available to elevated command roles (superadmin, administrator, and supervisor) for operational location governance.
 
 Activity Diagrams (Role-Based)
 
