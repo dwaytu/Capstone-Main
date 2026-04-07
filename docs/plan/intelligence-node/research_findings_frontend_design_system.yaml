@@ -1,0 +1,687 @@
+plan_id: intelligence-node
+objective: "Map exact CSS variables, component patterns, and styling conventions for Direction A 'The Intelligence Node' design implementation"
+focus_area: frontend-design-system
+created_at: "2026-04-07"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Design system is CSS-variable-driven with ~80+ tokens in :root/.dark blocks (index.css L4–L164), consumed via Tailwind config semantic mappings.
+  - Primary card pattern is the `.bento-card` utility class (index.css L575–L586) with gradient background, inset highlight, and `--shadow-bento` shadow — used by BentoCard.tsx, BentoGrid.tsx, CommandMetricCard, OpsMetricCard, and dozens of dashboard components.
+  - Badge/pill system uses `.soc-chip` base class (index.css L668) with tone/status modifiers, plus dedicated StatusBadge.tsx and SectionBadge.tsx components.
+  - Button system uses `.soc-btn` base class (index.css L628) with variant modifiers (-success, -danger, -neutral, -primary, -secondary).
+  - Shell architecture: OperationalShell (layout/OperationalShell.tsx) wraps Sidebar (components/Sidebar.tsx) + Header (shared/Header.tsx) with sidebar accent gradient and z-index token system.
+
+research_metadata:
+  methodology: "hybrid retrieval: semantic_search + grep_search + read_file for index.css, tailwind.config.ts, and component files"
+  scope: "Complete frontend design token system, shell components, card/badge/button patterns"
+  confidence: high
+  coverage: 95
+  decision_blockers: 0
+  research_blockers: 0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 1. CSS VARIABLES — index.css
+# ═══════════════════════════════════════════════════════════════════════════════
+
+css_variables:
+  file: DasiaAIO-Frontend/src/index.css
+  total_lines_analyzed: "~1500"
+
+  root_light_mode:
+    block_location: "L4–L164 (:root)"
+
+    spacing_tokens:
+      - { var: "--space-unit", value: "8px", line: 5 }
+      - { var: "--space-1", value: "0.25rem", line: 6 }
+      - { var: "--space-2", value: "0.5rem", line: 7 }
+      - { var: "--space-3", value: "0.75rem", line: 8 }
+      - { var: "--space-4", value: "1rem", line: 9 }
+      - { var: "--space-5", value: "1.25rem", line: 10 }
+      - { var: "--space-6", value: "1.5rem", line: 11 }
+
+    radius_tokens:
+      - { var: "--radius-card", value: "10px", line: 12 }
+      - { var: "--radius-sm", value: "0.5rem", line: 13 }
+      - { var: "--radius-md", value: "0.75rem", line: 14 }
+      - { var: "--radius-lg", value: "1rem", line: 15 }
+      - { var: "--radius-pill", value: "999px", line: 16 }
+
+    core_colors:
+      - { var: "--color-background", value: "#f5f7fb", line: 17 }
+      - { var: "--color-surface", value: "#ffffff", line: 18 }
+      - { var: "--color-surface-elevated", value: "#f3f6fb", line: 19 }
+      - { var: "--color-surface-hover", value: "#eef3f9", line: 20 }
+
+    text_colors:
+      - { var: "--color-text-primary", value: "#111827", line: 22 }
+      - { var: "--color-text-secondary", value: "#6b7280", line: 23 }
+      - { var: "--color-text-tertiary", value: "#94a3b8", line: 24 }
+      - { var: "--color-text-disabled", value: "#9ca3af", line: 25 }
+
+    border_colors:
+      - { var: "--color-border", value: "#e5e7eb", line: 27 }
+      - { var: "--color-border-subtle", value: "#e8edf5", line: 28 }
+      - { var: "--color-border-elevated", value: "#c7d2e0", line: 29 }
+      - { var: "--color-border-strong", value: "#9fb0c7", line: 30 }
+      - { var: "--color-focus-ring", value: "#0f4ccf", line: 31 }
+
+    semantic_status_colors:
+      success:
+        - { var: "--color-success", value: "#16a34a", line: 33 }
+        - { var: "--color-success-bg", value: "#eaf8ef", line: 34 }
+        - { var: "--color-success-border", value: "#86d5a2", line: 35 }
+        - { var: "--color-success-text", value: "#166534", line: 36 }
+      warning:
+        - { var: "--color-warning", value: "#ca8a04", line: 38 }
+        - { var: "--color-warning-bg", value: "#fef8e6", line: 39 }
+        - { var: "--color-warning-border", value: "#e8cc7f", line: 40 }
+        - { var: "--color-warning-text", value: "#854d0e", line: 41 }
+      danger:
+        - { var: "--color-danger", value: "#dc2626", line: 43 }
+        - { var: "--color-danger-bg", value: "#feecec", line: 44 }
+        - { var: "--color-danger-border", value: "#f2a2a2", line: 45 }
+        - { var: "--color-danger-text", value: "#991b1b", line: 46 }
+      info:
+        - { var: "--color-info", value: "#2563eb", line: 48 }
+        - { var: "--color-info-bg", value: "#eaf1ff", line: 49 }
+        - { var: "--color-info-border", value: "#90b2fb", line: 50 }
+        - { var: "--color-info-text", value: "#1e40af", line: 51 }
+
+    status_aliases: "L53–L73: --status-{success,warning,danger,info}-{bg,border,text} alias --color-* counterparts; --status-{pending,accepted,declined}-* alias warning/success/danger"
+
+    primary_brand:
+      - { var: "--color-primary", value: "#0f4ccf", line: 75 }
+      - { var: "--color-primary-hover", value: "#1d4ed8", line: 76 }
+      - { var: "--color-primary-active", value: "#0c3ca8", line: 77 }
+      - { var: "--color-primary-text", value: "#ffffff", line: 78 }
+
+    link_colors:
+      - { var: "--color-link", value: "#1d4ed8", line: 80 }
+      - { var: "--color-link-hover", value: "#1e40af", line: 81 }
+
+    overlay_panel:
+      - { var: "--color-overlay", value: "rgba(2, 6, 23, 0.62)", line: 83 }
+      - { var: "--color-panel-hover", value: "color-mix(in srgb, var(--color-surface-hover) 82%, transparent)", line: 84 }
+      - { var: "--color-panel-hover-strong", value: "color-mix(in srgb, var(--color-info) 10%, var(--color-surface-hover))", line: 85 }
+
+    sidebar_tokens:
+      - { var: "--color-sidebar-accent-start", value: "color-mix(in srgb, var(--color-info) 78%, white 10%)", line: 87 }
+      - { var: "--color-sidebar-accent-end", value: "color-mix(in srgb, var(--color-accent) 72%, white 8%)", line: 88 }
+      - { var: "--color-sidebar-active-bg", value: "linear-gradient(135deg, color-mix(in srgb, var(--color-info) 24%, transparent), color-mix(in srgb, var(--color-accent) 18%, transparent))", line: 89 }
+
+    avatar_tokens:
+      - { var: "--color-avatar-start", value: "#2563eb", line: 91 }
+      - { var: "--color-avatar-end", value: "#4f46e5", line: 92 }
+
+    role_tokens:
+      admin:
+        - { var: "--color-role-admin-bg", value: "color-mix(in srgb, #8b5cf6 17%, var(--color-surface))", line: 94 }
+        - { var: "--color-role-admin-border", value: "color-mix(in srgb, #8b5cf6 38%, var(--color-border))", line: 95 }
+        - { var: "--color-role-admin-text", value: "#7c3aed", line: 96 }
+      guard:
+        - { var: "--color-role-guard-bg", value: "color-mix(in srgb, #0891b2 16%, var(--color-surface))", line: 98 }
+        - { var: "--color-role-guard-border", value: "color-mix(in srgb, #0891b2 35%, var(--color-border))", line: 99 }
+        - { var: "--color-role-guard-text", value: "#0e7490", line: 100 }
+      default:
+        - { var: "--color-role-default-bg", value: "color-mix(in srgb, #64748b 14%, var(--color-surface))", line: 102 }
+        - { var: "--color-role-default-border", value: "color-mix(in srgb, #64748b 32%, var(--color-border))", line: 103 }
+        - { var: "--color-role-default-text", value: "#475569", line: 104 }
+
+    special_status_tokens:
+      - { var: "--color-warning-strong-bg", value: "#fef3c7", line: 106 }
+      - { var: "--color-warning-strong-border", value: "#f59e0b", line: 107 }
+      - { var: "--color-warning-strong-text", value: "#92400e", line: 108 }
+      - { var: "--color-danger-soft-bg", value: "color-mix(in srgb, var(--color-danger) 10%, var(--color-surface))", line: 110 }
+      - { var: "--color-danger-soft-border", value: "color-mix(in srgb, var(--color-danger) 26%, var(--color-border))", line: 111 }
+      - { var: "--color-danger-soft-text", value: "color-mix(in srgb, var(--color-danger) 72%, #ffffff 8%)", line: 112 }
+
+    status_dot_tokens:
+      - { var: "--status-dot-success", value: "#22c55e", line: 114 }
+      - { var: "--status-dot-info", value: "#38bdf8", line: 115 }
+      - { var: "--status-dot-warning", value: "#eab308", line: 116 }
+      - { var: "--status-dot-danger", value: "#ef4444", line: 117 }
+
+    accent_tokens:
+      - { var: "--color-accent", value: "#0891b2", line: 119 }
+      - { var: "--color-accent-secondary", value: "#0e7490", line: 120 }
+
+    scrollbar_tokens:
+      - { var: "--scrollbar-track", value: "#e8edf5", line: 122 }
+      - { var: "--scrollbar-thumb", value: "#c7d2e0", line: 123 }
+      - { var: "--scrollbar-thumb-hover", value: "#94a3b8", line: 124 }
+
+    shadow_tokens:
+      - { var: "--shadow-bento", value: "0 1px 3px rgba(15, 23, 42, 0.08), 0 10px 20px rgba(15, 23, 42, 0.03)", line: 126 }
+      - { var: "--shadow-bento-hover", value: "0 8px 18px rgba(15, 23, 42, 0.12), 0 14px 30px rgba(15, 23, 42, 0.08)", line: 127 }
+      - { var: "--shadow-elevated", value: "0 12px 28px rgba(15, 23, 42, 0.14)", line: 128 }
+      - { var: "--shadow-modal", value: "0 24px 48px rgba(15, 23, 42, 0.2)", line: 129 }
+
+    z_index_tokens:
+      - { var: "--z-base", value: 0, line: 130 }
+      - { var: "--z-map", value: 5, line: 131 }
+      - { var: "--z-sticky", value: 20, line: 132 }
+      - { var: "--z-header", value: 30, line: 133 }
+      - { var: "--z-drawer-backdrop", value: 40, line: 134 }
+      - { var: "--z-guard-sticky-region", value: 42, line: 135 }
+      - { var: "--z-drawer", value: 48, line: 136 }
+      - { var: "--z-floating", value: 60, line: 137 }
+      - { var: "--z-mobile-nav", value: 64, line: 138 }
+      - { var: "--z-toast", value: 80, line: 139 }
+      - { var: "--z-banner", value: 82, line: 140 }
+      - { var: "--z-rate-limit", value: 84, line: 141 }
+      - { var: "--z-overlay", value: 100, line: 142 }
+      - { var: "--z-modal-inbox", value: 104, line: 143 }
+      - { var: "--z-modal-settings", value: 106, line: 144 }
+      - { var: "--z-modal-profile", value: 108, line: 145 }
+      - { var: "--z-modal", value: 110, line: 146 }
+
+    layout_tokens:
+      - { var: "--guard-sticky-region-height", value: "12rem", line: 149 }
+      - { var: "--guard-main-reserved-height", value: "4.25rem", line: 151 }
+      - { var: "--sidebar-width-expanded", value: "18rem", line: 152 }
+      - { var: "--sidebar-width-collapsed", value: "4rem", line: 153 }
+
+    legacy_aliases: "L155–L164: --bg-primary, --bg-surface, --bg-elevated, --text-primary, --text-secondary, --border-color, --border-subtle, --accent, --accent-glow, --accent-secondary"
+
+  dark_mode:
+    block_location: "L166–L262 (.dark)"
+    key_overrides:
+      core_colors:
+        - { var: "--color-background", value: "#0b1220" }
+        - { var: "--color-surface", value: "#111827" }
+        - { var: "--color-surface-elevated", value: "#172133" }
+        - { var: "--color-surface-hover", value: "#1c2940" }
+      text_colors:
+        - { var: "--color-text-primary", value: "#e5e7eb" }
+        - { var: "--color-text-secondary", value: "#9ca3af" }
+        - { var: "--color-text-tertiary", value: "#7f92ac" }
+        - { var: "--color-text-disabled", value: "#64748b" }
+      border_colors:
+        - { var: "--color-border", value: "#1f2937" }
+        - { var: "--color-border-subtle", value: "#223145" }
+        - { var: "--color-border-elevated", value: "#3a4c68" }
+        - { var: "--color-border-strong", value: "#5b7699" }
+        - { var: "--color-focus-ring", value: "#67e8f9" }
+      semantic_status:
+        success:
+          - { var: "--color-success", value: "#22c55e" }
+          - { var: "--color-success-bg", value: "rgba(34, 197, 94, 0.14)" }
+          - { var: "--color-success-border", value: "rgba(34, 197, 94, 0.45)" }
+          - { var: "--color-success-text", value: "#86efac" }
+        warning:
+          - { var: "--color-warning", value: "#eab308" }
+          - { var: "--color-warning-bg", value: "rgba(234, 179, 8, 0.14)" }
+          - { var: "--color-warning-border", value: "rgba(234, 179, 8, 0.45)" }
+          - { var: "--color-warning-text", value: "#fde68a" }
+        danger:
+          - { var: "--color-danger", value: "#ef4444" }
+          - { var: "--color-danger-bg", value: "rgba(239, 68, 68, 0.14)" }
+          - { var: "--color-danger-border", value: "rgba(239, 68, 68, 0.5)" }
+          - { var: "--color-danger-text", value: "#fecaca" }
+        info:
+          - { var: "--color-info", value: "#38bdf8" }
+          - { var: "--color-info-bg", value: "rgba(56, 189, 248, 0.14)" }
+          - { var: "--color-info-border", value: "rgba(56, 189, 248, 0.5)" }
+          - { var: "--color-info-text", value: "#bae6fd" }
+      primary_brand:
+        - { var: "--color-primary", value: "#38bdf8" }
+        - { var: "--color-primary-hover", value: "#67e8f9" }
+        - { var: "--color-primary-active", value: "#0ea5e9" }
+        - { var: "--color-primary-text", value: "#052433" }
+      link_colors:
+        - { var: "--color-link", value: "#7dd3fc" }
+        - { var: "--color-link-hover", value: "#bae6fd" }
+      accent:
+        - { var: "--color-accent", value: "#22d3ee" }
+        - { var: "--color-accent-secondary", value: "#06b6d4" }
+      shadow_tokens:
+        - { var: "--shadow-bento", value: "0 1px 2px rgba(0, 0, 0, 0.45), 0 14px 26px rgba(2, 6, 23, 0.25)" }
+        - { var: "--shadow-bento-hover", value: "0 8px 20px rgba(3, 10, 27, 0.45), 0 18px 36px rgba(3, 10, 27, 0.4)" }
+        - { var: "--shadow-elevated", value: "0 18px 36px rgba(2, 6, 23, 0.5)" }
+        - { var: "--shadow-modal", value: "0 30px 60px rgba(2, 6, 23, 0.66)" }
+      scrollbar:
+        - { var: "--scrollbar-track", value: "#1a2435" }
+        - { var: "--scrollbar-thumb", value: "#3a4c68" }
+        - { var: "--scrollbar-thumb-hover", value: "#64748b" }
+      accent_glow:
+        - { var: "--accent-glow", value: "rgba(34, 211, 238, 0.3)" }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 2. SHELL COMPONENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+shell_components:
+
+  header:
+    file: DasiaAIO-Frontend/src/components/shared/Header.tsx
+    lines: 56
+    key_classes: >
+      z-[var(--z-header)]
+      border-b border-border
+      bg-surface/95
+      px-4 py-3 backdrop-blur
+      md:px-8 md:py-4
+    safe_area: "paddingTop: calc(0.75rem + env(safe-area-inset-top, 0px))"
+    title_classes: "m-0 text-xl font-bold uppercase tracking-wide text-text-primary md:text-2xl"
+    subtitle: "text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary — reads 'Mission Console'"
+    hamburger_classes: "min-h-11 min-w-11 rounded-lg p-2 text-text-secondary"
+    child_components:
+      - SectionBadge (header badge pill)
+      - HeaderGlobalActions (avatar, notifications, profile menu)
+
+  operational_shell:
+    file: DasiaAIO-Frontend/src/components/layout/OperationalShell.tsx
+    lines: ~230
+    root_classes: "flex h-[100dvh] w-full overflow-hidden bg-background font-sans"
+    sidebar_spacer: "hidden w-72 flex-shrink-0 lg:block lg:w-[var(--sidebar-width)] soc-sidebar-width-transition"
+    main_area: "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+    content_scroll: "soc-scroll-area flex-1 min-h-0 overflow-y-auto p-4 md:p-6"
+    mobile_bottom_nav: "fixed bottom-0 left-0 right-0 z-[var(--z-mobile-nav)] border-t border-border-elevated bg-surface/95 px-2 backdrop-blur-md"
+    mobile_tabs: ["dashboard", "approvals", "schedule", "inbox (Alerts)", "more"]
+    error_banner_classes: "mb-4 rounded-lg border border-danger-border bg-danger-bg p-3 text-sm font-medium text-danger-text"
+
+  sidebar:
+    file: DasiaAIO-Frontend/src/components/Sidebar.tsx
+    lines: ~200+
+    aside_classes: >
+      fixed inset-y-0 left-0 z-[var(--z-drawer)]
+      w-72 lg:w-[var(--sidebar-width)] soc-sidebar-width-transition
+      flex flex-col overflow-y-auto shadow-2xl soc-sidebar-shell
+      transform transition-transform duration-200 ease-out lg:transform-none
+    accent_line: "h-1 w-full soc-sidebar-accent (linear-gradient via --color-sidebar-accent-start / --color-sidebar-accent-end)"
+    sidebar_shell_class: "soc-sidebar-shell — bg: color-mix(in srgb, var(--color-surface) 94%, transparent); border-right: 1px solid var(--color-border)"
+    nav_item_classes: "soc-sidebar-nav-item cursor-pointer select-none px-3 py-2.5 text-left text-sm font-semibold uppercase tracking-wide"
+    nav_item_active_class: "soc-sidebar-nav-item-active — bg: var(--color-sidebar-active-bg); border-left: 3px solid var(--color-info)"
+    glyph_style: "inline-flex h-5 w-5 items-center justify-center rounded-md border border-border-subtle bg-surface-elevated text-[11px] font-bold"
+    group_heading: "soc-sidebar-heading — 11px bold uppercase tracking-[0.2em]"
+    child_components:
+      - SidebarBrand (logo + system status)
+    mobile_overlay: "fixed inset-0 z-[var(--z-drawer-backdrop)] bg-black/50"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. CARD / SURFACE PATTERNS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+card_patterns:
+
+  bento_card_css_class:
+    defined_in: "DasiaAIO-Frontend/src/index.css L575–L586"
+    definition: |
+      .bento-card {
+        border-radius: var(--radius-card);           /* 10px */
+        border: 1px solid var(--color-border-subtle);
+        background: linear-gradient(165deg, color-mix(in srgb, var(--color-surface-elevated) 88%, transparent), var(--color-surface));
+        padding: calc(var(--space-unit) * 2);         /* 16px */
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-info) 8%, transparent), var(--shadow-bento);
+        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      }
+      .bento-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-bento-hover);
+        border-color: var(--color-border-elevated);
+      }
+    tailwind_plugin_equivalent: >
+      @apply bg-surface border border-border-subtle rounded-2xl p-6 shadow-bento transition-all duration-250
+      hover: shadow-bento-hover
+
+  soc_dashboard_card_css_class:
+    defined_in: "DasiaAIO-Frontend/src/index.css L553–L564"
+    definition: |
+      Same as bento-card but with surface-elevated at 90% opacity, explicit hover translateY(-2px), border-color -> border-elevated on hover.
+      Nearly identical — includes inset 0 1px 0 info highlight.
+
+  command_panel_css_class:
+    defined_in: "DasiaAIO-Frontend/src/index.css L525–L528"
+    classes: "border: 1px solid var(--color-border-subtle); border-radius: var(--radius-card); background: linear-gradient(180deg, ...); box-shadow: inset + shadow-bento"
+
+  BentoCard_component:
+    file: DasiaAIO-Frontend/src/components/BentoCard.tsx
+    lines: ~240
+    variants: [default, success, warning, danger, info]
+    sizes: [sm (p-4 120px), md (p-5 160px), lg (p-6 200px), xl (p-8 280px)]
+    extra_props: [glass, glow, interactive, loading (skeleton), disabled]
+    base_classes: "rounded-lg border transition-all duration-250"
+    interactive_hover: "cursor-pointer hover:shadow-bento-hover hover:bg-surface-hover"
+    non_interactive: "shadow-bento"
+
+  BentoGrid_component:
+    file: DasiaAIO-Frontend/src/components/BentoGrid.tsx
+    lines: ~97
+    grid_classes: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+    exports: "BentoGrid (default), BentoCard (named) — BentoCard here uses .bento-card CSS class directly"
+    card_span_system: "colSpan (1–4), rowSpan (1–3), isMain (2col+2row hero)"
+
+  top_files_using_card_patterns:
+    - file: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+      pattern: "bento-card, shadow-md, bg-surface rounded-lg"
+    - file: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+      pattern: "bento-card, shadow-lg"
+    - file: DasiaAIO-Frontend/src/components/dashboard/CommandMetricCard.tsx
+      pattern: "bento-card + status-bar-* tone + inset box-shadow accent"
+    - file: DasiaAIO-Frontend/src/components/dashboard/OpsMetricCard.tsx
+      pattern: "bento-card + severityStyles border overrides"
+    - file: DasiaAIO-Frontend/src/components/MeritScoreDashboard.tsx
+      pattern: "bento-card + status-bar-info / status-bar-success"
+    - file: DasiaAIO-Frontend/src/components/TripManagement.tsx
+      pattern: "bento-card bare invocation"
+    - file: DasiaAIO-Frontend/src/components/CalendarDashboard.tsx
+      pattern: "shadow-lg on hover, chip-based event cards"
+
+  other_surface_classes:
+    - { class: "table-glass", location: "index.css L594", description: "surface 92% transparent + border-subtle + blur backdrop" }
+    - { class: "thead-glass", location: "index.css L602", description: "sticky top z-10 surface-elevated 94% + border shadow" }
+    - { class: "status-live-card", location: "index.css L724", description: "0.75rem radius, border-subtle, surface 92%, padding 0.9rem" }
+    - { class: "soc-surface", location: "index.css L924", description: "1rem radius, border-subtle, surface 92%, shadow-bento" }
+    - { class: "soc-kpi", location: "index.css L930", description: "0.8rem radius, gradient bg, 0.85rem padding" }
+    - { class: "soc-empty-state", location: "index.css L998", description: "dashed border-elevated, 8px radius, centered" }
+
+  status_bar_indicators:
+    note: "Left-accent inset box-shadow — NOT border"
+    classes:
+      - { class: "status-bar-success", value: "inset 5px 0 0 0 var(--color-success)", line: 588 }
+      - { class: "status-bar-warning", value: "inset 5px 0 0 0 var(--color-warning)", line: 592 }
+      - { class: "status-bar-critical", value: "inset 5px 0 0 0 var(--color-danger)", line: 596 }
+      - { class: "status-bar-info", value: "inset 5px 0 0 0 var(--color-info)", line: 600 }
+      - { class: "critical-glow", value: "inset 5px + 0 0 18px danger glow + pulse-critical animation", line: 604 }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4. BADGE / STATUS PATTERNS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+badge_patterns:
+
+  soc_chip:
+    defined_in: "DasiaAIO-Frontend/src/index.css L668"
+    base_definition: |
+      .soc-chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.2rem 0.62rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+    status_modifiers:
+      - { class: ".soc-chip.status-warning", border: "var(--status-warning-border)", bg: "var(--status-warning-bg)", color: "var(--status-warning-text)", line: 844 }
+      - { class: ".soc-chip.status-danger", border: "var(--status-danger-border)", bg: "var(--status-danger-bg)", color: "var(--status-danger-text)", line: 850 }
+      - { class: ".soc-chip.status-success", border: "var(--status-success-border)", bg: "var(--status-success-bg)", color: "var(--status-success-text)", line: 856 }
+      - { class: ".soc-chip.status-info", border: "var(--status-info-border)", bg: "var(--status-info-bg)", color: "var(--status-info-text)", line: 862 }
+      - { class: ".soc-chip.status-neutral", border: "var(--color-border-elevated)", bg: "var(--color-surface-elevated)", color: "var(--color-text-secondary)", line: 868 }
+    tone_modifiers:
+      - { class: "tone-guard", border: "#6fa9ff", bg: "color-mix(#2563eb 14%)", light_color: "#1d4ed8", dark_color: "#93c5fd" }
+      - { class: "tone-vehicle", border: "#f7c35f", bg: "color-mix(#f59e0b 16%)", light_color: "#b45309", dark_color: "#fcd34d" }
+      - { class: "tone-mission", border: "#b9a3ff", bg: "color-mix(#8b5cf6 15%)", light_color: "#6d28d9", dark_color: "#c4b5fd" }
+      - { class: "tone-maintenance", border: "#ef9999", bg: "color-mix(#dc2626 14%)", light_color: "#991b1b", dark_color: "#fca5a5" }
+      - { class: "tone-analytics", border: "#67d6e4", bg: "color-mix(#06b6d4 14%)", light_color: "#0e7490", dark_color: "#67e8f9" }
+
+  StatusBadge_component:
+    file: DasiaAIO-Frontend/src/components/dashboard/ui/StatusBadge.tsx
+    lines: 35
+    tones: [default, guard, vehicle, mission, maintenance, analytics, success, warning, danger]
+    implementation: "Simple wrapper that maps tone -> soc-chip + status/tone modifier class"
+    consumers: [AnalyticsDashboard, CalendarDashboard, and others]
+
+  SectionBadge_component:
+    file: DasiaAIO-Frontend/src/components/SectionBadge.tsx
+    lines: 15
+    class: "soc-section-badge"
+    definition: "Pill (radius-pill) with info-border, info-bg, info-text — 0.72rem bold uppercase"
+    defined_in_css: "index.css L1006"
+
+  status_badge_shift_swap:
+    defined_in: "index.css L1295–L1320"
+    classes:
+      - ".status-badge — 9999px radius, 1px solid, 0.75rem font"
+      - ".status-badge-pending — pending-bg/text/border vars"
+      - ".status-badge-accepted — accepted-bg/text/border vars"
+      - ".status-badge-declined — declined-bg/text/border vars"
+
+  RoleBadge_inline:
+    file: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+    location: "L93–L110"
+    implementation: |
+      Inline FC using ring-1 approach:
+      - admin/superadmin: bg-info-bg text-info-text ring-1 ring-info-border
+      - supervisor: bg-warning-bg text-warning-text ring-1 ring-warning-border
+      - guard: bg-success-bg text-success-text ring-1 ring-success-border
+      Classes: rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide
+    also_in: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx (L115, identical pattern)
+
+  soc_role_chip:
+    defined_in: "index.css L1088–L1106"
+    classes:
+      - ".soc-role-chip — pill radius, role-default-border/bg/text, 0.75rem font"
+      - ".soc-role-chip-admin — role-admin-* tokens"
+      - ".soc-role-chip-guard — role-guard-* tokens"
+
+  severity_badge_patterns:
+    incident_severity:
+      file: DasiaAIO-Frontend/src/components/dashboard/IncidentSeverityMonitoringPanel.tsx
+      location: "L11–L24"
+      classes:
+        critical: "border-red-500/50 bg-red-500/15 text-red-200"
+        high: "border-orange-400/50 bg-orange-500/15 text-orange-200"
+        medium: "border-amber-400/50 bg-amber-500/15 text-amber-200"
+        low: "border-emerald-500/50 bg-emerald-500/15 text-emerald-200"
+      note: "These use raw Tailwind colors not design tokens — inconsistency"
+    incident_status_pill:
+      open: "border-red-500/40 bg-red-500/10 text-red-200"
+      investigating: "border-sky-500/40 bg-sky-500/10 text-sky-200"
+      resolved: "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+
+  status_light_dots:
+    defined_in: "index.css L741–L766"
+    base: ".status-light — h-0.55rem w-0.55rem rounded-full"
+    variants:
+      - ".status-light-success — bg var(--status-dot-success) + glow"
+      - ".status-light-info — bg var(--status-dot-info) + glow"
+      - ".status-light-warning — bg var(--status-dot-warning) + glow"
+      - ".status-light-danger — bg var(--status-dot-danger) + glow"
+    animation: ".status-light-pulse — scale 0.95 → 1.08 pulse"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. BUTTON PATTERNS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+button_patterns:
+
+  soc_btn_base:
+    defined_in: "DasiaAIO-Frontend/src/index.css L628–L645"
+    definition: |
+      .soc-btn {
+        border-radius: 0.5rem;
+        border: 1px solid var(--color-info-border);
+        background: color-mix(in srgb, var(--color-info) 16%, var(--color-surface));
+        color: var(--color-text-primary);
+        padding: 0.55rem 0.9rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+      }
+      .soc-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-bento-hover);
+        background: color-mix(in srgb, var(--color-info) 24%, var(--color-surface));
+      }
+
+  variant_classes:
+    - class: ".soc-btn-success"
+      location: "L647"
+      definition: "border-color: success-border; bg: success-bg; color: success-text"
+    - class: ".soc-btn-danger"
+      location: "L653"
+      definition: "border-color: danger-border; bg: danger-bg; color: danger-text"
+    - class: ".soc-btn-neutral"
+      location: "L659"
+      definition: "border-color: border-elevated; bg: surface-elevated; color: text-secondary"
+    - class: ".soc-btn-primary"
+      location: "L1150"
+      definition: "border: 1px solid color-mix(primary 44%, border); bg: linear-gradient(135deg, primary, primary-hover); color: primary-text"
+    - class: ".soc-btn-secondary"
+      location: "L1160"
+      definition: "border: border-elevated; bg: surface-elevated 96%; color: text-secondary; hover: panel-hover"
+
+  forced_colors_override:
+    location: "L1341–L1345"
+    definition: "All soc-btn variants get border: 1px solid ButtonBorder; background: ButtonFace; color: ButtonText"
+
+  terminal_login_btn:
+    defined_in: "index.css L775"
+    description: "Special gradient button for login screen — linear-gradient(#0ea5e9, #2563eb, #0ea5e9) with glow"
+
+  swap_response_buttons:
+    defined_in: "index.css L1327–L1340"
+    classes:
+      - ".swap-response-btn — 0.375rem radius, 0.75rem font"
+      - ".swap-response-accept — accepted-bg/text/border"
+      - ".swap-response-decline — declined-bg/text/border"
+
+  usage_example_files:
+    - DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+    - DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx
+    - DasiaAIO-Frontend/src/components/CalendarDashboard.tsx
+    - DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 6. TAILWIND CONFIG
+# ═══════════════════════════════════════════════════════════════════════════════
+
+tailwind_config:
+  file: DasiaAIO-Frontend/tailwind.config.ts
+  dark_mode: "class"
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"]
+
+  color_extensions:
+    note: "All map to CSS variables — no hardcoded colors in Tailwind config"
+    mappings:
+      - { tw_name: "background", var: "var(--color-background)" }
+      - { tw_name: "surface", var: "var(--color-surface)" }
+      - { tw_name: "surface-elevated", var: "var(--color-surface-elevated)" }
+      - { tw_name: "surface-hover", var: "var(--color-surface-hover)" }
+      - { tw_name: "text-primary", var: "var(--color-text-primary)" }
+      - { tw_name: "text-secondary", var: "var(--color-text-secondary)" }
+      - { tw_name: "text-tertiary", var: "var(--color-text-tertiary)" }
+      - { tw_name: "text-disabled", var: "var(--color-text-disabled)" }
+      - { tw_name: "border / border-subtle / border-elevated", var: "var(--color-border-*)" }
+      - { tw_name: "success / success-bg / success-border / success-text", var: "var(--color-success-*)" }
+      - { tw_name: "warning", var: "var(--color-warning-*)" }
+      - { tw_name: "danger", var: "var(--color-danger-*)" }
+      - { tw_name: "info", var: "var(--color-info-*)" }
+      - { tw_name: "primary / primary-hover / primary-active / primary-text", var: "var(--color-primary-*)" }
+      - { tw_name: "accent / accent-secondary", var: "var(--color-accent-*)" }
+
+  font_size_scale:
+    - { name: "xs", size: "0.75rem", lineHeight: "1.5", weight: 500 }
+    - { name: "sm", size: "0.875rem", lineHeight: "1.5", weight: 500 }
+    - { name: "base", size: "1rem", lineHeight: "1.6", weight: 500 }
+    - { name: "lg", size: "1.125rem", lineHeight: "1.6", weight: 600 }
+    - { name: "xl", size: "1.25rem", lineHeight: "1.6", weight: 600 }
+    - { name: "2xl", size: "1.5rem", lineHeight: "1.5", weight: 700 }
+    - { name: "3xl", size: "1.875rem", lineHeight: "1.4", weight: 700 }
+
+  border_radius_scale:
+    - { name: "sm", value: "0.375rem (6px)" }
+    - { name: "DEFAULT", value: "0.5rem (8px)" }
+    - { name: "md", value: "0.625rem (10px)" }
+    - { name: "lg", value: "0.75rem (12px)" }
+    - { name: "xl", value: "1rem (16px)" }
+    - { name: "2xl", value: "1.25rem (20px)" }
+
+  box_shadow_extensions:
+    - { name: "bento", value: "var(--shadow-bento)" }
+    - { name: "bento-hover", value: "var(--shadow-bento-hover)" }
+    - { name: "elevated", value: "var(--shadow-elevated)" }
+    - { name: "modal", value: "var(--shadow-modal)" }
+
+  animations:
+    - { name: "fade-in", value: "fade-in 0.3s ease-out" }
+    - { name: "slide-in-right", value: "slide-in-right 0.3s ease-out" }
+    - { name: "pulse-subtle", value: "pulse-subtle 2s ease-in-out infinite" }
+
+  plugins:
+    - name: "Bento Grid utilities"
+      utilities:
+        - ".bento-grid — auto-fit minmax(280px, 1fr), gap 1rem"
+        - ".bento-grid-dense — auto-fit minmax(240px, 1fr), gap 0.75rem"
+        - ".bento-card — @apply bg-surface border border-border-subtle rounded-2xl p-6 shadow-bento (NOTE: this Tailwind plugin version differs slightly from the CSS utility class version)"
+        - ".text-balance — text-wrap: balance"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 7. TYPOGRAPHY SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+typography:
+  fonts:
+    body: "Space Grotesk (400, 500, 600, 700)"
+    headings: "Rajdhani (600, 700)"
+    loaded_via: "@import Google Fonts in index.css L2"
+  heading_rule: "h1–h4 use font-family: Rajdhani; letter-spacing: 0.04em (index.css L396)"
+  utility_classes:
+    - { class: "soc-page-title", size: "22px", weight: 800, tracking: "0.04em", transform: "uppercase", line: 483 }
+    - { class: "soc-section-title", size: "16px", weight: 700, tracking: "0.05em", transform: "uppercase", line: 490 }
+    - { class: "soc-card-title", size: "14px", weight: 700, tracking: "0.05em", transform: "uppercase", line: 497 }
+    - { class: "soc-body", size: "13px", lineHeight: "1.45", line: 504 }
+    - { class: "soc-label", size: "11px", weight: 700, tracking: "0.12em", transform: "uppercase", line: 508 }
+    - { class: "soc-kpi-label", size: "0.7rem", weight: 700, tracking: "0.09em", transform: "uppercase" }
+    - { class: "soc-kpi-value", size: "1.45rem", weight: 800 }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 8. ANIMATION / TRANSITION SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+animations:
+  section_entrance: "animate-section-enter — fade-in-up 0.4s ease-out; nth-child delays 0.05s increments (L1399–L1404)"
+  card_hover: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease (bento-card)"
+  button_hover: "transform 160ms ease, box-shadow 160ms ease (soc-btn)"
+  critical_pulse: "pulse-critical 1.8s ease-in-out infinite — danger glow oscillation"
+  radar_sweep: "radar-sweep 12s linear infinite (login screen)"
+  status_pulse: "status-pulse 2.4s ease-in-out — opacity 0.72→1, scale 0.95→1.08"
+  skeleton_shimmer: "shimmer 1.4s ease infinite"
+  reduced_motion: "@media (prefers-reduced-motion: reduce) — all durations forced to 0.01ms (L1365)"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 9. ACCESSIBILITY INFRASTRUCTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+accessibility:
+  skip_link: "Present in OperationalShell.tsx — skip-link class, targets #maincontent"
+  sr_only: "Defined in index.css L450 — clip-path + 1px overflow pattern"
+  forced_colors_support: "L1337–L1355 — cards, buttons, guard sticky use ButtonBorder/ButtonFace/Canvas"
+  focus_ring_pattern: "outline: 2px solid var(--color-primary) offset 2px (some components use --color-focus-ring)"
+  touch_targets: "min-h-11 min-w-11 pattern on hamburger, sidebar close, mobile nav buttons"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPEN QUESTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+open_questions:
+  - question: "IncidentSeverityMonitoringPanel uses raw Tailwind colors (red-500, orange-400, etc.) instead of design tokens — should these be normalized?"
+    context: "Inconsistency with the rest of the design system which uses CSS variables"
+    type: nice_to_know
+    affects: ["badge-normalization"]
+
+  - question: "The Tailwind plugin bento-card definition (rounded-2xl p-6) differs from the CSS utility class definition (radius-card = 10px, padding = 16px) — which is canonical?"
+    context: "Plugin says rounded-2xl (20px) while CSS utility says var(--radius-card) (10px)"
+    type: decision_blocker
+    affects: ["card-radius-standardization"]
+
+  - question: "Some tone-surface classes (tone-guard-surface, tone-vehicle-surface) are defined but usage is unclear — are they actively used?"
+    context: "Found definitions in index.css L900+ but no grep hits in components"
+    type: nice_to_know
+    affects: ["cleanup"]
+
+gaps:
+  - area: "Glass morphism patterns"
+    description: "BentoCard.tsx supports glass prop but the .glass-card and .accent-glow CSS classes were not found in the read range — may be defined elsewhere or unused"
+    impact: research_blocker
+    affects: ["glass-card-implementation"]
+
+  - area: "Dark mode body gradient"
+    description: "Dark mode body uses a multi-stop linear gradient (L382) — design changes to --color-background alone won't affect this gradient"
+    impact: nice_to_know
+    affects: ["background-theming"]
