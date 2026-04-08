@@ -398,6 +398,10 @@ Current backend reality:
     - `DELETE /api/tracking/client-sites/:id`
     - `POST /api/tracking/heartbeat` (guard session heartbeat -> guard tracking point)
     - `GET /api/tracking/ws?token=<jwt>` (websocket snapshot stream)
+  - Guard heartbeat precision policy update (`POST /api/tracking/heartbeat`):
+    - samples with `accuracy_meters > 5000` are treated as approximate IP-based fallbacks, persisted with status `approximate`, and acknowledged with `accepted: true` plus `approximate: true`
+    - samples with `accuracy_meters` in the GPS-like range still enforce environment-based strict/balanced precision thresholds
+    - missing `accuracy_meters` still follows the infinity fallback path and is ignored with `accepted: false`
   - Websocket lifecycle hardening:
     - `DasiaAIO-Backend/src/handlers/tracking.rs`: websocket auth rejection, snapshot-build failures, receive errors, lag events, and disconnects now produce structured tracing logs for production troubleshooting.
     - websocket snapshot send failures now terminate the client loop cleanly instead of failing silently.

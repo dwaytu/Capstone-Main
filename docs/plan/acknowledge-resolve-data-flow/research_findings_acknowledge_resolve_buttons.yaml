@@ -1,0 +1,125 @@
+plan_id: acknowledge-resolve-data-flow
+objective: "Trace complete data flow for Acknowledge/Resolve buttons in LiveOperationsFeed and IncidentAlertFeed"
+focus_area: incident-status-update-ui
+created_at: "2026-04-08T00:00:00Z"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Both Acknowledge and Resolve buttons exist in LiveOperationsFeed.tsx and IncidentAlertFeed.tsx
+  - Both call back to a single handler: handleIncidentStatusUpdate in CommandCenterDashboard.tsx
+  - That handler delegates to useIncidents().updateStatus which PATCHes /api/incidents/{id}/status
+  - After the PATCH succeeds, useIncidents.refresh() re-fetches the full incidents list from /api/incidents/active
+  - There is NO local optimistic state mutation, NO loading/pending spinner on the buttons, and NO per-button error handling — errors propagate as unhandled promise rejections (void cast on the onClick)
+
+research_metadata:
+  methodology: "hybrid retrieval: grep_search + read_file"
+  scope: "Frontend only — LiveOperationsFeed, IncidentAlertFeed, CommandCenterDashboard, useIncidents hook, api.ts utilities"
+  confidence: high
+  coverage: 100
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: LiveOperationsFeed.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/LiveOperationsFeed.tsx
+    purpose: Renders live operations feed with per-item Acknowledge/Resolve buttons for incident items
+    key_elements:
+      - element: onUpdateIncidentStatus
+        type: prop (optional callback)
+        location: "LiveOperationsFeed.tsx:16"
+        description: "Typed as (incidentId: string, status: 'investigating' | 'resolved') => Promise<void>"
+      - element: Acknowledge button
+        type: JSX button
+        location: "LiveOperationsFeed.tsx:136-144"
+        description: "Calls void onUpdateIncidentStatus(incidentId, 'investigating')"
+      - element: Resolve button
+        type: JSX button
+        location: "LiveOperationsFeed.tsx:145-155"
+        description: "Calls void onUpdateIncidentStatus(incidentId, 'resolved')"
+      - element: isIncidentItem guard
+        type: condition
+        location: "LiveOperationsFeed.tsx:96"
+        description: "item.id.startsWith('incident-') determines if buttons are rendered"
+    language: TypeScript/React
+    lines: 170
+
+  - file: IncidentAlertFeed.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/IncidentAlertFeed.tsx
+    purpose: Renders incident alert feed with per-alert Acknowledge/Resolve buttons
+    key_elements:
+      - element: onUpdateStatus
+        type: prop (optional callback)
+        location: "IncidentAlertFeed.tsx:9"
+        description: "Typed as (incidentId: string, status: 'investigating' | 'resolved') => Promise<void>"
+      - element: Acknowledge button
+        type: JSX button
+        location: "IncidentAlertFeed.tsx:91-100"
+        description: "Calls void onUpdateStatus(alert.incidentId!, 'investigating')"
+      - element: Resolve button
+        type: JSX button
+        location: "IncidentAlertFeed.tsx:101-110"
+        description: "Calls void onUpdateStatus(alert.incidentId!, 'resolved')"
+      - element: alert.incidentId guard
+        type: condition
+        location: "IncidentAlertFeed.tsx:89"
+        description: "Buttons only render when alert.incidentId is truthy"
+    language: TypeScript/React
+    lines: 118
+
+  - file: CommandCenterDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/dashboard/CommandCenterDashboard.tsx
+    purpose: Parent dashboard that creates the handler and wires it to both feed components
+    key_elements:
+      - element: incidentsState
+        type: hook return value
+        location: "CommandCenterDashboard.tsx:57"
+        description: "const incidentsState = useIncidents()"
+      - element: handleIncidentStatusUpdate
+        type: callback function
+        location: "CommandCenterDashboard.tsx:158-160"
+        description: "useCallback wrapper that calls incidentsState.updateStatus(incidentId, status)"
+      - element: LiveOperationsFeed prop wiring
+        type: JSX prop
+        location: "CommandCenterDashboard.tsx:358"
+        description: "onUpdateIncidentStatus={handleIncidentStatusUpdate}"
+      - element: IncidentAlertFeed prop wiring
+        type: JSX prop
+        location: "CommandCenterDashboard.tsx:363"
+        description: "onUpdateStatus={handleIncidentStatusUpdate}"
+    language: TypeScript/React
+    lines: 450+
+
+  - file: useIncidents.ts
+    path: DasiaAIO-Frontend/src/hooks/useIncidents.ts
+    purpose: Hook that manages incident CRUD — fetch, report, updateStatus
+    key_elements:
+      - element: updateStatus
+        type: function (useCallback)
+        location: "useIncidents.ts:78-90"
+        description: "PATCHes /api/incidents/{id}/status then calls refresh()"
+      - element: refresh
+        type: function (useCallback)
+        location: "useIncidents.ts:37-55"
+        description: "GETs /api/incidents/active?page=1&page_size=50 and sets state"
+      - element: incidents state
+        type: useState
+        location: "useIncidents.ts:32"
+        description: "Local array of Incident objects"
+    language: TypeScript
+    lines: 100
+
+  - file: api.ts
+    path: DasiaAIO-Frontend/src/utils/api.ts
+    purpose: Shared fetch utility with auth, timeout, retry, and error handling
+    key_elements:
+      - element: fetchJsonOrThrow
+        type: function
+        location: "api.ts:310"
+        description: "Wrapper around fetch with auth injection, timeout (15s), retry for GET/idempotent, and structured error handling"
+      - element: getAuthHeaders
+        type: function
+        location: "api.ts:500"
+        description: "Returns { Authorization: 'Bearer <token>' } from stored auth token"
+    language: TypeScript
+    lines: 520+
