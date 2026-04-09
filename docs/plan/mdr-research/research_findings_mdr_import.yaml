@@ -1,0 +1,771 @@
+plan_id: mdr-research
+objective: "Comprehensive research of the SENTINEL MDR import/upload feature across frontend and backend"
+focus_area: mdr-import
+created_at: "2026-04-10"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - MDR import is a fully wired end-to-end feature: client-side XLSX parsing → JSON POST → staging rows → matching → review UI → commit/reject
+  - Frontend: 5 files under components/mdr/ (MdrImportPage, MdrUploader, MdrParseEngine, MdrBatchReview, MdrBatchList) + router + navigation entries
+  - Backend: handler (handlers/mdr.rs, 7 endpoints), service (services/mdr_import_service.rs, 3 functions), 2 models, 1 migration creating 6 new tables + altering 4 existing
+  - Roles: superadmin and admin can access MDR features; only superadmin can commit batches; backend route-level commit/reject requires superadmin but frontend allows admin to reject
+  - Key issues found: commit/reject route guard mismatch vs frontend logic, N+1 query in matching, no duplicate batch detection, hardcoded temp password for new guards
+
+research_metadata:
+  methodology: "hybrid retrieval: grep_search for 'mdr' across frontend/backend/migrations, file_search for mdr*, read_file for all discovered files"
+  scope: "Full frontend components, backend handlers, services, models, routes, migrations, navigation config, router config, permissions"
+  confidence: high
+  coverage: 100  # All MDR files discovered and fully read
+  decision_blockers: 0
+  research_blockers: 0
+
+# ═══════════════════════════════════════════════════════════════════
+# FILES ANALYZED
+# ═══════════════════════════════════════════════════════════════════
+
+files_analyzed:
+
+  # ── Frontend ──────────────────────────────────────────────────
+
+  - file: MdrImportPage.tsx
+    path: DasiaAIO-Frontend/src/components/mdr/MdrImportPage.tsx
+    purpose: "Top-level page component for MDR import workspace. Tab switcher (Import New / Batch History) + batch review via URL param"
+    key_elements:
+      - element: MdrImportPage
+        type: function-component
+        location: "MdrImportPage.tsx:18"
+        description: "FC with tabs: 'import' and 'history'. Shows MdrUploader or MdrBatchList. If URL has :batchId param, shows MdrBatchReview."
+      - element: canManageMdr
+        type: variable
+        location: "MdrImportPage.tsx:27"
+        description: "Role check: user.role === 'superadmin' || user.role === 'admin'. Non-matching roles see a warning banner."
+    language: TypeScript/React
+    lines: 105
+
+  - file: MdrUploader.tsx
+    path: DasiaAIO-Frontend/src/components/mdr/MdrUploader.tsx
+    purpose: "File upload component: drag-and-drop or click to select .xlsx/.xls file, parses client-side, shows preview, uploads JSON to backend"
+    key_elements:
+      - element: handleWorkbookSelection
+        type: function
+        location: "MdrUploader.tsx:96"
+        description: "Validates file extension, calls parseMdrWorkbook() from MdrParseEngine, stores parsed result in state"
+      - element: handleUpload
+        type: function
+        location: "MdrUploader.tsx:127"
+        description: "POSTs parsed JSON to /api/mdr/import with filename, reportMonth, branch, sheets. On success calls onUploadSuccess(batchId)"
+      - element: computePreviewCounts
+        type: function
+        location: "MdrUploader.tsx:39"
+        description: "Derives unique guard, client, firearm counts from parsed sheets for preview display"
+      - element: MdrImportResponse
+        type: interface
+        location: "MdrUploader.tsx:11"
+        description: "Response shape: { batchId, totalRows, preview: { matched, new, ambiguous, errors } }"
+    language: TypeScript/React
+    lines: ~320
+
+  - file: MdrParseEngine.ts
+    path: DasiaAIO-Frontend/src/components/mdr/MdrParseEngine.ts
+    purpose: "Client-side XLSX parsing engine. Uses SheetJS (xlsx library) to read workbook, identifies sheets by name patterns, parses roster/pullout/returned sections"
+    key_elements:
+      - element: parseMdrWorkbook
+        type: function
+        location: "MdrParseEngine.ts:685"
+        description: "Main entry point. Reads file as ArrayBuffer, identifies sheets via identifySheets(), dispatches to parseRosterSheet/parsePullOutSheet/parseReturnedFirearmsSheet"
+      - element: MdrParseResult
+        type: interface
+        location: "MdrParseEngine.ts:29"
+        description: "{ filename, reportMonth, branch, sheets: { mainRoster, supplementary, pullOut, returnedFirearms }, warnings }"
+      - element: MdrRowData
+        type: interface
+        location: "MdrParseEngine.ts:5"
+        description: "Per-row data: sheetName, rowNumber, section, clientNumber/Name/Address, guardNumber/Name, contactNumber, licenseNumber/Expiry, firearmKind/Make/Caliber/SerialNumber/Validity, actualAmmo, ammoCount, licRegName, pulloutStatus, faRemarks"
+      - element: MdrSection
+        type: type
+        location: "MdrParseEngine.ts:3"
+        description: "'clients' | 'tower' | 'armored' | 'backup' | 'vault' | 'equipment' | 'pullout' | 'returned'"
+      - element: identifySheets
+        type: function
+        location: "MdrParseEngine.ts:~660"
+        description: "Auto-detects sheet roles by name: main roster (month name or 'MAIN'), supplementary ('Sheet1'/'SUPPLEMENT'), pull-out ('PULL OUT'), returned ('FA RETURNED')"
+      - element: parseRosterSheet
+        type: function
+        location: "MdrParseEngine.ts:303"
+        description: "Parses main/supplementary roster sheets. Starts at row 8. Detects section markers. Extracts client+guard+firearm data per row."
+      - element: parsePullOutSheet
+        type: function
+        location: "MdrParseEngine.ts:475"
+        description: "Parses pull-out sheet. Starts at row 4. Similar structure but includes pulloutStatus field."
+      - element: parseReturnedFirearmsSheet
+        type: function
+        location: "MdrParseEngine.ts:599"
+        description: "Parses returned firearms sheet. Starts at row 2. Simpler structure: firearmKind, serialNumber, firearmMake, faRemarks."
+      - element: SECTION_PATTERNS
+        type: variable
+        location: "MdrParseEngine.ts:67"
+        description: "Regex patterns to detect section markers: CLIENT SITES, TOWER SITES, ARMORED CAR, BACKUP, FIREARMS ON VAULT, EQUIPMENT/ISSUED"
+      - element: STOP_MARKER_PATTERN
+        type: variable
+        location: "MdrParseEngine.ts:65"
+        description: "Regex to stop parsing: RECAPITULATION, PREPARED BY, NOTED BY, CERTIFIED CORRECT"
+    language: TypeScript
+    lines: ~750
+
+  - file: MdrBatchReview.tsx
+    path: DasiaAIO-Frontend/src/components/mdr/MdrBatchReview.tsx
+    purpose: "Review UI for a specific MDR batch. Shows batch stats, paginated staging rows table, resolve ambiguous rows, commit/reject batch"
+    key_elements:
+      - element: MdrBatchReview
+        type: function-component
+        location: "MdrBatchReview.tsx:113"
+        description: "Loads batch details + staging rows in parallel. Shows stats (total/matched/new/ambiguous/error), row table with resolve controls, commit/reject buttons"
+      - element: handleResolveRow
+        type: function
+        location: "MdrBatchReview.tsx:~295"
+        description: "PATCH /api/mdr/staging/:id/resolve — updates match_status and matched IDs for ambiguous rows"
+      - element: runBatchAction
+        type: function
+        location: "MdrBatchReview.tsx:~335"
+        description: "POST /api/mdr/batches/:id/commit or /api/mdr/batches/:id/reject"
+      - element: canCommit
+        type: variable
+        location: "MdrBatchReview.tsx:130"
+        description: "userRole === 'superadmin' — only superadmin can commit"
+      - element: canReject
+        type: variable
+        location: "MdrBatchReview.tsx:131"
+        description: "userRole === 'superadmin' || userRole === 'admin' — both can reject"
+    language: TypeScript/React
+    lines: ~500
+
+  - file: MdrBatchList.tsx
+    path: DasiaAIO-Frontend/src/components/mdr/MdrBatchList.tsx
+    purpose: "Paginated list of all MDR import batches with status, filename, upload date, row counts, and View Review action"
+    key_elements:
+      - element: MdrBatchList
+        type: function-component
+        location: "MdrBatchList.tsx:71"
+        description: "GET /api/mdr/batches with pagination. Table shows status badge, workbook name, report month, upload date, row stats, View Review button"
+    language: TypeScript/React
+    lines: ~200
+
+  - file: routes.ts
+    path: DasiaAIO-Frontend/src/router/routes.ts
+    purpose: "Route path constants and view-to-route mapping"
+    key_elements:
+      - element: ROUTES.MDR_IMPORT
+        type: variable
+        location: "routes.ts:20"
+        description: "'/mdr-import'"
+      - element: VIEW_TO_ROUTE['mdr-import']
+        type: variable
+        location: "routes.ts:58"
+        description: "Maps 'mdr-import' view key to ROUTES.MDR_IMPORT"
+    language: TypeScript
+    lines: ~80
+
+  - file: index.tsx (router)
+    path: DasiaAIO-Frontend/src/router/index.tsx
+    purpose: "React Router configuration"
+    key_elements:
+      - element: MdrImportPage lazy import
+        type: variable
+        location: "index.tsx:24"
+        description: "lazy(() => import('../components/mdr/MdrImportPage'))"
+      - element: MDR route registration
+        type: pattern
+        location: "index.tsx:161-162"
+        description: "Two routes: ROUTES.MDR_IMPORT and '/mdr-import/:batchId', both render MdrImportPage via LegacyPage wrapper"
+    language: TypeScript/React
+    lines: ~170
+
+  - file: navigation.ts
+    path: DasiaAIO-Frontend/src/config/navigation.ts
+    purpose: "Sidebar navigation configuration per role"
+    key_elements:
+      - element: SUPERADMIN_NAV MDR entry
+        type: variable
+        location: "navigation.ts:19"
+        description: "{ view: 'mdr-import', label: 'MDR Import', group: 'Operations' } — no permission gate"
+      - element: ADMIN_NAV MDR entry
+        type: variable
+        location: "navigation.ts:33"
+        description: "{ view: 'mdr-import', label: 'MDR Import', group: 'Operations' } — no permission gate"
+      - element: SUPERVISOR_NAV
+        type: variable
+        location: "navigation.ts:44"
+        description: "Does NOT include MDR import"
+    language: TypeScript
+    lines: ~50
+
+  - file: Sidebar.tsx
+    path: DasiaAIO-Frontend/src/components/Sidebar.tsx
+    purpose: "Sidebar component with icon abbreviations"
+    key_elements:
+      - element: MDR abbreviation
+        type: variable
+        location: "Sidebar.tsx:45"
+        description: "'mdr-import': 'MD' — sidebar icon abbreviation"
+    language: TypeScript/React
+    lines: N/A
+
+  # ── Backend ───────────────────────────────────────────────────
+
+  - file: mdr.rs (handlers)
+    path: DasiaAIO-Backend/src/handlers/mdr.rs
+    purpose: "HTTP handlers for all MDR endpoints"
+    key_elements:
+      - element: import_mdr
+        type: function
+        location: "mdr.rs:73"
+        description: "POST /api/mdr/import — Creates batch, inserts all staging rows, calls match_staging_rows(), returns batch ID + match summary"
+      - element: get_batches
+        type: function
+        location: "mdr.rs:157"
+        description: "GET /api/mdr/batches — Paginated list of all mdr_import_batches ORDER BY created_at DESC"
+      - element: get_batch_by_id
+        type: function
+        location: "mdr.rs:181"
+        description: "GET /api/mdr/batches/:id — Single batch details"
+      - element: get_batch_review
+        type: function
+        location: "mdr.rs:211"
+        description: "GET /api/mdr/batches/:id/review — Paginated staging rows for a batch"
+      - element: resolve_staging_row
+        type: function
+        location: "mdr.rs:245"
+        description: "PATCH /api/mdr/staging/:id/resolve — Updates match_status to 'matched' or 'new' with optional matched IDs"
+      - element: commit_batch
+        type: function
+        location: "mdr.rs:275"
+        description: "POST /api/mdr/batches/:id/commit — Requires superadmin via require_min_role(). Delegates to mdr_import_service::commit_batch()"
+      - element: reject_batch
+        type: function
+        location: "mdr.rs:287"
+        description: "POST /api/mdr/batches/:id/reject — Delegates to mdr_import_service::reject_batch()"
+      - element: MdrImportRequest
+        type: struct
+        location: "mdr.rs:17"
+        description: "Request body: { filename, report_month, branch?, sheets: { main_roster, supplementary, pull_out, returned_firearms } }"
+      - element: MdrRowInput
+        type: struct
+        location: "mdr.rs:33"
+        description: "Per-row input: 21 fields matching MdrRowData on frontend"
+      - element: ResolveRequest
+        type: struct
+        location: "mdr.rs:60"
+        description: "{ match_status, matched_guard_id?, matched_firearm_id?, matched_client_id? }"
+    language: Rust
+    lines: ~300
+
+  - file: mdr_import_service.rs
+    path: DasiaAIO-Backend/src/services/mdr_import_service.rs
+    purpose: "Business logic: matching, commit, reject for MDR batches"
+    key_elements:
+      - element: match_staging_rows
+        type: function
+        location: "mdr_import_service.rs:40"
+        description: "Iterates all staging rows for a batch. Matches guard by license_number (primary) or UPPER(full_name) (fallback). Matches firearm by serial_number. Matches client by UPPER(name). Sets match_status per row."
+      - element: commit_batch
+        type: function
+        location: "mdr_import_service.rs:185"
+        description: "Transactional commit. Per section: equipment→INSERT equipment, returned→UPDATE/INSERT firearms, pullout→INSERT guard_status_transitions + UPDATE user status + end assignments, vault→UPDATE/INSERT firearms, default (clients/tower/armored/backup)→upsert guard + upsert firearm + create allocation + create assignment. Updates batch status to 'committed'. Writes audit_log entry."
+      - element: reject_batch
+        type: function
+        location: "mdr_import_service.rs:608"
+        description: "Sets status='rejected' for batches in 'staging' or 'reviewing' state"
+      - element: MatchSummary
+        type: struct
+        location: "mdr_import_service.rs:8"
+        description: "{ total, matched, new_rows, ambiguous, errors }"
+      - element: CommitSummary
+        type: struct
+        location: "mdr_import_service.rs:17"
+        description: "{ clients_created/updated, guards_created/updated, firearms_created/updated, allocations_created, assignments_created, transitions_created, equipment_created }"
+    language: Rust
+    lines: ~630
+
+  - file: models.rs (MDR models)
+    path: DasiaAIO-Backend/src/models.rs
+    purpose: "Rust model structs for MDR database tables"
+    key_elements:
+      - element: MdrImportBatch
+        type: struct
+        location: "models.rs:1039"
+        description: "Maps to mdr_import_batches table: id, filename, report_month, branch?, uploaded_by, status, total/matched/new/ambiguous/error_rows, committed_at/by, notes, created_at"
+      - element: MdrStagingRow
+        type: struct
+        location: "models.rs:1059"
+        description: "Maps to mdr_staging_rows table: 25 fields including match_status, matched_*_id, validation_errors (JSONB)"
+    language: Rust
+    lines: ~60
+
+  - file: main.rs (MDR routes)
+    path: DasiaAIO-Backend/src/main.rs
+    purpose: "Route registration for MDR endpoints"
+    key_elements:
+      - element: MDR integration routes
+        type: pattern
+        location: "main.rs:1539-1567"
+        description: "Registers /api/clients, /api/clients/:id, /api/guard-assignments, /api/guard-assignments/by-client/:id, /api/guard-status-transitions — all gated by require_mdr_management"
+      - element: MDR import routes
+        type: pattern
+        location: "main.rs:1570-1632"
+        description: "Registers /api/mdr/import (POST), /api/mdr/batches (GET), /api/mdr/batches/:id (GET), /api/mdr/batches/:id/review (GET), /api/mdr/staging/:id/resolve (PATCH), /api/mdr/batches/:id/commit (POST), /api/mdr/batches/:id/reject (POST)"
+      - element: commit/reject route guard
+        type: pattern
+        location: "main.rs:1612-1632"
+        description: "Both commit and reject use require_superadmin middleware, NOT require_mdr_management"
+    language: Rust
+    lines: ~100
+
+  - file: authz.rs (MDR middleware)
+    path: DasiaAIO-Backend/src/middleware/authz.rs
+    purpose: "Authorization middleware"
+    key_elements:
+      - element: require_mdr_management
+        type: function
+        location: "authz.rs:144"
+        description: "Checks 'manage_mdr' permission via authorize_permission()"
+    language: Rust
+    lines: ~5
+
+  - file: utils.rs (permissions)
+    path: DasiaAIO-Backend/src/utils.rs
+    purpose: "Role-to-permission mapping"
+    key_elements:
+      - element: manage_mdr permission
+        type: pattern
+        location: "utils.rs:235, utils.rs:255"
+        description: "Granted to superadmin and admin roles. NOT granted to supervisor or guard."
+    language: Rust
+    lines: N/A
+
+  - file: add_mdr_integration.sql
+    path: DasiaAIO-Backend/migrations/add_mdr_integration.sql
+    purpose: "Database migration for MDR integration"
+    key_elements:
+      - element: clients table
+        type: table
+        location: "add_mdr_integration.sql:14"
+        description: "New table: id, name, address, phone, client_number, branch, is_active. Unique index on UPPER(name)+COALESCE(branch,'')"
+      - element: mdr_import_batches table
+        type: table
+        location: "add_mdr_integration.sql:28"
+        description: "Audit trail: id, filename, report_month, branch, uploaded_by→users, status, row counts, committed_at/by, notes"
+      - element: mdr_staging_rows table
+        type: table
+        location: "add_mdr_integration.sql:47"
+        description: "Raw parsed Excel data: 25 columns. CASCADE delete on batch. Indexed by batch_id and (batch_id, match_status)"
+      - element: guard_assignments table
+        type: table
+        location: "add_mdr_integration.sql:84"
+        description: "Guard-to-client posting. Unique active index on (guard_id, client_id, assignment_start). Has mdr_batch_id/mdr_row_ref."
+      - element: guard_status_transitions table
+        type: table
+        location: "add_mdr_integration.sql:110"
+        description: "Pull-out history: transition_type, reason, previous_client_id. Indexed by (guard_id, created_at DESC)"
+      - element: equipment table
+        type: table
+        location: "add_mdr_integration.sql:127"
+        description: "Non-firearm gear: type, description, serial_number, assigned_to_client/guard, quantity, status, mdr_batch_id"
+      - element: users ALTER
+        type: migration
+        location: "add_mdr_integration.sql:145-148"
+        description: "Adds guard_number, status, mdr_batch_id, lic_reg_name columns"
+      - element: firearms ALTER
+        type: migration
+        location: "add_mdr_integration.sql:151-158"
+        description: "Adds kind, make, validity_date, ammo_issued, lic_reg_name, vault_status, return_remarks, mdr_batch_id columns"
+      - element: firearm_allocations ALTER
+        type: migration
+        location: "add_mdr_integration.sql:161-162"
+        description: "Adds mdr_batch_id, mdr_row_ref columns"
+      - element: client_sites ALTER
+        type: migration
+        location: "add_mdr_integration.sql:165"
+        description: "Adds client_id column to link sites to business clients"
+    language: SQL
+    lines: ~170
+
+# ═══════════════════════════════════════════════════════════════════
+# FULL UPLOAD FLOW
+# ═══════════════════════════════════════════════════════════════════
+
+upload_flow:
+  step_1_file_selection:
+    component: MdrUploader.tsx
+    description: |
+      User drags/drops or selects .xlsx/.xls file.
+      Extension validated client-side (only .xlsx/.xls accepted).
+
+  step_2_client_side_parsing:
+    component: MdrParseEngine.ts
+    description: |
+      File is read as ArrayBuffer via FileReader.
+      SheetJS (xlsx) parses the workbook with cellDates: true.
+      identifySheets() auto-detects sheet roles by name pattern:
+        - Main roster: sheet name containing month name, or 'MAIN'/'ROSTER', or first sheet
+        - Supplementary: 'Sheet 1' or 'SUPPLEMENT'
+        - Pull-out: 'PULL OUT' / 'PULLOUT'
+        - Returned: 'FA RETURNED' / 'RETURNED TO GHQ' / 'RETURNED'
+      Each sheet is parsed by its specialized parser:
+        - parseRosterSheet(): starts row 8, reads client/guard/firearm columns A-P
+        - parsePullOutSheet(): starts row 4, includes pulloutStatus
+        - parseReturnedFirearmsSheet(): starts row 2, simpler firearm-only columns
+      Returns MdrParseResult with filename, reportMonth, branch, sheets{}, warnings[].
+
+  step_3_preview:
+    component: MdrUploader.tsx
+    description: |
+      Preview counts (unique guards/clients/firearms, pullout count, returned count) displayed.
+      Parsing warnings shown (max 20 in UI).
+      User clicks "Upload & Process" button.
+
+  step_4_upload:
+    component: MdrUploader.tsx → backend
+    api_call: "POST /api/mdr/import"
+    content_type: "application/json"
+    description: |
+      Sends JSON body: { filename, reportMonth, branch, sheets: { mainRoster[], supplementary[], pullOut[], returnedFirearms[] } }
+      NOTE: This is NOT a multipart file upload. The XLSX is parsed entirely on the client, and only the extracted JSON rows are sent.
+
+  step_5_backend_import:
+    handler: "handlers/mdr.rs → import_mdr()"
+    description: |
+      1. Extracts bearer token, verifies JWT claims
+      2. Creates mdr_import_batches row with status='staging'
+      3. Iterates all rows from all 4 sheet arrays
+      4. Inserts each as mdr_staging_rows with match_status='pending'
+      5. Calls mdr_import_service::match_staging_rows()
+      6. Returns { batchId, totalRows, preview: { matched, new, ambiguous, errors } }
+
+  step_6_matching:
+    service: "services/mdr_import_service.rs → match_staging_rows()"
+    description: |
+      For each staging row:
+        Guard matching:
+          1. Primary: users.license_number = staging.license_number WHERE role='guard'
+          2. Fallback: UPPER(users.full_name) = UPPER(staging.guard_name) WHERE role='guard'
+          3. Multiple matches → 'ambiguous'
+        Firearm matching: firearms.serial_number = staging.serial_number
+        Client matching: UPPER(clients.name) = UPPER(staging.client_name)
+        Error check: non-equipment/non-returned rows without guard_name → 'error'
+      Updates match_status and matched_*_id on each staging row.
+      Updates batch row counts and sets status='reviewing'.
+
+  step_7_redirect_to_review:
+    component: MdrImportPage.tsx
+    description: |
+      On upload success, navigates to /mdr-import/{batchId} which renders MdrBatchReview.
+
+  step_8_review:
+    component: MdrBatchReview.tsx
+    description: |
+      Shows batch stats dashboard (total/matched/new/ambiguous/error).
+      Paginated table of staging rows (50 per page).
+      Ambiguous rows show resolve controls: select matched/new, pick guard/firearm/client IDs.
+      Resolve button PATCHes /api/mdr/staging/:id/resolve.
+
+  step_9_commit_or_reject:
+    component: MdrBatchReview.tsx
+    description: |
+      Commit (superadmin only): POST /api/mdr/batches/:id/commit
+        → mdr_import_service::commit_batch() — full transactional upsert
+      Reject (superadmin/admin in UI, but superadmin-only in backend route): POST /api/mdr/batches/:id/reject
+        → mdr_import_service::reject_batch() — sets status='rejected'
+
+# ═══════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════
+
+api_endpoints:
+  - method: POST
+    path: "/api/mdr/import"
+    handler: "handlers::mdr::import_mdr"
+    middleware: "require_mdr_management + audit_write_requests"
+    description: "Upload parsed MDR data, create batch + staging rows, run matching"
+    request_body: "MdrImportRequest (JSON)"
+    response: "{ batchId, totalRows, preview: { matched, new, ambiguous, errors } }"
+
+  - method: GET
+    path: "/api/mdr/batches"
+    handler: "handlers::mdr::get_batches"
+    middleware: "require_mdr_management"
+    description: "Paginated list of all MDR import batches"
+    query_params: "page, pageSize"
+    response: "{ total, page, pageSize, items: MdrImportBatch[] }"
+
+  - method: GET
+    path: "/api/mdr/batches/:id"
+    handler: "handlers::mdr::get_batch_by_id"
+    middleware: "require_mdr_management"
+    description: "Single batch details"
+    response: "MdrImportBatch"
+
+  - method: GET
+    path: "/api/mdr/batches/:id/review"
+    handler: "handlers::mdr::get_batch_review"
+    middleware: "require_mdr_management"
+    description: "Paginated staging rows for review"
+    query_params: "page, pageSize"
+    response: "{ total, page, pageSize, items: MdrStagingRow[] }"
+
+  - method: PATCH
+    path: "/api/mdr/staging/:id/resolve"
+    handler: "handlers::mdr::resolve_staging_row"
+    middleware: "require_mdr_management + audit_write_requests"
+    description: "Resolve ambiguous/error staging row by setting match_status and matched IDs"
+    request_body: "ResolveRequest (JSON)"
+    response: "{ status: 'resolved' }"
+
+  - method: POST
+    path: "/api/mdr/batches/:id/commit"
+    handler: "handlers::mdr::commit_batch"
+    middleware: "require_superadmin + audit_write_requests"
+    description: "Commit batch — transactional upsert of all staging rows into production tables"
+    response: "{ status: 'committed', summary: CommitSummary }"
+
+  - method: POST
+    path: "/api/mdr/batches/:id/reject"
+    handler: "handlers::mdr::reject_batch"
+    middleware: "require_superadmin + audit_write_requests"
+    description: "Reject batch — sets status to 'rejected'"
+    response: "{ status: 'rejected' }"
+
+# ═══════════════════════════════════════════════════════════════════
+# DATABASE TABLES
+# ═══════════════════════════════════════════════════════════════════
+
+database_tables:
+  new_tables:
+    - name: clients
+      purpose: "First-class business entity representing security agency clients"
+      key_columns: "id, name, address, phone, client_number, branch, is_active"
+      indexes: "Unique on UPPER(name)+COALESCE(branch,'')"
+
+    - name: mdr_import_batches
+      purpose: "Audit trail for each MDR workbook upload"
+      key_columns: "id, filename, report_month, branch, uploaded_by→users, status, row counts, committed_at/by"
+      statuses: "staging → reviewing → committed | rejected"
+
+    - name: mdr_staging_rows
+      purpose: "Raw parsed Excel rows held for review before commit"
+      key_columns: "25 columns — all MDR row data + match_status + matched_*_id + validation_errors"
+      indexes: "batch_id, (batch_id, match_status)"
+      cascade: "ON DELETE CASCADE from mdr_import_batches"
+
+    - name: guard_assignments
+      purpose: "Guard-to-client posting records"
+      key_columns: "guard_id→users, client_id→clients, post_label, guard_number, status, mdr traceability"
+      indexes: "guard_id, client_id, unique active per (guard_id, client_id, assignment_start)"
+
+    - name: guard_status_transitions
+      purpose: "Pull-out and re-assignment history"
+      key_columns: "guard_id, transition_type, reason, previous_client_id, mdr traceability"
+      indexes: "(guard_id, created_at DESC)"
+
+    - name: equipment
+      purpose: "Non-firearm gear tracked from MDR"
+      key_columns: "equipment_type, description, serial_number, assigned_to_client/guard, quantity, status"
+
+  altered_tables:
+    - name: users
+      added_columns: "guard_number (INTEGER), status (VARCHAR), mdr_batch_id (VARCHAR), lic_reg_name (VARCHAR)"
+
+    - name: firearms
+      added_columns: "kind, make, validity_date, ammo_issued, lic_reg_name, vault_status, return_remarks, mdr_batch_id"
+
+    - name: firearm_allocations
+      added_columns: "mdr_batch_id, mdr_row_ref"
+
+    - name: client_sites
+      added_columns: "client_id (VARCHAR) — links sites to business clients"
+
+# ═══════════════════════════════════════════════════════════════════
+# ROLES AND ACCESS CONTROL
+# ═══════════════════════════════════════════════════════════════════
+
+roles_and_access:
+  superadmin:
+    - "manage_mdr permission → can access all MDR routes"
+    - "Can upload, review, resolve, commit, reject"
+    - "Commit requires superadmin (enforced in handler via require_min_role + route middleware)"
+  admin:
+    - "manage_mdr permission → can access most MDR routes"
+    - "Can upload, review, resolve"
+    - "Frontend shows reject button (canReject = userRole === 'superadmin' || userRole === 'admin')"
+    - "BUT backend reject route uses require_superadmin middleware → admin reject will 403"
+  supervisor:
+    - "NO manage_mdr permission"
+    - "NO nav entry for MDR"
+  guard:
+    - "NO manage_mdr permission"
+    - "NO nav entry for MDR"
+
+# ═══════════════════════════════════════════════════════════════════
+# BUGS AND ISSUES
+# ═══════════════════════════════════════════════════════════════════
+
+bugs_and_issues:
+
+  - id: BUG-1
+    severity: medium
+    title: "Admin reject button will 403 at backend"
+    description: |
+      Frontend MdrBatchReview.tsx:131 sets canReject = userRole === 'superadmin' || userRole === 'admin',
+      showing a reject button for admins. But main.rs:1623-1632 registers /api/mdr/batches/:id/reject
+      with require_superadmin middleware, so admin users will get a 403 Forbidden response.
+    files:
+      - "DasiaAIO-Frontend/src/components/mdr/MdrBatchReview.tsx:131"
+      - "DasiaAIO-Backend/src/main.rs:1623-1632"
+    fix: "Either change backend reject route to require_mdr_management, or change frontend canReject to superadmin-only"
+
+  - id: BUG-2
+    severity: low
+    title: "N+1 query in match_staging_rows"
+    description: |
+      match_staging_rows() iterates ALL staging rows and runs 1-3 SQL queries per row
+      (guard match, optionally name match, firearm match, client match = up to 4 queries per row).
+      For a 500-row MDR workbook, this is ~2000 individual queries.
+    files:
+      - "DasiaAIO-Backend/src/services/mdr_import_service.rs:40-170"
+    fix: "Pre-load all guards/firearms/clients into HashMaps and match in-memory"
+
+  - id: BUG-3
+    severity: medium
+    title: "Hardcoded temp password for new guards created on commit"
+    description: |
+      When commit_batch creates a new guard user, it uses hash_password("changeme123!").
+      There is no forced password change mechanism, and the password is the same for every
+      auto-created guard. This is a security concern.
+    files:
+      - "DasiaAIO-Backend/src/services/mdr_import_service.rs:~460"
+    fix: "Generate random passwords, or create users in a 'pending_activation' state"
+
+  - id: BUG-4
+    severity: low
+    title: "No duplicate batch detection"
+    description: |
+      The same filename + report_month + branch can be uploaded multiple times
+      with no warning or deduplication. This could lead to duplicate guard/firearm records on commit.
+    files:
+      - "DasiaAIO-Backend/src/handlers/mdr.rs:73-155"
+    fix: "Check for existing batch with same filename+report_month before creating"
+
+  - id: BUG-5
+    severity: low
+    title: "New guard email generation is naive"
+    description: |
+      For new guards, email is generated as guardname@sentinel.local and username
+      from name.to_lowercase().replace(' ', '.').replace(',', ''). Name collisions
+      would cause unique constraint violations.
+    files:
+      - "DasiaAIO-Backend/src/services/mdr_import_service.rs:~455-465"
+    fix: "Add uniqueness suffix or check for existing username/email"
+
+  - id: ISSUE-1
+    severity: info
+    title: "validation_errors column in mdr_staging_rows is never populated"
+    description: |
+      The JSONB validation_errors column exists in the schema and model but is never
+      written to by any handler or service.
+    files:
+      - "DasiaAIO-Backend/migrations/add_mdr_integration.sql:75"
+      - "DasiaAIO-Backend/src/models.rs:1090"
+
+  - id: ISSUE-2
+    severity: info
+    title: "notes column on mdr_import_batches is never used"
+    description: |
+      The batch has a 'notes' TEXT column but no UI or handler writes to it.
+    files:
+      - "DasiaAIO-Backend/migrations/add_mdr_integration.sql:42"
+
+  - id: ISSUE-3
+    severity: info
+    title: "Resolve UI uses raw IDs in select dropdowns"
+    description: |
+      The resolve controls for ambiguous rows show raw UUIDs in dropdowns
+      rather than displaying guard names, firearm serial numbers, or client names.
+      This makes manual resolution very difficult.
+    files:
+      - "DasiaAIO-Frontend/src/components/mdr/MdrBatchReview.tsx:~430-480"
+
+# ═══════════════════════════════════════════════════════════════════
+# IMPLEMENTATION STATUS
+# ═══════════════════════════════════════════════════════════════════
+
+implementation_status:
+  overall: "Fully wired end-to-end"
+  details: |
+    The MDR import feature is complete at all layers:
+    - Frontend: file upload, client-side XLSX parsing, preview, upload, batch history, review, resolve, commit/reject
+    - Backend: import handler, matching service, commit service (full transactional upsert), reject service
+    - Database: migration creates all required tables and extends existing ones
+    - Routing: both frontend React Router and backend Axum routes are registered
+    - Auth/Authz: middleware guards on all endpoints, permission model defined
+    - Audit: commit writes to audit_logs table
+    - Navigation: sidebar entries for superadmin and admin roles
+
+  parsing_depth: |
+    The MdrParseEngine is sophisticated — handles 4 sheet types, multiple section detection,
+    date normalization (numeric Excel dates, slash-delimited, ISO), phone normalization,
+    client/guard/firearm extraction. Generates actionable warnings.
+
+  commit_depth: |
+    The commit_batch service handles 5 distinct section types (equipment, returned, pullout,
+    vault, default roster) with create-or-update logic for clients, guards, firearms,
+    allocations, assignments, and status transitions. Uses a database transaction.
+
+  what_works:
+    - "File upload with drag-and-drop"
+    - "Client-side .xlsx/.xls parsing with 4 sheet types"
+    - "Preview counts before upload"
+    - "Backend import + auto-matching"
+    - "Batch history with pagination"
+    - "Staging row review table"
+    - "Manual row resolution"
+    - "Batch commit with transactional upsert"
+    - "Batch reject"
+    - "Audit logging on commit"
+
+  what_needs_attention:
+    - "Admin reject 403 mismatch (BUG-1)"
+    - "N+1 matching query performance (BUG-2)"
+    - "Hardcoded temp password (BUG-3)"
+    - "No duplicate batch detection (BUG-4)"
+    - "Naive email generation for new guards (BUG-5)"
+    - "Resolve UI shows raw UUIDs (ISSUE-3)"
+    - "Unused validation_errors and notes columns"
+
+# ═══════════════════════════════════════════════════════════════════
+
+open_questions:
+  - question: "Should admin be allowed to reject batches?"
+    context: "Frontend allows it, backend blocks it. Intentional design or oversight?"
+    type: decision_blocker
+    affects: ["BUG-1"]
+
+  - question: "Is the hardcoded temp password acceptable for the deployment?"
+    context: "New guards created via MDR commit get 'changeme123!' as password"
+    type: decision_blocker
+    affects: ["BUG-3"]
+
+gaps:
+  - area: "Search/filter on batch review page"
+    description: "No search or filter controls on the staging rows table — large batches (500+ rows) are hard to navigate with pagination alone"
+    impact: nice_to_know
+    affects: []
+
+  - area: "Batch-level re-match"
+    description: "No ability to re-run matching after manual data corrections. Once matched, the only flow is resolve individual rows."
+    impact: nice_to_know
+    affects: []
+
+  - area: "Export/download"
+    description: "No way to export committed data or staging review results"
+    impact: nice_to_know
+    affects: []
