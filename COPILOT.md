@@ -192,6 +192,18 @@ backed by:
 | POST | `/api/shifts/swap-request` | Guard shift swap request |
 | GET | `/api/shifts/swap-requests` | List swap requests |
 | PATCH | `/api/shifts/swap-requests/:id/respond` | Accept / decline swap |
+| GET | `/api/clients` | Paginated clients list |
+| GET | `/api/clients/:id` | Client by ID |
+| GET | `/api/guard-assignments` | Active guard assignments |
+| GET | `/api/guard-assignments/by-client/:id` | Assignments by client |
+| GET | `/api/guard-status-transitions` | Guard status transition history |
+| POST | `/api/mdr/import` | Upload parsed MDR workbook to staging |
+| GET | `/api/mdr/batches` | Paginated MDR import batches |
+| GET | `/api/mdr/batches/:id` | Single batch detail |
+| GET | `/api/mdr/batches/:id/review` | Staging rows for review |
+| PATCH | `/api/mdr/staging/:id/resolve` | Resolve ambiguous staging row |
+| POST | `/api/mdr/batches/:id/commit` | Commit batch (superadmin) |
+| POST | `/api/mdr/batches/:id/reject` | Reject batch (superadmin) |
 
 ---
 
@@ -209,6 +221,12 @@ backed by:
 | `guard_shift_swaps` | Shift swap requests (`requester_id`, `target_id`, `status`) |
 | `incidents` | Reported incidents with AI-assigned severity |
 | `firearm_allocations` | Guard ↔ firearm allocation records |
+| `clients` | Client organizations (name, address, phone, branch) |
+| `guard_assignments` | Guard ↔ client post assignments with status |
+| `guard_status_transitions` | Pull-out, resignation, floating status history |
+| `equipment` | Non-firearm equipment (detectors, radios, etc.) |
+| `mdr_import_batches` | MDR import batch tracking (staging → committed) |
+| `mdr_staging_rows` | Per-row staging data with match status |
 
 ---
 

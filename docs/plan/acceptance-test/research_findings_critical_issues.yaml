@@ -1,0 +1,486 @@
+plan_id: acceptance-test
+objective: Research 5 critical issues found during SENTINEL acceptance testing
+focus_area: backend-routes, frontend-router, websocket, auth-middleware, presence
+created_at: "2026-04-09"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Issue 1 (WS 403): The `/api/tracking/ws` route has NO auth middleware layer — it does its own token extraction from subprotocol headers. The CORS layer (outermost) uses `AllowOrigin::list()` which may not include the `Sec-WebSocket-Protocol` in `allow_headers`, potentially stripping it during preflight. The WS route requires a `bearer.<token>` subprotocol OR `?token=` query param. CORS origin mismatch with production frontend domain is the most likely root cause.
+  - Issue 2 (Guard ERR_ABORTED): All four guard endpoints exist and use `require_authenticated` (not role-gated). ERR_ABORTED is NOT a backend auth rejection — it's a browser-side abort, likely caused by the guard dashboard's `Promise.allSettled` bulk fetch pattern where one early failure (e.g., network/CORS) cascades.
+  - Issue 3 (Analytics timeout): The route exists and maps to a handler that runs ~10 sequential SQL queries. Guard role is explicitly blocked by `require_analytics_view` which checks `view_analytics` permission — guards lack this permission. For elevated roles, the handler's serial query pattern is a timeout risk.
+  - Issue 4 (Support redirect): By design. `SupportRouteWrapper` in `router/index.tsx:123-127` explicitly returns `<Navigate to={ROUTES.INBOX} replace />` for non-guard roles (superadmin/admin/supervisor).
+  - Issue 5 (Active/Inactive): Status is derived purely from `last_seen_at` timestamp with a 3-minute window. The `touch_last_seen` presence middleware fires on every authenticated API request. If a user hasn't made any API call in 3 minutes, they appear "Inactive". No WebSocket heartbeat updates `last_seen_at`.
+
+research_metadata:
+  methodology: "hybrid retrieval: semantic_search + grep_search, targeted file reads"
+  scope: "DasiaAIO-Backend/src/ (routes, handlers, middleware, utils) + DasiaAIO-Frontend/src/ (router, components, hooks)"
+  confidence: high
+  coverage: 92
+  decision_blockers: 1
+  research_blockers: 0
+
+files_analyzed:
+  - file: main.rs
+    path: DasiaAIO-Backend/src/main.rs
+    purpose: Router definition — all API routes, middleware layering, CORS config
+    key_elements:
+      - element: "/api/tracking/ws route"
+        type: route
+        location: "main.rs:1391"
+        description: "WebSocket upgrade route with NO route_layer middleware — handler does its own auth"
+      - element: "/api/analytics route"
+        type: route
+        location: "main.rs:1290-1293"
+        description: "GET handler with require_analytics_view middleware"
+      - element: "/api/guard-allocations/:guard_id"
+        type: route
+        location: "main.rs:582-585"
+        description: "GET with require_authenticated — allows any authenticated user including guards"
+      - element: "/api/guard-replacement/guard/:guard_id/shifts"
+        type: route
+        location: "main.rs:647-650"
+        description: "GET with require_authenticated — allows any authenticated user including guards"
+      - element: "/api/attendance/:guard_id"
+        type: route
+        location: "main.rs:697-700"
+        description: "GET with require_authenticated — allows any authenticated user including guards"
+      - element: "/api/guard-firearm-permits/:guard_id"
+        type: route
+        location: "main.rs:900-903"
+        description: "GET with require_authenticated — allows any authenticated user including guards"
+      - element: cors_layer
+        type: variable
+        location: "main.rs:94-213"
+        description: "CORS config — uses AllowOrigin::list(). Only allows Authorization, Content-Type, Accept, Origin headers. Does NOT explicitly allow Sec-WebSocket-Protocol or Upgrade headers."
+      - element: global middleware stack
+        type: pattern
+        location: "main.rs:1665-1683"
+        description: "Layer order (inside-out): request_timeout → TraceLayer → audit_authz_failures → touch_last_seen → body_limit → security_headers → CORS (outermost)"
+    language: rust
+    lines: 1700
+
+  - file: tracking.rs
+    path: DasiaAIO-Backend/src/handlers/tracking.rs
+    purpose: WebSocket tracking handler
+    key_elements:
+      - element: tracking_ws
+        type: function
+        location: "tracking.rs:1974-2037"
+        description: "WS upgrade handler. Extracts token from Sec-WebSocket-Protocol header (bearer.<token> subprotocol) OR ?token= query param. Verifies JWT, checks legal consent, checks has_tracking_access_role(). Returns 401/403 on failure."
+      - element: extract_ws_token_from_protocols
+        type: function
+        location: "tracking.rs:87-101"
+        description: "Parses 'Sec-WebSocket-Protocol' header, looking for 'bearer.<token>' subprotocol"
+      - element: TrackingWsAuthQuery
+        type: struct
+        location: "tracking.rs:83-86"
+        description: "Query params struct with optional token field for ?token= auth"
+    language: rust
+    lines: 2100
+
+  - file: authz.rs
+    path: DasiaAIO-Backend/src/middleware/authz.rs
+    purpose: Authorization middleware functions
+    key_elements:
+      - element: has_tracking_access_role
+        type: function
+        location: "authz.rs:9-13"
+        description: "Returns true for superadmin, admin, supervisor, guard — ALL roles have tracking access"
+      - element: require_authenticated
+        type: function
+        location: "authz.rs:59-64"
+        description: "Extracts bearer token, verifies JWT, enforces legal consent. Allows any valid authenticated user regardless of role."
+      - element: require_analytics_view
+        type: function
+        location: "authz.rs:155-157"
+        description: "Calls authorize_permission with 'view_analytics' — guards lack this permission"
+      - element: authorize_permission
+        type: function
+        location: "authz.rs:33-56"
+        description: "Generic permission check: extracts token, verifies JWT, checks legal consent, then calls utils::has_permission(role, permission)"
+    language: rust
+    lines: 200
+
+  - file: utils.rs
+    path: DasiaAIO-Backend/src/utils.rs
+    purpose: Utility functions including role permission mappings
+    key_elements:
+      - element: "guard permissions"
+        type: variable
+        location: "utils.rs:284-288"
+        description: "Guard role has only 3 permissions: create_support_ticket, manage_notifications, view_merit. Notably MISSING: view_analytics, manage_firearms, manage_schedules, allocate_firearm"
+    language: rust
+    lines: 350
+
+  - file: presence.rs
+    path: DasiaAIO-Backend/src/middleware/presence.rs
+    purpose: touch_last_seen middleware (updates user.last_seen_at on every authenticated request)
+    key_elements:
+      - element: touch_last_seen
+        type: function
+        location: "presence.rs:7-27"
+        description: "Global middleware. On every request with valid Bearer token, runs UPDATE users SET last_seen_at = CURRENT_TIMESTAMP WHERE id = $1. This is the ONLY mechanism updating last_seen_at besides login."
+    language: rust
+    lines: 28
+
+  - file: analytics.rs
+    path: DasiaAIO-Backend/src/handlers/analytics.rs
+    purpose: Analytics endpoint handlers
+    key_elements:
+      - element: get_analytics
+        type: function
+        location: "analytics.rs:74-250"
+        description: "Runs ~10 sequential SQL queries (guards count, active guards, missions, firearms, incidents, etc.). No pagination, no caching. Has secondary role check: require_min_role('supervisor')."
+    language: rust
+    lines: 400
+
+  - file: index.tsx
+    path: DasiaAIO-Frontend/src/router/index.tsx
+    purpose: React Router definition
+    key_elements:
+      - element: SupportRouteWrapper
+        type: function
+        location: "index.tsx:123-128"
+        description: "If user.role === 'guard' → renders GuardSectionWrapper with section='support'. Otherwise → Navigate to ROUTES.INBOX (redirect). This is INTENTIONAL design."
+      - element: "/support route"
+        type: route
+        location: "index.tsx:185"
+        description: "Under ALL_ROLES RoleGuard, so all roles can access /support, but non-guard roles get redirected to /inbox by SupportRouteWrapper"
+    language: typescript
+    lines: 230
+
+  - file: AdminDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/AdminDashboard.tsx
+    purpose: Admin user management dashboard
+    key_elements:
+      - element: ONLINE_WINDOW_MS
+        type: variable
+        location: "AdminDashboard.tsx:39"
+        description: "Constant: 3 * 60 * 1000 (3 minutes). Users are 'online' if last_seen_at is within this window."
+      - element: isUserOnline
+        type: function
+        location: "AdminDashboard.tsx:41-46"
+        description: "Returns true if Date.now() - last_seen_at <= 3 minutes. Returns false if lastSeenAt is null/undefined/NaN."
+      - element: getUserDerivedStatus
+        type: function
+        location: "AdminDashboard.tsx:72-76"
+        description: "Derives status: pending (if in pendingIds), suspended (if suspended/unverified), then active/inactive based on isUserOnline(last_seen_at)"
+    language: typescript
+    lines: 950
+
+  - file: SuperadminDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx
+    purpose: Superadmin dashboard (duplicates same isUserOnline logic)
+    key_elements:
+      - element: isUserOnline (duplicate)
+        type: function
+        location: "SuperadminDashboard.tsx:59-64"
+        description: "Identical 3-minute window logic as AdminDashboard"
+      - element: getUserDerivedStatus (duplicate)
+        type: function
+        location: "SuperadminDashboard.tsx:104-108"
+        description: "Identical derivation logic as AdminDashboard"
+    language: typescript
+    lines: 1500
+
+  - file: UserDashboard.tsx
+    path: DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx
+    purpose: Guard workspace — fires the 4 parallel API fetches that fail
+    key_elements:
+      - element: bulk fetch pattern
+        type: pattern
+        location: "UserDashboard.tsx:264-285"
+        description: "Promise.allSettled() with 4 requests: attendance, guard-shifts, guard-allocations, guard-permits. Uses fetchJsonOrThrow which may ERR_ABORT if fetch fails."
+    language: typescript
+    lines: 900
+
+  - file: useOperationalMapData.ts
+    path: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+    purpose: WebSocket connection logic for live tracking map
+    key_elements:
+      - element: WebSocket connection
+        type: pattern
+        location: "useOperationalMapData.ts:355-402"
+        description: "Constructs wsUrl by replacing http→ws in API_BASE_URL. Passes protocols: ['sentinel-tracking-v1', 'bearer.<token>']. Has reconnect logic with exponential backoff, max 10 attempts."
+    language: typescript
+    lines: 500
+
+patterns_found:
+  - category: architecture
+    pattern: "WS auth via subprotocol header instead of route middleware"
+    description: "The /api/tracking/ws route has no route_layer middleware. Instead, the handler itself extracts the JWT from the Sec-WebSocket-Protocol header (bearer.<token>) or ?token= query param. This is necessary because browsers cannot set Authorization headers on WebSocket upgrades."
+    examples:
+      - file: tracking.rs
+        location: "tracking.rs:1974-1995"
+        snippet: "let protocol_token = extract_ws_token_from_protocols(&headers); let query_token = query.token..."
+    prevalence: rare
+
+  - category: error_handling
+    pattern: "Promise.allSettled for multi-endpoint guard fetches"
+    description: "Guard dashboard fires 4 API calls via Promise.allSettled. If a network-level issue causes ERR_ABORTED on one, all 4 may fail simultaneously (shared connection pool / CORS preflight failure)."
+    examples:
+      - file: UserDashboard.tsx
+        location: "UserDashboard.tsx:264-285"
+        snippet: "const settled = await Promise.allSettled(requests)"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Presence tracking via global middleware"
+    description: "touch_last_seen is a global middleware layer that updates last_seen_at on EVERY authenticated request. This means active/inactive status depends on API call frequency, not an explicit heartbeat."
+    examples:
+      - file: presence.rs
+        location: "presence.rs:7-27"
+        snippet: "UPDATE users SET last_seen_at = CURRENT_TIMESTAMP WHERE id = $1"
+      - file: main.rs
+        location: "main.rs:1674"
+        snippet: "middleware::presence::touch_last_seen"
+    prevalence: common
+
+  - category: architecture
+    pattern: "Duplicated isUserOnline logic across dashboards"
+    description: "Both AdminDashboard.tsx and SuperadminDashboard.tsx have identical isUserOnline and getUserDerivedStatus functions with the same 3-minute ONLINE_WINDOW_MS constant."
+    examples:
+      - file: AdminDashboard.tsx
+        location: "AdminDashboard.tsx:39-46"
+        snippet: "const ONLINE_WINDOW_MS = 3 * 60 * 1000"
+      - file: SuperadminDashboard.tsx
+        location: "SuperadminDashboard.tsx:57-64"
+        snippet: "const ONLINE_WINDOW_MS = 3 * 60 * 1000"
+    prevalence: occasional
+
+related_architecture:
+  components_relevant_to_domain:
+    - component: "CORS layer"
+      responsibility: "Controls allowed origins, methods, and headers for cross-origin requests"
+      location: "main.rs:94-213"
+      relationship_to_domain: "Outermost layer — affects all requests including WebSocket upgrades"
+    - component: "Presence middleware"
+      responsibility: "Updates last_seen_at timestamp on every authenticated request"
+      location: "middleware/presence.rs"
+      relationship_to_domain: "Only mechanism (besides login) that keeps users 'active'"
+    - component: "authz middleware"
+      responsibility: "Route-level authorization checks"
+      location: "middleware/authz.rs"
+      relationship_to_domain: "Guards are blocked from analytics but allowed on attendance/shifts/allocations/permits endpoints"
+
+open_questions:
+  - question: "Is the production CORS_ORIGINS env var configured to include the frontend production domain?"
+    context: "WS 403 could be caused by CORS preflight failing if the frontend origin is not in the allow-list. The CORS layer might strip the Sec-WebSocket-Protocol header."
+    type: decision_blocker
+    affects: ["issue-1-ws-403"]
+
+  - question: "Are the guard ERR_ABORTED errors happening on ALL 4 requests simultaneously, or is one failing first?"
+    context: "If all 4 fail, it's likely a CORS/network issue rather than individual endpoint auth failure. The backend routes all use require_authenticated which should accept guard tokens."
+    type: research
+    affects: ["issue-2-guard-api"]
+
+  - question: "Is the 3-minute ONLINE_WINDOW_MS appropriate given that the only update mechanism is API activity?"
+    context: "If a user is viewing a static page and not making API calls, they'll appear inactive within 3 minutes even though they're online."
+    type: nice_to_know
+    affects: ["issue-5-active-inactive"]
+
+gaps:
+  - area: "Production CORS_ORIGINS value"
+    description: "Cannot verify actual deployed env var value. The code requires CORS_ORIGINS or CORS_ORIGIN to be set in production. If the frontend domain is missing or misconfigured, WS upgrades will fail."
+    impact: decision_blocker
+    affects: ["issue-1-ws-403"]
+
+  - area: "Railway deployment logs"
+    description: "Cannot verify actual 403 response body from production to confirm whether the rejection comes from CORS layer vs handler-level auth"
+    impact: research_blocker
+    affects: ["issue-1-ws-403", "issue-2-guard-api"]
+
+  - area: "Browser devtools network tab"
+    description: "Need actual error response bodies to distinguish CORS rejection (browser ERR_ABORTED with no response) from handler 403 (response with error body)"
+    impact: research_blocker
+    affects: ["issue-2-guard-api"]
+
+# ============================================================
+# DETAILED FINDINGS PER ISSUE
+# ============================================================
+
+issue_findings:
+
+  issue_1_ws_403:
+    title: "WebSocket 403 on /api/tracking/ws"
+    severity: critical
+    root_cause_candidates:
+      - rank: 1
+        cause: "CORS origin mismatch — production frontend origin may not be in CORS_ORIGINS env var"
+        evidence: |
+          The CORS layer (main.rs:94-213) uses AllowOrigin::list() which only allows explicitly configured origins.
+          In production, CORS_ORIGINS must be set (config.rs:47-49 enforces this).
+          The WebSocket upgrade starts as an HTTP GET request subject to CORS.
+          If the frontend domain isn't in the allowed list, the browser blocks the upgrade.
+        confidence: high
+      - rank: 2
+        cause: "Sec-WebSocket-Protocol header stripped by CORS allowed_headers config"
+        evidence: |
+          The CORS allow_headers list (main.rs:115-120) only includes: Authorization, Content-Type, Accept, Origin.
+          It does NOT include Sec-WebSocket-Protocol or Upgrade or Connection.
+          The frontend sends subprotocols ['sentinel-tracking-v1', 'bearer.<token>'] (useOperationalMapData.ts:362).
+          If the CORS layer strips or rejects these headers, the handler's extract_ws_token_from_protocols() gets no token and returns 401.
+        confidence: medium
+      - rank: 3
+        cause: "Token extraction failure — JWT not found in subprotocol header"
+        evidence: |
+          If the token format is malformed or the header is absent, tracking_ws handler (tracking.rs:1989-1993) returns AppError::Unauthorized.
+          Frontend sends bearer.<token> format which matches extract_ws_token_from_protocols parsing (tracking.rs:95-97).
+        confidence: low
+    key_files:
+      - "DasiaAIO-Backend/src/main.rs:1391 (route definition — no middleware)"
+      - "DasiaAIO-Backend/src/handlers/tracking.rs:1974-2037 (WS handler with inline auth)"
+      - "DasiaAIO-Backend/src/handlers/tracking.rs:87-101 (subprotocol token parser)"
+      - "DasiaAIO-Backend/src/main.rs:94-213 (CORS config)"
+      - "DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts:355-402 (WS client)"
+    notes: |
+      The /api/tracking/ws route intentionally has no route_layer middleware because WebSocket
+      upgrades cannot use standard Bearer Authorization headers. The handler does its own auth
+      by extracting the token from the Sec-WebSocket-Protocol header (bearer.<jwt>) or a 
+      ?token= query parameter. The guard role IS allowed (has_tracking_access_role returns true
+      for all 4 roles). The 403 is not a role issue.
+
+  issue_2_guard_api_err_aborted:
+    title: "Guard-specific API ERR_ABORTED"
+    severity: high
+    root_cause_candidates:
+      - rank: 1
+        cause: "net::ERR_ABORTED is a browser-side abort, not a server 403/401"
+        evidence: |
+          All four routes exist in main.rs and use require_authenticated middleware (not role-gated):
+          - /api/attendance/:guard_id → main.rs:697-700 → require_authenticated
+          - /api/guard-replacement/guard/:guard_id/shifts → main.rs:647-650 → require_authenticated
+          - /api/guard-allocations/:guard_id → main.rs:582-585 → require_authenticated
+          - /api/guard-firearm-permits/:guard_id → main.rs:900-903 → require_authenticated
+          
+          require_authenticated (authz.rs:59-64) only verifies JWT validity and legal consent.
+          It does NOT check role — guard tokens should pass fine.
+          
+          ERR_ABORTED typically means the browser killed the request before getting a response:
+          - CORS preflight failure (no Access-Control-Allow-Origin in response)
+          - Request cancelled by AbortController
+          - Page navigation during request
+          - Network connectivity issue
+        confidence: high
+      - rank: 2
+        cause: "CORS preflight failure on production"
+        evidence: |
+          If the frontend production origin is not in CORS_ORIGINS, ALL API requests will fail
+          with ERR_ABORTED — not just WebSocket. This would explain why all 4 guard endpoints
+          fail simultaneously.
+        confidence: medium
+      - rank: 3
+        cause: "Legal consent not accepted — enforce_legal_consent returns 403"
+        evidence: |
+          require_authenticated calls enforce_legal_consent (authz.rs:62).
+          If the guard user hasn't accepted ToA, all requests return 403.
+          The frontend might abort on first 403 and cancel remaining requests.
+        confidence: medium
+    key_files:
+      - "DasiaAIO-Backend/src/main.rs:582,647,697,900 (route definitions)"
+      - "DasiaAIO-Backend/src/middleware/authz.rs:59-64 (require_authenticated)"
+      - "DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx:264-285 (bulk fetch)"
+    notes: |
+      The backend routes all exist and accept guard tokens via require_authenticated.
+      The server-side code does NOT reject guards on these endpoints.
+      ERR_ABORTED is NOT the same as HTTP 403 — it means the request was cancelled/blocked
+      at the browser level. Most likely candidates: CORS origin mismatch in production,
+      or legal consent not accepted (enforce_legal_consent returns 403 which the fetch
+      wrapper may interpret as abort-worthy).
+
+  issue_3_analytics_timeout:
+    title: "Analytics API timeout"
+    severity: medium
+    root_cause_candidates:
+      - rank: 1
+        cause: "Guard role explicitly blocked — middleware returns 403"
+        evidence: |
+          Route (main.rs:1290-1293) uses require_analytics_view middleware.
+          require_analytics_view calls authorize_permission(req, next, "view_analytics").
+          Guard role permissions (utils.rs:284-288): ["create_support_ticket", "manage_notifications", "view_merit"].
+          Guard does NOT have "view_analytics" → returns 403 Forbidden.
+          Additionally, handler itself has require_min_role(&headers, "supervisor") check (analytics.rs:78).
+        confidence: high
+      - rank: 2
+        cause: "Slow sequential SQL queries causing timeout for elevated roles"
+        evidence: |
+          get_analytics handler (analytics.rs:74-250) runs ~10 sequential SQL queries without
+          pagination or caching. On a large dataset this could exceed request timeout.
+          The global request_timeout middleware (main.rs:1665) applies.
+        confidence: medium
+    key_files:
+      - "DasiaAIO-Backend/src/main.rs:1290-1293 (route + middleware)"
+      - "DasiaAIO-Backend/src/middleware/authz.rs:155-157 (require_analytics_view)"
+      - "DasiaAIO-Backend/src/utils.rs:284-288 (guard permissions — no view_analytics)"
+      - "DasiaAIO-Backend/src/handlers/analytics.rs:74-250 (handler with ~10 sequential queries)"
+    notes: |
+      If the caller is a guard, the 403 is expected — guards don't have analytics access.
+      If the caller is superadmin/admin/supervisor and it still fails, the issue is likely
+      the handler's sequential query pattern causing a timeout on production database.
+
+  issue_4_support_redirect:
+    title: "Support route redirects to /inbox for elevated roles"
+    severity: low_by_design
+    root_cause_candidates:
+      - rank: 1
+        cause: "Intentional design — SupportRouteWrapper redirects non-guard roles to /inbox"
+        evidence: |
+          SupportRouteWrapper (router/index.tsx:123-128):
+            if (user.role === 'guard') return <GuardSectionWrapper section="support" />
+            return <Navigate to={ROUTES.INBOX} replace />
+          
+          For guards: renders their UserDashboard with activeView="support"
+          For all other roles: redirects to /inbox
+          
+          This is a deliberate routing decision — the /support view is guard-specific,
+          and elevated roles get their support integration through the inbox.
+        confidence: high
+    key_files:
+      - "DasiaAIO-Frontend/src/router/index.tsx:123-128 (SupportRouteWrapper)"
+      - "DasiaAIO-Frontend/src/router/index.tsx:185 (route definition under ALL_ROLES)"
+      - "DasiaAIO-Frontend/src/router/routes.ts:19,25 (SUPPORT='/support', INBOX='/inbox')"
+    notes: |
+      This is working as designed. The /support path is a guard-facing section of UserDashboard.
+      For superadmin/admin/supervisor, the inbox serves as the unified support + notifications hub.
+      If this behavior is unwanted, the SupportRouteWrapper needs to render a dedicated
+      support component for elevated roles instead of redirecting.
+
+  issue_5_active_inactive_status:
+    title: "All non-logged-in users show as Inactive with stale signals"
+    severity: medium
+    root_cause_candidates:
+      - rank: 1
+        cause: "Status derived solely from last_seen_at with 3-minute window"
+        evidence: |
+          Both AdminDashboard.tsx:39-46 and SuperadminDashboard.tsx:59-64 define:
+            ONLINE_WINDOW_MS = 3 * 60 * 1000 (3 minutes)
+            isUserOnline(lastSeenAt) → true if Date.now() - lastSeenAt <= 3 minutes
+          
+          getUserDerivedStatus (AdminDashboard.tsx:72-76, SuperadminDashboard.tsx:104-108):
+            Returns 'active' ONLY if isUserOnline(last_seen_at) is true.
+            Otherwise returns 'inactive'.
+          
+          last_seen_at is updated by:
+            1. touch_last_seen middleware (presence.rs:7-27) — on every authenticated API call
+            2. Login handler (auth.rs:783) — at login time
+          
+          There is NO WebSocket heartbeat that updates last_seen_at.
+          There is NO dedicated presence/ping endpoint.
+          
+          If a user is logged in but viewing a static page (no API calls for 3+ minutes),
+          they appear "Inactive". Most users won't be making API calls every 3 minutes.
+        confidence: high
+    key_files:
+      - "DasiaAIO-Frontend/src/components/AdminDashboard.tsx:39-46,72-76"
+      - "DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx:59-64,104-108"
+      - "DasiaAIO-Backend/src/middleware/presence.rs:7-27 (touch_last_seen)"
+      - "DasiaAIO-Backend/src/handlers/auth.rs:783 (login updates last_seen_at)"
+    notes: |
+      The presence system has no active heartbeat mechanism. Users appear "Inactive"
+      within 3 minutes of their last API call. The "Signal Xm ago" display 
+      (AdminDashboard.tsx:760, SuperadminDashboard.tsx:1225) shows exact time since
+      last_seen_at which will always be stale for users not actively triggering API calls.
+      
+      The WebSocket connection for tracking does NOT update last_seen_at — it runs
+      entirely within the tracking handler and never touches the presence middleware.

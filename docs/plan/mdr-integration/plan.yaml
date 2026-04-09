@@ -1,0 +1,700 @@
+id: mdr-integration
+title: MDR (Monthly Deployment Report) Integration Architecture
+created: 2026-04-09
+status: proposed
+owner: sentinel-planner
+
+summary: |
+  Integrate DSIA's Monthly Deployment Report (Excel workbook) into SENTINEL
+  so that guard-to-client assignments, firearm allocations, license data,
+  equipment, pull-out history, and returned-firearms tracking originate from
+  a single auditable import pipeline rather than manual data entry.
+
+# ─────────────────────────────────────────────────────────────────────
+# 1. ARCHITECTURE DECISIONS
+# ─────────────────────────────────────────────────────────────────────
+
+decisions:
+  integration_model: |
+    STAGING + NORMALIZED UPSERT.
+    Excel is parsed client-side (browser) into JSON.  JSON is POSTed to a
+    staging endpoint.  Backend validates, deduplicates, and upserts into
+    normalized production tables inside a single DB transaction.
+    Reasoning: keeps Rust dependency surface small (no xlsx crate on server),
+    lets admin review parsed data before commit, and produces a full audit
+    trail per import batch.
+
+  dedup_strategy: |
+    Primary match key: license_number (unique per guard in the Philippines).
+    Fallback: UPPER(full_name) + phone_number last-6 digits.
+    Firearms: serial_number (already UNIQUE).
+    Client sites: UPPER(name) + first-50-chars-of-address.
+    Every staging row carries a match_status: NEW | MATCHED | AMBIGUOUS.
+    AMBIGUOUS rows require admin resolution before commit.
+
+  pull_out_handling: |
+    Pull-out records create a row in guard_status_transitions with
+    transition_type = 'pull_out' and a reason (resign/floating/reassigned).
+    Guard's users.status field is updated accordingly.
+    Firearm allocations are closed (status → 'returned').
+    Firearms with FA-RETURNED remarks are set to 'maintenance' or 'decommissioned'.
+
+  traceability: |
+    Every mdr_import_batch stores the filename, sheet, upload timestamp,
+    and uploader.  Every staging row stores sheet_name + row_number.
+    Committed production records store mdr_batch_id + mdr_row_ref
+    so any guard/firearm/assignment can be traced back to a specific
+    workbook cell.
+
+  import_cadence: |
+    Designed for repeatable monthly imports.  Each import creates a new
+    batch.  The system warns if a batch for the same month already exists
+    (allows override with confirmation).
+
+# ─────────────────────────────────────────────────────────────────────
+# 2. NEW DATABASE TABLES
+# ─────────────────────────────────────────────────────────────────────
+
+new_tables:
+
+  - name: clients
+    purpose: First-class client/organization entity (replaces string references)
+    columns:
+      - { name: id, type: "VARCHAR(36) PK", note: UUID }
+      - { name: name, type: "VARCHAR(255) NOT NULL" }
+      - { name: address, type: TEXT }
+      - { name: phone, type: "VARCHAR(50)" }
+      - { name: client_number, type: "INTEGER", note: "MDR client #" }
+      - { name: branch, type: "VARCHAR(100)", note: "TAGUM BRANCH etc." }
+      - { name: is_active, type: "BOOLEAN DEFAULT true" }
+      - { name: created_at, type: "TIMESTAMPTZ DEFAULT now()" }
+      - { name: updated_at, type: "TIMESTAMPTZ DEFAULT now()" }
+    indexes:
+      - "UNIQUE(UPPER(name), COALESCE(branch, ''))"
+
+  - name: guard_assignments
+    purpose: "Guard-to-client posting (replaces shifts.client_site string)"
+    columns:
+      - { name: id, type: "VARCHAR(36) PK" }
+      - { name: guard_id, type: "VARCHAR(36) NOT NULL FK→users" }
+      - { name: client_id, type: "VARCHAR(36) NOT NULL FK→clients" }
+      - { name: client_site_id, type: "VARCHAR(36) FK→client_sites", note: "optional link to geo-fenced site" }
+      - { name: post_label, type: "VARCHAR(255)", note: "e.g. Main Gate, Vault" }
+      - { name: guard_number, type: INTEGER, note: "MDR sequential #" }
+      - { name: assignment_start, type: TIMESTAMPTZ }
+      - { name: assignment_end, type: TIMESTAMPTZ }
+      - { name: status, type: "VARCHAR(50) DEFAULT 'active'", note: "active | ended | pulled_out" }
+      - { name: mdr_batch_id, type: "VARCHAR(36) FK→mdr_import_batches" }
+      - { name: mdr_row_ref, type: "VARCHAR(50)", note: "sheet:row e.g. MARCH:42" }
+      - { name: created_at, type: "TIMESTAMPTZ DEFAULT now()" }
+      - { name: updated_at, type: "TIMESTAMPTZ DEFAULT now()" }
+    indexes:
+      - "idx_guard_assignments_guard ON guard_assignments(guard_id)"
+      - "idx_guard_assignments_client ON guard_assignments(client_id)"
+      - "UNIQUE(guard_id, client_id, assignment_start) WHERE status = 'active'"
+
+  - name: guard_status_transitions
+    purpose: "History of guard status changes (pull-outs, resignations, floats)"
+    columns:
+      - { name: id, type: "VARCHAR(36) PK" }
+      - { name: guard_id, type: "VARCHAR(36) NOT NULL FK→users" }
+      - { name: transition_type, type: "VARCHAR(50) NOT NULL", note: "pull_out | resignation | floating | reassignment | reactivation" }
+      - { name: reason, type: TEXT }
+      - { name: previous_client_id, type: "VARCHAR(36) FK→clients" }
+      - { name: effective_date, type: TIMESTAMPTZ }
+      - { name: mdr_batch_id, type: "VARCHAR(36) FK→mdr_import_batches" }
+      - { name: mdr_row_ref, type: "VARCHAR(50)" }
+      - { name: recorded_by, type: "VARCHAR(36) FK→users" }
+      - { name: created_at, type: "TIMESTAMPTZ DEFAULT now()" }
+
+  - name: equipment
+    purpose: "Non-firearm equipment tracking (metal detectors, radios, med kits)"
+    columns:
+      - { name: id, type: "VARCHAR(36) PK" }
+      - { name: equipment_type, type: "VARCHAR(100) NOT NULL" }
+      - { name: description, type: "VARCHAR(255)" }
+      - { name: serial_number, type: "VARCHAR(100)" }
+      - { name: assigned_to_client_id, type: "VARCHAR(36) FK→clients" }
+      - { name: assigned_to_guard_id, type: "VARCHAR(36) FK→users" }
+      - { name: quantity, type: "INTEGER DEFAULT 1" }
+      - { name: status, type: "VARCHAR(50) DEFAULT 'active'" }
+      - { name: mdr_batch_id, type: "VARCHAR(36) FK→mdr_import_batches" }
+      - { name: created_at, type: "TIMESTAMPTZ DEFAULT now()" }
+      - { name: updated_at, type: "TIMESTAMPTZ DEFAULT now()" }
+
+  - name: mdr_import_batches
+    purpose: "Audit trail for each MDR upload"
+    columns:
+      - { name: id, type: "VARCHAR(36) PK" }
+      - { name: filename, type: "VARCHAR(255) NOT NULL" }
+      - { name: report_month, type: "VARCHAR(20) NOT NULL", note: "e.g. 2026-03" }
+      - { name: branch, type: "VARCHAR(100)" }
+      - { name: uploaded_by, type: "VARCHAR(36) NOT NULL FK→users" }
+      - { name: status, type: "VARCHAR(50) DEFAULT 'staging'", note: "staging | reviewing | committed | rejected | superseded" }
+      - { name: total_rows, type: INTEGER }
+      - { name: matched_rows, type: INTEGER }
+      - { name: new_rows, type: INTEGER }
+      - { name: ambiguous_rows, type: INTEGER }
+      - { name: error_rows, type: INTEGER }
+      - { name: committed_at, type: TIMESTAMPTZ }
+      - { name: committed_by, type: "VARCHAR(36) FK→users" }
+      - { name: notes, type: TEXT }
+      - { name: created_at, type: "TIMESTAMPTZ DEFAULT now()" }
+
+  - name: mdr_staging_rows
+    purpose: "Raw parsed rows from Excel, held for review before commit"
+    columns:
+      - { name: id, type: "VARCHAR(36) PK" }
+      - { name: batch_id, type: "VARCHAR(36) NOT NULL FK→mdr_import_batches" }
+      - { name: sheet_name, type: "VARCHAR(50) NOT NULL" }
+      - { name: row_number, type: "INTEGER NOT NULL" }
+      - { name: section, type: "VARCHAR(50)", note: "clients | tower | armored | backup | vault | equipment | pullout | returned" }
+      - { name: client_number, type: INTEGER }
+      - { name: client_name, type: "VARCHAR(255)" }
+      - { name: client_address, type: TEXT }
+      - { name: guard_number, type: INTEGER }
+      - { name: guard_name, type: "VARCHAR(255)" }
+      - { name: contact_number, type: "VARCHAR(50)" }
+      - { name: license_number, type: "VARCHAR(100)" }
+      - { name: license_expiry, type: "VARCHAR(50)", note: "raw string — validated on commit" }
+      - { name: firearm_kind, type: "VARCHAR(100)" }
+      - { name: firearm_make, type: "VARCHAR(100)" }
+      - { name: caliber, type: "VARCHAR(50)" }
+      - { name: serial_number, type: "VARCHAR(100)" }
+      - { name: firearm_validity, type: "VARCHAR(50)" }
+      - { name: actual_ammo, type: "VARCHAR(50)" }
+      - { name: ammo_count, type: "VARCHAR(50)" }
+      - { name: lic_reg_name, type: "VARCHAR(100)" }
+      - { name: pullout_status, type: "VARCHAR(50)", note: "RESIGN / FLOATING / etc." }
+      - { name: fa_remarks, type: "VARCHAR(255)", note: "defective / deface / returned" }
+      - { name: match_status, type: "VARCHAR(20) DEFAULT 'pending'", note: "pending | new | matched | ambiguous | error" }
+      - { name: matched_guard_id, type: "VARCHAR(36)" }
+      - { name: matched_firearm_id, type: "VARCHAR(36)" }
+      - { name: matched_client_id, type: "VARCHAR(36)" }
+      - { name: validation_errors, type: "JSONB", note: "array of {field, message}" }
+      - { name: created_at, type: "TIMESTAMPTZ DEFAULT now()" }
+    indexes:
+      - "idx_staging_batch ON mdr_staging_rows(batch_id)"
+      - "idx_staging_match ON mdr_staging_rows(batch_id, match_status)"
+
+# ─────────────────────────────────────────────────────────────────────
+# 3. SCHEMA CHANGES TO EXISTING TABLES
+# ─────────────────────────────────────────────────────────────────────
+
+existing_table_changes:
+
+  users:
+    add_columns:
+      - { name: guard_number, type: INTEGER, note: "MDR sequential guard #" }
+      - { name: status, type: "VARCHAR(50) DEFAULT 'active'", note: "active | floating | resigned | terminated" }
+      - { name: mdr_batch_id, type: "VARCHAR(36)", note: "last MDR batch that touched this record" }
+      - { name: lic_reg_name, type: "VARCHAR(100)", note: "license registered company name from MDR" }
+
+  firearms:
+    add_columns:
+      - { name: kind, type: "VARCHAR(100)", note: "Pistol / Shotgun / Revolver from MDR" }
+      - { name: make, type: "VARCHAR(100)", note: "Armscor / Akkar / Rock Island" }
+      - { name: validity_date, type: TIMESTAMPTZ, note: "firearm validity from MDR" }
+      - { name: ammo_issued, type: INTEGER, note: "rounds issued from MDR" }
+      - { name: lic_reg_name, type: "VARCHAR(100)" }
+      - { name: vault_status, type: "VARCHAR(50)", note: "NULL for field, 'vault' for GHQ vault, 'returned_ghq' for FA-RETURNED" }
+      - { name: return_remarks, type: "VARCHAR(255)", note: "defective / deface from FA-RETURNED sheet" }
+      - { name: mdr_batch_id, type: "VARCHAR(36)" }
+
+  firearm_allocations:
+    add_columns:
+      - { name: mdr_batch_id, type: "VARCHAR(36)" }
+      - { name: mdr_row_ref, type: "VARCHAR(50)" }
+
+  client_sites:
+    add_columns:
+      - { name: client_id, type: "VARCHAR(36)", note: "FK→clients — links geo site to business client" }
+
+# ─────────────────────────────────────────────────────────────────────
+# 4. IMPORT PIPELINE DESIGN
+# ─────────────────────────────────────────────────────────────────────
+
+import_pipeline:
+  step_1_parse:
+    location: browser (frontend)
+    library: "xlsx (SheetJS) — already common, tree-shakeable"
+    output: "JSON array of MdrStagingRow objects per sheet"
+    notes: |
+      Parser is a pure function: sheet → typed rows.
+      Handles multi-row client blocks by carrying client context forward.
+      Normalizes capitalization, trims whitespace, coerces date strings.
+      Tags section type per row range.
+
+  step_2_upload:
+    endpoint: "POST /api/mdr/import"
+    auth: "admin | superadmin"
+    body: |
+      {
+        filename: string,
+        report_month: "2026-03",
+        branch: "TAGUM BRANCH",
+        sheets: {
+          main_roster: MdrStagingRow[],
+          supplementary: MdrStagingRow[],
+          pull_out: MdrStagingRow[],
+          returned_firearms: MdrStagingRow[]
+        }
+      }
+    response: |
+      {
+        batch_id: string,
+        total_rows: number,
+        preview: { new: n, matched: n, ambiguous: n, errors: n }
+      }
+    notes: |
+      Backend writes all rows to mdr_staging_rows.
+      Runs dedup/match algorithm (license_number → users, serial_number → firearms, name → clients).
+      Does NOT write to production tables yet.
+
+  step_3_review:
+    endpoint: "GET /api/mdr/batches/:batch_id/review"
+    auth: "admin | superadmin"
+    response: "Paginated staging rows with match_status + matched entity previews"
+    notes: "Admin resolves AMBIGUOUS rows via PATCH /api/mdr/staging/:row_id/resolve"
+
+  step_4_commit:
+    endpoint: "POST /api/mdr/batches/:batch_id/commit"
+    auth: "superadmin"
+    notes: |
+      Single DB transaction:
+      1. Upsert clients
+      2. Upsert users (guards) — update license, phone, guard_number
+      3. Upsert firearms — update kind, make, caliber, validity
+      4. Create/update firearm_allocations
+      5. Create guard_assignments
+      6. Process pull-out rows → guard_status_transitions + close assignments
+      7. Process returned firearms → update firearms.status + vault_status
+      8. Create equipment rows
+      9. Update mdr_import_batches.status = 'committed'
+      10. Write audit_logs entry
+
+  step_5_history:
+    endpoint: "GET /api/mdr/batches"
+    auth: "admin | superadmin"
+    notes: "List all import batches with stats for audit history"
+
+# ─────────────────────────────────────────────────────────────────────
+# 5. API ENDPOINTS (COMPLETE)
+# ─────────────────────────────────────────────────────────────────────
+
+api_endpoints:
+  - { method: POST, path: "/api/mdr/import", auth: "admin+", desc: "Upload parsed MDR data → staging" }
+  - { method: GET, path: "/api/mdr/batches", auth: "admin+", desc: "List all import batches" }
+  - { method: GET, path: "/api/mdr/batches/:id", auth: "admin+", desc: "Get batch summary + stats" }
+  - { method: GET, path: "/api/mdr/batches/:id/review", auth: "admin+", desc: "Paginated staging rows for review" }
+  - { method: PATCH, path: "/api/mdr/staging/:row_id/resolve", auth: "admin+", desc: "Resolve ambiguous match" }
+  - { method: POST, path: "/api/mdr/batches/:id/commit", auth: "superadmin", desc: "Commit batch to production tables" }
+  - { method: POST, path: "/api/mdr/batches/:id/reject", auth: "superadmin", desc: "Reject/discard batch" }
+  - { method: GET, path: "/api/clients", auth: "admin+", desc: "List clients (new entity)" }
+  - { method: GET, path: "/api/clients/:id", auth: "admin+", desc: "Get client detail" }
+  - { method: GET, path: "/api/guard-assignments", auth: "admin+", desc: "List active guard assignments" }
+  - { method: GET, path: "/api/guard-assignments/by-client/:id", auth: "admin+", desc: "Guards at a client" }
+  - { method: GET, path: "/api/guard-status-transitions", auth: "admin+", desc: "Pull-out/transition history" }
+
+# ─────────────────────────────────────────────────────────────────────
+# 6. FRONTEND COMPONENTS
+# ─────────────────────────────────────────────────────────────────────
+
+frontend_components:
+
+  new_pages:
+    - path: "src/pages/MdrImportPage.tsx"
+      desc: "Top-level MDR import workflow (upload → review → commit)"
+      route: "/mdr/import"
+      access: "admin | superadmin"
+
+  new_components:
+    - path: "src/components/mdr/MdrUploader.tsx"
+      desc: |
+        File picker for .xlsx. Uses SheetJS to parse in-browser.
+        Shows parse progress + summary before upload.
+        Calls POST /api/mdr/import.
+
+    - path: "src/components/mdr/MdrParseEngine.ts"
+      desc: |
+        Pure utility: (workbook) → { main_roster, supplementary, pull_out, returned_firearms }.
+        Handles multi-row client blocks, section detection, normalization.
+        No React dependency — testable standalone.
+
+    - path: "src/components/mdr/MdrReviewTable.tsx"
+      desc: |
+        Paginated table of staging rows grouped by section.
+        Color-coded match_status (green=matched, yellow=new, red=ambiguous, gray=error).
+        Inline resolution UI for ambiguous rows.
+
+    - path: "src/components/mdr/MdrBatchHistory.tsx"
+      desc: "List of past import batches with status, stats, date, uploader."
+
+    - path: "src/components/mdr/MdrCommitConfirm.tsx"
+      desc: |
+        Summary dialog before commit: counts of new guards, new firearms,
+        updated records, pull-outs to process. Requires superadmin.
+
+    - path: "src/components/mdr/MdrBatchDetail.tsx"
+      desc: "Detail view of a single batch: stats + review table + commit/reject controls."
+
+  modified_components:
+    - path: "src/components/admin/SuperadminDashboard.tsx"
+      change: "Add MDR Import card/link in command panel"
+
+    - path: "src/components/admin/ResourceManagementPanel.tsx"
+      change: "Add Clients tab alongside existing Firearms, Vehicles tabs"
+
+    - path: "src/components/shared/Sidebar.tsx (or navigation)"
+      change: "Add MDR Import nav item under Admin section"
+
+# ─────────────────────────────────────────────────────────────────────
+# 7. BACKEND FILES
+# ─────────────────────────────────────────────────────────────────────
+
+backend_files:
+
+  new_files:
+    - path: "src/handlers/mdr.rs"
+      desc: |
+        All MDR endpoints: import, batches, review, resolve, commit, reject.
+        Imports service module for dedup + commit logic.
+
+    - path: "src/handlers/clients.rs"
+      desc: "CRUD for clients table (list, get, search)."
+
+    - path: "src/handlers/guard_assignments.rs"
+      desc: "Read endpoints for guard_assignments + guard_status_transitions."
+
+    - path: "src/services/mdr_import_service.rs"
+      desc: |
+        Core business logic:
+        - match_staging_rows(pool, batch_id) — dedup/match algorithm
+        - commit_batch(pool, batch_id, committed_by) — transactional upsert
+        - reject_batch(pool, batch_id)
+
+    - path: "migrations/add_mdr_integration.sql"
+      desc: "Single migration: new tables + ALTER TABLE additions."
+
+  modified_files:
+    - path: "src/handlers/mod.rs"
+      change: "Add pub mod mdr; pub mod clients; pub mod guard_assignments;"
+
+    - path: "src/services/mod.rs"
+      change: "Add pub mod mdr_import_service;"
+
+    - path: "src/main.rs"
+      change: "Register MDR, clients, guard_assignments routes"
+
+    - path: "src/models.rs"
+      change: "Add structs: Client, GuardAssignment, GuardStatusTransition, MdrImportBatch, MdrStagingRow, Equipment"
+
+    - path: "src/db.rs"
+      change: "NOT modified — new tables go in migration file only (cleaner separation)"
+
+# ─────────────────────────────────────────────────────────────────────
+# 8. INTEGRATION POINTS WITH EXISTING MODULES
+# ─────────────────────────────────────────────────────────────────────
+
+integration_points:
+
+  - module: "Firearm Management (handlers/firearms.rs, firearm_allocation.rs)"
+    impact: |
+      MDR commit upserts firearms and creates allocations.
+      Existing firearm list/detail views gain kind, make, validity_date columns.
+      FA-RETURNED processing sets firearm status to maintenance/decommissioned.
+
+  - module: "User Management (handlers/users.rs)"
+    impact: |
+      Guards gain guard_number, status, lic_reg_name fields.
+      User list can filter by status (active/floating/resigned).
+      Guard detail page shows MDR import source.
+
+  - module: "Shift Management (handlers/shifts, attendance)"
+    impact: |
+      shifts.client_site string can now link to clients.id for new shifts.
+      Existing shifts keep string for backward compat; new shifts can use FK.
+
+  - module: "Analytics (handlers/analytics.rs)"
+    impact: |
+      Can now query guard count per client, firearm distribution,
+      pull-out trends over time from guard_status_transitions.
+
+  - module: "Audit (handlers/audit.rs)"
+    impact: |
+      MDR commit writes audit_logs with action_key='mdr_batch_committed',
+      entity_type='mdr_import_batch', metadata includes batch stats.
+
+  - module: "Geofence/Tracking (handlers/tracking.rs)"
+    impact: |
+      client_sites.client_id links geo-fenced sites to business clients.
+      Guard assignment data enriches geofence event context.
+
+# ─────────────────────────────────────────────────────────────────────
+# 9. WAVE-BASED EXECUTION ORDER
+# ─────────────────────────────────────────────────────────────────────
+
+waves:
+
+  wave_1:
+    title: "Schema + Models + Clients Foundation"
+    goal: "Database ready, models compiled, clients endpoint operational"
+    tasks:
+      - id: w1-t1
+        title: "Write migration SQL"
+        owner: sentinel-backend-engineer
+        files: ["migrations/add_mdr_integration.sql"]
+        acceptance: "Migration runs clean on fresh and existing DBs"
+        verify: "cargo build succeeds; psql \\dt shows new tables"
+
+      - id: w1-t2
+        title: "Add Rust models"
+        owner: sentinel-backend-engineer
+        files: ["src/models.rs"]
+        depends_on: [w1-t1]
+        acceptance: "Client, GuardAssignment, GuardStatusTransition, MdrImportBatch, MdrStagingRow, Equipment structs compile"
+        verify: "cargo build"
+
+      - id: w1-t3
+        title: "Clients handler + routes"
+        owner: sentinel-backend-engineer
+        files: ["src/handlers/clients.rs", "src/handlers/mod.rs", "src/main.rs"]
+        depends_on: [w1-t2]
+        acceptance: "GET /api/clients returns empty list; GET /api/clients/:id returns 404"
+        verify: "cargo test; curl localhost:5000/api/clients"
+
+    parallel_note: "w1-t1 first, then w1-t2 + w1-t3 sequentially (model dependency)"
+
+  wave_2:
+    title: "MDR Import Pipeline (Backend)"
+    goal: "Full import → staging → review → commit flow operational via API"
+    tasks:
+      - id: w2-t1
+        title: "MDR import service (dedup/match logic)"
+        owner: sentinel-backend-engineer
+        files: ["src/services/mdr_import_service.rs", "src/services/mod.rs"]
+        acceptance: |
+          match_staging_rows correctly: matches by license_number,
+          falls back to name+phone, flags ambiguous.
+          commit_batch transactionally upserts all entity types.
+        verify: "cargo test -- mdr"
+
+      - id: w2-t2
+        title: "MDR handler endpoints"
+        owner: sentinel-backend-engineer
+        files: ["src/handlers/mdr.rs", "src/handlers/mod.rs", "src/main.rs"]
+        depends_on: [w2-t1]
+        acceptance: |
+          POST /api/mdr/import accepts JSON, creates batch + staging rows.
+          GET /api/mdr/batches/:id/review returns paginated staging.
+          PATCH /api/mdr/staging/:id/resolve updates match.
+          POST /api/mdr/batches/:id/commit writes to production.
+          Audit log entry created on commit.
+        verify: "cargo test -- mdr; manual curl with sample payload"
+
+      - id: w2-t3
+        title: "Guard assignments + status transitions handlers"
+        owner: sentinel-backend-engineer
+        files: ["src/handlers/guard_assignments.rs", "src/handlers/mod.rs", "src/main.rs"]
+        depends_on: [w1-t3]
+        acceptance: "GET /api/guard-assignments, GET /api/guard-status-transitions return data after import"
+        verify: "cargo test"
+
+    parallel_note: "w2-t1 then w2-t2 sequentially; w2-t3 can parallel with w2-t1"
+
+  wave_3:
+    title: "Frontend Parse Engine + Upload UI"
+    goal: "Admin can select .xlsx, preview parsed data, and upload to backend"
+    tasks:
+      - id: w3-t1
+        title: "Install SheetJS + write parse engine"
+        owner: sentinel-frontend-engineer
+        files: ["package.json", "src/components/mdr/MdrParseEngine.ts"]
+        acceptance: |
+          Given an MDR workbook, produces typed JSON arrays for all 4 sheets.
+          Handles multi-row client blocks.
+          Normalizes names, phones, dates.
+          Unit tests pass with sample data.
+        verify: "npm test -- MdrParseEngine"
+
+      - id: w3-t2
+        title: "MDR Uploader component"
+        owner: sentinel-frontend-engineer
+        files: ["src/components/mdr/MdrUploader.tsx"]
+        depends_on: [w3-t1]
+        acceptance: |
+          File picker accepts .xlsx only.
+          Shows parse summary (row counts per section).
+          Calls POST /api/mdr/import on confirm.
+          Shows success/error feedback.
+        verify: "npm test -- MdrUploader; manual browser test"
+
+    parallel_note: "Wave 3 starts after Wave 2 backend endpoints are confirmed working"
+
+  wave_4:
+    title: "Frontend Review + Commit UI"
+    goal: "Admin can review staging rows, resolve ambiguities, and commit"
+    tasks:
+      - id: w4-t1
+        title: "Review table + batch detail"
+        owner: sentinel-frontend-engineer
+        files: [
+          "src/components/mdr/MdrReviewTable.tsx",
+          "src/components/mdr/MdrBatchDetail.tsx"
+        ]
+        acceptance: |
+          Paginated table with color-coded match statuses.
+          Inline resolution for ambiguous rows.
+          Section grouping (clients, tower, armored, etc.).
+        verify: "npm test; manual browser test with real batch"
+
+      - id: w4-t2
+        title: "Commit confirm + batch history"
+        owner: sentinel-frontend-engineer
+        files: [
+          "src/components/mdr/MdrCommitConfirm.tsx",
+          "src/components/mdr/MdrBatchHistory.tsx"
+        ]
+        acceptance: |
+          Commit dialog shows impact summary.
+          History lists all batches with status badges.
+          Only superadmin sees commit button.
+        verify: "npm test; role-based browser test"
+
+      - id: w4-t3
+        title: "MDR Import page + routing + nav"
+        owner: sentinel-frontend-engineer
+        files: [
+          "src/pages/MdrImportPage.tsx",
+          "src/components/admin/SuperadminDashboard.tsx",
+          "src/components/admin/ResourceManagementPanel.tsx"
+        ]
+        acceptance: |
+          /mdr/import route works.
+          SuperadminDashboard has MDR Import card.
+          ResourceManagementPanel has Clients tab.
+          Protected by admin+ role check.
+        verify: "Manual browser test as admin and guard (guard should not see it)"
+
+    parallel_note: "w4-t1 and w4-t2 can run in parallel (different files). w4-t3 after both."
+
+  wave_5:
+    title: "QA + Security + Integration Validation"
+    goal: "End-to-end flow verified, security reviewed, existing modules not broken"
+    tasks:
+      - id: w5-t1
+        title: "End-to-end QA"
+        owner: sentinel-qa-lead
+        files: []
+        acceptance: |
+          Upload real MDR workbook → all sections parsed correctly.
+          Review shows correct match/new/ambiguous counts.
+          Commit creates expected guards, firearms, assignments.
+          Pull-out rows update guard status and close allocations.
+          FA-RETURNED rows mark firearms as maintenance.
+          Existing firearm/user/shift views still work.
+          Guard dashboard (UserDashboard.tsx) unaffected.
+          Mobile responsive check on import page.
+        verify: "Browser-first validation, all 4 roles, desktop + mobile"
+
+      - id: w5-t2
+        title: "Security review"
+        owner: sentinel-security-reviewer
+        files: ["src/handlers/mdr.rs", "src/services/mdr_import_service.rs"]
+        acceptance: |
+          Only admin+ can upload. Only superadmin can commit.
+          No SQL injection in staging writes (parameterized).
+          File size limits enforced (body limit).
+          Audit trail complete.
+          No PII leakage in error responses.
+        verify: "Code review + manual auth bypass attempt"
+
+      - id: w5-t3
+        title: "Documentation sync"
+        owner: sentinel-capstone-documenter
+        files: ["CHATGPT_SYSTEM_GUIDE.md", "SENTINEL - Group 8.md", "COPILOT.md"]
+        depends_on: [w5-t1]
+        acceptance: "Docs reflect new MDR endpoints, tables, and UI"
+        verify: "Manual review"
+
+    parallel_note: "w5-t1 and w5-t2 can parallel. w5-t3 after w5-t1."
+
+# ─────────────────────────────────────────────────────────────────────
+# 10. RISKS AND BLOCKERS
+# ─────────────────────────────────────────────────────────────────────
+
+risks:
+  - id: R1
+    title: "SheetJS bundle size"
+    severity: medium
+    mitigation: "Use xlsx/dist/xlsx.mini.js (~200KB). Lazy-load only on MDR page via dynamic import."
+
+  - id: R2
+    title: "Date parsing ambiguity"
+    severity: high
+    mitigation: |
+      Store raw date strings in staging. Parse with multiple format attempts
+      (MM/DD/YYYY, M/D/YYYY, Excel serial number). Flag unparseable as validation error.
+      Admin resolves before commit.
+
+  - id: R3
+    title: "Guard dedup false positives"
+    severity: high
+    mitigation: |
+      Never auto-merge AMBIGUOUS. Always surface to admin.
+      Show side-by-side comparison (MDR row vs existing SENTINEL record).
+      License number is the strongest signal — prefer it.
+
+  - id: R4
+    title: "Large batch transaction timeout"
+    severity: medium
+    mitigation: |
+      ~200 guards + ~200 firearms + ~50 clients = ~500 upserts.
+      Well within Postgres transaction limits. Monitor commit latency.
+      If needed, split into sub-transactions per section.
+
+  - id: R5
+    title: "Backward compatibility with shifts.client_site string"
+    severity: low
+    mitigation: |
+      Do NOT drop or rename the string field. New guard_assignments table
+      is additive. Existing shift flows continue working unchanged.
+      Future wave can migrate shifts to use client FK.
+
+  - id: R6
+    title: "Multi-row client block parsing complexity"
+    severity: medium
+    mitigation: |
+      Parse engine carries forward last-seen client name + address.
+      Unit test with real MDR sample data to verify edge cases.
+      Manual section detection by row range and pattern matching.
+
+# ─────────────────────────────────────────────────────────────────────
+# 11. OUT OF SCOPE (FIRST DELIVERY)
+# ─────────────────────────────────────────────────────────────────────
+
+out_of_scope:
+  - "Server-side Excel parsing (stays browser-side)"
+  - "Auto-scheduling shifts from MDR data"
+  - "Client CRUD (create/update/delete) — only import + list for now"
+  - "Migrating existing shifts.client_site strings to FK"
+  - "MDR export/generation from SENTINEL data"
+  - "Multi-branch support (first delivery = single branch per file)"
+  - "Historical import of old MDR workbooks (can be done, but not validated)"
+
+# ─────────────────────────────────────────────────────────────────────
+# 12. OPEN QUESTIONS
+# ─────────────────────────────────────────────────────────────────────
+
+open_questions:
+  - id: Q1
+    question: "Should commiteed MDR data be editable after commit, or is the next month's import the correction mechanism?"
+    default_assumption: "Immutable after commit. Corrections come in next month's MDR."
+
+  - id: Q2
+    question: "Should the LIC.REG.NAME abbreviations (D.INC, D.SEC, D.FORCE) be normalized to full company names?"
+    default_assumption: "Store as-is in lic_reg_name. Admin can update clients.name later."
+
+  - id: Q3
+    question: "Should Armored Car Crews from MDR update existing armored_cars + driver_assignments tables?"
+    default_assumption: "Yes — match by license plate or driver name, upsert driver_assignments."

@@ -132,6 +132,20 @@ Approval workflow highlights (implemented):
 - Support ticket create/list
 - User notifications list/read/delete/unread count
 
+### F. MDR Import and Reconciliation
+
+- MDR batch intake with staging + review gates for roster-derived records
+- Match/review workflow for staged rows before write-through to operational tables
+- Transactional batch commit/reject flow with batch status transitions and audit metadata
+- MDR endpoints:
+  - `POST /api/mdr/import`
+  - `GET /api/mdr/batches`
+  - `GET /api/mdr/batches/:id`
+  - `GET /api/mdr/batches/:id/review`
+  - `PATCH /api/mdr/staging/:id/resolve`
+  - `POST /api/mdr/batches/:id/commit`
+  - `POST /api/mdr/batches/:id/reject`
+
 ## 6. Data and Database Notes
 
 Database initialization occurs in backend startup (`run_migrations` in `db.rs`).
@@ -142,6 +156,7 @@ Main table domains include:
 - `firearms`, `firearm_allocations`, permit/maintenance related tables
 - `armored_cars`, car allocations, trips, driver assignments, vehicle maintenance
 - Notifications, tickets, merit-related tables
+- MDR import pipeline tables: `mdr_import_batches`, `mdr_staging_rows`
 - Operational map tracking tables: `client_sites`, `tracking_points`, `geofence_events`, `site_geofences`
 - Audit traceability table: `audit_logs` now stores `source_ip`, `user_agent`, structured `metadata`, and indexed result/time dimensions for forensic querying
 - AI operational intelligence tables:
@@ -222,6 +237,8 @@ Client access governance hardening:
 - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` was redesigned to a mission-first guard workspace with a single-column mobile layout, persistent field action dock (`Report Incident`, `Check In/Check Out`, `View Instructions`), assignment-focused top summary cards, a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`), and shared top-right header actions for quick inbox, settings, and profile access.
 - Guard resilience UX now includes explicit loading/sync states, offline and partial-sync banners with retry, and protected action feedback messages for field-critical workflows.
 - Tracking telemetry hooks now enforce frontend role gating (`supervisor`/`guard`) before calling tracking APIs/websocket endpoints (`useOperationalMapData`, `useReplacementSuggestions`, and app-level heartbeat dispatch in `App.tsx`), preventing repeated `403` tracking calls for non-tracking roles.
+- `LocationContext.tsx` now exports a heartbeat status type; `UserDashboard.tsx` shows an amber warning indicator when location sharing is paused or heartbeat submission is inactive.
+- `SuperadminDashboard.tsx` now passes computed `activeGuards` and `activeTrips` from tracking data to `OperationalMapPanel` instead of hardcoded zeros.
 - Sidebar service-health polling (`DasiaAIO-Frontend/src/hooks/useServiceHealth.ts`) now uses `/api/health/system` payloads instead of probing role-restricted operational routes, eliminating expected-but-noisy `403` console spam for lower-privilege sessions.
 - Release workflow Android governance (`.github/workflows/release.yml`) now requires signing material for release execution and fails fast when signing secrets are missing.
 - Android CI setup now includes Gradle dependency caching (`gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a`), dual SDK package provisioning (`platforms;android-33` + `build-tools;33.0.2` and `platforms;android-35` + `build-tools;35.0.0`), and robust license acceptance handling that avoids `yes | sdkmanager --licenses` pipefail termination.
@@ -316,6 +333,10 @@ All AI/prediction panels upgraded from static text output to actionable call-to-
   - car allocation + car maintenance + driver assignment endpoints
   - legacy trips endpoints and legacy firearm maintenance listing endpoint
 - Support-ticket create request now accepts both `guard_id` and `guardId` payload keys for compatibility.
+- MDR import endpoints are active with role-gated access controls in `DasiaAIO-Backend/src/main.rs`:
+  - `require_mdr_management` for import, list/review, and row-resolution routes
+  - `require_superadmin` for batch commit/reject routes
+  - `audit_write_requests` applied on MDR write operations (`import`, `resolve`, `commit`, `reject`)
 - Seeder credential hardening:
   - `DasiaAIO-Backend/seed.js` no longer contains a hardcoded database connection string.
   - Seeder now requires `DATABASE_URL` and supports optional TLS behavior via `DATABASE_SSL_MODE`.
@@ -610,7 +631,7 @@ Current frontend reality:
     - `DasiaAIO-Backend/src/handlers/audit.rs`: fixed `GET /api/audit-logs` SQL composition by restoring valid spacing/newline query text in the SELECT/FROM segment, resolving server-side `500` syntax failures seen in the audit-log dashboard.
     - `DasiaAIO-Frontend/src/components/AuditLogViewer.tsx`: audit filter controls now include explicit `id`/`name` and `htmlFor` associations (`audit-search`, `audit-result`, `audit-entity-type`, `audit-page-size`) to satisfy browser autofill/accessibility form-field checks.
     - `DasiaAIO-Frontend/src/components/SentinelLogo.tsx` + `DasiaAIO-Frontend/src/index.css`: replaced conflicting dual-class SVG beam animation wiring with unified `sentinel-beam-animated` class and CSS keyframes so radar sweep rotation and opacity pulse run together again; retained `prefers-reduced-motion` fallback.
-    - `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts` + `DasiaAIO-Frontend/.env.local`: websocket map stream remains opt-in via `VITE_ENABLE_TRACKING_WS=true`; if backend rejects websocket upgrade/token, browser will still show connection warnings while periodic polling continues.
+    - `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts`: websocket map stream is now enabled by default via `VITE_ENABLE_TRACKING_WS=true` set in all environment files (`.env.production`, `.env.development`, `.env.web`, `.env.mobile`, `.env.desktop`, `.env.example`). If backend rejects websocket upgrade/token, browser will still show connection warnings while periodic polling continues. The duplicate secondary heartbeat interval previously running inside `useOperationalMapData` has been removed to prevent double heartbeat submissions.
     - `DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx`: operational legend and usage hints added (without changing map data contracts).
     - `DasiaAIO-Frontend/src/components/CalendarDashboard.tsx`: schedule workspace header and stable tokenized event color classes (using CSS variables) replacing fragile class names.
     - `DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx`: restructured into SOC surface hierarchy with KPI blocks and accessible utilization progressbars.
@@ -787,7 +808,7 @@ Current frontend reality:
           - `DasiaAIO-Frontend/src/App.tsx`: startup now hydrates secure session state before auth restore and logout now calls backend revocation endpoint.
           - `DasiaAIO-Frontend/src/components/LoginPage.tsx`: login stores both access and refresh tokens; client-side password checks match stronger policy expectations.
         - Desktop/mobile wrapper hardening:
-          - `apps/desktop-tauri/src-tauri/tauri.conf.json`: explicit production and development CSP policies are enforced.
+          - `apps/desktop-tauri/src-tauri/tauri.conf.json`: explicit production and development CSP policies are enforced. CSP `style-src` now includes `https://fonts.googleapis.com` and `font-src` includes `https://fonts.gstatic.com` in both production and development policies for proper Google Fonts loading.
           - `apps/android-capacitor/capacitor.config.ts`: Android scheme uses `https` in production builds.
           - `apps/android-capacitor/android/app/src/main/AndroidManifest.xml`: Android backup extraction disabled (`allowBackup=false`, `fullBackupContent=false`).
           - `apps/android-capacitor/package.json`: added `capacitor-secure-storage-plugin` (Capacitor 7-compatible) and synced Android plugins.
@@ -1197,10 +1218,12 @@ Verified in this session (Docker runtime):
     - Validation:
       - Backend rebuilt successfully after query updates.
       - `GET /api/tracking/map-data` returns payload successfully and includes current user point with expected `accuracyMeters`.
-  - Strict accuracy mode (latest):
-    - User/guard map points are now strict-filtered to improve reliability:
-      - required precision: `accuracy_meters <= 20`
-      - required recency: within 3 minutes
+  - Accuracy mode defaults (latest):
+    - Default accuracy mode changed from `strict` to `balanced` in both frontend (`trackingPolicy.ts`) and backend (`tracking.rs`).
+    - `VITE_TRACKING_ACCURACY_MODE=balanced` is now set in `.env.production`, `.env.mobile`, and `.env.example`.
+    - Balanced mode thresholds: `accuracy_meters <= 35`, person recency within 8 minutes.
+    - Strict mode thresholds (available via override): `accuracy_meters <= 20`, person recency within 3 minutes.
+    - User/guard map points are filtered by the active mode:
       - stale session-overlay guard points were removed from map snapshot composition to avoid drift artifacts.
     - Vehicle points keep a separate recency gate (10 minutes).
     - Ingestion hardening:
@@ -1243,7 +1266,7 @@ Verified in this session (Docker runtime):
       - `TRACKING_REQUIRED_ACCURACY_METERS`
       - `TRACKING_PERSON_RECENCY_MINUTES`
       - `TRACKING_VEHICLE_RECENCY_MINUTES`
-    - If override vars are absent, mode defaults are applied.
+    - If override vars are absent, `balanced` mode defaults are applied (accuracy ≤35m, person recency 8min, vehicle recency 10min).
   - Regression checks (latest):
     - Added script: `scripts/tracking_smoke_test.ps1`.
       - Verifies health, auth, low-accuracy rejection, high-accuracy acceptance, and map snapshot visibility rules.

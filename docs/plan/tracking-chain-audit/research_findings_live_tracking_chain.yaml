@@ -1,0 +1,670 @@
+plan_id: tracking-chain-audit
+objective: Verify every link in the live tracking chain from guard mobile heartbeat to superadmin map display
+focus_area: live-tracking-chain
+created_at: "2026-04-09"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - The full tracking chain (guard heartbeat → backend ingestion → broadcast → superadmin WS/poll → map render) is architecturally complete and code-connected.
+  - **CRITICAL BLOCKER**: Capacitor geolocation plugin is NOT listed in `capacitor.config.ts` plugins — the bridge plugin may not register on Android, causing silent geolocation failure on native mobile.
+  - **CRITICAL BLOCKER**: The heartbeat interval (20s) combined with strict accuracy filtering (20m mobile) and a 3-minute recency window means a guard who misses ~9 heartbeats (common on spotty mobile GPS) disappears from the map entirely.
+  - **HIGH RISK**: Tauri CSP `connect-src` uses a blanket `wss:` scheme which works, but the production CSP in `index.html` meta tag correctly lists `wss://*.up.railway.app`. Both should work for Railway deployment.
+  - WebSocket is fully implemented end-to-end with broadcast bus, reconnection with exponential backoff, and HTTP polling fallback every 30s.
+  - The `VITE_ENABLE_TRACKING_WS=true` env var is set in ALL environment files, so WS is always enabled.
+
+
+research_metadata:
+  methodology: "Hybrid retrieval: semantic_search + grep_search for all tracking-related code, sequential read_file for full handler/hook/context analysis across frontend and backend"
+  scope: "Full end-to-end tracking chain: guard geolocation → heartbeat POST → backend ingestion/storage → broadcast bus → WS push → superadmin map consumption, plus CSP/CORS/Capacitor security config"
+  confidence: high
+  coverage: 95
+  decision_blockers: 2
+  research_blockers: 0
+
+# =============================================================================
+# SECTION 1: GUARD-SIDE — Location Permission and Heartbeat Submission
+# =============================================================================
+
+guard_side:
+  files_analyzed:
+    - file: location.ts
+      path: DasiaAIO-Frontend/src/utils/location.ts
+      purpose: "Geolocation resolution with platform detection, Capacitor plugin bridge, browser Geolocation API, and IP fallback"
+      key_elements:
+        - element: getCapacitorGeolocationPlugin()
+          type: function
+          location: "location.ts:53-59"
+          description: "Checks window.Capacitor.isNativePlatform() then returns window.Capacitor.Plugins.Geolocation — does NOT use @capacitor/geolocation import"
+        - element: resolveLocationWithFallback()
+          type: function
+          location: "location.ts:269-281"
+          description: "Priority chain: Capacitor plugin (if platform=capacitor) → browser geolocation (if secure context) → IP fallback (ipinfo.io, geolocation-db.com)"
+        - element: getCapacitorPosition()
+          type: function
+          location: "location.ts:95-114"
+          description: "Calls Capacitor plugin.requestPermissions() then plugin.getCurrentPosition() with enableHighAccuracy=true, timeout=20000"
+        - element: fetchIpLocation()
+          type: function
+          location: "location.ts:116-175"
+          description: "Fallback with 5-minute cache TTL, tries ipinfo.io then geolocation-db.com, reports accuracy=20000m"
+
+    - file: LocationContext.tsx
+      path: DasiaAIO-Frontend/src/context/LocationContext.tsx
+      purpose: "React context providing consent management and periodic heartbeat loop"
+      key_elements:
+        - element: heartbeat_useEffect
+          type: pattern
+          location: "LocationContext.tsx:103-169"
+          description: "The core heartbeat loop — fires every 20s via setInterval, with rate-limit guard of 12s between sends"
+        - element: sendHeartbeat()
+          type: function
+          location: "LocationContext.tsx:122-165"
+          description: "Resolves location, applies accuracy filter, POSTs to /api/tracking/heartbeat"
+
+    - file: trackingPolicy.ts
+      path: DasiaAIO-Frontend/src/utils/trackingPolicy.ts
+      purpose: "Configurable accuracy modes (strict/balanced) that control required accuracy and recency thresholds"
+
+  heartbeat_gates:
+    description: "All of these must be true before a heartbeat fires"
+    gates:
+      - gate: "isLoggedIn === true"
+        location: "LocationContext.tsx:103"
+        detail: "User must be authenticated"
+      - gate: "user object exists"
+        location: "LocationContext.tsx:103"
+        detail: "Auth context must have resolved a user"
+      - gate: "hasAcceptedToa === true"
+        location: "LocationContext.tsx:103"
+        detail: "User must have accepted Terms of Agreement (legal consent)"
+      - gate: "hasLocationConsent === true"
+        location: "LocationContext.tsx:103"
+        detail: "User must have accepted in-app location consent (localStorage key dasi.locationConsent.v1)"
+      - gate: "role === 'supervisor' || role === 'guard'"
+        location: "LocationContext.tsx:106-107"
+        detail: "Only these two roles send heartbeats"
+      - gate: "Debounce: now - lastSent >= 12000ms"
+        location: "LocationContext.tsx:123"
+        detail: "Prevents duplicate sends within 12s even if interval fires early"
+      - gate: "getAuthToken() returns a non-empty value"
+        location: "LocationContext.tsx:126"
+        detail: "Bearer token must be present"
+      - gate: "Accuracy gate: if GPS, accuracyMeters <= requiredAccuracyMeters"
+        location: "LocationContext.tsx:133-137"
+        detail: "IP-based locations (source='ip') bypass this check. GPS/Capacitor locations must meet threshold (strict: 20m mobile, balanced: 35m mobile)"
+
+  heartbeat_interval:
+    setInterval_ms: 20000
+    debounce_ms: 12000
+    description: "setInterval fires every 20s, but the sendHeartbeat function has a 12s debounce guard. Effective interval is 20s."
+    first_fire: "Immediate — sendHeartbeat() is called once on mount before the interval starts"
+
+  heartbeat_endpoint:
+    method: POST
+    url: "${API_BASE_URL}/api/tracking/heartbeat"
+    production_url: "https://backend-production-0c47.up.railway.app/api/tracking/heartbeat"
+    payload:
+      entityType: "'user' (literal string)"
+      entityId: "user.id"
+      label: "user.fullName || user.full_name || user.username"
+      status: "'active' (literal string)"
+      latitude: "number"
+      longitude: "number"
+      heading: "number | null"
+      speedKph: "number | null"
+      accuracyMeters: "number | null"
+    headers:
+      Authorization: "Bearer {token}"
+      Content-Type: "application/json"
+
+  capacitor_geolocation:
+    npm_package: "@capacitor/geolocation@^7.1.3"
+    installed_in: "apps/android-capacitor/package.json:19"
+    import_style: "Runtime bridge via window.Capacitor.Plugins.Geolocation — NO ES module import"
+    android_gradle: "apps/android-capacitor/android/capacitor.settings.gradle:6 — project(':capacitor-geolocation') IS registered"
+    capacitor_config_plugins: "NOT LISTED in capacitor.config.ts plugins section"
+    finding: |
+      CRITICAL: The Capacitor config at apps/android-capacitor/capacitor.config.ts only lists
+      SplashScreen and StatusBar plugins. The Geolocation plugin is NOT listed.
+      While Capacitor auto-registers plugins from node_modules, the plugin configuration
+      (like permissions) may not be picked up correctly. The Android Gradle settings DO
+      include the plugin, so the native bridge should still work. However, the lack of
+      explicit plugin config means no custom options are passed.
+      
+      The code uses runtime bridge (window.Capacitor.Plugins.Geolocation) rather than
+      ES module import, which is the correct Capacitor v5+ pattern for plugins that are
+      installed in the native project. This SHOULD work if the native build includes the plugin.
+
+  heartbeat_failure_handling:
+    on_error: "Sets heartbeatPaused=true, shows notice 'Location update paused — check your connection and try again.'"
+    retry_strategy: "NO explicit retry. The next setInterval tick (20s later) will attempt again."
+    exponential_backoff: false
+    silent_drop: false
+    detail: "The setInterval continues running. Each tick calls sendHeartbeat() which will try again. The paused state is just a UI indicator — the loop still runs."
+
+# =============================================================================
+# SECTION 2: BACKEND — Heartbeat Ingestion and Storage
+# =============================================================================
+
+backend:
+  files_analyzed:
+    - file: tracking.rs
+      path: DasiaAIO-Backend/src/handlers/tracking.rs
+      purpose: "All tracking handlers including heartbeat, map-data, WS upgrade, geofence evaluation, guard history"
+      key_elements:
+        - element: guard_heartbeat()
+          type: function
+          location: "tracking.rs:1792"
+          description: "POST /api/tracking/heartbeat handler — validates, stores, evaluates geofences, broadcasts"
+        - element: tracking_ws()
+          type: function
+          location: "tracking.rs:1974"
+          description: "GET /api/tracking/ws — WebSocket upgrade handler with sub-protocol auth"
+        - element: handle_tracking_ws()
+          type: function
+          location: "tracking.rs:1013"
+          description: "WS session loop — sends initial snapshot, then pushes on every broadcast bus event"
+        - element: fetch_map_snapshot()
+          type: function
+          location: "tracking.rs:~780"
+          description: "Builds full map snapshot with client_sites, tracking_points, geofence_zones, geofence_alerts"
+        - element: tracking_bus()
+          type: function
+          location: "tracking.rs:~180"
+          description: "tokio::broadcast channel (capacity 256) for real-time event distribution"
+        - element: publish_tracking_event()
+          type: function
+          location: "tracking.rs:~187"
+          description: "Publishes event keys like 'guard_heartbeat', 'geofence_transition' to the broadcast bus"
+
+    - file: authz.rs
+      path: DasiaAIO-Backend/src/middleware/authz.rs
+      purpose: "Authorization middleware for tracking endpoints"
+      key_elements:
+        - element: has_tracking_access_role()
+          type: function
+          location: "authz.rs:9"
+          description: "Returns true for superadmin, admin, supervisor, guard"
+        - element: require_tracking_access()
+          type: function
+          location: "authz.rs:84"
+          description: "Middleware that verifies JWT + legal consent + operational role"
+
+    - file: db.rs
+      path: DasiaAIO-Backend/src/db.rs
+      purpose: "Database schema creation including tracking_points table"
+
+  heartbeat_validation:
+    steps:
+      - step: "Extract and verify JWT from Authorization header"
+        location: "tracking.rs:1798-1799"
+      - step: "Normalize role; set entity_type='guard' if guard role, else 'user'"
+        location: "tracking.rs:1800-1804"
+      - step: "validate_coordinates(latitude, longitude) — checks -90..90) and (-180..180)"
+        location: "tracking.rs:1806"
+      - step: "Accuracy gate: if accuracy_meters > required_accuracy AND NOT ip-based (>5000m), return 202 Accepted with accepted=false"
+        location: "tracking.rs:1811-1824"
+        detail: "IP-based locations (accuracy > 5000m) are allowed through as 'approximate'. GPS samples below required accuracy are silently rejected with 202."
+      - step: "Generate tracking ID, derive label and status"
+        location: "tracking.rs:1826-1835"
+      - step: "INSERT INTO tracking_points with parameterized query"
+        location: "tracking.rs:1838-1855"
+      - step: "evaluate_geofence_transitions() — checks enter/exit against all active geofences"
+        location: "tracking.rs:1857-1858"
+      - step: "publish_tracking_event('guard_heartbeat') to broadcast bus"
+        location: "tracking.rs:1860"
+        detail: "This is the critical line that triggers WS push to all connected superadmin clients"
+
+  storage:
+    table: tracking_points
+    schema:
+      columns:
+        - name: id
+          type: "VARCHAR(36) PRIMARY KEY"
+        - name: entity_type
+          type: "VARCHAR(32) NOT NULL"
+          values: "'guard' | 'user' | 'vehicle'"
+        - name: entity_id
+          type: "VARCHAR(64) NOT NULL"
+          detail: "Set to claims.sub (the user's ID from JWT)"
+        - name: user_id
+          type: "VARCHAR(36)"
+          detail: "Also set to claims.sub — FK to users(id) ON DELETE SET NULL"
+        - name: label
+          type: "VARCHAR(255)"
+        - name: status
+          type: "VARCHAR(50)"
+          detail: "'active' | 'approximate' (IP-based)"
+        - name: latitude
+          type: "DOUBLE PRECISION NOT NULL"
+        - name: longitude
+          type: "DOUBLE PRECISION NOT NULL"
+        - name: heading
+          type: "DOUBLE PRECISION"
+        - name: speed_kph
+          type: "DOUBLE PRECISION"
+        - name: accuracy_meters
+          type: "DOUBLE PRECISION"
+        - name: recorded_at
+          type: "TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        - name: created_by
+          type: "VARCHAR(36)"
+    indexes:
+      - "idx_tracking_points_entity_time ON (entity_type, entity_id, recorded_at DESC)"
+      - "idx_tracking_points_user_time ON (user_id, recorded_at DESC)"
+
+  broadcast_channel:
+    exists: true
+    type: "tokio::sync::broadcast::Sender<String>"
+    capacity: 256
+    event_keys:
+      - "guard_heartbeat"
+      - "geofence_transition"
+      - "tracking_point_created"
+      - "geofence_zone_deleted"
+    mechanism: |
+      On every heartbeat INSERT, publish_tracking_event("guard_heartbeat") is called.
+      All connected WebSocket sessions subscribe to this bus. On receiving any event,
+      the WS handler calls fetch_map_snapshot() and pushes a fresh JSON snapshot to
+      the client. This means every heartbeat from any guard triggers a full snapshot
+      push to ALL connected elevated users.
+
+  websocket_handler:
+    path: "/api/tracking/ws"
+    route_registration: "main.rs:1391 — NO require_tracking_access middleware on this route (auth is done inside the handler)"
+    auth_methods:
+      - method: "Sub-protocol: 'bearer.{token}' in Sec-WebSocket-Protocol header"
+        location: "tracking.rs:85-97"
+      - method: "Query parameter: ?token={token}"
+        location: "tracking.rs:1977-1982"
+    auth_validation:
+      - "Verifies JWT token"
+      - "Checks claims.legal_consent_accepted"
+      - "Checks has_tracking_access_role(normalized role)"
+    sub_protocol_negotiation: "If client requests 'sentinel-tracking-v1', server responds with it"
+    ws_session_behavior:
+      - "Sends initial snapshot immediately on connect"
+      - "Subscribes to tracking_bus()"
+      - "On any bus event: fetches fresh snapshot and pushes to client"
+      - "Handles Ping/Pong"
+      - "On auth close codes (1008, 4001, 4401, 4403): client emits auth:token-expired event"
+    active_connection_tracking: "AtomicUsize counter tracks active WS connections"
+
+# =============================================================================
+# SECTION 3: SUPERADMIN-SIDE — Map Data Consumption
+# =============================================================================
+
+superadmin_side:
+  files_analyzed:
+    - file: useOperationalMapData.ts
+      path: DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts
+      purpose: "React hook managing map data via HTTP polling + optional WebSocket"
+      key_elements:
+        - element: enableTrackingWs
+          type: variable
+          location: "useOperationalMapData.ts:156"
+          description: "Reads VITE_ENABLE_TRACKING_WS env var — must be exactly 'true'"
+        - element: load()
+          type: function
+          location: "useOperationalMapData.ts:~195"
+          description: "HTTP GET /api/tracking/map-data with auth headers"
+        - element: connectWebSocket()
+          type: function
+          location: "useOperationalMapData.ts:~380"
+          description: "Constructs WS URL, connects with sub-protocols, handles messages"
+        - element: HTTP_polling_interval
+          type: pattern
+          location: "useOperationalMapData.ts:~340"
+          description: "30-second setInterval fallback poll"
+
+    - file: OperationalMapPanel.tsx
+      path: DasiaAIO-Frontend/src/components/dashboard/OperationalMapPanel.tsx
+      purpose: "Leaflet-based map rendering with tracking points, client sites, geofences, guard paths"
+      key_elements:
+        - element: visibleTrackingPoints
+          type: variable
+          location: "OperationalMapPanel.tsx:~170"
+          description: "Filters out stale tracking points based on recency thresholds"
+        - element: isPointStale()
+          type: function
+          location: "OperationalMapPanel.tsx:~162"
+          description: "Marks points as stale if age > personRecencyMinutes (3 min strict, 8 min balanced)"
+
+  data_fetching:
+    http_polling:
+      endpoint: "GET ${API_BASE_URL}/api/tracking/map-data"
+      interval_ms: 30000
+      description: "Fires on mount and every 30 seconds as a fallback"
+      response_shape: |
+        {
+          clientSites: [...],
+          trackingPoints: [...],
+          geofenceAlerts: [...],
+          geofenceZones: [...]
+        }
+
+    websocket:
+      enabled_by: "VITE_ENABLE_TRACKING_WS=true (set in ALL .env files)"
+      url_construction: "API_BASE_URL.replace(/^http/, 'ws') + '/api/tracking/ws'"
+      production_url: "wss://backend-production-0c47.up.railway.app/api/tracking/ws"
+      protocols: "['sentinel-tracking-v1', 'bearer.{token}']"
+      message_format: |
+        { "type": "snapshot", "data": { clientSites, trackingPoints, geofenceAlerts, geofenceZones } }
+      reconnection:
+        base_delay_ms: 1500
+        max_delay_ms: 30000
+        max_attempts: 8
+        strategy: "Exponential backoff: delay = min(1500 * 2^(attempt-1), 30000)"
+        on_max_attempts: "Sets wsConnectionState='closed', shows error 'Live map socket unavailable. Using periodic refresh.'"
+
+    ws_failure_behavior:
+      description: "HTTP polling continues regardless of WS state"
+      detail: |
+        The 30s setInterval runs independently of the WebSocket connection.
+        If WS connects successfully, both WS pushes AND HTTP polls update the map.
+        If WS fails, HTTP polling alone keeps the map updated every 30s.
+        The WS connection is attempted with a 0ms initial delay (setTimeout(connectWebSocket, 0)).
+
+  staleness_filtering:
+    person_recency_strict: "3 minutes"
+    person_recency_balanced: "8 minutes"
+    vehicle_recency_strict: "10 minutes"
+    vehicle_recency_balanced: "20 minutes"
+    implementation: |
+      OperationalMapPanel.tsx filters tracking points client-side using isPointStale().
+      Points older than the recency threshold for their entity type are excluded from
+      visibleTrackingPoints. This means even if the backend returns a point, the frontend
+      may hide it if it's too old.
+    
+    critical_interaction_with_heartbeat: |
+      With strict mode (default): person recency = 3 minutes, heartbeat interval = 20s.
+      A guard must successfully submit at least 1 heartbeat every 3 minutes to stay visible.
+      With 20s intervals, that's ~9 attempts per window. If ALL 9 fail (GPS timeout, 
+      accuracy rejection, network error), the guard vanishes from the map.
+      
+      With balanced mode: person recency = 8 minutes, giving ~24 attempts per window.
+      This is much more resilient to intermittent failures.
+
+  map_rendering:
+    library: "react-leaflet with Leaflet"
+    tile_provider: "CartoDB — dark_all (dark mode) / rastertiles/voyager (light mode)"
+    marker_types:
+      - "Current user pin (red dot with white border)"
+      - "Tracking point markers from visibleTrackingPoints"
+      - "Client site markers"
+      - "Geofence circles/polygons"
+      - "Guard path polylines (when selected)"
+    default_center: "[7.0731, 125.6128] (Davao City)"
+
+# =============================================================================
+# SECTION 4: CSP AND SECURITY
+# =============================================================================
+
+csp_and_security:
+  index_html_csp:
+    file: DasiaAIO-Frontend/index.html
+    connect_src: "'self' http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:* https://*.up.railway.app wss://*.up.railway.app https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com"
+    finding: |
+      GOOD: CSP connect-src explicitly includes wss://*.up.railway.app which covers
+      the production backend at wss://backend-production-0c47.up.railway.app/api/tracking/ws.
+      Also includes ws://localhost:* and ws://127.0.0.1:* for development.
+      Map tiles are covered by https://*.basemaps.cartocdn.com.
+
+  tauri_csp:
+    file: apps/desktop-tauri/src-tauri/tauri.conf.json
+    production_csp_connect_src: "'self' https: wss: http://localhost:5000 http://127.0.0.1:5000 ws://localhost:5000 ws://127.0.0.1:5000"
+    finding: |
+      GOOD: Tauri production CSP uses blanket 'https:' and 'wss:' schemes, which allows
+      connections to any HTTPS/WSS endpoint including Railway. This is more permissive
+      than the web CSP but functional for a desktop app.
+      
+      NOTE: The localhost:5000 origins suggest a local backend was assumed — these
+      are harmless but won't be used in production.
+
+  capacitor_config:
+    file: apps/android-capacitor/capacitor.config.ts
+    plugins_listed: "SplashScreen, StatusBar"
+    geolocation_plugin_listed: false
+    server_config:
+      androidScheme: "https (production) / http (dev)"
+      cleartext: "false (production) / true (dev)"
+    finding: |
+      ISSUE: @capacitor/geolocation is installed in package.json and registered in
+      Android Gradle settings, but is NOT listed in the capacitor.config.ts plugins
+      section. Capacitor should auto-discover it from node_modules, but explicit
+      plugin config ensures proper initialization. The absence means NO custom
+      plugin options are passed (e.g., no permission rationale strings).
+      
+      The Android manifest permissions should be checked separately — if
+      ACCESS_FINE_LOCATION is not declared, the plugin will fail silently.
+
+# =============================================================================
+# SECTION 5: RAILWAY BACKEND WEBSOCKET SUPPORT
+# =============================================================================
+
+railway_websocket:
+  railway_json:
+    file: DasiaAIO-Backend/railway.json
+    config:
+      builder: DOCKERFILE
+      start_command: "/app/server"
+      healthcheck_path: "/api/health"
+      healthcheck_timeout: 180
+    finding: |
+      Railway supports WebSocket connections by default on their proxy layer.
+      There is no special configuration needed in railway.json for WS support.
+      The healthcheck uses HTTP which is correct — WS upgrades go through the
+      same HTTPS endpoint.
+
+  axum_ws_handler:
+    exists: true
+    path: "/api/tracking/ws"
+    handler: "tracking_ws() in handlers/tracking.rs:1974"
+    upgrade: "Uses axum::extract::WebSocketUpgrade"
+    detail: |
+      The handler accepts WebSocketUpgrade from Axum, authenticates via sub-protocol
+      token or query parameter, validates role and legal consent, then upgrades.
+      The actual WS session is handled by handle_tracking_ws() which runs the
+      send/receive loop with the broadcast bus.
+
+  cors_for_ws:
+    finding: |
+      CORS headers are set via tower_http::cors::CorsLayer on the Axum router.
+      The allowed methods include GET (needed for WS upgrade).
+      The allowed headers include Authorization, Content-Type, Accept, Origin.
+      
+      IMPORTANT: CORS is not directly enforced on WebSocket connections by browsers
+      in the same way as HTTP. The Origin header is sent but the WS protocol doesn't
+      require CORS preflight. The server-side auth (JWT in sub-protocol) is the
+      primary security gate for WS.
+      
+      However, the CORS_ORIGINS env var MUST be set in Railway for HTTP endpoints
+      to work. If it's missing in production, the /api/tracking/map-data HTTP
+      polling endpoint will fail with CORS errors even if WS works.
+
+# =============================================================================
+# CRITICAL FINDINGS — POTENTIAL BLOCKERS
+# =============================================================================
+
+critical_findings:
+  - id: CF-1
+    severity: CRITICAL
+    area: "Guard-side geolocation on mobile"
+    title: "Capacitor geolocation plugin may not initialize correctly"
+    detail: |
+      The @capacitor/geolocation plugin IS installed (package.json) and the Android
+      Gradle settings DO register it, but it is NOT listed in capacitor.config.ts plugins.
+      
+      While Capacitor auto-discovers plugins, the runtime bridge pattern used
+      (window.Capacitor.Plugins.Geolocation) depends on the plugin being properly
+      registered in the native layer. If the native build doesn't include the plugin
+      classes, getCapacitorGeolocationPlugin() returns null and the code falls through
+      to browser geolocation, which requires HTTPS context inside a WebView.
+      
+      The fallback chain (Capacitor → browser → IP) means the guard would still get
+      some location, but IP-based locations have 20km accuracy and are marked as
+      "approximate" — potentially useless for operational tracking.
+    
+    affected_files:
+      - "DasiaAIO-Frontend/src/utils/location.ts:53-59"
+      - "apps/android-capacitor/capacitor.config.ts"
+    
+    verification_needed: |
+      1. Build the Android APK and check if Geolocation plugin is in the generated sources
+      2. Test on a real device: does window.Capacitor.Plugins.Geolocation exist at runtime?
+      3. Check AndroidManifest.xml for ACCESS_FINE_LOCATION permission declaration
+
+  - id: CF-2
+    severity: HIGH
+    area: "Heartbeat interval vs staleness window"
+    title: "Strict mode 3-minute recency window is fragile for mobile use"
+    detail: |
+      Default tracking mode is 'strict' which requires:
+      - Accuracy ≤ 20m on mobile (location.ts accuracy gate)
+      - Backend also filters: accuracy ≤ 20m (tracking.rs required_accuracy_meters())
+      - Recency: 3 minutes (person_recency_minutes() in strict mode)
+      - Heartbeat interval: 20 seconds
+      
+      This gives ~9 heartbeat attempts per recency window. In strict mode, GPS
+      accuracy must be ≤ 20m — which is frequently NOT achievable indoors or in
+      urban canyons. Each failed accuracy check results in:
+      - Frontend: heartbeat silently not sent (location.ts:133-137)
+      - Backend: 202 Accepted with accepted=false (tracking.rs:1811-1824)
+      
+      If a guard is inside a building with poor GPS, they will vanish from the map
+      within 3 minutes. The 'balanced' mode (8 min, 35m accuracy) is much more
+      resilient but is not the default.
+    
+    affected_files:
+      - "DasiaAIO-Frontend/src/utils/trackingPolicy.ts"
+      - "DasiaAIO-Frontend/src/context/LocationContext.tsx:133-137"
+      - "DasiaAIO-Backend/src/handlers/tracking.rs:1811-1824"
+
+  - id: CF-3
+    severity: MEDIUM
+    area: "Frontend heartbeat payload mismatch"
+    title: "Frontend sends entityType='user' but backend expects 'guard' for guard-role filtering"
+    detail: |
+      LocationContext.tsx:141 sends entityType: 'user' (hardcoded literal).
+      The backend guard_heartbeat handler at tracking.rs:1800-1804 overrides this:
+        entity_type = if actor_role == "guard" { "guard" } else { "user" }
+      
+      So the backend correctly normalizes this based on JWT role. However, in
+      fetch_map_snapshot(), the query filters by entity_type IN ('guard') for the
+      per-guard view (tracking.rs:~800). This works because the backend overrides
+      the frontend's 'user' value to 'guard'.
+      
+      BUT: The useOperationalMapData.ts sendGuardHeartbeat() function sends
+      entityType: 'guard' (line ~280). This is a different code path than
+      LocationContext — used by the map panel's manual heartbeat feature.
+      The inconsistency is harmless because the backend normalizes, but it's
+      confusing and could cause issues if the backend logic changes.
+    
+    affected_files:
+      - "DasiaAIO-Frontend/src/context/LocationContext.tsx:141"
+      - "DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts:~280"
+      - "DasiaAIO-Backend/src/handlers/tracking.rs:1800-1804"
+
+  - id: CF-4
+    severity: LOW
+    area: "WebSocket connection timing"  
+    title: "WS connects with setTimeout(0) — potential race with initial HTTP load"
+    detail: |
+      The WebSocket connection is initiated via setTimeout(connectWebSocket, 0)
+      (useOperationalMapData.ts:~430). This means it fires in the next microtask,
+      potentially before the initial HTTP load() completes. Both the WS snapshot
+      and the HTTP response will call applySnapshot(), so the last one wins.
+      This is not a bug but can cause a brief flash as data is overwritten.
+
+# =============================================================================
+# COMPLETE CHAIN VERIFICATION
+# =============================================================================
+
+chain_verification:
+  link_1_guard_permission:
+    status: IMPLEMENTED
+    detail: "Full permission chain: consent banner → localStorage acceptance → OS permission request → Capacitor/browser/IP fallback"
+    risk: "Capacitor plugin registration uncertainty (CF-1)"
+  
+  link_2_heartbeat_submission:
+    status: IMPLEMENTED
+    detail: "20s interval, POST /api/tracking/heartbeat with JWT auth, accuracy-gated"
+    risk: "Strict mode accuracy filter may reject most indoor GPS samples (CF-2)"
+  
+  link_3_backend_ingestion:
+    status: IMPLEMENTED
+    detail: "Validates coordinates, accuracy, stores in tracking_points table with parameterized queries"
+    risk: "None — well implemented"
+  
+  link_4_broadcast_bus:
+    status: IMPLEMENTED
+    detail: "tokio::broadcast channel pushes 'guard_heartbeat' event on every successful INSERT"
+    risk: "None — event is published AFTER INSERT succeeds"
+  
+  link_5_ws_push:
+    status: IMPLEMENTED
+    detail: "WS handler subscribes to bus, fetches fresh snapshot on each event, pushes to client"
+    risk: "None — fully implemented with auth, reconnection, and sub-protocol negotiation"
+  
+  link_6_http_fallback:
+    status: IMPLEMENTED
+    detail: "30s polling interval continues regardless of WS state"
+    risk: "None — independent of WS"
+  
+  link_7_map_rendering:
+    status: IMPLEMENTED
+    detail: "Leaflet map renders visibleTrackingPoints as markers after staleness filtering"
+    risk: "Staleness filter may hide valid points in strict mode (CF-2)"
+  
+  link_8_csp:
+    status: IMPLEMENTED
+    detail: "index.html CSP allows wss://*.up.railway.app; Tauri allows wss: blanket"
+    risk: "None for current deployment"
+  
+  link_9_cors:
+    status: REQUIRES_VERIFICATION
+    detail: "CORS_ORIGINS must be set in Railway env vars to include the frontend origin"
+    risk: "If misconfigured, HTTP polling fails (WS would still work)"
+
+open_questions:
+  - question: "Is the Android ACCESS_FINE_LOCATION permission declared in AndroidManifest.xml?"
+    context: "The Capacitor geolocation plugin requires this manifest entry. Auto-generated by the plugin if properly registered."
+    type: decision_blocker
+    affects: ["CF-1"]
+
+  - question: "What is the current TRACKING_ACCURACY_MODE in Railway production?"
+    context: "If set to 'strict' (default), guards in buildings will vanish within 3 minutes. 'balanced' is much more resilient."
+    type: decision_blocker
+    affects: ["CF-2"]
+
+  - question: "Is CORS_ORIGINS correctly set in Railway to include the frontend production URL?"
+    context: "Without this, HTTP polling for map-data will fail with CORS errors. WS would still work as browsers don't enforce CORS on WS."
+    type: research
+    affects: ["chain link 9"]
+
+  - question: "Does the guard mobile app actually load the Capacitor Geolocation plugin at runtime?"
+    context: "Can only be verified by testing on a device or emulator. Check window.Capacitor.Plugins.Geolocation in devtools."
+    type: decision_blocker
+    affects: ["CF-1"]
+
+android_manifest_verification:
+  file: "apps/android-capacitor/android/app/src/main/AndroidManifest.xml"
+  permissions_declared:
+    - "android.permission.ACCESS_FINE_LOCATION"
+    - "android.permission.ACCESS_COARSE_LOCATION"
+    - "android.permission.INTERNET"
+    - "android.permission.ACCESS_NETWORK_STATE"
+  finding: "GOOD: Both fine and coarse location permissions are declared. The Capacitor Geolocation plugin should work at the native layer."
+
+gaps:
+
+  - area: "Railway environment variables"
+    description: "Cannot verify CORS_ORIGINS and TRACKING_ACCURACY_MODE settings without Railway dashboard access"
+    impact: research_blocker
+    affects: ["CF-2", "chain link 9"]
+
+  - area: "Actual device testing"
+    description: "Cannot verify Capacitor plugin runtime availability without device/emulator testing"
+    impact: decision_blocker
+    affects: ["CF-1"]
