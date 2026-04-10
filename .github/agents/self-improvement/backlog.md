@@ -21,3 +21,11 @@ ITEM: Migration file additions may not execute during app startup
 EVIDENCE: src/db.rs run_migrations() is hardcoded and does not load SQL files from migrations/ such as migrations/add_feedback_system.sql
 NEXT_STEP: Pick one migration path (file-based sqlx migrate or db.rs runtime DDL) and align new migrations to it
 STATUS: open
+
+DATE: 2026-04-10
+AGENT: sentinel-security-reviewer
+CATEGORY: security
+ITEM: Frontend role normalization defaults unknown roles to guard for tracking-related UI gating
+EVIDENCE: DasiaAIO-Frontend/src/types/auth.ts returns 'guard' for invalid role input; trackingAccessPolicy.test.ts expects unknown-role and user to retain tracking access
+NEXT_STEP: Tighten frontend role normalization to fail closed for unknown roles and update tests to match the four valid SENTINEL roles only
+STATUS: open

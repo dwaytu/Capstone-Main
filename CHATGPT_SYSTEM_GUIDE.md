@@ -316,7 +316,7 @@ All AI/prediction panels upgraded from static text output to actionable call-to-
 - When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
 - Local web dev origins `http://localhost:5173` and `http://127.0.0.1:5173` are now only auto-augmented for non-production runtime, tightening production CORS posture while preserving local developer ergonomics.
 - Tracking websocket upgrades (`GET /api/tracking/ws`) now explicitly reject users without accepted legal consent and reject roles outside `supervisor`/`guard`.
-- Tracking websocket authentication now supports token transport via `Sec-WebSocket-Protocol` (`sentinel-tracking-v1`, `bearer.<jwt>`) to avoid exposing JWTs in URL query strings; temporary query-token fallback remains for transition compatibility.
+- Tracking websocket authentication uses token transport exclusively via `Sec-WebSocket-Protocol` (`sentinel-tracking-v1`, `bearer.<jwt>`) to avoid exposing JWTs in URL query strings; query-string `?token=` fallback has been removed and is rejected server-side.
 - Global middleware order in `DasiaAIO-Backend/src/main.rs` now keeps CORS outermost so browser CORS headers are still attached when upstream middleware (rate-limit/auth/presence) returns early errors.
 - API/auth/expensive rate-limit middleware (`DasiaAIO-Backend/src/middleware/rate_limit.rs`) now bypasses `OPTIONS` requests so browser preflight checks are never rate-limited.
 - Rate-limit middleware now returns CORS-safe `429` responses so browser clients receive explicit throttling status instead of opaque CORS failures under load.
@@ -427,7 +427,7 @@ Current backend reality:
     - `PUT /api/tracking/client-sites/:id`
     - `DELETE /api/tracking/client-sites/:id`
     - `POST /api/tracking/heartbeat` (guard session heartbeat -> guard tracking point)
-    - `GET /api/tracking/ws?token=<jwt>` (websocket snapshot stream)
+    - `GET /api/tracking/ws` (websocket snapshot stream, `Sec-WebSocket-Protocol` bearer auth only — query-string token rejected)
   - Guard heartbeat precision policy update (`POST /api/tracking/heartbeat`):
     - samples with `accuracy_meters > 5000` are treated as approximate IP-based fallbacks, persisted with status `approximate`, and acknowledged with `accepted: true` plus `approximate: true`
     - samples with `accuracy_meters` in the GPS-like range still enforce environment-based strict/balanced precision thresholds
@@ -1270,9 +1270,15 @@ Verified in this session (Docker runtime):
       - `Accuracy` selector with `Strict` / `Balanced`.
       - Selection persists client-side and shows notification feedback.
     - Operational map trust enhancements in `OperationalMapPanel`:
-      - Marker popup now shows `Source`, `Accuracy`, and `Updated: Xs ago`.
-      - Stale tracking points are auto-hidden based on current mode thresholds.
-      - UI now shows hidden stale count (`stale hidden`) in tracked-units card.
+      - Marker popup now shows backend telemetry metadata including `Source`, `Schedule`, `Heartbeat`, `Accuracy`, and `Updated: Xs ago`.
+      - Stale and offline guard markers remain visible (not auto-hidden), with explicit reliability states and unscheduled marker styling.
+      - Map actions now include `Fit All`, `Center Tagum`, `Center Me`, `Follow Selected Guard`, and per-layer visibility toggles for guards, vehicles, client sites, and alerts.
+    - Guard tracking reliability consolidation:
+      - `DasiaAIO-Frontend/src/context/LocationContext.tsx` is the single guard heartbeat producer for logged-in, consented guard and supervisor sessions.
+      - `DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx` now surfaces context-driven heartbeat telemetry and blocker-specific recovery actions (`consent`, `ToA`, `permission`, `retry`).
+      - `DasiaAIO-Frontend/src/components/dashboard/GuardMapTab.tsx` centers on latest heartbeat coordinates when available, with explicit Tagum fallback messaging when no heartbeat has arrived yet.
+    - Android wrapper scope clarification:
+      - `apps/android-capacitor/README.md` now explicitly documents that heartbeat updates are foreground-driven in the current Capacitor wrapper, with no native background location service implementation yet.
   - Backend policy configurability (latest):
     - `tracking.rs` now reads configurable policy from environment:
       - `TRACKING_ACCURACY_MODE` (`strict`/`balanced`)
@@ -1288,6 +1294,27 @@ Verified in this session (Docker runtime):
     - Script runtime validation in this session: `PASS: tracking smoke test succeeded.`
   - Deployment note:
     - These latest changes are validated locally (Docker + local runtime) and intentionally not pushed/deployed to Railway yet.
+  - Tracking release-blocker closure (latest):
+    - Server-authoritative location tracking consent model:
+      - New consent columns on `users` table: `location_tracking_consent` (bool), `location_tracking_consent_granted_at`, `location_tracking_consent_revoked_at`, `location_tracking_consent_updated_at`. Added via idempotent `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` in `db.rs` startup migration.
+      - New backend consent endpoints:
+        - `GET /api/tracking/consent` — returns current consent state for the authenticated user.
+        - `POST /api/tracking/consent/grant` — sets `location_tracking_consent = true` and updates timestamps.
+        - `POST /api/tracking/consent/revoke` — sets `location_tracking_consent = false` and updates timestamps.
+      - `POST /api/tracking/heartbeat` now checks `location_tracking_consent` server-side and returns `403 tracking_consent_required` when consent is not granted.
+    - Heartbeat role whitelist:
+      - `POST /api/tracking/heartbeat` now enforces a server-side role whitelist: only `guard` and `supervisor` roles may submit heartbeats. All other roles (`admin`, `superadmin`) receive `403 Forbidden`.
+    - WebSocket query-token rejection:
+      - `GET /api/tracking/ws` no longer accepts `?token=` query-string authentication. Clients must use `Sec-WebSocket-Protocol` header with `sentinel-tracking-v1` and `bearer.<jwt>` subprotocols.
+      - Frontend `useOperationalMapData.ts` updated to remove `?token=` from WebSocket URL composition.
+    - Frontend consent integration:
+      - `LocationContext.tsx` is now server-authoritative: initializes consent via `GET /api/tracking/consent`, grant/revoke via backend endpoints, and handles `403 tracking_consent_required` from heartbeat by auto-revoking local state.
+      - New utility: `DasiaAIO-Frontend/src/utils/trackingConsent.ts` — centralized backend consent API calls.
+    - Integration tests added in `DasiaAIO-Backend/tests/tracking_release_blocker_integration.rs`:
+      - Supervisor heartbeat accepted with consent.
+      - Admin heartbeat rejected (role whitelist).
+      - Superadmin heartbeat rejected (role whitelist).
+    - Security review: PASS — backend and frontend role whitelists are identical (`guard`, `supervisor` only).
   - Command-center UX update (latest):
     - `CommandCenterDashboard` now renders `SystemStatusBanner` above the main section stack for high-visibility system health.
     - Banner color and glow are state-driven (`green` operational, `yellow` warning, `red` critical) and derived from existing alert severity logic.

@@ -1,0 +1,177 @@
+plan_id: user-creation-endpoint
+objective: "Research the SENTINEL backend POST /api/users endpoint and compare with frontend Add User form"
+focus_area: user-creation-endpoint
+created_at: "2026-04-10"
+created_by: gem-researcher
+status: completed
+
+tldr: |
+  - Backend handler `create_user_by_actor` in handlers/users.rs uses `CreateManagedUserRequest` (10 fields, camelCase serde)
+  - Frontend sends only 4 fields: { name, email, password, role } — missing 6 of 10 backend fields
+  - Critical mismatch: frontend sends `name` but backend expects `fullName` + `username` — both are required non-optional String fields
+  - Backend will reject the frontend request with 400 because `username`, `fullName`, and `phoneNumber` are missing required fields
+  - Additionally, guards require `licenseNumber`, `licenseIssuedDate`, `licenseExpiryDate` — frontend has no UI for these
+
+research_metadata:
+  methodology: "grep_search for route definitions and struct names, read_file for handler and model details"
+  scope: "POST /api/users route: backend handler, request struct, frontend form submission"
+  confidence: high
+  coverage: 100
+  decision_blockers: 0
+  research_blockers: 0
+
+files_analyzed:
+  - file: main.rs
+    path: DasiaAIO-Backend/src/main.rs
+    purpose: Route definitions
+    key_elements:
+      - element: "/api/users" POST route
+        type: pattern
+        location: "main.rs:378-380"
+        description: "Maps POST /api/users → handlers::users::create_user_by_actor"
+    language: rust
+    lines: 800
+
+  - file: users.rs
+    path: DasiaAIO-Backend/src/handlers/users.rs
+    purpose: User CRUD handlers
+    key_elements:
+      - element: CreateManagedUserRequest
+        type: class
+        location: "handlers/users.rs:43-55"
+        description: "Serde-deserialized request body struct for POST /api/users"
+      - element: create_user_by_actor
+        type: function
+        location: "handlers/users.rs:56-140+"
+        description: "Handler that validates actor permissions, required fields, guard-specific fields, then INSERTs"
+    language: rust
+    lines: 140
+
+  - file: models.rs
+    path: DasiaAIO-Backend/src/models.rs
+    purpose: Shared data models
+    key_elements:
+      - element: CreateUserRequest
+        type: class
+        location: "models.rs:70-84"
+        description: "Similar struct used by auth registration (NOT the one used by /api/users). Has admin_code field."
+    language: rust
+    lines: 110
+
+  - file: ResourceManagementPanel.tsx
+    path: DasiaAIO-Frontend/src/components/admin/ResourceManagementPanel.tsx
+    purpose: Admin resource management UI including Add User form
+    key_elements:
+      - element: handleCreateUser
+        type: function
+        location: "ResourceManagementPanel.tsx:226-270"
+        description: "Submits POST /api/users with JSON body"
+      - element: newUser state
+        type: variable
+        location: "ResourceManagementPanel.tsx:~265"
+        description: "{ name, email, password, role } — only 4 fields"
+    language: typescript
+    lines: 500
+
+backend_struct_definition:
+  struct_name: CreateManagedUserRequest
+  file: DasiaAIO-Backend/src/handlers/users.rs
+  lines: "43-55"
+  serde_config: 'rename_all = "camelCase"'
+  fields:
+    - name: email
+      rust_type: String
+      json_key: email
+      required: true
+    - name: password
+      rust_type: String
+      json_key: password
+      required: true
+    - name: username
+      rust_type: String
+      json_key: username
+      required: true
+    - name: role
+      rust_type: String
+      json_key: role
+      required: true
+    - name: full_name
+      rust_type: String
+      json_key: fullName
+      required: true
+    - name: phone_number
+      rust_type: String
+      json_key: phoneNumber
+      required: true
+    - name: license_number
+      rust_type: "Option<String>"
+      json_key: licenseNumber
+      required: false
+      note: "Required at validation level for role=guard"
+    - name: license_issued_date
+      rust_type: "Option<DateTime<Utc>>"
+      json_key: licenseIssuedDate
+      required: false
+      note: "Required at validation level for role=guard"
+    - name: license_expiry_date
+      rust_type: "Option<DateTime<Utc>>"
+      json_key: licenseExpiryDate
+      required: false
+      note: "Required at validation level for role=guard"
+    - name: address
+      rust_type: "Option<String>"
+      json_key: address
+      required: false
+
+  handler_validation:
+    - "email, password, username, full_name, phone_number must be non-empty (400 otherwise)"
+    - "If role=guard: license_number, license_issued_date, license_expiry_date must all be Some (400 otherwise)"
+    - "Actor role must be authorized to create target role via utils::can_create_role"
+
+frontend_request_body:
+  file: DasiaAIO-Frontend/src/components/admin/ResourceManagementPanel.tsx
+  lines: "247-253"
+  json_body:
+    name: "newUser.name.trim()"
+    email: "newUser.email.trim()"
+    password: "newUser.password"
+    role: "newUser.role"
+
+mismatches:
+  - severity: critical
+    field: name → fullName
+    description: |
+      Frontend sends `name` but backend expects `fullName` (camelCase of `full_name`).
+      The backend struct has NO `name` field — serde with `deny_unknown_fields` would reject it,
+      BUT the handler struct does NOT use `deny_unknown_fields` so `name` is silently ignored.
+      Meanwhile `fullName` is missing, so the String default ("") triggers the handler's
+      empty-string check → 400 "full name is required".
+
+  - severity: critical
+    field: username (missing)
+    description: |
+      Frontend does not send `username` at all. Backend requires it as a non-empty String.
+      serde deserialization will fail with a missing-field error before the handler even runs.
+
+  - severity: critical
+    field: phoneNumber (missing)
+    description: |
+      Frontend does not send `phoneNumber`. Backend requires it as a non-empty String.
+      serde deserialization will fail with a missing-field error.
+
+  - severity: high
+    field: licenseNumber / licenseIssuedDate / licenseExpiryDate (missing for guards)
+    description: |
+      Frontend has no UI fields for guard license info. If role=guard is selected,
+      the handler will return 400 "Guard accounts require license number and license dates".
+      Non-guard roles would succeed once the critical mismatches above are fixed.
+
+  - severity: low
+    field: address (missing)
+    description: |
+      Frontend does not send `address`, but this is Option<String> so it defaults to None.
+      Not a breaking issue.
+
+open_questions: []
+
+gaps: []

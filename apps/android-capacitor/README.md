@@ -36,4 +36,5 @@ If needed, override with LAN host in a local mode file (for example http://192.1
 
 - Android manifest includes `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, and `ACCESS_COARSE_LOCATION`.
 - GPS permission is requested at runtime via Capacitor Geolocation before heartbeat tracking.
+- Heartbeat updates are foreground-driven from the web app runtime. Native background location services are not currently implemented in this wrapper.
 - Build outputs are generated from shared frontend assets so web/mobile/desktop stay API-compatible.
