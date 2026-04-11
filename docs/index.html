@@ -1168,9 +1168,13 @@
       <table>
         <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead>
         <tbody>
-          <tr><td><span class="method ws">WS</span></td><td>/ws/tracking</td><td>Live guard location stream</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/tracking</td><td>Ingest tracking point</td><td>🔒 Guard</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/tracking/latest</td><td>Latest positions snapshot</td><td>🔒 JWT</td></tr>
+           <tr><td><span class="method get">GET</span></td><td>/api/tracking/map-data</td><td>Operational map snapshot with guard, site, alert, and reliability state data</td><td>🔒 Guard+ / Elevated view</td></tr>
+           <tr><td><span class="method get">GET</span></td><td>/api/tracking/active-guards</td><td>Active and retained guard roster for command visibility</td><td>🔒 Guard+ / Elevated view</td></tr>
+           <tr><td><span class="method post">POST</span></td><td>/api/tracking/heartbeat</td><td>Persist a guard or supervisor heartbeat sample</td><td>🔒 Guard / Supervisor</td></tr>
+           <tr><td><span class="method get">GET</span></td><td>/api/tracking/consent</td><td>Read the authenticated user tracking consent state</td><td>🔒 JWT</td></tr>
+           <tr><td><span class="method post">POST</span></td><td>/api/tracking/consent/grant</td><td>Grant server-side tracking consent for the authenticated user</td><td>🔒 JWT</td></tr>
+           <tr><td><span class="method post">POST</span></td><td>/api/tracking/consent/revoke</td><td>Revoke server-side tracking consent for the authenticated user</td><td>🔒 JWT</td></tr>
+           <tr><td><span class="method ws">WS</span></td><td>/api/tracking/ws</td><td>Live tracking snapshot stream using protocol-bearer auth only</td><td>🔒 JWT</td></tr>
           <tr><td><span class="method get">GET</span></td><td>/api/incidents</td><td>List incidents</td><td>🔒 JWT</td></tr>
           <tr><td><span class="method post">POST</span></td><td>/api/incidents</td><td>Create incident report</td><td>🔒 JWT</td></tr>
         </tbody>

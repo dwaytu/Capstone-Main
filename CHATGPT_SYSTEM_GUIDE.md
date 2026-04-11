@@ -1191,7 +1191,8 @@ Verified in this session (Docker runtime):
     - No diagnostics issues in `UserDashboard.tsx` and `OperationalMapPanel.tsx`.
   - Tracking scope verification (latest):
     - Runtime probe executed against active local backend on `http://localhost:5000`.
-    - `POST /api/tracking/heartbeat` and `GET /api/tracking/map-data` are now restricted to `supervisor` and `guard` roles; admin/superadmin requests are expected to return `403` and generate authz-failure audit entries.
+     - `POST /api/tracking/heartbeat` is restricted to `guard` and `supervisor` roles only; admin, superadmin, and unknown roles are expected to return `403`.
+     - `GET /api/tracking/map-data` remains available to elevated operational roles for command visibility while still exposing unscheduled, stale, and offline guard telemetry.
     - Guard requests continue to persist heartbeat telemetry and receive `Location heartbeat recorded` success responses when precision policy is satisfied.
     - Frontend accuracy tuning added:
       - App-level all-user location capture now performs an immediate `getCurrentPosition` call on login and uses fresher geolocation cache (`maximumAge: 2000`) before watch updates.
@@ -1202,7 +1203,7 @@ Verified in this session (Docker runtime):
       - Backend services rebuilt and running (`docker compose ps`: backend up, postgres healthy).
       - `GET /api/health` => `200`.
       - `POST /api/tracking/heartbeat` (supervisor/guard token) => `201` with message `Location heartbeat recorded`.
-      - `GET /api/tracking/map-data` returns role-scoped tracking payload for supervisor/guard sessions.
+      - `GET /api/tracking/map-data` returns role-scoped tracking payload for elevated command sessions and guard-facing operational map views.
   - User management + map ops updates (latest):
     - User table filter control in `SuperadminDashboard` is now active and role-scoped (`all`, `superadmin`, `admin`, `supervisor`, `guard`).
     - User table ordering now enforces role priority first, then alphabetical name ordering:
