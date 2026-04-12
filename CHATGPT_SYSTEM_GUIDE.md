@@ -56,8 +56,10 @@ It manages:
 
 ### Legacy compatibility still present
 
-- `user` is still accepted as a legacy role value and normalized to `guard` in critical paths.
-- Frontend role normalization now treats role strings case-insensitively (for example `Admin`, `ADMIN`, ` admin `), reducing accidental fallback to `guard` caused by inconsistent casing.
+- `user` remains only as an explicit compatibility alias to `guard` in narrowly scoped migration paths.
+- Backend startup migration in `DasiaAIO-Backend/src/db.rs` enforces `users.role` default as `guard` and rewrites persisted legacy `user` rows to `guard` so new legacy-role state is not generated.
+- Frontend role normalization now treats role strings case-insensitively, maps only the explicit legacy alias `user` to `guard`, and fails closed for malformed or unknown values instead of promoting them to an operational role.
+- Backend authenticated token verification now accepts only `guard`, `supervisor`, `admin`, and `superadmin`, with an explicit `user -> guard` compatibility alias and fail-closed rejection for all other role claims.
 
 If ChatGPT is asked about roles, it should verify code paths before assuming docs are fully accurate.
 
@@ -231,7 +233,7 @@ Client access governance hardening:
 - URL-accessible elevated routes intentionally excluded from sidebar chrome are now explicitly documented in `DasiaAIO-Frontend/src/router/routes.ts` via `ELEVATED_URL_ONLY_ROUTES` (`/permits`, `/inbox`, `/profile`, `/support`, `/shift-swaps`, `/notifications`, `/trips`).
 - Command-center AI panels (`PredictiveAlertsPanel`, `IncidentSeverityClassifier`, `IncidentSummaryGenerator`) now use semantic status tokens (`*-bg`, `*-border`, `*-text`) instead of hardcoded dark-only text classes, fixing light-mode contrast regressions.
 - Analytics charts in `DasiaAIO-Frontend/src/components/AnalyticsDashboard.tsx` now set SVG label/axis fill and baseline stroke directly from semantic CSS tokens (`--color-text-primary`, `--color-text-secondary`, `--color-border-elevated`) for consistent readability in both dark and light themes.
-- Operational map role gating in `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts` now aligns with backend tracking authorization: only `supervisor` and `guard` roles access tracking endpoints, and client-site add/edit/delete controls remain supervisor-only to prevent admin/superadmin tracking 403 console noise.
+- Operational map role gating in `DasiaAIO-Frontend/src/hooks/useOperationalMapData.ts` and `DasiaAIO-Frontend/src/types/auth.ts` now mirrors the backend tracking split: all authenticated operational roles (`superadmin`, `admin`, `supervisor`, `guard`) can read tracking surfaces, only `guard` and `supervisor` can produce heartbeat-style person telemetry, and elevated roles manage client-site actions. The frontend tracking socket is attempted only when `VITE_ENABLE_TRACKING_WS=true`, while 30-second polling remains active when the socket is disabled or unavailable.
 - Direct `Header` consumers with view-state routing context (`ArmoredCarDashboard`, `FirearmInventory`, `FirearmAllocation`, `FirearmMaintenance`, `GuardFirearmPermits`, and `MeritScoreDashboard`) now pass shared `onNavigateToInbox` and `onNavigateToSettings` callbacks so top-right actions stay consistent across elevated resource pages while the sidebar remains limited to primary navigation.
 - `DasiaAIO-Frontend/src/utils/pushNotifications.ts` now short-circuits service-worker registration in Vite development and clears existing localhost registrations/caches from `src/main.tsx` startup so the web shell cannot be pinned to stale cached chrome during dashboard iteration. Production push/offline behavior continues to use `/sw.js`.
 - `DasiaAIO-Frontend/vite.config.ts` now pins dev HMR client behavior to localhost (`server.hmr.host`, `clientPort`, `strictPort`) so VS Code integrated-browser sessions avoid localhost/127.0.0.1 websocket drift and consistently load current shell updates.
@@ -245,7 +247,7 @@ Client access governance hardening:
 - Global mobile quick navigation in `App.tsx` is disabled for guard routing, and guard navigation is now single-sourced inside `UserDashboard.tsx` through a dedicated bottom-nav field shell to avoid redundant controls.
 - `DasiaAIO-Frontend/src/components/UserDashboard.tsx` was redesigned to a mission-first guard workspace with a single-column mobile layout, persistent field action dock (`Report Incident`, `Check In/Check Out`, `View Instructions`), assignment-focused top summary cards, a dedicated bottom navigation bar (`Mission`, `Resources`, `Support`, `Map`), and shared top-right header actions for quick inbox, settings, and profile access.
 - Guard resilience UX now includes explicit loading/sync states, offline and partial-sync banners with retry, and protected action feedback messages for field-critical workflows.
-- Tracking telemetry hooks now enforce frontend role gating (`supervisor`/`guard`) before calling tracking APIs/websocket endpoints (`useOperationalMapData`, `useReplacementSuggestions`, and app-level heartbeat dispatch in `App.tsx`), preventing repeated `403` tracking calls for non-tracking roles.
+- Tracking telemetry hooks now separate tracking reads from person-telemetry writes: operational roles can reach tracking read surfaces, heartbeat submission remains limited to `guard`/`supervisor` producers, and non-operational roles are blocked before any tracking API or websocket attempt.
 - `LocationContext.tsx` now exports a heartbeat status type; `UserDashboard.tsx` shows an amber warning indicator when location sharing is paused or heartbeat submission is inactive.
 - `SuperadminDashboard.tsx` now passes computed `activeGuards` and `activeTrips` from tracking data to `OperationalMapPanel` instead of hardcoded zeros.
 - Sidebar service-health polling (`DasiaAIO-Frontend/src/hooks/useServiceHealth.ts`) now uses `/api/health/system` payloads instead of probing role-restricted operational routes, eliminating expected-but-noisy `403` console spam for lower-privilege sessions.
@@ -315,7 +317,7 @@ All AI/prediction panels upgraded from static text output to actionable call-to-
 - CORS fallback allow-lists now also include runtime origins used by packaged clients (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) to prevent mobile/desktop WebView login fetch failures when strict CORS env vars are absent.
 - When `CORS_ORIGINS` or `CORS_ORIGIN` is explicitly configured, backend CORS augments those settings with native wrapper origins (`capacitor://localhost`, `tauri://localhost`, `http://localhost`, `https://localhost`) so mobile and desktop wrappers do not regress into `Failed to fetch` due to origin mismatch.
 - Local web dev origins `http://localhost:5173` and `http://127.0.0.1:5173` are now only auto-augmented for non-production runtime, tightening production CORS posture while preserving local developer ergonomics.
-- Tracking websocket upgrades (`GET /api/tracking/ws`) now explicitly reject users without accepted legal consent and reject roles outside `supervisor`/`guard`.
+- Tracking websocket upgrades (`GET /api/tracking/ws`) now explicitly reject users without accepted legal consent and reject roles outside authenticated operational roles (`superadmin`, `admin`, `supervisor`, `guard`).
 - Tracking websocket authentication uses token transport exclusively via `Sec-WebSocket-Protocol` (`sentinel-tracking-v1`, `bearer.<jwt>`) to avoid exposing JWTs in URL query strings; query-string `?token=` fallback has been removed and is rejected server-side.
 - Global middleware order in `DasiaAIO-Backend/src/main.rs` now keeps CORS outermost so browser CORS headers are still attached when upstream middleware (rate-limit/auth/presence) returns early errors.
 - API/auth/expensive rate-limit middleware (`DasiaAIO-Backend/src/middleware/rate_limit.rs`) now bypasses `OPTIONS` requests so browser preflight checks are never rate-limited.
@@ -409,25 +411,24 @@ Current backend reality:
   - `DasiaAIO-Backend/src/db.rs`: startup schema bootstrap now creates/extends `client_sites`, `tracking_points` (including `user_id` association), `geofence_events`, and `site_geofences` with operational indexes.
   - `DasiaAIO-Backend/src/handlers/tracking.rs`: handlers now cover map snapshots, telemetry/site ingestion, guard movement intelligence, and geofence transition evaluation.
   - `DasiaAIO-Backend/src/handlers/mod.rs`: `tracking` module export added.
-  - `DasiaAIO-Backend/src/main.rs`: tracking routes now require `supervisor` or `guard` role at middleware level:
-    - `GET /api/tracking/map-data`
-    - `POST /api/tracking/points`
+  - `DasiaAIO-Backend/src/main.rs` and `DasiaAIO-Backend/src/middleware/authz.rs`: `require_tracking_access` now admits all authenticated operational roles (`superadmin`, `admin`, `supervisor`, `guard`) to tracking read surfaces and tracking-consent endpoints while rejecting legacy/unknown roles.
+  - Tracking read surfaces are split by handler scope:
+    - `GET /api/tracking/map-data`, `GET /api/tracking/active-guards`, and `GET /api/tracking/ws` accept authenticated operational roles. Guard-facing snapshots are self-scoped to the authenticated guard, while elevated roles receive broader command views.
+    - `GET /api/tracking/guard-history/:id` and `GET /api/tracking/guard-path/:id` accept authenticated operational roles, but `guard` sessions may request only their own `:id`.
+    - `GET /api/tracking/consent`, `POST /api/tracking/consent/grant`, and `POST /api/tracking/consent/revoke` let operational-role users inspect and update their own location-tracking consent state.
+  - Elevated site and geofence management remains handler-gated at `supervisor` minimum, so `supervisor`, `admin`, and `superadmin` manage:
+    - `GET /api/tracking/client-sites`
     - `POST /api/tracking/client-sites`
-    - `GET /api/tracking/guard-history/:id`
-    - `GET /api/tracking/guard-path/:id`
-    - `GET /api/tracking/active-guards`
+    - `PUT /api/tracking/client-sites/:id`
+    - `DELETE /api/tracking/client-sites/:id`
     - `GET /api/tracking/geofences`
     - `GET /api/tracking/client-sites/:id/geofences`
     - `POST /api/tracking/client-sites/:id/geofences`
     - `PUT /api/tracking/geofences/:id`
     - `DELETE /api/tracking/geofences/:id`
-  - Guard safety rule: guards can only submit `entityType='guard'` points for their own `entityId` (JWT `sub`).
-  - Expanded tracking API for location lifecycle and live streaming (same `supervisor`/`guard` scope):
-    - `GET /api/tracking/client-sites`
-    - `PUT /api/tracking/client-sites/:id`
-    - `DELETE /api/tracking/client-sites/:id`
-    - `POST /api/tracking/heartbeat` (guard session heartbeat -> guard tracking point)
-    - `GET /api/tracking/ws` (websocket snapshot stream, `Sec-WebSocket-Protocol` bearer auth only — query-string token rejected)
+  - Person-tracking write policy:
+    - `POST /api/tracking/heartbeat` requires accepted legal consent, active location-tracking consent, and a `guard` or `supervisor` actor. Guards write self-scoped `entityType='guard'` heartbeats; supervisors write self-scoped `entityType='user'` heartbeats.
+    - `POST /api/tracking/points` is reachable by operational roles at route entry, but `entityType in ('guard', 'user')` additionally requires accepted legal consent, active location-tracking consent, and self-scoped producer enforcement. Vehicle writes do not enter the person-tracking consent gate. Guard-origin vehicle writes through `POST /api/tracking/points` are forbidden.
   - Guard heartbeat precision policy update (`POST /api/tracking/heartbeat`):
     - samples with `accuracy_meters > 5000` are treated as approximate IP-based fallbacks, persisted with status `approximate`, and acknowledged with `accepted: true` plus `approximate: true`
     - samples with `accuracy_meters` in the GPS-like range still enforce environment-based strict/balanced precision thresholds
@@ -1459,7 +1460,7 @@ Verified in this session (Docker runtime):
   - RBAC and layout hardening pass (latest):
     - Backend authorization updates:
       - `/api/audit-logs`, `/api/audit/logs`, `/api/audit/logs/filter`, `/api/audit/user-activity/:id`, `/api/audit/anomalies` now require superadmin route and handler gates.
-      - Tracking routes now require supervisor/guard role middleware; websocket upgrades reject non-supervisor/non-guard roles.
+      - Tracking read surfaces now use authenticated operational-role access gates, while websocket upgrades reject non-operational roles and person-telemetry writes remain handler-limited to consented guard/supervisor self-tracking.
       - Incident reads are role-scoped: guard sees self-reported incidents only; elevated roles retain full incident feed.
       - Global authz-failure audit middleware records API-wide denials (`401/403`, including write-route denials) into `audit_logs`.
     - Frontend authorization/layout updates:
