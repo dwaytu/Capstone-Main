@@ -29,3 +29,11 @@ ITEM: Frontend role normalization defaults unknown roles to guard for tracking-r
 EVIDENCE: DasiaAIO-Frontend/src/types/auth.ts returns 'guard' for invalid role input; trackingAccessPolicy.test.ts expects unknown-role and user to retain tracking access
 NEXT_STEP: Tighten frontend role normalization to fail closed for unknown roles and update tests to match the four valid SENTINEL roles only
 STATUS: open
+
+DATE: 2026-04-12
+AGENT: sentinel-security-reviewer
+CATEGORY: security
+ITEM: Supervisor heartbeats currently enter guard-only history, path, and geofence semantics
+EVIDENCE: DasiaAIO-Backend/src/handlers/tracking.rs writes supervisor heartbeats as entity_type='guard', and downstream reads/alerts query tracking_points where entity_type IN ('guard')
+NEXT_STEP: Decide explicitly whether supervisor movement belongs in guard operational channels; if not, separate entity typing or add downstream role-aware filtering before calling the shortcut safe
+STATUS: open

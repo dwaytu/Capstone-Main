@@ -26,3 +26,10 @@ CONTEXT: tracking preflight review covering websocket auth, consent enforcement,
 CORRECTION: Tracking consent was enforced only in frontend localStorage/UI state, while websocket auth still accepted a query-string token fallback and the heartbeat route remained broader than the producer policy.
 LESSON: For privacy-sensitive tracking flows, require server-authoritative consent for data producers, avoid query-string bearer transport on websocket upgrades, and align backend role enforcement with the real producer set instead of trusting frontend gating.
 PROMOTE_AFTER: repeated 3x with success
+
+DATE: 2026-04-12
+AGENT: sentinel-security-reviewer
+CONTEXT: narrow tracking truthfulness review for device-only live tracking, PanicButton IP fallback, and supervisor heartbeat semantics
+CORRECTION: Heartbeat collection was correctly moved to device-only geolocation, but some permission banners still claimed live tracking would continue with IP fallback and a backend shortcut collapsed supervisor heartbeats into guard semantics.
+LESSON: When tracking semantics change, update every user-facing message and downstream classifier together. Keep emergency fallback paths clearly separate from live-tracking claims, and do not reuse a role-specific entity type unless downstream history, alerting, and analytics are also intended to share that meaning.
+PROMOTE_AFTER: repeated 3x with success
