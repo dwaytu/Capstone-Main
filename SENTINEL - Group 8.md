@@ -148,7 +148,7 @@ Objectives
 
 General Objective
 
-To design, implement, and validate SENTINEL as an integrated, role-governed, multi-platform security operations management system that strengthens workforce continuity, asset accountability, incident coordination, live monitoring, and governance visibility across Web, Desktop, and Android environments.
+The main objective of this study is to develop a system named SENTINEL, an integrated, role-governed, multi-platform security operations management system for the stakeholders of Davao Security & Intelligence Agency, Inc. The purpose of this system is to improve their workforce continuity, asset accountability, incident coordination, live monitoring, and governance visibility across Web, Desktop, and Android platforms.
 
 Specific Objectives
 
@@ -966,64 +966,8 @@ The Work Breakdown Structure (WBS) organizes the project into major deliverables
 WBS Diagram (Mermaid Model)
 
 ```mermaid
-flowchart LR
-	ROOT["Work Breakdown Structure\nSENTINEL System"]
-
-	subgraph P1["Phase 1: Planning"]
-		direction TB
-		P1_1["1.1 Define scope and objectives"]
-		P1_2["1.2 Identify stakeholders and roles"]
-		P1_3["1.3 Prepare sprint roadmap"]
-		P1_D["Deliverable:\nApproved project plan"]
-		P1_1 --> P1_2 --> P1_3 --> P1_D
-	end
-
-	subgraph P2["Phase 2: Requirements Engineering"]
-		direction TB
-		P2_1["2.1 Gather functional requirements"]
-		P2_2["2.2 Define non-functional requirements"]
-		P2_3["2.3 Validate with client"]
-		P2_D["Deliverable:\nApproved requirements spec"]
-		P2_1 --> P2_2 --> P2_3 --> P2_D
-	end
-
-	subgraph P3["Phase 3: System Design"]
-		direction TB
-		P3_1["3.1 Design architecture and database"]
-		P3_2["3.2 Define API contracts"]
-		P3_3["3.3 Prepare storyboard and navigation"]
-		P3_D["Deliverable:\nDesign specification"]
-		P3_1 --> P3_2 --> P3_3 --> P3_D
-	end
-
-	subgraph P4["Phase 4: Development"]
-		direction TB
-		P4_1["4.1 Build auth, RBAC, and approvals"]
-		P4_2["4.2 Build scheduling, attendance, and replacement"]
-		P4_3["4.3 Build firearms, permits, and compliance"]
-		P4_4["4.4 Build fleet, trips, incidents, and support/notification"]
-		P4_5["4.5 Build dashboards, inbox, AI, tracking, and cross-platform"]
-		P4_D["Deliverable:\nIntegrated system build"]
-		P4_1 --> P4_2 --> P4_3 --> P4_4 --> P4_5 --> P4_D
-	end
-
-	subgraph P5["Phase 5: Testing and QA"]
-		direction TB
-		P5_1["5.1 Module and integration testing"]
-		P5_2["5.2 Security and role testing"]
-		P5_3["5.3 Fix defects and regressions"]
-		P5_D["Deliverable:\nValidated release candidate"]
-		P5_1 --> P5_2 --> P5_3 --> P5_D
-	end
-
-	subgraph P6["Phase 6: Documentation and Deployment"]
-		direction TB
-		P6_1["6.1 Deploy and verify runtime"]
-		P6_2["6.2 Finalize technical and user docs"]
-		P6_3["6.3 Prepare defense and turnover"]
-		P6_D["Deliverable:\nFinal documented system"]
-		P6_1 --> P6_2 --> P6_3 --> P6_D
-	end
+flowchart TB
+	ROOT["SENTINEL<br/>Integrated, Role-Governed, Multi-Platform<br/>Security Operations Management System"]
 
 	ROOT --> P1
 	ROOT --> P2
@@ -1031,51 +975,150 @@ flowchart LR
 	ROOT --> P4
 	ROOT --> P5
 	ROOT --> P6
+	ROOT --> P7
+	ROOT --> P8
+	ROOT --> P9
 
-	P1 --- P2 --- P3 --- P4 --- P5 --- P6
+	P1["Phase 1 -<br/>Project Initiation"]
+	P1 --> P1_1["1.1 Define Project Scope and Objectives"]
+	P1_1 --> P1_2["1.2 Identify Stakeholders"]
+	P1_2 --> P1_3["1.3 Conduct Initial Project Planning and Scheduling"]
 
-	classDef head fill:#a7d7df,stroke:#4c7680,color:#111,stroke-width:1px;
-	classDef task fill:#ffffff,stroke:#6a6a6a,color:#111,stroke-width:1px;
-	classDef out fill:#bfe8ef,stroke:#4c7680,color:#111,stroke-width:1px;
+	P2["Phase 2 -<br/>Planning"]
+	P2 --> P2_1["2.1 Conduct Project Kickoff Meeting"]
+	P2_1 --> P2_2["2.2 Create Product Backlog"]
+	P2_2 --> P2_3["2.3 Develop Sprint Plan"]
+	P2_3 --> P2_4["2.4 Establish Communication and Reporting Mechanisms"]
 
-	class ROOT head;
-	class P1_1,P1_2,P1_3,P2_1,P2_2,P2_3,P3_1,P3_2,P3_3,P4_1,P4_2,P4_3,P4_4,P4_5,P5_1,P5_2,P5_3,P6_1,P6_2,P6_3 task;
-	class P1_D,P2_D,P3_D,P4_D,P5_D,P6_D out;
+	P3["Phase 3 -<br/>Iteration 1"]
+	P3 --> P3_1["3.1 Conduct Sprint Planning Meeting"]
+	P3_1 --> P3_2["3.2 Design Core Architecture and Database"]
+	P3_2 --> P3_3["3.3 Develop Authentication, RBAC, and Approval Modules"]
+	P3_3 --> P3_4["3.4 Develop Frontend Shell and Navigation"]
+	P3_4 --> P3_5["3.5 Perform Unit Testing"]
+	P3_5 --> P3_6["3.6 Conduct Review and Demo"]
+	P3_6 --> P3_7["3.7 Conduct Retrospective"]
+
+	P4["Phase 4 -<br/>Iteration 2"]
+	P4 --> P4_1["4.1 Conduct Sprint Planning Meeting"]
+	P4_1 --> P4_2["4.2 Develop Scheduling, Attendance, and Replacement Modules"]
+	P4_2 --> P4_3["4.3 Develop Incident, Notification, and Support Workflows"]
+	P4_3 --> P4_4["4.4 Integrate Role-Based Dashboard Views"]
+	P4_4 --> P4_5["4.5 Perform Unit Testing"]
+	P4_5 --> P4_6["4.6 Conduct Review and Demo"]
+	P4_6 --> P4_7["4.7 Conduct Retrospective"]
+
+	P5["Phase 5 -<br/>Iteration 3"]
+	P5 --> P5_1["5.1 Conduct Sprint Planning Meeting"]
+	P5_1 --> P5_2["5.2 Develop Firearm, Permit, Vehicle, and Trip Modules"]
+	P5_2 --> P5_3["5.3 Develop Live Tracking, Geofencing, and Operational Map Features"]
+	P5_3 --> P5_4["5.4 Develop Analytics, Inbox, and AI-Assisted Features"]
+	P5_4 --> P5_5["5.5 Prepare Cross-Platform Builds for Web, Desktop, and Android"]
+	P5_5 --> P5_6["5.6 Perform Unit Testing"]
+	P5_6 --> P5_7["5.7 Conduct Review and Demo"]
+	P5_7 --> P5_8["5.8 Conduct Retrospective"]
+
+	P6["Phase 6 -<br/>Testing and Quality Assurance"]
+	P6 --> P6_1["6.1 Conduct System Testing"]
+	P6_1 --> P6_2["6.2 Perform Integration and Security Testing"]
+	P6_2 --> P6_3["6.3 Perform User Acceptance Testing (UAT)"]
+	P6_3 --> P6_4["6.4 Identify and Address Defects"]
+	P6_4 --> P6_5["6.5 Validate Data Security, Privacy, and Policy Compliance"]
+
+	P7["Phase 7 -<br/>Deployment"]
+	P7 --> P7_1["7.1 Deploy Web, Desktop, and Android Builds"]
+	P7_1 --> P7_2["7.2 Configure Runtime Environment and Database Services"]
+	P7_2 --> P7_3["7.3 Provide User Training and Technical Documentation"]
+	P7_3 --> P7_4["7.4 Monitor and Fine-Tune System Performance"]
+
+	P8["Phase 8 -<br/>Maintenance and Refinement"]
+	P8 --> P8_1["8.1 Continuous System Monitoring"]
+	P8_1 --> P8_2["8.2 Apply Software Updates and Improvements"]
+	P8_2 --> P8_3["8.3 Provide User Support and Issue Resolution"]
+	P8_3 --> P8_4["8.4 Update Technical and User Documentation"]
+	P8_4 --> P8_5["8.5 Collect and Incorporate Stakeholder Feedback"]
+
+	P9["Phase 9 -<br/>Project Closure"]
+	P9 --> P9_1["9.1 Conduct Final Project Review"]
+	P9_1 --> P9_2["9.2 Document Lessons Learned"]
+	P9_2 --> P9_3["9.3 Handover Project Deliverables and Documentation"]
+	P9_3 --> P9_4["9.4 Prepare Defense Materials and Final Submission"]
+
+	classDef root fill:#ffffff,stroke:#666,color:#111,stroke-width:1.5px;
+	classDef phase fill:#ffffff,stroke:#666,color:#111,stroke-width:1.5px;
+	classDef task fill:#f8f8f8,stroke:#999,color:#111,stroke-width:1px;
+
+	class ROOT root;
+	class P1,P2,P3,P4,P5,P6,P7,P8,P9 phase;
+	class P1_1,P1_2,P1_3,P2_1,P2_2,P2_3,P2_4,P3_1,P3_2,P3_3,P3_4,P3_5,P3_6,P3_7,P4_1,P4_2,P4_3,P4_4,P4_5,P4_6,P4_7,P5_1,P5_2,P5_3,P5_4,P5_5,P5_6,P5_7,P5_8,P6_1,P6_2,P6_3,P6_4,P6_5,P7_1,P7_2,P7_3,P7_4,P8_1,P8_2,P8_3,P8_4,P8_5,P9_1,P9_2,P9_3,P9_4 task;
 ```
 
 WBS Diagram (Text Model)
 
-1.0 Project Management
-1.1 Project initiation and scope definition
-1.2 Stakeholder consultation and approvals
-1.3 Sprint planning and monitoring
+1.0 Phase 1 - Project Initiation
+1.1 Define project scope and objectives
+1.2 Identify stakeholders
+1.3 Conduct initial project planning and scheduling
 
-2.0 Requirements Engineering
-2.1 Requirements elicitation
-2.2 Functional and non-functional analysis
-2.3 Requirements validation and sign-off
+2.0 Phase 2 - Planning
+2.1 Conduct project kickoff meeting
+2.2 Create product backlog
+2.3 Develop sprint plan
+2.4 Establish communication and reporting mechanisms
 
-3.0 System Design
-3.1 Architecture and database design
-3.2 API and module design
-3.3 Storyboard and interface design
+3.0 Phase 3 - Iteration 1
+3.1 Conduct sprint planning meeting
+3.2 Design core architecture and database
+3.3 Develop authentication, RBAC, and approval modules
+3.4 Develop frontend shell and navigation
+3.5 Perform unit testing
+3.6 Conduct review and demo
+3.7 Conduct retrospective
 
-4.0 System Development
-4.1 Authentication, RBAC, and approval workflows
-4.2 Scheduling, attendance, and replacement workflows
-4.3 Firearms, permits, and compliance workflows
-4.4 Fleet, trip, incident, support, and notification workflows
-4.5 Dashboards, inbox, AI, map tracking, and cross-platform delivery
+4.0 Phase 4 - Iteration 2
+4.1 Conduct sprint planning meeting
+4.2 Develop scheduling, attendance, and replacement modules
+4.3 Develop incident, notification, and support workflows
+4.4 Integrate role-based dashboard views
+4.5 Perform unit testing
+4.6 Conduct review and demo
+4.7 Conduct retrospective
 
-5.0 Testing and Quality Assurance
-5.1 Module and integration testing
-5.2 Security and role-permission testing
-5.3 Defect fixing and regression testing
+5.0 Phase 5 - Iteration 3
+5.1 Conduct sprint planning meeting
+5.2 Develop firearm, permit, vehicle, and trip modules
+5.3 Develop live tracking, geofencing, and operational map features
+5.4 Develop analytics, inbox, and AI-assisted features
+5.5 Prepare cross-platform builds for Web, Desktop, and Android
+5.6 Perform unit testing
+5.7 Conduct review and demo
+5.8 Conduct retrospective
 
-6.0 Documentation and Deployment
-6.1 Deployment and runtime validation
-6.2 Technical and user documentation
-6.3 Defense preparation and final turnover
+6.0 Phase 6 - Testing and Quality Assurance
+6.1 Conduct system testing
+6.2 Perform integration and security testing
+6.3 Perform user acceptance testing (UAT)
+6.4 Identify and address defects
+6.5 Validate data security, privacy, and policy compliance
+
+7.0 Phase 7 - Deployment
+7.1 Deploy Web, Desktop, and Android builds
+7.2 Configure runtime environment and database services
+7.3 Provide user training and technical documentation
+7.4 Monitor and fine-tune system performance
+
+8.0 Phase 8 - Maintenance and Refinement
+8.1 Continuous system monitoring
+8.2 Apply software updates and improvements
+8.3 Provide user support and issue resolution
+8.4 Update technical and user documentation
+8.5 Collect and incorporate stakeholder feedback
+
+9.0 Phase 9 - Project Closure
+9.1 Conduct final project review
+9.2 Document lessons learned
+9.3 Handover project deliverables and documentation
+9.4 Prepare defense materials and final submission
 
 Gantt Chart of Activities
 
@@ -1091,125 +1134,102 @@ gantt
 	dateFormat  YYYY-MM-DD
 	axisFormat  %b
 
-	section Planning
-	Project Initiation                  :a1, 2026-02-01, 30d
-	Requirements Gathering              :a2, 2026-03-01, 31d
-	System Architecture and UI Planning :a3, 2026-04-01, 30d
+	section Phase 1 - Project Initiation
+	Define scope and objectives                   :a1, 2026-02-01, 10d
+	Identify stakeholders                         :a2, after a1, 8d
+	Initial planning and scheduling               :a3, after a2, 10d
 
-	section Development Sprints
-	Sprint 1 Auth RBAC Approvals         :b1, 2026-05-01, 31d
-	Sprint 2 Schedule Attendance Replace :b2, 2026-06-01, 30d
-	Sprint 3 Firearms Permits Compliance :b3, 2026-07-01, 31d
-	Sprint 4 Fleet Trips Incident Support :b4, 2026-08-01, 31d
-	Sprint 5 Dashboard Inbox AI Xplat    :b5, 2026-09-01, 30d
+	section Phase 2 - Planning
+	Kickoff and requirements alignment            :b1, 2026-03-01, 10d
+	Create product backlog                        :b2, after b1, 8d
+	Sprint planning and reporting setup           :b3, after b2, 13d
 
-	section Validation and Closeout
-	Integration Testing and Bug Fixing  :c1, 2026-10-01, 31d
-	User Validation and Documentation   :c2, 2026-11-01, 30d
-	Final Review Defense and Turnover   :c3, 2026-12-01, 31d
+	section Phase 3 - Iteration 1
+	Core architecture and database design         :c1, 2026-04-01, 15d
+	Auth, RBAC, and approval development          :c2, after c1, 20d
+	Frontend shell, testing, and review           :c3, after c2, 25d
+
+	section Phase 4 - Iteration 2
+	Scheduling, attendance, and replacement       :d1, 2026-06-01, 30d
+	Incident, support, and dashboard integration  :d2, 2026-07-01, 20d
+	Review, testing, and retrospective            :d3, after d2, 11d
+
+	section Phase 5 - Iteration 3
+	Asset, permit, vehicle, and trip modules      :e1, 2026-08-01, 31d
+	Tracking, analytics, AI, and x-platform prep  :e2, 2026-09-01, 20d
+	Review, testing, and retrospective            :e3, after e2, 10d
+
+	section Phase 6 - Testing and Quality Assurance
+	System and integration testing                :f1, 2026-10-01, 15d
+	Security, UAT, and defect resolution          :f2, after f1, 16d
+
+	section Phase 7 - Deployment
+	Release preparation and environment setup     :g1, 2026-11-01, 7d
+	User training and technical documentation     :g2, after g1, 8d
+
+	section Phase 8 - Maintenance and Refinement
+	Monitoring and refinements                    :h1, 2026-11-16, 15d
+	Support and documentation updates             :h2, 2026-12-01, 10d
+
+	section Phase 9 - Project Closure
+	Final review and turnover                     :i1, 2026-12-11, 10d
+	Defense preparation and final submission      :i2, after i1, 11d
 ```
 
 Gantt Chart of Activities (Planned Timeline)
 
 Month: February
-Activity: Project initiation and problem definition
+Activity: Phase 1 - Project initiation, stakeholder identification, and initial planning
 
 Month: March
-Activity: Requirements gathering and validation
+Activity: Phase 2 - Project kickoff, backlog creation, and sprint planning
 
-Month: April
-Activity: System architecture and interface planning
+Month: April to May
+Activity: Phase 3 - Iteration 1 implementation (core architecture, database, authentication, RBAC, approvals, and frontend shell)
 
-Month: May
-Activity: Sprint 1 implementation (authentication, RBAC, and approvals)
+Month: June to July
+Activity: Phase 4 - Iteration 2 implementation (scheduling, attendance, replacement, incidents, notifications, support, and dashboard integration)
 
-Month: June
-Activity: Sprint 2 implementation (scheduling, attendance, replacement)
-
-Month: July
-Activity: Sprint 3 implementation (firearms, permits, and compliance controls)
-
-Month: August
-Activity: Sprint 4 implementation (fleet, trips, incidents, notifications, and support)
-
-Month: September
-Activity: Sprint 5 implementation (dashboards, inbox, analytics, AI, map tracking, and cross-platform packaging)
+Month: August to September
+Activity: Phase 5 - Iteration 3 implementation (firearms, permits, vehicles, trips, live tracking, analytics, AI, and cross-platform preparation)
 
 Month: October
-Activity: Integration testing and bug fixing
+Activity: Phase 6 - Testing and quality assurance
 
 Month: November
-Activity: User validation, documentation, and refinements
+Activity: Phase 7 - Deployment, runtime setup, user training, and documentation
 
-Month: December
-Activity: Final review, defense preparation, and turnover
+Month: Late November to Early December
+Activity: Phase 8 - Maintenance, support, and refinement
+
+Month: Mid to Late December
+Activity: Phase 9 - Final review, defense preparation, submission, and turnover
 
 Calendar of Activities
 
 The calendar of activities operationalizes the WBS and Gantt sequence by specifying each period's objective, personnel involvement, and resource requirements.
 
-1. February - Project initiation and problem definition.
-Purpose: Define project boundaries, objectives, and target operational issues.
-Persons involved: Proponents, adviser, client representative.
-Resources needed: Consultation sessions, initial proposal documents, reference studies.
+Table 1: Activity Table
 
-2. March - Requirements gathering and validation.
-Purpose: Elicit and validate functional and non-functional requirements.
-Persons involved: Proponents, operations users, adviser.
-Resources needed: Interview guides, requirement templates, process notes.
-
-3. April - System architecture and interface planning.
-Purpose: Define system architecture, data model, and storyboard screens.
-Persons involved: Proponents and adviser.
-Resources needed: ERD tools, wireframe tools, architecture notes.
-
-4. May - Sprint 1: Authentication, role governance, and approvals.
-Purpose: Implement secure account lifecycle, access governance, and approval workflows.
-Persons involved: Proponents.
-Resources needed: VS Code, Rust toolchain, Node.js, PostgreSQL, Docker.
-
-5. June - Sprint 2: Scheduling, attendance, and replacement.
-Purpose: Implement shift management, attendance recording, no-show detection, and replacement workflows.
-Persons involved: Proponents.
-Resources needed: API test scripts, schedule datasets, integration logs.
-
-6. July - Sprint 3: Firearms, permits, and compliance.
-Purpose: Implement inventory, allocation, maintenance, permit, and compliance-sensitive workflows.
-Persons involved: Proponents.
-Resources needed: Firearm/permit data templates, compliance validation cases.
-
-7. August - Sprint 4: Fleet, trips, incidents, notifications, and support.
-Purpose: Implement armored car management, trip lifecycle, incident handling, support-ticket workflows, and notification delivery.
-Persons involved: Proponents.
-Resources needed: Fleet/trip datasets, incident scenarios, runtime logs.
-
-8. September - Sprint 5: Dashboards, inbox, analytics, AI, tracking, and cross-platform packaging.
-Purpose: Implement command dashboards, role-based inbox workflows, predictive modules, map tracking, real-time monitoring, and cross-platform build alignment.
-Persons involved: Proponents.
-Resources needed: Analytics test data, AI validation scenarios, platform build toolchains.
-
-9. October - Integration testing and bug fixing.
-Purpose: Validate end-to-end modules, role permissions, and real-time flows; resolve regressions.
-Persons involved: Proponents, adviser, selected testers.
-Resources needed: Test scripts, issue tracker, runtime diagnostics.
-
-10. November - User validation, documentation, and refinements.
-Purpose: Validate operational usability, finalize documentation content, and apply approved refinements.
-Persons involved: Proponents, adviser, selected client-side validators.
-Resources needed: Validation checklists, manuscript drafts, review notes.
-
-11. December - Final review, defense preparation, and turnover.
-Purpose: Consolidate final outputs, prepare defense materials, and complete project handover.
-Persons involved: Proponents and adviser.
-Resources needed: Final manuscript file, presentation slides, appendices.
+| Month / Time Frame | Activity | Purpose | Persons Involved | Resources Needed |
+|---|---|---|---|---|
+| February 2026 | Phase 1 - Project Initiation | To define the project scope, identify stakeholders, and prepare the initial development schedule | Proponents, adviser, client representative | Consultation sessions, initial proposal documents, reference studies |
+| March 2026 | Phase 2 - Planning | To conduct kickoff activities, organize the product backlog, and establish sprint and reporting mechanisms | Proponents, adviser, client-side validators | Requirement notes, backlog templates, planning documents |
+| April to May 2026 | Phase 3 - Iteration 1 | To build the project foundation through architecture design, database setup, authentication, RBAC, approvals, and frontend shell development | Proponents | VS Code, Rust toolchain, Node.js, PostgreSQL, Docker, UI planning references |
+| June to July 2026 | Phase 4 - Iteration 2 | To implement workforce continuity workflows, including scheduling, attendance, replacement, incident handling, notifications, and support workflows | Proponents | API test scripts, schedule datasets, incident scenarios, integration logs |
+| August to September 2026 | Phase 5 - Iteration 3 | To implement asset, compliance, tracking, analytics, AI-assisted, and cross-platform packaging features | Proponents | Firearm and fleet datasets, analytics test data, AI validation scenarios, platform build toolchains |
+| October 2026 | Phase 6 - Testing and Quality Assurance | To validate end-to-end system behavior, security, role permissions, user acceptance, and defect correction | Proponents, adviser, selected testers | Test scripts, issue tracker, validation checklists, runtime diagnostics |
+| Early November 2026 | Phase 7 - Deployment | To prepare release builds, configure runtime environments, and conduct user training and documentation turnover | Proponents, adviser, selected client-side validators | Deployment guides, runtime configuration notes, technical and user documentation |
+| Late November to Early December 2026 | Phase 8 - Maintenance and Refinement | To monitor system performance, address issues, update documentation, and incorporate approved stakeholder feedback | Proponents, selected validators | Monitoring logs, review notes, support records, update checklists |
+| Mid to Late December 2026 | Phase 9 - Project Closure | To complete the final review, consolidate project outputs, prepare defense materials, and hand over deliverables | Proponents, adviser | Final manuscript file, presentation slides, appendices, turnover documents |
 
 Resources
 
 Hardware Requirements (Recommended)
 
-Table 1 presents the recommended hardware requirements for development and operational deployment of the implemented SENTINEL system.
+Table 2 presents the recommended hardware requirements for development and operational deployment of the implemented SENTINEL system.
 
-Table 1: Hardware Requirements
+Table 2: Hardware Requirements
 
 Development Workstation
 Operating System: Windows 10/11 (64-bit)
@@ -1263,17 +1283,15 @@ Runtime Requirements
 
 Requirements Analysis
 
-Requirement analysis in this study used an operational risk lens to determine who is affected, which activities are vulnerable, and where existing procedures create delays, compliance gaps, or weak accountability.
+The requirements baseline for SENTINEL was defined from actual private-security operational pain points: fragmented coordination, delayed visibility, compliance exposure, and weak traceability of sensitive asset workflows. Based on current implementation, the requirements analysis prioritizes role-governed access, real-time operational awareness, and auditable process execution across personnel, equipment, vehicle, incident, and analytics domains.
+Technology and software selection was treated as a requirements decision, not only an implementation preference. For the frontend layer, React + TypeScript + Vite was selected to satisfy modular dashboard composition, strict role-based rendering, and rapid iteration. Angular was considered because it provides a full framework with built-in dependency injection and strong conventions; however, its heavier project structure was less aligned with the team's component-by-component delivery pace. Vue was considered for its simpler learning curve and progressive adoption model, but the existing codebase and shared component strategy were already established around React patterns. Plain JavaScript React was also considered, but TypeScript was chosen to reduce contract errors in role logic, API payload mapping, and cross-module state handling.
+For backend processing, Rust + Axum was selected to meet concurrency, security, and reliability requirements for authentication, approvals, tracking, and analytics endpoints. Node.js + Express was considered because of rapid API prototyping and broad ecosystem support, but the project prioritized compile-time safety and stricter runtime guarantees for security-sensitive operations. Java + Spring Boot was considered for enterprise-grade structure and mature tooling, yet it introduces a larger operational footprint and greater configuration overhead for this capstone scope. Go + Gin/Fiber was also considered for performance and simplicity, but Rust + Axum better matched the team's objective of memory-safe, middleware-centric API enforcement with fine-grained control.
+For persistence, PostgreSQL was selected because SENTINEL requires relational integrity across users, approvals, shifts, attendance, firearms, vehicles, incidents, and audit records. MySQL/MariaDB were considered because they are widely used relational systems, but PostgreSQL was preferred for stronger advanced SQL features, robust JSONB support, and flexible indexing for mixed transactional and analytical workloads. MongoDB was considered because of schema flexibility and rapid document modeling; however, SENTINEL's compliance and cross-entity constraints require strong relational guarantees that are more naturally enforced in PostgreSQL.
+For mapping and geospatial visualization, OpenStreetMap + Leaflet was selected to satisfy real-time operational map requirements, client-site management, and location marker rendering while retaining implementation control. Google Maps Platform was considered because it provides high-quality basemaps, geocoding, and route services, but usage-based billing and API quota sensitivity are less favorable for continuous monitoring views. Mapbox was considered because it offers strong vector map tooling and customizable styles, yet recurring usage costs and token-governed access create additional operational dependency for long-running dashboards. ArcGIS was considered for enterprise GIS depth, but its platform complexity exceeds current implementation needs. OpenStreetMap + Leaflet was therefore chosen for cost efficiency, integration flexibility, and direct alignment with the implemented web map architecture.
+For real-time operational visibility, websocket streaming with polling fallback was selected as a hybrid requirement. Server-Sent Events (SSE) was considered because it simplifies one-way streaming, but websocket transport better supports bidirectional session handling and live snapshot exchange patterns used in tracking views. Polling-only models were considered for implementation simplicity, but they introduce higher latency and unnecessary repeated requests for active command-center monitoring. The implemented websocket-plus-polling model balances responsiveness with continuity when persistent connections are interrupted.
+For deployment targets, the system uses a web-first core with Tauri (desktop) and Capacitor (Android) wrappers to meet cross-platform access requirements without maintaining separate business logic per platform. Electron was considered for desktop packaging because of mature tooling, but Tauri was preferred for a lighter runtime footprint and tighter security posture. React Native and fully native Android/desktop tracks were considered for platform-specific delivery, but they would require duplicate UI and integration maintenance. The chosen wrapper strategy preserves feature parity across Web, Desktop, and Android while reducing implementation divergence.
+For operational tooling, Docker/Compose, managed runtime deployment, and version-controlled release workflows were selected to satisfy reproducibility and maintainability requirements. Manual host-based installation was considered but increases environment drift and onboarding inconsistency. Alternative orchestration-heavy stacks (for example, immediate Kubernetes adoption) were considered excessive for current scale and capstone constraints. The selected tooling stack provides repeatable setup, traceable change history, and controlled release validation that directly supports the implemented system lifecycle.
 
-The requirements baseline was derived from observed agency needs: role-governed access, workforce continuity, asset custody control, incident coordination, real-time monitoring, and command-level decision support. Emphasis was placed on requirements that strengthen traceability and reduce delayed intervention in field operations.
-
-Beyond basic data recording, the analysis includes intelligence-oriented requirements such as movement-history reconstruction, geofence transition awareness, and forensic audit interpretation. These requirements support proactive supervision and evidence-based review.
-
-Usability requirements focus on reducing decision friction by consolidating urgent tasks and workflow context in role-specific command surfaces. Compliance requirements similarly treat policy acceptance as an enforceable access condition, with recorded legal metadata for institutional accountability.
-
-Security and continuity requirements include authenticated access, authorization control, session integrity, abuse protection, and traceable denial events. Real-time monitoring requirements prioritize resilient field visibility under variable network conditions.
-
-Cross-platform requirements require behavior parity across Web, Desktop, and Android environments, while release and maintainability requirements prioritize controlled distribution and verifiable deployment integrity.
 
 Requirements Documentation
 
@@ -1283,59 +1301,33 @@ The requirements listed below are aligned with verified module coverage and stor
 
 Functional Requirements
 
-FR-01. The system shall support administrator-mediated onboarding, verification, approval, authentication, and password-reset workflows for operational users.
+For clearer academic presentation, the functional requirements are organized according to the primary user type they support. This arrangement emphasizes the role-governed nature of the system while preserving the implemented and validated system behavior.
 
-FR-02. The system shall enforce role-based access for superadmin, admin, supervisor, and guard, including role-appropriate dashboard and API access.
+Common Functional Requirements for All Users
+
+FR-AU-01. The system shall support administrator-mediated onboarding, verification, approval, secure authentication, password-reset workflows, role-based access control, mandatory legal-policy acceptance, cross-platform runtime delivery across Web, Windows desktop, and Android, and access to a release-oriented documentation portal.
 
 Implemented compatibility handling treats pre-migration `user` values only as a narrow transitional alias to `guard` in explicitly defined compatibility paths; malformed or unknown role values are rejected rather than promoted into an operational role.
 
-FR-03. The system shall support guard management workflows including profile governance, shift assignment, attendance capture, no-show detection, and replacement processing.
+Superadmin Functional Requirements
 
-FR-04. The system shall support firearm lifecycle management including records, issuance/return, permit-state awareness, and maintenance tracking.
+FR-SA-01. The system shall provide superadmin users with command-level dashboards, shared quick Inbox workflows, AI-assisted decision-support outputs, ticketing and notification visibility, a feedback dashboard for aggregate and record-level review, audit-log visibility, and forensic audit intelligence for investigative review.
 
-FR-05. The system shall support armored vehicle lifecycle management including records, driver assignment, trip operations, and maintenance tracking.
+Administrator Functional Requirements
 
-FR-06. The system shall provide real-time tracking through live location updates, attendance signaling, and site-aware monitoring, with access governed by authorized operational roles.
+FR-AD-01. The system shall enable administrator users to govern personnel workflows, support scheduling and workforce coordination, manage firearm and armored vehicle lifecycle records, access command dashboards and quick Inbox workflows, handle operational ticketing and notifications, and submit authenticated feedback through the constrained feedback workflow.
 
-FR-06a. The system shall provide movement-history and active-deployment insights to support replay-based monitoring and command decisions.
+Supervisor Functional Requirements
 
-FR-06b. The system shall detect and persist geofence enter/exit transitions and expose these alerts in live map snapshots for supervisory awareness.
+FR-SU-01. The system shall enable supervisor users to monitor schedules, attendance, no-show conditions, and replacement actions; access real-time tracking, movement-history, active-deployment, and geofence-alert views; use command dashboards, quick Inbox workflows, and AI-assisted decision-support outputs; manage ticketing and notification workflows; and submit authenticated feedback.
 
-FR-07. The system shall provide analytics and command-level dashboards for operational summaries, trends, approvals, and decision support.
+Guard Functional Requirements
 
-FR-07a. The system shall provide a role-centric quick Inbox action that surfaces prioritized items and workflow timelines through shared header overlays and role-specific data mappings, while preserving fallback full-view access when deeper review is required.
-
-FR-08. The system shall provide AI-assisted decision-support outputs for absence risk, replacement recommendation, incident classification, incident summarization, and predictive alerts.
-
-FR-09. The system shall provide ticketing and notification workflows, including dashboard-embedded and overlay-based delivery surfaces, to support operational communication and exception handling.
-
-FR-09a. The system shall collect authenticated user feedback through a constrained rating-and-comments submission flow with conflict-safe duplicate prevention and a superadmin-visible feedback dashboard for aggregate and record-level review.
-
-FR-10. The system shall support cross-platform runtime delivery for web, Windows desktop (Tauri), and Android mobile (Capacitor).
-
-FR-11. The system shall provide audit-log visibility for authorized superadmin users, with filterable and paginated audit records.
-
-FR-11a. The system shall provide forensic audit intelligence for user-activity timelines and anomaly identification to support investigative workflows.
-
-FR-12. The system shall require recorded acceptance of Terms of Agreement, Privacy Policy, and Acceptable Use Policy before users can access restricted operational functions.
-
-FR-13. The system shall provide a release-oriented documentation portal that includes download channels, security profile, architecture references, and legal-policy links for web, desktop, and Android distribution.
+FR-G-01. The system shall enable guard users to access personal schedules and assigned resources, perform attendance-related actions, receive and respond to notifications, submit incident and support-related workflows, use self-scoped live tracking and movement-history features subject to policy and consent controls, access mission-critical field actions such as panic escalation, and submit authenticated feedback.
 
 Non-Functional Requirements
 
-NFR-01. Security: The system shall enforce strong authentication, role-based authorization, approval-gated access, auditable security events, account-protection controls, and abuse resistance measures.
-
-NFR-02. Performance: The system shall maintain responsive dashboards and timely operational updates suitable for near-real-time supervisory decision-making.
-
-NFR-03. Usability: The system shall provide role-centered dashboards and modular UI navigation that reduce operator context switching during active operations.
-
-NFR-03a. Workflow Focus: The system shall minimize dashboard navigation friction by placing urgent operational work and timeline context behind a single quick Inbox action in the shared header for each supported role.
-
-NFR-04. Reliability: The system shall maintain robust session continuity, secure session renewal, and explicit session termination to protect ongoing operations.
-
-NFR-05. Scalability: The system architecture shall remain API-driven and modular so additional modules, integrations, and platform targets can be added without redesigning the full stack.
-
-NFR-06. Compliance Traceability: Legal acceptance and policy governance events shall be persisted with timestamped metadata suitable for operational and compliance review.
+The non-functional requirements of SENTINEL emphasize security, performance, usability, reliability, scalability, and compliance traceability. In terms of security, the system shall enforce strong authentication, role-based authorization, approval-gated access, auditable security events, account-protection controls, and abuse-resistance measures to preserve the integrity of operational data and workflows. In terms of performance, the system shall maintain responsive dashboards and timely operational updates suitable for near-real-time supervisory decision-making. With respect to usability, the system shall provide role-centered dashboards and modular user-interface navigation that reduce operator context switching, while further minimizing workflow friction through the use of a shared quick Inbox action for urgent operational work and timeline context. In terms of reliability, the system shall maintain secure session continuity, renewal, and termination behaviors to protect ongoing operations. With respect to scalability, the system architecture shall remain API-driven and modular so that additional modules, integrations, and platform targets may be introduced without requiring a full redesign. Finally, for compliance traceability, legal acceptance and policy-governance events shall be recorded with timestamped metadata suitable for institutional review, accountability, and regulatory compliance.
 
 Storyboard (Proposed Interface Flow)
 
@@ -1400,23 +1392,34 @@ Figure 8. Guard Activity Diagram
 Figure 8 illustrates the Guard workflow from authentication to shift execution and secure logout. After login, the guard enters a mission-first dashboard that prioritizes the current post, immediate next action, and readiness cues before lower-priority workflows. The guard then performs check-in and check-out when a shift is active, and may review alerts, submit support tickets, request shift swaps, and update profile information as needed.
 
 ```mermaid
-flowchart LR
-	A([Start]) --> B[Open login]
-	B --> C[Enter credentials]
-	C --> D{Credentials valid?}
-	D -- No --> E[Show error]
+flowchart TD
+	A([Start]) --> B[Open Login Screen]
+	B --> C[Enter Guard Credentials]
+	C --> D{Credentials Valid?}
+	D -- No --> E[Display Error Message]
 	E --> C
-	D -- Yes --> F[Open Guard dashboard]
-	F --> G[View schedule and duty]
-	G --> H{Shift is active?}
-	H -- No --> I[View alerts or submit ticket]
-	I --> J[Update profile]
-	J --> K[Logout]
-	K --> L([End])
-	H -- Yes --> M[Perform check-in]
-	M --> N[Perform duty]
-	N --> O[Perform check-out]
-	O --> I
+	D -- Yes --> F{Account Approved and Policies Accepted?}
+	F -- No --> G[Show Approval or Policy Acceptance Prompt]
+	G --> H[Complete Required Verification or Acceptance]
+	H --> F
+	F -- Yes --> I[Open Guard Dashboard]
+	I --> J[Review Schedule, Duty Status, and Notifications]
+	J --> K{Shift or Operational Duty Available?}
+	K -- No --> L[Review Alerts, Submit Ticket, or Update Profile]
+	L --> M[Logout]
+	M --> N([End])
+	K -- Yes --> O[Perform Check-In]
+	O --> P{Location Consent and Device Access Available?}
+	P -- No --> Q[Resolve Consent or Permission Prompt]
+	Q --> P
+	P -- Yes --> R[Perform Patrol and Field Duty]
+	R --> S{Incident or Support Needed?}
+	S -- Yes --> T[Submit Incident, Support Request, or Panic Escalation]
+	T --> U[Continue Duty Monitoring]
+	S -- No --> U[Continue Duty Monitoring]
+	U --> V[Perform Check-Out]
+	V --> W[Review Notifications or Remaining Tasks]
+	W --> M
 ```
 
 Figure 9. Supervisor Activity Diagram
@@ -1424,19 +1427,28 @@ Figure 9. Supervisor Activity Diagram
 Figure 9 presents the Supervisor workflow, beginning with dashboard access and continuing through attendance review, gap detection, and replacement coordination. When no immediate staffing issue exists, the supervisor proceeds with alert, incident, and team monitoring tasks before secure session closure.
 
 ```mermaid
-flowchart LR
+flowchart TD
 	A([Start]) --> B[Login as Supervisor]
-	B --> C[Open Supervisor dashboard]
-	C --> D[Review schedule and attendance]
-	D --> E{No-show or gap detected?}
-	E -- Yes --> F[Start replacement workflow]
-	F --> G[Assign available guard]
-	G --> H[Confirm deployment]
-	E -- No --> I[Monitor alerts and incidents]
-	H --> I
-	I --> J[Review team performance]
-	J --> K[Logout]
-	K --> L([End])
+	B --> C{Credentials, Approval, and Policy State Valid?}
+	C -- No --> D[Reject Access or Require Completion of Missing Requirements]
+	D --> B
+	C -- Yes --> E[Open Supervisor Dashboard]
+	E --> F[Review Schedules, Attendance, and Team Status]
+	F --> G{No-Show, Absence, or Coverage Gap Detected?}
+	G -- Yes --> H[Start Replacement Workflow]
+	H --> I[Identify Available Guard]
+	I --> J[Assign Replacement and Confirm Deployment]
+	J --> K[Update Operational Status]
+	G -- No --> L[Monitor Alerts, Incidents, and Support Activity]
+	K --> L
+	L --> M[Review Live Tracking, Guard History, and Geofence Alerts]
+	M --> N{Operational Issue Requires Action?}
+	N -- Yes --> O[Coordinate Corrective Action or Escalation]
+	O --> P[Record Decision and Continue Monitoring]
+	N -- No --> P[Continue Monitoring]
+	P --> Q[Review Performance and Command Summaries]
+	Q --> R[Logout]
+	R --> S([End])
 ```
 
 Figure 10. Administrator Activity Diagram
@@ -1444,19 +1456,24 @@ Figure 10. Administrator Activity Diagram
 Figure 10 outlines the Administrator workflow for approvals, scheduling, asset records, incident and support review, and analytics-assisted monitoring. The process includes a corrective-action loop for detected issues and concludes with secure logout for traceable session closure.
 
 ```mermaid
-flowchart LR
+flowchart TD
 	A([Start]) --> B[Login as Administrator]
-	B --> C[Open Admin dashboard]
-	C --> D[Manage users and approvals]
-	D --> E[Manage schedules and assignments]
-	E --> F[Manage firearms and fleet records]
-	F --> G[Review incidents, tickets, notifications]
-	G --> H[Access analytics and reports]
-	H --> I{Operational issue found?}
-	I -- Yes --> J[Apply corrective action]
-	J --> G
-	I -- No --> K[Logout]
-	K --> L([End])
+	B --> C{Credentials, Approval, and Policy State Valid?}
+	C -- No --> D[Reject Access or Require Completion of Missing Requirements]
+	D --> B
+	C -- Yes --> E[Open Administrator Dashboard]
+	E --> F[Manage Users, Approvals, and Role-Governed Records]
+	F --> G[Manage Schedules, Assignments, and Operational Resources]
+	G --> H[Manage Firearm, Permit, Vehicle, and Trip Records]
+	H --> I[Review Incidents, Support Tickets, and Notifications]
+	I --> J[Access Dashboards, Analytics, and Reports]
+	J --> K{Operational or Compliance Issue Found?}
+	K -- Yes --> L[Apply Corrective or Administrative Action]
+	L --> M[Validate Updated Records and Status]
+	M --> I
+	K -- No --> N[Finalize Current Administrative Tasks]
+	N --> O[Logout]
+	O --> P([End])
 ```
 
 Figure 11. Superadmin Activity Diagram
@@ -1464,19 +1481,23 @@ Figure 11. Superadmin Activity Diagram
 Figure 11 describes the Superadmin workflow for system-wide governance. After authentication, the superadmin reviews global indicators, role-permission policies, and audit records. When policy or security concerns are identified, governance updates are applied and validated before monitoring resumes.
 
 ```mermaid
-flowchart LR
+flowchart TD
 	A([Start]) --> B[Login as Superadmin]
-	B --> C[Open command dashboard]
-	C --> D[Review global KPIs and status]
-	D --> E[Manage roles and permission policies]
-	E --> F[Review audit logs and governance actions]
-	F --> G{Policy or security issue detected?}
-	G -- Yes --> H[Apply governance and access updates]
-	H --> I[Validate changes across modules]
-	I --> D
-	G -- No --> J[Approve strategic operational settings]
-	J --> K[Logout]
-	K --> L([End])
+	B --> C{Credentials, Approval, and Policy State Valid?}
+	C -- No --> D[Reject Access or Require Completion of Missing Requirements]
+	D --> B
+	C -- Yes --> E[Open Superadmin Command Dashboard]
+	E --> F[Review Global KPIs, Service Health, and Command Status]
+	F --> G[Manage Roles, Permissions, and Governance Policies]
+	G --> H[Review Audit Logs, Forensic Intelligence, and Governance Actions]
+	H --> I{Security, Policy, or Governance Issue Detected?}
+	I -- Yes --> J[Apply Governance, Access, or Policy Updates]
+	J --> K[Validate Changes Across Modules and User Roles]
+	K --> L[Review Updated Global Status]
+	L --> F
+	I -- No --> M[Approve Strategic Settings and Oversight Actions]
+	M --> N[Logout]
+	N --> O([End])
 ```
 
 Development
