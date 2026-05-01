@@ -1,76 +1,82 @@
-﻿# SENTINEL Capstone Main
+# SENTINEL Security Operations Platform
 
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://dwaytu.github.io/Capstone-Main/)
-[![Release](https://img.shields.io/github/v/release/dwaytu/Capstone-Main?display_name=tag)](https://github.com/dwaytu/Capstone-Main/releases)
+[![Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-2563eb)](https://dwaytu.github.io/Capstone-Main/)
+[![Release](https://img.shields.io/github/v/release/dwaytu/Capstone-Main)](https://github.com/dwaytu/Capstone-Main/releases)
 [![Release Workflow](https://github.com/dwaytu/Capstone-Main/actions/workflows/release.yml/badge.svg)](https://github.com/dwaytu/Capstone-Main/actions/workflows/release.yml)
 [![Docs Workflow](https://github.com/dwaytu/Capstone-Main/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/dwaytu/Capstone-Main/actions/workflows/deploy-docs.yml)
 
-SENTINEL is a full-stack security operations and asset management platform with a shared React frontend and platform wrappers for Web, Desktop, and Android.
+SENTINEL is a role-governed security operations platform for Davao Security & Investigation Agency (DSIA). The platform unifies workforce operations, incident response, tracking intelligence, and governance workflows across Web, Desktop, and Android.
 
-Documentation: https://dwaytu.github.io/Capstone-Main/
+## Live Links
 
-## Downloads
-- Web (latest): https://dasiasentinel.xyz/
-- Desktop installer (MSI/EXE): https://github.com/dwaytu/Capstone-Main/releases/latest
-- Android APK: https://github.com/dwaytu/Capstone-Main/releases/latest
+- Documentation: https://dwaytu.github.io/Capstone-Main/
+- Web application: https://dasiasentinel.xyz/
+- Latest releases (Desktop + Android artifacts): https://github.com/dwaytu/Capstone-Main/releases/latest
 
-## Installation Guide
+## Repository Topology
 
-1. Web
-- Open https://dasiasentinel.xyz/
-- Sign in with your provisioned SENTINEL account
+This workspace is a coordinated root repository with platform/service repositories:
 
-2. Desktop (Tauri)
-- Go to https://github.com/dwaytu/Capstone-Main/releases/latest
-- Download either the `.msi` or `.exe` installer
-- Run installer and launch SENTINEL
+- Root governance/release repo: `dwaytu/Capstone-Main`
+- Frontend application repo: `dwaytu/DasiaAIO-Frontend`
+- Backend API repo: `dwaytu/DasiaAIO-Backend`
 
-3. Android (Capacitor)
-- Go to https://github.com/dwaytu/Capstone-Main/releases/latest
-- Download the latest release APK
-- Install on device (enable sideloading if required)
+Local structure:
 
-## Repository Layout
+```text
+Capstone Main/
+  DasiaAIO-Frontend/      React + TypeScript + Vite
+  DasiaAIO-Backend/       Rust + Axum + PostgreSQL
+  apps/desktop-tauri/     Desktop wrapper (Tauri)
+  apps/android-capacitor/ Android wrapper (Capacitor)
+  docs/                   GitHub Pages source
+```
 
-- `DasiaAIO-Frontend/`: React + TypeScript + Vite application.
-- `DasiaAIO-Backend/`: Rust + Axum + PostgreSQL API.
-- `apps/desktop-tauri/`: Tauri desktop wrapper.
-- `apps/android-capacitor/`: Capacitor Android wrapper.
-- `.github/`: custom Copilot agents, instructions, and skills.
+## Tech Stack
+
+- Frontend: React 18, TypeScript, Vite, Tailwind CSS, Jest, Playwright
+- Backend: Rust, Axum, SQLx, PostgreSQL, Tokio
+- Packaging: Tauri (Desktop), Capacitor (Android)
+- Delivery: GitHub Actions, GitHub Pages, Railway
 
 ## Quick Start
 
-### 1. Install dependencies
+### 1. Prerequisites
+
+- Node.js 20+
+- npm 10+
+- Rust stable toolchain
+- PostgreSQL 14+
+
+### 2. Install dependencies
 
 ```bash
 npm install
 npm install --prefix DasiaAIO-Frontend
 ```
 
-### 2. Run frontend locally
+### 3. Run development servers
+
+Frontend:
 
 ```bash
 npm run dev --prefix DasiaAIO-Frontend
 ```
 
-### 3. Run backend locally
+Backend:
 
 ```bash
 cd DasiaAIO-Backend
-cargo run
+cargo run --bin server
 ```
 
-## Build and Release Commands
-
-Run from repository root:
+## Build and Release Commands (Root)
 
 ```bash
 npm run build:web
 npm run build:desktop
 npm run build:android
 ```
-
-Release wrappers and web build:
 
 ```bash
 npm run release:web
@@ -79,29 +85,31 @@ npm run release:android
 npm run release:all
 ```
 
-Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0.0`).
-
-## Production Runtime Configuration
-
-- Frontend builds require `VITE_API_BASE_URL` and enforce HTTPS in production mode.
-- Backend startup in production requires strong `JWT_SECRET`, non-default `ADMIN_CODE`, and explicit CORS origin configuration.
-- Desktop updater is currently disabled at the native layer; version awareness is handled by the frontend via backend release metadata checks.
-- Mobile and desktop share the same API origin contract as the web client.
-
-## Documentation
-
-- Main docs: https://dwaytu.github.io/Capstone-Main/
-- Workspace navigation map: `/docs/WORKSPACE_NAVIGATION.md`
-- Railway autodeploy setup: `/docs/RAILWAY_AUTODEPLOY.md`
-- Codex workflow contract: `/.github/instructions/codex-working-contract.instructions.md`
-- Codex workflow quickstart: `/docs/CODEX_WORKFLOW.md`
-- Codex system map: `/docs/CODEX_SYSTEM_MAP.md`
-
-## Codex Verification
-
-Run the full verification pipeline from repository root:
+Verification:
 
 ```bash
 npm run verify:all
 ```
 
+## Deployment Model
+
+- Production deployment is Railway-native, configured at the service level in Railway.
+- Root CI remains responsible for release orchestration and documentation deployment.
+- GitHub Pages serves directly from the `docs/` directory via `.github/workflows/deploy-docs.yml`.
+
+## Security and Governance Notes
+
+- Protected access is role-based: `guard`, `supervisor`, `admin`, `superadmin`.
+- Legal-policy acceptance is enforced before protected workflows.
+- Production backend startup enforces hardening checks (JWT secret strength, CORS, admin code policy).
+
+## Documentation Index
+
+- System docs: `docs/`
+- Workspace navigation: `docs/WORKSPACE_NAVIGATION.md`
+- Railway deployment runbook: `docs/RAILWAY_AUTODEPLOY.md`
+- Product memory for AI sessions: `PROJECT_MEMORY.md`
+
+## License
+
+UNLICENSED (internal academic and organizational use).

@@ -839,3 +839,83 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Deploy-trigger pushes executed to service repos without touching local WIP files:
   - Frontend trigger commit: `87d30fc` (`dwaytu/DasiaAIO-Frontend`)
   - Backend trigger commit: `9235b71` (`dwaytu/DasiaAIO-Backend`)
+
+---
+
+# 32) BACKEND DIAGNOSTIC CLEANUP + VS CODE GRADLE CACHE REPAIR (2026-05-02)
+
+## Backend warning cleanup
+- Eliminated Rust `dead_code` warnings that were flooding the VS Code Problems panel by applying targeted cleanup:
+  - Removed unused no-show query fields from `handlers/guard_replacement.rs` (`grace_period_minutes`, `replacement_status`) and aligned SQL projection.
+  - Removed unused shift proximity query fields from `handlers/tracking.rs` (`guard_id`, `start_time`) and aligned SQL projection.
+  - Marked intentional compatibility-only structures with narrow `#[allow(dead_code)]`:
+    - `MissionAssignmentRequest` in `handlers/missions.rs`
+    - `ActiveTripWithGuards` in `handlers/trip_management.rs`
+  - Added module-level `#![allow(dead_code)]` in `src/models.rs` because this file keeps shared/legacy DTOs used across uneven deployment paths.
+- Verification:
+  - `cd DasiaAIO-Backend && cargo check` now completes with zero warnings.
+
+## Android/Gradle tooling status
+- Confirmed Android Gradle project builds correctly from CLI:
+  - `cd apps/android-capacitor/android && .\\gradlew.bat :capacitor-cordova-android-plugins:help` -> BUILD SUCCESSFUL.
+- Repaired missing Red Hat Java extension init script path used by VS Code Java Gradle import by recreating the absent cache file under `%APPDATA%\\Code\\User\\globalStorage\\redhat.java\\1.53.0\\...\\gradle\\init\\init.gradle` from the existing 1.54.0 template.
+- This issue was IDE cache/tooling-state related, not a project code build failure.
+
+---
+
+# 33) OBJECTIVE 9 GEOFENCE COMMAND-SURFACE CLOSURE (2026-05-02)
+
+## Objective coverage impact
+- Closed the previously documented frontend gap for geofence-zone command management by exposing backend geofence CRUD in the command map UI.
+- This directly improves Specific Objective 9.c/9.e/9.f coverage (site/geofence management + supervisory geofence monitoring response surface).
+
+## Frontend implementation
+- Extended `useOperationalMapData` with:
+  - geofence-zone models (`GeofenceZone`, `GeofenceZoneInput`)
+  - elevated-role geofence loading (`GET /api/tracking/geofences`)
+  - geofence CRUD methods:
+    - `POST /api/tracking/client-sites/:id/geofences`
+    - `PUT /api/tracking/geofences/:id`
+    - `DELETE /api/tracking/geofences/:id`
+- Updated `OperationalMapPanel` to:
+  - render real geofence zones per site (radius circles and polygon overlays when present)
+  - replace fixed hardcoded “1 km” display with actual active-zone counts
+  - add a Geofence Zone Manager (create/edit/activate/delete radius zones) for elevated roles.
+
+## Verification
+- `cd DasiaAIO-Frontend && npm run build` passed.
+- Focused map/tracking test suite passed:
+  - `mapTileUrls.test.ts`
+  - `operationalMapTruthfulness.test.ts`
+  - `trackingAccessPolicy.test.ts`
+- Backend compile sanity check passed:
+  - `cd DasiaAIO-Backend && cargo check`
+
+---
+
+# 34) REPOSITORY DOCS PROFESSIONALIZATION + PAGES LANDING REFRESH (2026-05-02)
+
+## README standardization
+- Rewrote README content in all three primary repositories to align with industry-style structure and onboarding clarity:
+  - Root: `README.md`
+  - Frontend repo: `DasiaAIO-Frontend/README.md`
+  - Backend repo: `DasiaAIO-Backend/README.md`
+- New structure emphasizes:
+  - concise product overview
+  - clear topology/repository relationships
+  - prerequisite/setup commands
+  - validated build/release commands
+  - deployment model and governance links
+  - security/configuration expectations
+
+## GitHub Pages landing refresh
+- Replaced `docs/index.html` with a cleaner, professional landing page design focused on:
+  - architecture summary
+  - repository topology and direct links
+  - build/release command table
+  - documentation/legal access points
+  - production/release entry links
+- Preserved deployment path: GitHub Pages still publishes from `docs/` via `.github/workflows/deploy-docs.yml`.
+
+## Encoding hygiene
+- Rewrote updated documentation files in UTF-8 without BOM to avoid rendering artifacts in markdown/html surfaces.

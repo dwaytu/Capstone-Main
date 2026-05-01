@@ -342,7 +342,7 @@ Limitation of the Study
 - Direct interoperability with third-party security hardware ecosystems (for example CCTV, IoT sensors, and access-control turnstiles) is excluded.
 - Field operations remain dependent on device GPS accuracy and network availability; the current implementation provides partial offline queuing for selected high-priority guard actions but does not deliver full offline-first system coverage.
 - Native wrapper deployment in this study is limited to Windows desktop and Android; iOS and macOS are excluded.
-- Some backend-supported capabilities, such as direct training-record administration and full geofence-zone administration, are not yet exposed through complete end-user command surfaces in the current implementation.
+- Some backend-supported capabilities, such as direct training-record administration, are not yet exposed through complete end-user command surfaces in the current implementation.
 - Some workflows remain consolidated inside shared dashboard panels, tabs, or shell overlays rather than fully separated standalone pages.
 ---
 

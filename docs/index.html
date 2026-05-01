@@ -1,1504 +1,487 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SENTINEL — Security Operations Platform</title>
-  <meta name="description" content="SENTINEL is an integrated security operations platform for Davao Security & Investigation Agency. Full-stack: React, Rust/Axum, PostgreSQL. Web, Desktop, and Android." />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SENTINEL | Security Operations Platform</title>
+  <meta name="description" content="SENTINEL is a role-governed security operations platform for DSIA. Built with React, Rust/Axum, and PostgreSQL. Delivered for Web, Desktop, and Android." />
+  <meta name="theme-color" content="#0b1220" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    /* ─── Reset & base ──────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg-base:    #0b0e14;
-      --bg-panel:   #111620;
-      --bg-card:    #161d2b;
-      --bg-hover:   #1c2538;
-      --border:     #1e2d45;
-      --accent:     #2d8cf0;
-      --accent-dim: #1a4d80;
-      --accent-glow:rgba(45,140,240,0.18);
-      --green:      #22c55e;
-      --amber:      #f59e0b;
-      --red:        #ef4444;
-      --purple:     #a855f7;
-      --text-1:     #e8edf5;
-      --text-2:     #8a9bb8;
-      --text-3:     #4a5a75;
-      --radius:     10px;
-      --radius-lg:  16px;
-      --shadow:     0 4px 24px rgba(0,0,0,.45);
-      --font-mono:  'JetBrains Mono', 'Fira Code', monospace;
+      --bg: #060b16;
+      --surface: #0b1220;
+      --surface-2: #111b30;
+      --surface-3: #14213a;
+      --border: #223150;
+      --text: #dfe7fb;
+      --muted: #8ea2c9;
+      --accent: #00b8d9;
+      --accent-2: #40e0c0;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --radius: 14px;
+      --shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
     }
 
-    @media (prefers-reduced-motion: no-preference) {
-      html { scroll-behavior: smooth; }
-    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg-base);
-      color: var(--text-1);
-      line-height: 1.7;
-      font-size: 15px;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ─── Scrollbar ─────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-base); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    /* ─── Top nav ───────────────────────────────────────────────── */
-    #top-nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      height: 56px;
-      background: rgba(11,14,20,.88);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 32px;
-    }
-    .nav-brand {
-      display: flex; align-items: center; gap: 10px;
-      font-weight: 700; font-size: 15px; letter-spacing: .04em;
-      color: var(--text-1); text-decoration: none;
-    }
-    .nav-brand .badge {
-      background: var(--accent); color: #fff;
-      font-size: 10px; padding: 2px 7px; border-radius: 4px;
-      letter-spacing: .08em; font-weight: 600;
-    }
-    .nav-links { display: flex; gap: 24px; list-style: none; }
-    .nav-links a {
-      color: var(--text-2); text-decoration: none; font-size: 13px;
-      transition: color .2s;
-    }
-    .nav-links a:hover { color: var(--accent); }
-    .nav-cta {
-      background: var(--accent); color: #fff;
-      padding: 7px 16px; border-radius: 7px; font-size: 13px;
-      font-weight: 500; text-decoration: none;
-      transition: opacity .2s;
-    }
-    .nav-cta:hover { opacity: .85; }
-
-    /* ─── Layout ────────────────────────────────────────────────── */
-    .page-wrapper { padding-top: 56px; }
-
-    /* ─── Hero ──────────────────────────────────────────────────── */
-    #hero {
-      padding: 100px 32px 80px;
-      text-align: center;
+      font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background:
-        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(45,140,240,.12) 0%, transparent 70%),
-        var(--bg-base);
-    }
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 40px; padding: 5px 14px;
-      font-size: 12px; color: var(--text-2); letter-spacing: .06em;
-      margin-bottom: 28px;
-    }
-    .dot { width:7px; height:7px; border-radius:50%; background:var(--green);
-      box-shadow:0 0 6px var(--green); }
-    h1 {
-      font-size: clamp(2.4rem, 5vw, 3.8rem);
-      font-weight: 700; line-height: 1.15;
-      letter-spacing: -.02em; margin-bottom: 20px;
-    }
-    h1 span { color: var(--accent); }
-    .hero-sub {
-      max-width: 620px; margin: 0 auto 36px;
-      font-size: 17px; color: var(--text-2); line-height: 1.7;
-    }
-    .hero-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--accent); color: #fff;
-      padding: 12px 24px; border-radius: var(--radius);
-      font-weight: 600; font-size: 14px;
-      text-decoration: none; transition: opacity .2s;
-    }
-    .btn-primary:hover { opacity: .85; }
-    .btn-ghost {
-      background: var(--bg-card); color: var(--text-1);
-      border: 1px solid var(--border);
-      padding: 12px 24px; border-radius: var(--radius);
-      font-weight: 500; font-size: 14px;
-      text-decoration: none; transition: background .2s;
-    }
-    .btn-ghost:hover { background: var(--bg-hover); }
-
-    /* ─── Platform badges ───────────────────────────────────────── */
-    .platform-strip {
-      display: flex; justify-content: center; gap: 16px;
-      flex-wrap: wrap; margin-top: 48px;
-    }
-    .platform-badge {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      padding: 8px 16px; border-radius: 8px;
-      font-size: 13px; color: var(--text-2);
-    }
-    .platform-badge svg { width:16px; height:16px; flex-shrink:0; }
-
-    /* ─── Section wrapper ───────────────────────────────────────── */
-    section { padding: 72px 32px; }
-    .container { max-width: 1080px; margin: 0 auto; }
-    .section-label {
-      font-size: 11px; letter-spacing: .1em; color: var(--accent);
-      text-transform: uppercase; font-weight: 600; margin-bottom: 10px;
-    }
-    h2 {
-      font-size: clamp(1.6rem, 3vw, 2.2rem);
-      font-weight: 700; letter-spacing: -.01em;
-      margin-bottom: 14px;
-    }
-    .section-intro {
-      color: var(--text-2); font-size: 16px; max-width: 620px;
-      margin-bottom: 48px; line-height: 1.7;
+        radial-gradient(1200px 480px at 85% -10%, rgba(0, 184, 217, 0.16), transparent 70%),
+        radial-gradient(1000px 420px at -15% 5%, rgba(64, 224, 192, 0.12), transparent 65%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
     }
 
-    /* ─── Divider ───────────────────────────────────────────────── */
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 0;
+    a { color: inherit; }
+
+    .container {
+      width: min(1120px, calc(100% - 2rem));
+      margin: 0 auto;
     }
 
-    /* ─── Stat bar ──────────────────────────────────────────────── */
-    #stats { padding: 40px 32px; background: var(--bg-panel); }
-    .stats-grid {
-      max-width: 1080px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 32px;
-    }
-    .stat-item { text-align: center; }
-    .stat-value {
-      font-size: 2.2rem; font-weight: 700; color: var(--accent);
-      line-height: 1; margin-bottom: 6px;
-    }
-    .stat-label { font-size: 13px; color: var(--text-2); }
-
-    /* ─── Feature cards ─────────────────────────────────────────── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-    }
-    .feature-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 28px;
-      transition: border-color .2s, box-shadow .2s;
-    }
-    .feature-card:hover {
-      border-color: var(--accent-dim);
-      box-shadow: 0 0 0 1px var(--accent-dim), var(--shadow);
-    }
-    .feature-icon {
-      width: 44px; height: 44px;
-      background: var(--accent-glow); border: 1px solid var(--accent-dim);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 16px; font-size: 20px;
-    }
-    .feature-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-    .feature-card p  { font-size: 13px; color: var(--text-2); line-height: 1.65; }
-
-    /* ─── Architecture diagram ──────────────────────────────────── */
-    #architecture { background: var(--bg-panel); }
-    .arch-diagram {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 32px;
-      overflow-x: auto;
-    }
-    .arch-layers { display: flex; flex-direction: column; gap: 20px; }
-    .arch-layer { display: flex; align-items: flex-start; gap: 20px; }
-    .arch-layer-label {
-      min-width: 120px; font-size: 11px; letter-spacing: .08em;
-      color: var(--text-3); text-transform: uppercase; font-weight: 600;
-      padding-top: 10px;
-    }
-    .arch-boxes { display: flex; flex-wrap: wrap; gap: 10px; }
-    .arch-box {
-      padding: 9px 16px; border-radius: 8px;
-      font-size: 13px; font-weight: 500;
-      border: 1px solid;
-    }
-    .arch-box.blue   { color: #60a5fa; border-color: #1e3a5f; background: rgba(96,165,250,.08); }
-    .arch-box.green  { color: #4ade80; border-color: #14532d; background: rgba(74,222,128,.08); }
-    .arch-box.amber  { color: #fbbf24; border-color: #713f12; background: rgba(251,191,36,.08); }
-    .arch-box.purple { color: #c084fc; border-color: #4a1d96; background: rgba(192,132,252,.08); }
-    .arch-box.red    { color: #f87171; border-color: #7f1d1d; background: rgba(248,113,113,.08); }
-    .arch-arrow {
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-3); font-size: 20px; margin: -8px 0;
-    }
-
-    /* ─── Tech stack ────────────────────────────────────────────── */
-    .tech-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
-    }
-    .tech-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px;
-    }
-    .tech-category {
-      font-size: 10px; letter-spacing: .1em; color: var(--accent);
-      text-transform: uppercase; font-weight: 700; margin-bottom: 12px;
-    }
-    .tech-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    .tech-list li {
-      font-size: 13px; color: var(--text-2);
-      display: flex; align-items: center; gap: 8px;
-    }
-    .tech-list li::before { content: '›'; color: var(--accent); font-weight: 700; }
-
-    /* ─── API table ─────────────────────────────────────────────── */
-    .api-table-wrapper {
-      overflow-x: auto; border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-    }
-    table { width: 100%; border-collapse: collapse; }
-    thead th {
-      background: var(--bg-hover); color: var(--text-2);
-      font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-      font-weight: 600; padding: 12px 16px; text-align: left;
-    }
-    tbody tr { border-top: 1px solid var(--border); }
-    tbody tr:hover { background: var(--bg-hover); }
-    tbody td { padding: 11px 16px; font-size: 13px; color: var(--text-2); }
-    tbody td:first-child { color: var(--text-1); }
-    .method {
-      display: inline-block;
-      padding: 2px 8px; border-radius: 4px;
-      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-    }
-    .get    { background: rgba(34,197,94,.15);   color: #4ade80; }
-    .post   { background: rgba(45,140,240,.15);  color: #60a5fa; }
-    .put    { background: rgba(245,158,11,.15);  color: #fbbf24; }
-    .delete { background: rgba(239,68,68,.15);   color: #f87171; }
-    .ws     { background: rgba(168,85,247,.15);  color: #c084fc; }
-
-    /* ─── Role cards ────────────────────────────────────────────── */
-    .roles-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-      gap: 16px;
-    }
-    .role-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 24px;
-      transition: border-color .2s;
-    }
-    .role-card:hover { border-color: var(--accent-dim); }
-    .role-chip {
-      display: inline-block;
-      padding: 3px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 600; letter-spacing: .05em;
-      margin-bottom: 14px;
-    }
-    .chip-super  { background: rgba(239,68,68,.15);  color: #f87171;  border: 1px solid #7f1d1d; }
-    .chip-admin  { background: rgba(245,158,11,.15); color: #fbbf24;  border: 1px solid #713f12; }
-    .chip-super2 { background: rgba(45,140,240,.15); color: #60a5fa;  border: 1px solid #1e3a5f; }
-    .chip-guard  { background: rgba(34,197,94,.15);  color: #4ade80;  border: 1px solid #14532d; }
-    .role-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-    .role-card p  { font-size: 13px; color: var(--text-2); line-height: 1.65; }
-    .perm-list { list-style: none; margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
-    .perm-list li { font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
-    .perm-list li::before { content: '✓'; color: var(--green); font-weight: 700; font-size: 11px; }
-
-    /* ─── Code block ────────────────────────────────────────────── */
-    .code-block {
-      background: #080b10; border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px 24px;
-      font-family: var(--font-mono); font-size: 13px;
-      color: #cbd5e1; overflow-x: auto; line-height: 1.7;
-    }
-    .code-block .comment { color: #3d5475; }
-    .code-block .key     { color: #60a5fa; }
-    .code-block .val     { color: #4ade80; }
-    .code-block .str     { color: #fbbf24; }
-    .code-block .sym     { color: #f87171; }
-
-    /* ─── Timeline ──────────────────────────────────────────────── */
-    .timeline { position: relative; padding-left: 28px; }
-    .timeline::before {
-      content: ''; position: absolute; left: 7px; top: 0; bottom: 0;
-      width: 2px; background: var(--border);
-    }
-    .timeline-item { position: relative; margin-bottom: 32px; }
-    .timeline-dot {
-      position: absolute; left: -28px; top: 4px;
-      width: 14px; height: 14px; border-radius: 50%;
-      background: var(--accent); border: 2px solid var(--bg-base);
-      box-shadow: 0 0 8px var(--accent);
-    }
-    .timeline-item h3 {
-      font-size: 15px; font-weight: 600; margin-bottom: 6px;
-    }
-    .timeline-item p { font-size: 13px; color: var(--text-2); line-height: 1.65; }
-    .tl-tag {
-      display: inline-block;
-      background: var(--accent-glow); color: var(--accent);
-      border: 1px solid var(--accent-dim);
-      font-size: 11px; padding: 2px 8px; border-radius: 4px;
-      margin-bottom: 8px; font-weight: 500;
-    }
-
-    /* ─── Screenshots ───────────────────────────────────────────── */
-    .screenshots-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    .screenshot-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); overflow: hidden;
-      transition: transform .2s, box-shadow .2s;
-    }
-    .screenshot-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 32px rgba(0,0,0,.5);
-    }
-    .screenshot-card img {
-      width: 100%; height: auto; display: block;
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(6, 11, 22, 0.82);
       border-bottom: 1px solid var(--border);
     }
-    .screenshot-label {
-      padding: 12px 16px;
-      font-size: 13px; color: var(--text-2);
+
+    .topbar-inner {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
     }
 
-    /* ─── Download cards ────────────────────────────────────────── */
-    .download-grid {
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+    }
+
+    .brand-chip {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #001119;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .nav a {
+      text-decoration: none;
+      padding: 0.25rem 0.2rem;
+    }
+
+    .nav a:hover { color: var(--text); }
+
+    .hero {
+      padding: 5rem 0 3rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: rgba(17, 27, 48, 0.65);
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+    }
+
+    .hero h1 {
+      margin: 1rem 0 0.85rem;
+      font-size: clamp(2rem, 4.8vw, 3.4rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      max-width: 20ch;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .hero-actions {
+      margin-top: 1.4rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.7rem 1rem;
+      border: 1px solid transparent;
+      transition: 160ms ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #03222b;
+    }
+
+    .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: rgba(17, 27, 48, 0.75);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover { background: var(--surface-3); }
+
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
+      gap: 1rem;
     }
-    .download-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 28px;
-      display: flex; flex-direction: column; gap: 16px;
-      transition: border-color .2s, box-shadow .2s;
+
+    .kpis {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      margin-top: 2rem;
     }
-    .download-card:hover {
-      border-color: var(--accent-dim);
+
+    .card {
+      background: linear-gradient(180deg, rgba(20, 33, 58, 0.9), rgba(11, 18, 32, 0.95));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
     }
-    .dl-icon { font-size: 32px; line-height: 1; }
-    .dl-title { font-size: 16px; font-weight: 600; }
-    .dl-desc  { font-size: 13px; color: var(--text-2); line-height: 1.6; }
-    .dl-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--bg-hover); border: 1px solid var(--border);
-      color: var(--accent); padding: 8px 14px; border-radius: 8px;
-      font-size: 13px; font-weight: 500; text-decoration: none;
-      transition: background .2s;
-    }
-    .dl-link:hover { background: var(--accent-dim); color: #fff; }
 
-    /* ─── Footer ────────────────────────────────────────────────── */
-    footer {
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
-      padding: 48px 32px;
-    }
-    .footer-inner {
-      max-width: 1080px; margin: 0 auto;
-      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
-    }
-    .footer-brand p { font-size: 13px; color: var(--text-3); margin-top: 10px; line-height: 1.65; }
-    .footer-col h4  { font-size: 12px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--text-2); margin-bottom: 14px; }
-    .footer-col ul  { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .footer-col a   { font-size: 13px; color: var(--text-3); text-decoration: none;
-      transition: color .2s; }
-    .footer-col a:hover { color: var(--accent); }
-    .footer-bottom {
-      max-width: 1080px; margin: 32px auto 0;
-      padding-top: 24px; border-top: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-      font-size: 12px; color: var(--text-3);
-    }
-    .status-indicator {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--text-2);
+    .kpi { padding: 1rem; }
+
+    .kpi .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.35rem;
     }
 
-    /* ─── Tag / badge ───────────────────────────────────────────── */
-    .tag {
+    .kpi .label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    section { padding: 2.8rem 0; }
+
+    .section-head {
+      margin-bottom: 1rem;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: -0.01em;
+    }
+
+    .section-head p {
+      margin: 0.45rem 0 0;
+      color: var(--muted);
+      max-width: 75ch;
+    }
+
+    .columns-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .columns-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+    .panel { padding: 1rem; }
+
+    .panel h3 {
+      margin: 0 0 0.55rem;
+      font-size: 1rem;
+    }
+
+    .panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .list li { margin: 0.35rem 0; }
+
+    .repo-link {
+      margin-top: 0.9rem;
       display: inline-block;
-      background: var(--bg-hover); border: 1px solid var(--border);
-      color: var(--text-2); padding: 2px 8px;
-      border-radius: 4px; font-size: 11px;
+      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      color: #a9d4ff;
     }
 
-    /* ─── AI section ────────────────────────────────────────────── */
-    #ai { background: var(--bg-panel); }
-    .ai-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-      gap: 20px;
-    }
-    .ai-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 24px;
-      transition: border-color .2s;
-    }
-    .ai-card:hover { border-color: var(--accent-dim); }
-    .ai-badge {
-      display: inline-block; font-size: 10px; font-weight: 700;
-      letter-spacing: .1em; text-transform: uppercase;
-      background: rgba(168,85,247,.15); color: #c084fc;
-      border: 1px solid #4a1d96;
-      padding: 3px 8px; border-radius: 4px; margin-bottom: 12px;
-    }
-    .ai-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-    .ai-card p  { font-size: 13px; color: var(--text-2); line-height: 1.65; }
-
-    /* ─── Responsive ────────────────────────────────────────────── */
-    @media (max-width: 768px) {
-      #top-nav { padding: 0 20px; }
-      .nav-links { display: none; }
-      section { padding: 56px 20px; }
-      #stats { padding: 32px 20px; }
-      .footer-inner { grid-template-columns: 1fr 1fr; }
-      .footer-bottom { flex-direction: column; text-align: center; }
-      h1 { font-size: 2rem; }
-    }
-    @media (max-width: 768px) {
-      /* Mobile nav is hidden visually; provide skip-to-content as fallback */
-      #nav-mobile-note { display: block; }
-    }
-    @media (max-width: 480px) {
-      .footer-inner { grid-template-columns: 1fr; }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(11, 18, 32, 0.95);
     }
 
-    /* ─── Anchor offset for fixed nav ───────────────────────────── */
-    [id] { scroll-margin-top: 70px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.7rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .tag.green { color: #83e5a2; border-color: rgba(34, 197, 94, 0.35); }
+    .tag.amber { color: #f5cc76; border-color: rgba(245, 158, 11, 0.35); }
+    .tag.blue { color: #9fd2ff; border-color: rgba(0, 184, 217, 0.4); }
+
+    .footer {
+      margin-top: 2rem;
+      border-top: 1px solid var(--border);
+      padding: 1.2rem 0 2rem;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    @media (max-width: 720px) {
+      .hero { padding-top: 4rem; }
+      .topbar-inner { align-items: flex-start; padding: 0.6rem 0; }
+      .nav { font-size: 0.8rem; }
+    }
   </style>
 </head>
 <body>
-
-<!-- ═══════════════════════════ TOP NAV ═══════════════════════════ -->
-<nav id="top-nav" aria-label="Main navigation">
-  <a href="#hero" class="nav-brand">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    SENTINEL
-    <span class="badge">v1.0</span>
-  </a>
-  <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#architecture">Architecture</a></li>
-    <li><a href="#api">API</a></li>
-    <li><a href="#roles">Roles</a></li>
-    <li><a href="#ai">AI Engine</a></li>
-    <li><a href="#download">Download</a></li>
-    <li><a href="#quickstart">Quick Start</a></li>
-  </ul>
-  <a href="https://dasiasentinel.xyz" target="_blank" rel="noopener" class="nav-cta">
-    Open App ↗
-  </a>
-</nav>
-
-<div class="page-wrapper">
-
-<!-- ═══════════════════════════ HERO ══════════════════════════════ -->
-<section id="hero">
-  <div class="hero-eyebrow">
-    <span class="dot" aria-hidden="true"></span>
-    Capstone Project · Group 8 · Davao Security &amp; Investigation Agency
-  </div>
-  <h1>
-    Intelligent<br />
-    <span>Security Operations</span><br />
-    Command Platform
-  </h1>
-  <p class="hero-sub">
-    SENTINEL is a full-stack security operations management system — unifying
-    personnel, firearms, fleet, scheduling, real-time tracking, and AI-powered
-    predictive analytics into one cross-platform command center.
-  </p>
-  <div class="hero-actions">
-    <a href="https://dasiasentinel.xyz" target="_blank" rel="noopener" class="btn-primary">
-      🌐 Launch Web App
-    </a>
-    <a href="#quickstart" class="btn-ghost">Quick Start Guide</a>
-    <a href="https://github.com/dwaytu/Capstone-Main/releases/latest" target="_blank" rel="noopener" class="btn-ghost">
-      ↓ Download
-    </a>
-  </div>
-
-  <ul class="platform-strip" aria-label="Available platforms" style="padding-left:0;list-style:none;display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:48px;">
-    <li class="platform-badge">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-      Web (Railway)
-    </li>
-    <li class="platform-badge">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 3H4a2 2 0 00-2 2v11a2 2 0 002 2h6v2H8v2h8v-2h-2v-2h6a2 2 0 002-2V5a2 2 0 00-2-2zm0 13H4V5h16v11z"/></svg>
-      Windows Desktop (Tauri)
-    </li>
-    <li class="platform-badge">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.523 15.341l-.854-.49a6.94 6.94 0 00.354-2.12 6.94 6.94 0 00-.354-2.12l.854-.49a.5.5 0 000-.866l-7-4a.5.5 0 00-.5 0l-7 4a.5.5 0 000 .866l.854.49A6.94 6.94 0 003.523 12.73a6.94 6.94 0 00.354 2.12l-.854.49a.5.5 0 000 .866l7 4a.5.5 0 00.5 0l7-4a.5.5 0 000-.866z"/></svg>
-      Android (Capacitor)
-    </li>
-    <li class="platform-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-      React + TypeScript
-    </li>
-    <li class="platform-badge">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.5 2C6.81 2 3 5.81 3 10.5S6.81 19 11.5 19h.5v3c4.86-2.34 8-7 8-11.5C20 5.81 16.19 2 11.5 2zm1 14.5h-2v-2h2v2zm0-4h-2c0-3.25 3-3 3-5 0-1.1-.9-2-2-2s-2 .9-2 2h-2c0-2.21 1.79-4 4-4s4 1.79 4 4c0 2.5-3 2.75-3 5z"/></svg>
-      Rust + Axum
-    </li>
-  </ul>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ STATS ═════════════════════════════ -->
-<div id="stats">
-  <div class="stats-grid">
-    <div class="stat-item">
-      <div class="stat-value">18+</div>
-      <div class="stat-label">API Handler Modules</div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top">
+        <span>SENTINEL</span>
+        <span class="brand-chip">DSIA</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#architecture">Architecture</a>
+        <a href="#repositories">Repositories</a>
+        <a href="#delivery">Delivery</a>
+        <a href="#docs">Docs</a>
+      </nav>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">4</div>
-      <div class="stat-label">RBAC Roles</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value">5</div>
-      <div class="stat-label">AI / ML Services</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value">3</div>
-      <div class="stat-label">Platforms Supported</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value">9+</div>
-      <div class="stat-label">Role Dashboards</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value">Real-Time</div>
-      <div class="stat-label">WebSocket Tracking</div>
-    </div>
-  </div>
-</div>
+  </header>
 
-<hr class="divider" />
-
-<!-- ═══════════════════════════ FEATURES ══════════════════════════ -->
-<section id="features">
-  <div class="container">
-    <p class="section-label">Core Capabilities</p>
-    <h2>Everything Security Operations Needs</h2>
-    <p class="section-intro">
-      SENTINEL consolidates every operational domain — from guard scheduling and firearm
-      inventory to AI-driven absence prediction — into a unified command interface.
-    </p>
-
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🔐</div>
-        <h3>Authentication &amp; RBAC</h3>
-        <p>JWT-based auth with email verification, password recovery, and
-          role-based access control across four permission tiers.
-          Refresh token rotation with server-side session tracking.</p>
+  <main id="top" class="container">
+    <section class="hero">
+      <span class="eyebrow">Security operations and command platform</span>
+      <h1>Operational control for workforce, incidents, assets, and live field intelligence.</h1>
+      <p>
+        SENTINEL is an integrated platform for Davao Security & Investigation Agency. It combines role-based command workflows, tracking telemetry,
+        incident coordination, and compliance governance across Web, Desktop, and Android.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://dasiasentinel.xyz/" target="_blank" rel="noopener">Open Production Web</a>
+        <a class="btn btn-secondary" href="https://github.com/dwaytu/Capstone-Main/releases/latest" target="_blank" rel="noopener">Download Latest Release</a>
+        <a class="btn btn-secondary" href="https://github.com/dwaytu/Capstone-Main" target="_blank" rel="noopener">View Source</a>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">👥</div>
-        <h3>Guard Management</h3>
-        <p>Full personnel lifecycle: self-registration with approval gate,
-          attendance check-in/out, no-show detection, replacement requests,
-          merit scoring, and punctuality records.</p>
+      <div class="grid kpis" aria-label="Platform summary">
+        <article class="card kpi">
+          <div class="value">3</div>
+          <div class="label">Runtime targets</div>
+        </article>
+        <article class="card kpi">
+          <div class="value">4</div>
+          <div class="label">Operational roles</div>
+        </article>
+        <article class="card kpi">
+          <div class="value">Rust + React</div>
+          <div class="label">Core stack</div>
+        </article>
+        <article class="card kpi">
+          <div class="value">Railway + Pages</div>
+          <div class="label">Deployment model</div>
+        </article>
       </div>
+    </section>
 
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🔫</div>
-        <h3>Firearms Inventory</h3>
-        <p>End-to-end firearm tracking: inventory management, guard-to-firearm
-          allocations, permit lifecycle with expiry alerts,
-          and maintenance scheduling.</p>
+    <section id="architecture">
+      <div class="section-head">
+        <h2>System Architecture</h2>
+        <p>Shared frontend + dedicated backend API with wrapper runtimes for desktop and Android, backed by PostgreSQL.</p>
       </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🚗</div>
-        <h3>Armored Car Fleet</h3>
-        <p>Fleet operations hub: vehicle inventory, driver assignments,
-          predictive maintenance alerts, trip scheduling, and
-          mission-to-car allocation.</p>
+      <div class="grid columns-3">
+        <article class="card panel">
+          <span class="tag blue">Frontend</span>
+          <h3>React + TypeScript + Vite</h3>
+          <p>Role-aware command and field UX, map operations, notifications, governance controls, and platform-adaptive runtime behavior.</p>
+        </article>
+        <article class="card panel">
+          <span class="tag green">Backend</span>
+          <h3>Rust + Axum + SQLx</h3>
+          <p>Authentication, authorization, workflow orchestration, telemetry processing, geofence logic, and audit-grade service APIs.</p>
+        </article>
+        <article class="card panel">
+          <span class="tag amber">Data + Delivery</span>
+          <h3>PostgreSQL + CI/CD</h3>
+          <p>Centralized operational records with GitHub Actions release governance, Railway service deployment, and GitHub Pages documentation.</p>
+        </article>
       </div>
+    </section>
 
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">📅</div>
-        <h3>Scheduling &amp; Calendar</h3>
-        <p>Unified timeline view with shift creation, guard availability
-          management, trip scheduling, mission assignment, and
-          a full calendar dashboard.</p>
+    <section id="repositories">
+      <div class="section-head">
+        <h2>Repository Topology</h2>
+        <p>The project is organized as a coordinated root repository plus service repositories used in deployment and day-to-day development.</p>
       </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🗺️</div>
-        <h3>Real-Time Tracking</h3>
-        <p>Live operational map powered by Leaflet + OpenStreetMap with
-          WebSocket tracking stream, heartbeat ingestion, and
-          a polling fallback for resilience.</p>
+      <div class="grid columns-3">
+        <article class="card panel">
+          <h3>Capstone Main (Root)</h3>
+          <p>Governance, release orchestration, docs, and workspace-level standards.</p>
+          <a class="repo-link" href="https://github.com/dwaytu/Capstone-Main" target="_blank" rel="noopener">github.com/dwaytu/Capstone-Main</a>
+        </article>
+        <article class="card panel">
+          <h3>Frontend</h3>
+          <p>Shared application consumed by web, desktop, and Android wrappers.</p>
+          <a class="repo-link" href="https://github.com/dwaytu/DasiaAIO-Frontend" target="_blank" rel="noopener">github.com/dwaytu/DasiaAIO-Frontend</a>
+        </article>
+        <article class="card panel">
+          <h3>Backend</h3>
+          <p>API and operational services for command workflows, tracking, and compliance.</p>
+          <a class="repo-link" href="https://github.com/dwaytu/DasiaAIO-Backend" target="_blank" rel="noopener">github.com/dwaytu/DasiaAIO-Backend</a>
+        </article>
       </div>
+    </section>
 
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🤖</div>
-        <h3>AI Predictive Engine</h3>
-        <p>Five built-in AI services: guard absence prediction, smart
-          replacement suggestions, vehicle maintenance risk, incident
-          severity classification, and incident summarization.</p>
+    <section id="delivery">
+      <div class="section-head">
+        <h2>Build and Delivery</h2>
+        <p>Use root-level commands for coordinated builds and releases. Frontend and backend repositories also remain independently operable.</p>
       </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">📊</div>
-        <h3>Analytics Dashboard</h3>
-        <p>KPI aggregation, utilization trends, performance reviews,
-          merit score leaderboards, and predictive alert panels
-          synthesizing multi-domain risk signals.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Scope</th>
+              <th>Command</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Web build</td>
+              <td><code>npm run build:web</code></td>
+              <td>Build production web bundle</td>
+            </tr>
+            <tr>
+              <td>Desktop build</td>
+              <td><code>npm run build:desktop</code></td>
+              <td>Build web bundle and desktop wrapper artifacts</td>
+            </tr>
+            <tr>
+              <td>Android build</td>
+              <td><code>npm run build:android</code></td>
+              <td>Build web bundle and sync Android wrapper</td>
+            </tr>
+            <tr>
+              <td>Release pipeline</td>
+              <td><code>npm run release:all</code></td>
+              <td>Run governed multi-target release flow</td>
+            </tr>
+            <tr>
+              <td>Verification</td>
+              <td><code>npm run verify:all</code></td>
+              <td>Run codified validation gates before handoff</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+    </section>
 
-      <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🛡️</div>
-        <h3>Security &amp; Audit</h3>
-        <p>Audit trail for all write operations, presence tracking,
-          rate limiting on auth endpoints, bcrypt password hashing,
-          CSP headers, and CORS configuration.</p>
+    <section id="docs">
+      <div class="section-head">
+        <h2>Documentation and Governance</h2>
+        <p>Project guidance, runbooks, and policy docs are maintained in the root repository and published through GitHub Pages.</p>
       </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ SCREENSHOTS ═══════════════════════ -->
-<section id="screenshots">
-  <div class="container">
-    <p class="section-label">Module Previews</p>
-    <h2>System Interface Overview</h2>
-    <p class="section-intro">
-      Role-specific dashboards give each user exactly the tools they need,
-      from the superadmin command center to the guard daily operations workspace.
-    </p>
-
-    <div class="screenshots-grid">
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-12-User-Login-Module.png"
-          alt="SENTINEL login screen"
-          loading="lazy"
-        />
-        <div class="screenshot-label">🔐 User Login Module</div>
+      <div class="grid columns-2">
+        <article class="card panel">
+          <h3>Primary project docs</h3>
+          <ul class="list">
+            <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/README.md" target="_blank" rel="noopener">Root README</a></li>
+            <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/PRODUCTION_ROLLOUT.md" target="_blank" rel="noopener">Production Rollout</a></li>
+            <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/COPILOT.md" target="_blank" rel="noopener">Technical Reference</a></li>
+            <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/PROJECT_MEMORY.md" target="_blank" rel="noopener">Project Memory</a></li>
+          </ul>
+        </article>
+        <article class="card panel">
+          <h3>Policies and legal</h3>
+          <ul class="list">
+            <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/PrivacyPolicy.md" target="_blank" rel="noopener">Privacy Policy</a></li>
+            <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/TermsOfAgreement.md" target="_blank" rel="noopener">Terms of Agreement</a></li>
+            <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/AcceptableUsePolicy.md" target="_blank" rel="noopener">Acceptable Use Policy</a></li>
+            <li><a href="https://github.com/dwaytu/Capstone-Main/releases/latest" target="_blank" rel="noopener">Latest Release Artifacts</a></li>
+          </ul>
+        </article>
       </div>
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-13-Superadmin-Module.png"
-          alt="Superadmin command center dashboard"
-          loading="lazy"
-        />
-        <div class="screenshot-label">🛡️ Superadmin Command Center</div>
-      </div>
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-14-Administrator-Module.png"
-          alt="Administrator dashboard"
-          loading="lazy"
-        />
-        <div class="screenshot-label">⚙️ Administrator Module</div>
-      </div>
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-15-Supervisor-Module.png"
-          alt="Supervisor dashboard"
-          loading="lazy"
-        />
-        <div class="screenshot-label">📋 Supervisor Module</div>
-      </div>
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-16-Guard-Module.png"
-          alt="Guard daily operations workspace"
-          loading="lazy"
-        />
-        <div class="screenshot-label">👮 Guard Module</div>
-      </div>
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-17-Scheduling-and-Attendance-Module.png"
-          alt="Scheduling and attendance module"
-          loading="lazy"
-        />
-        <div class="screenshot-label">📅 Scheduling &amp; Attendance</div>
-      </div>
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-18-Asset-and-Compliance-Module.png"
-          alt="Asset and compliance module"
-          loading="lazy"
-        />
-        <div class="screenshot-label">🔫 Asset &amp; Compliance Module</div>
-      </div>
-      <div class="screenshot-card">
-        <img
-          src="screenshots/chapter2-modules/Figure-19-Analytics-and-Reporting-Module.png"
-          alt="Analytics and reporting dashboard"
-          loading="lazy"
-        />
-        <div class="screenshot-label">📊 Analytics &amp; Reporting</div>
-      </div>
-    </div>
-  </div>
-</section>
+    </section>
+  </main>
 
-<hr class="divider" />
-
-<!-- ═══════════════════════════ ARCHITECTURE ══════════════════════ -->
-<section id="architecture">
-  <div class="container">
-    <p class="section-label">System Design</p>
-    <h2>Platform Architecture</h2>
-    <p class="section-intro">
-      A monorepo orchestrating a shared React/TypeScript frontend with a
-      Rust/Axum backend, distributed across web, desktop, and mobile wrappers.
-    </p>
-
-    <div class="arch-diagram">
-      <div class="arch-layers">
-        <!-- Clients -->
-        <div class="arch-layer">
-          <div class="arch-layer-label">Clients</div>
-          <div class="arch-boxes">
-            <div class="arch-box blue">🌐 Web Browser<br/><small>dasiasentinel.xyz</small></div>
-            <div class="arch-box blue">🖥️ Tauri Desktop<br/><small>Windows MSI / EXE</small></div>
-            <div class="arch-box blue">📱 Capacitor Android<br/><small>APK sideload</small></div>
-          </div>
-        </div>
-        <div class="arch-arrow" aria-hidden="true">↓ HTTPS · WebSocket</div>
-
-        <!-- Frontend -->
-        <div class="arch-layer">
-          <div class="arch-layer-label">Frontend</div>
-          <div class="arch-boxes">
-            <div class="arch-box green">React 18 + TypeScript</div>
-            <div class="arch-box green">Vite Build System</div>
-            <div class="arch-box green">Role-Based Dashboards</div>
-            <div class="arch-box green">Leaflet Live Map</div>
-            <div class="arch-box green">JWT Auth (localStorage)</div>
-          </div>
-        </div>
-        <div class="arch-arrow" aria-hidden="true">↓ REST + WebSocket</div>
-
-        <!-- Backend -->
-        <div class="arch-layer">
-          <div class="arch-layer-label">Backend API</div>
-          <div class="arch-boxes">
-            <div class="arch-box amber">Rust (Edition 2021)</div>
-            <div class="arch-box amber">Axum Web Framework</div>
-            <div class="arch-box amber">JWT Middleware</div>
-            <div class="arch-box amber">RBAC Authorization</div>
-            <div class="arch-box amber">Audit Logging</div>
-            <div class="arch-box amber">Rate Limiting</div>
-          </div>
-        </div>
-        <div class="arch-arrow" aria-hidden="true">↓ sqlx async</div>
-
-        <!-- Services -->
-        <div class="arch-layer">
-          <div class="arch-layer-label">AI Services</div>
-          <div class="arch-boxes">
-            <div class="arch-box purple">Guard Absence Prediction</div>
-            <div class="arch-box purple">Replacement AI</div>
-            <div class="arch-box purple">Vehicle Maintenance Risk</div>
-            <div class="arch-box purple">Incident Classifier</div>
-            <div class="arch-box purple">Incident Summarizer</div>
-          </div>
-        </div>
-        <div class="arch-arrow" aria-hidden="true">↓ PostgreSQL protocol</div>
-
-        <!-- DB -->
-        <div class="arch-layer">
-          <div class="arch-layer-label">Data Layer</div>
-          <div class="arch-boxes">
-            <div class="arch-box red">PostgreSQL (Railway)</div>
-            <div class="arch-box red">Users &amp; RBAC Tables</div>
-            <div class="arch-box red">Operations Tables</div>
-            <div class="arch-box red">AI Prediction Tables</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tech stack breakdown -->
-    <h3 style="margin: 48px 0 20px; font-size:1.1rem; font-weight:600;">Technology Stack</h3>
-    <div class="tech-grid">
-      <div class="tech-card">
-        <div class="tech-category">Frontend</div>
-        <ul class="tech-list">
-          <li>React 18 + TypeScript</li>
-          <li>Vite (build + HMR)</li>
-          <li>Tailwind CSS</li>
-          <li>Leaflet + React-Leaflet</li>
-          <li>Native WebSocket API</li>
-          <li>LocalStorage auth session</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Backend</div>
-        <ul class="tech-list">
-          <li>Rust (Edition 2021)</li>
-          <li>Axum web framework</li>
-          <li>sqlx 0.8.x async ORM</li>
-          <li>Tokio async runtime</li>
-          <li>jsonwebtoken crate</li>
-          <li>Resend API (email)</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Database</div>
-        <ul class="tech-list">
-          <li>PostgreSQL</li>
-          <li>Railway managed instance</li>
-          <li>Schema auto-init (db.rs)</li>
-          <li>Normalized RBAC tables</li>
-          <li>Audit log table</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Desktop (Tauri)</div>
-        <ul class="tech-list">
-          <li>Tauri 2.x (Rust)</li>
-          <li>tauri-plugin-updater</li>
-          <li>MSI + NSIS EXE bundling</li>
-          <li>1600×960 window</li>
-          <li>Strict CSP policy</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Android (Capacitor)</div>
-        <ul class="tech-list">
-          <li>Capacitor 7.x</li>
-          <li>Geolocation plugin</li>
-          <li>Push notifications</li>
-          <li>Secure storage</li>
-          <li>Gradle assembleRelease</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">CI / CD</div>
-        <ul class="tech-list">
-          <li>GitHub Actions</li>
-          <li>Node 24 LTS</li>
-          <li>Rust stable toolchain</li>
-          <li>Temurin JDK 21</li>
-          <li>GitHub Releases artifacts</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ ROLES ═════════════════════════════ -->
-<section id="roles">
-  <div class="container">
-    <p class="section-label">Access Control</p>
-    <h2>Role-Based Access Model</h2>
-    <p class="section-intro">
-      SENTINEL implements a four-tier RBAC model enforced at every API route
-      via Axum middleware. Roles are normalized and validated case-insensitively.
-    </p>
-
-    <div class="roles-grid">
-      <div class="role-card">
-        <span class="role-chip chip-super">SUPERADMIN</span>
-        <h3>Superadmin</h3>
-        <p>Full elevated system access. Operates the command center with
-          unrestricted visibility across all modules and users.</p>
-        <ul class="perm-list">
-          <li>Full user &amp; role management</li>
-          <li>All analytics &amp; audit logs</li>
-          <li>All firearms &amp; fleet operations</li>
-          <li>AI predictions &amp; alerts</li>
-          <li>System configuration</li>
-        </ul>
-      </div>
-
-      <div class="role-card">
-        <span class="role-chip chip-admin">ADMIN</span>
-        <h3>Administrator</h3>
-        <p>Administrative operations including guard approvals, user management,
-          scheduling, and asset management.</p>
-        <ul class="perm-list">
-          <li>Approve guard registrations</li>
-          <li>Create &amp; manage users</li>
-          <li>Manage schedules</li>
-          <li>Manage firearms &amp; fleet</li>
-          <li>View analytics</li>
-        </ul>
-      </div>
-
-      <div class="role-card">
-        <span class="role-chip chip-super2">SUPERVISOR</span>
-        <h3>Supervisor</h3>
-        <p>Operational supervision: monitors guard status, handles replacements,
-          reviews attendance and incident reports.</p>
-        <ul class="perm-list">
-          <li>Monitor guard attendance</li>
-          <li>Handle replacement requests</li>
-          <li>View &amp; manage missions</li>
-          <li>View incidents &amp; alerts</li>
-          <li>Access performance data</li>
-        </ul>
-      </div>
-
-      <div class="role-card">
-        <span class="role-chip chip-guard">GUARD</span>
-        <h3>Guard / Personnel</h3>
-        <p>Daily operations workspace: schedule visibility, attendance check-in,
-          firearm permit management, and support ticket submission.</p>
-        <ul class="perm-list">
-          <li>View own schedule</li>
-          <li>Check-in / check-out</li>
-          <li>View firearm permit status</li>
-          <li>Submit support tickets</li>
-          <li>View own merit score</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Auth flow -->
-    <h3 style="margin: 48px 0 20px; font-size:1.1rem; font-weight:600;">Authentication Flow</h3>
-    <div class="timeline">
-      <div class="timeline-item">
-        <div class="timeline-dot" aria-hidden="true"></div>
-        <span class="tl-tag">Register</span>
-        <h3>Self-Registration (Guards)</h3>
-        <p>Guards submit registration with Gmail address. Account created with
-          <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">pending</code>
-          status. Email verification code sent.</p>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-dot" aria-hidden="true"></div>
-        <span class="tl-tag">Verify</span>
-        <h3>Email Verification</h3>
-        <p>6-digit code emailed via Resend API. Guard submits code to activate
-          account. Required before login is permitted.</p>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-dot" aria-hidden="true"></div>
-        <span class="tl-tag">Approval</span>
-        <h3>Admin Approval Gate</h3>
-        <p>Reviewer roles (superadmin / admin / supervisor) review pending
-          registrations and approve or reject. Decision notification sent to guard.</p>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-dot" aria-hidden="true"></div>
-        <span class="tl-tag">Login</span>
-        <h3>JWT Issuance</h3>
-        <p>Login returns access JWT (7-day) + refresh token. Refresh tokens are
-          persisted server-side and rotated on use. Claims include user ID and role.</p>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-dot" aria-hidden="true"></div>
-        <span class="tl-tag">Request</span>
-        <h3>Authorized Requests</h3>
-        <p>Every protected route validates the JWT, enforces RBAC permissions via
-          <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">authz.rs</code>
-          middleware, updates presence, and logs writes to the audit trail.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ AI ENGINE ════════════════════════ -->
-<section id="ai">
-  <div class="container">
-    <p class="section-label">Predictive Intelligence</p>
-    <h2>Built-In AI &amp; Analytics Engine</h2>
-    <p class="section-intro">
-      Five purpose-built AI services running in the Rust backend provide
-      real-time predictive insights across guard operations, fleet management,
-      and incident response.
-    </p>
-
-    <div class="ai-grid">
-      <div class="ai-card">
-        <span class="ai-badge">Guard Ops</span>
-        <h3>Guard Absence Prediction</h3>
-        <p>Analyzes historical attendance and punctuality patterns to predict
-          which guards are likely to be absent on upcoming shifts — enabling
-          proactive scheduling adjustments.</p>
-      </div>
-
-      <div class="ai-card">
-        <span class="ai-badge">Guard Ops</span>
-        <h3>Smart Replacement Suggestions</h3>
-        <p>When a no-show is detected, the AI engine automatically scores and
-          recommends the best available guard replacements based on availability,
-          location, and merit score.</p>
-      </div>
-
-      <div class="ai-card">
-        <span class="ai-badge">Fleet</span>
-        <h3>Vehicle Maintenance Risk</h3>
-        <p>Monitors mileage, last service dates, and trip frequency to predict
-          when armored cars are approaching maintenance thresholds before
-          breakdown occurs.</p>
-      </div>
-
-      <div class="ai-card">
-        <span class="ai-badge">Incidents</span>
-        <h3>Incident Severity Classification</h3>
-        <p>Automatically classifies incoming incident reports by severity level
-          (low / medium / high / critical) using pattern recognition to
-          prioritize response queues.</p>
-      </div>
-
-      <div class="ai-card">
-        <span class="ai-badge">Incidents</span>
-        <h3>Incident Summarization</h3>
-        <p>Generates concise natural-language summaries with extracted key phrases
-          from verbose incident reports — reducing analyst reading time during
-          high-volume alert periods.</p>
-      </div>
-
-      <div class="ai-card">
-        <span class="ai-badge">Cross-Domain</span>
-        <h3>Predictive Alerts Panel</h3>
-        <p>Synthesizes all AI service outputs — permit expiry, maintenance overdue,
-          no-show risk, and capacity issues — into a unified
-          prioritized alert feed on the command center.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ API REFERENCE ═════════════════════ -->
-<section id="api">
-  <div class="container">
-    <p class="section-label">API Reference</p>
-    <h2>Backend REST API</h2>
-    <p class="section-intro">
-      All endpoints are served from the Rust/Axum backend. Protected routes
-      require a valid JWT in the
-      <code style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">Authorization: Bearer &lt;token&gt;</code>
-      header.
-    </p>
-
-    <!-- Auth -->
-    <h3 style="margin-bottom:14px;font-size:1rem;font-weight:600;color:var(--text-2);">Authentication</h3>
-    <div class="api-table-wrapper" style="margin-bottom:32px;">
-      <table>
-        <thead>
-          <tr>
-            <th>Method</th>
-            <th>Endpoint</th>
-            <th>Description</th>
-            <th>Auth</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td><span class="method post">POST</span></td><td>/api/register</td><td>Guard self-registration</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/login</td><td>Login → JWT + refresh token</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/verify</td><td>Submit email verification code</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/resend-code</td><td>Resend verification code</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/forgot-password</td><td>Initiate password reset</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/verify-reset-code</td><td>Validate reset code</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/reset-password</td><td>Set new password</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/refresh</td><td>Rotate refresh token</td><td>Public</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/logout</td><td>Invalidate session</td><td>🔒 JWT</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Users -->
-    <h3 style="margin-bottom:14px;font-size:1rem;font-weight:600;color:var(--text-2);">Users &amp; Approvals</h3>
-    <div class="api-table-wrapper" style="margin-bottom:32px;">
-      <table>
-        <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method get">GET</span></td><td>/api/users</td><td>List all users</td><td>🔒 Admin+</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/user/:id</td><td>Get user by ID</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method put">PUT</span></td><td>/api/user/:id</td><td>Update user</td><td>🔒 Admin+</td></tr>
-          <tr><td><span class="method delete">DEL</span></td><td>/api/user/:id</td><td>Delete user</td><td>🔒 Admin+</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/pending-approvals</td><td>List pending guard registrations</td><td>🔒 Reviewer</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/approve/:id</td><td>Approve guard</td><td>🔒 Reviewer</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/reject/:id</td><td>Reject guard</td><td>🔒 Reviewer</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Operations -->
-    <h3 style="margin-bottom:14px;font-size:1rem;font-weight:600;color:var(--text-2);">Guard Operations</h3>
-    <div class="api-table-wrapper" style="margin-bottom:32px;">
-      <table>
-        <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method get">GET</span></td><td>/api/shifts</td><td>List shifts</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/shifts</td><td>Create shift</td><td>🔒 Admin+</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/attendance/checkin</td><td>Guard check-in</td><td>🔒 Guard</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/attendance/checkout</td><td>Guard check-out</td><td>🔒 Guard</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/replacements</td><td>List replacement requests</td><td>🔒 Supervisor+</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/replacements</td><td>Create replacement request</td><td>🔒 Supervisor+</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/merit</td><td>Merit scores</td><td>🔒 JWT</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Real-time -->
-    <h3 style="margin-bottom:14px;font-size:1rem;font-weight:600;color:var(--text-2);">Tracking &amp; Real-Time</h3>
-    <div class="api-table-wrapper" style="margin-bottom:32px;">
-      <table>
-        <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead>
-        <tbody>
-           <tr><td><span class="method get">GET</span></td><td>/api/tracking/map-data</td><td>Operational map snapshot with guard, site, alert, and reliability state data</td><td>🔒 Guard+ / Elevated view</td></tr>
-           <tr><td><span class="method get">GET</span></td><td>/api/tracking/active-guards</td><td>Active and retained guard roster for command visibility</td><td>🔒 Guard+ / Elevated view</td></tr>
-           <tr><td><span class="method post">POST</span></td><td>/api/tracking/heartbeat</td><td>Persist a guard or supervisor heartbeat sample</td><td>🔒 Guard / Supervisor</td></tr>
-           <tr><td><span class="method get">GET</span></td><td>/api/tracking/consent</td><td>Read the authenticated user tracking consent state</td><td>🔒 JWT</td></tr>
-           <tr><td><span class="method post">POST</span></td><td>/api/tracking/consent/grant</td><td>Grant server-side tracking consent for the authenticated user</td><td>🔒 JWT</td></tr>
-           <tr><td><span class="method post">POST</span></td><td>/api/tracking/consent/revoke</td><td>Revoke server-side tracking consent for the authenticated user</td><td>🔒 JWT</td></tr>
-           <tr><td><span class="method ws">WS</span></td><td>/api/tracking/ws</td><td>Live tracking snapshot stream using protocol-bearer auth only</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/incidents</td><td>List incidents</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/incidents</td><td>Create incident report</td><td>🔒 JWT</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- AI -->
-    <h3 style="margin-bottom:14px;font-size:1rem;font-weight:600;color:var(--text-2);">AI &amp; Analytics</h3>
-    <div class="api-table-wrapper">
-      <table>
-        <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method get">GET</span></td><td>/api/ai/absence-risk</td><td>Guard absence predictions</td><td>🔒 Supervisor+</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/ai/replacements</td><td>Smart replacement suggestions</td><td>🔒 Supervisor+</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/ai/vehicle-risk</td><td>Vehicle maintenance risk scores</td><td>🔒 Admin+</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/ai/classify-incident</td><td>Classify incident severity</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method post">POST</span></td><td>/api/ai/summarize-incident</td><td>Generate incident summary</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/analytics</td><td>KPI aggregation</td><td>🔒 Admin+</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/api/alerts</td><td>Predictive alerts feed</td><td>🔒 JWT</td></tr>
-          <tr><td><span class="method get">GET</span></td><td>/health</td><td>System health check</td><td>Public</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ QUICK START ═══════════════════════ -->
-<section id="quickstart">
-  <div class="container">
-    <p class="section-label">Developer Guide</p>
-    <h2>Quick Start</h2>
-    <p class="section-intro">
-      Get SENTINEL running locally in minutes. The monorepo uses npm workspaces
-      for frontend coordination and Cargo for the Rust backend.
-    </p>
-
-    <h3 style="margin-bottom:12px;font-size:1rem;font-weight:600;">Prerequisites</h3>
-    <div class="arch-boxes" style="margin-bottom:32px;flex-wrap:wrap;gap:10px;">
-      <div class="arch-box green">Node.js 18+</div>
-      <div class="arch-box amber">Rust (stable)</div>
-      <div class="arch-box blue">PostgreSQL 14+</div>
-      <div class="arch-box purple">Cargo</div>
-    </div>
-
-    <h3 style="margin-bottom:12px;font-size:1rem;font-weight:600;">1 — Clone &amp; Install</h3>
-    <div class="code-block" style="margin-bottom:28px;">
-<span class="comment"># Clone with submodules</span>
-git clone --recurse-submodules https://github.com/dwaytu/Capstone-Main.git
-cd Capstone-Main
-
-<span class="comment"># Install root and frontend dependencies</span>
-npm install
-npm install --prefix DasiaAIO-Frontend
-    </div>
-
-    <h3 style="margin-bottom:12px;font-size:1rem;font-weight:600;">2 — Configure Environment</h3>
-    <div class="code-block" style="margin-bottom:28px;">
-<span class="comment"># DasiaAIO-Backend/.env</span>
-<span class="key">DATABASE_URL</span>=<span class="str">postgres://user:pass@localhost/sentinel</span>
-<span class="key">JWT_SECRET</span>=<span class="str">your-strong-secret-here</span>
-<span class="key">ADMIN_CODE</span>=<span class="str">your-admin-registration-code</span>
-<span class="key">RESEND_API_KEY</span>=<span class="str">re_xxxxxxxxxxxx</span>   <span class="comment"># optional – email verification</span>
-<span class="key">CORS_ORIGIN</span>=<span class="str">http://localhost:5173</span>
-
-<span class="comment"># DasiaAIO-Frontend/.env.local</span>
-<span class="key">VITE_API_BASE_URL</span>=<span class="str">http://localhost:3000</span>
-    </div>
-
-    <h3 style="margin-bottom:12px;font-size:1rem;font-weight:600;">3 — Run Development Servers</h3>
-    <div class="code-block" style="margin-bottom:28px;">
-<span class="comment"># Terminal 1 – Backend (Rust)</span>
-cd DasiaAIO-Backend
-cargo run
-
-<span class="comment"># Terminal 2 – Frontend (Vite)</span>
-npm run dev --prefix DasiaAIO-Frontend
-<span class="comment"># → http://localhost:5173</span>
-    </div>
-
-    <h3 style="margin-bottom:12px;font-size:1rem;font-weight:600;">4 — Build for Production</h3>
-    <div class="code-block">
-<span class="comment"># From repository root:</span>
-npm run build:web        <span class="comment"># Web distribution</span>
-npm run build:desktop    <span class="comment"># Windows MSI + EXE (requires Tauri CLI)</span>
-npm run build:android    <span class="comment"># Android APK (requires Android SDK)</span>
-
-<span class="comment"># Release all platforms with version tag:</span>
-npm run release:all
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ DATABASE SCHEMA ═══════════════════ -->
-<section id="database">
-  <div class="container">
-    <p class="section-label">Data Layer</p>
-    <h2>Database Schema</h2>
-    <p class="section-intro">
-      PostgreSQL with schema auto-initialized on backend startup via
-      <code style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">db.rs</code>.
-      Tables are grouped by operational domain.
-    </p>
-
-    <div class="tech-grid">
-      <div class="tech-card">
-        <div class="tech-category">Identity &amp; Access</div>
-        <ul class="tech-list">
-          <li>users</li>
-          <li>roles</li>
-          <li>permissions</li>
-          <li>role_permissions</li>
-          <li>user_roles</li>
-          <li>audit_logs</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Guard Operations</div>
-        <ul class="tech-list">
-          <li>shifts</li>
-          <li>attendance</li>
-          <li>guard_availability</li>
-          <li>punctuality_records</li>
-          <li>training_records</li>
-          <li>support_tickets</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Firearms</div>
-        <ul class="tech-list">
-          <li>firearms</li>
-          <li>firearm_allocations</li>
-          <li>guard_firearm_permits</li>
-          <li>firearm_maintenance</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Fleet &amp; Vehicles</div>
-        <ul class="tech-list">
-          <li>armored_cars</li>
-          <li>car_allocations</li>
-          <li>car_maintenance</li>
-          <li>driver_assignments</li>
-          <li>trips</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">Operations</div>
-        <ul class="tech-list">
-          <li>incidents</li>
-          <li>client_sites</li>
-          <li>tracking_points</li>
-          <li>notifications</li>
-          <li>missions</li>
-        </ul>
-      </div>
-      <div class="tech-card">
-        <div class="tech-category">AI &amp; Analytics</div>
-        <ul class="tech-list">
-          <li>guard_absence_predictions</li>
-          <li>smart_guard_replacements</li>
-          <li>incident_severity_classifications</li>
-          <li>predictive_vehicle_maintenance</li>
-          <li>ai_incident_summaries</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ DOWNLOAD ══════════════════════════ -->
-<section id="download">
-  <div class="container">
-    <p class="section-label">Distribution</p>
-    <h2>Download &amp; Access</h2>
-    <p class="section-intro">
-      SENTINEL is available on three platforms. All release artifacts are
-      published automatically via GitHub Actions on version tags.
-    </p>
-
-    <div class="download-grid">
-      <div class="download-card">
-        <div class="dl-icon">🌐</div>
-        <div class="dl-title">Web Application</div>
-        <div class="dl-desc">
-          The production web app is always available at dasiasentinel.xyz. No installation
-          required — sign in with your SENTINEL account from any browser.
-        </div>
-        <a href="https://dasiasentinel.xyz" target="_blank" rel="noopener" class="dl-link">
-          Open Web App ↗
-        </a>
-      </div>
-
-      <div class="download-card">
-        <div class="dl-icon">🖥️</div>
-        <div class="dl-title">Windows Desktop</div>
-        <div class="dl-desc">
-          Native Windows application built with Tauri. Download the
-          <strong>.msi</strong> (recommended) or <strong>.exe</strong> installer
-          from the latest GitHub Release.
-        </div>
-        <a href="https://github.com/dwaytu/Capstone-Main/releases/latest" target="_blank" rel="noopener" class="dl-link">
-          Download Installer ↗
-        </a>
-      </div>
-
-      <div class="download-card">
-        <div class="dl-icon">📱</div>
-        <div class="dl-title">Android APK</div>
-        <div class="dl-desc">
-          Capacitor-based Android app. Download the APK from the latest GitHub
-          Release. Enable sideloading in device settings before installing.
-        </div>
-        <a href="https://github.com/dwaytu/Capstone-Main/releases/latest" target="_blank" rel="noopener" class="dl-link">
-          Download APK ↗
-        </a>
-      </div>
-
-      <div class="download-card">
-        <div class="dl-icon">📦</div>
-        <div class="dl-title">Source Code</div>
-        <div class="dl-desc">
-          Clone the monorepo including all submodules. See the Quick Start
-          section for setup instructions and build commands.
-        </div>
-        <a href="https://github.com/dwaytu/Capstone-Main" target="_blank" rel="noopener" class="dl-link">
-          View on GitHub ↗
-        </a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<hr class="divider" />
-
-<!-- ═══════════════════════════ LEGAL DOCS ════════════════════════ -->
-<section id="legal">
-  <div class="container">
-    <p class="section-label">Policies &amp; Legal</p>
-    <h2>Legal Documents</h2>
-    <p class="section-intro">
-      SENTINEL is operated for Davao Security &amp; Investigation Agency.
-      Please review the applicable policies before using the platform.
-    </p>
-    <div class="download-grid">
-      <div class="download-card">
-        <div class="dl-icon">🔒</div>
-        <div class="dl-title">Privacy Policy</div>
-        <div class="dl-desc">How we collect, store, and protect your data.</div>
-        <a href="https://github.com/dwaytu/Capstone-Main/blob/main/PrivacyPolicy.md" target="_blank" rel="noopener" class="dl-link">Read Policy ↗</a>
-      </div>
-      <div class="download-card">
-        <div class="dl-icon">📋</div>
-        <div class="dl-title">Terms of Agreement</div>
-        <div class="dl-desc">User agreement and terms governing use of SENTINEL.</div>
-        <a href="https://github.com/dwaytu/Capstone-Main/blob/main/TermsOfAgreement.md" target="_blank" rel="noopener" class="dl-link">Read Terms ↗</a>
-      </div>
-      <div class="download-card">
-        <div class="dl-icon">✅</div>
-        <div class="dl-title">Acceptable Use Policy</div>
-        <div class="dl-desc">Guidelines for acceptable and responsible use.</div>
-        <a href="https://github.com/dwaytu/Capstone-Main/blob/main/AcceptableUsePolicy.md" target="_blank" rel="noopener" class="dl-link">Read Policy ↗</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-</div><!-- end .page-wrapper -->
-
-<!-- ═══════════════════════════ FOOTER ════════════════════════════ -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div style="font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        SENTINEL
-      </div>
-      <p>Integrated Security Operations Platform for Davao Security &amp; Investigation Agency.<br />
-        Capstone Project — Group 8.</p>
-    </div>
-
-    <div class="footer-col">
-      <h4>Platform</h4>
-      <ul>
-        <li><a href="https://dasiasentinel.xyz" target="_blank" rel="noopener">Web App</a></li>
-        <li><a href="https://github.com/dwaytu/Capstone-Main/releases/latest" target="_blank" rel="noopener">Desktop Installer</a></li>
-        <li><a href="https://github.com/dwaytu/Capstone-Main/releases/latest" target="_blank" rel="noopener">Android APK</a></li>
-        <li><a href="https://github.com/dwaytu/Capstone-Main" target="_blank" rel="noopener">Source Code</a></li>
-      </ul>
-    </div>
-
-    <div class="footer-col">
-      <h4>Docs</h4>
-      <ul>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#architecture">Architecture</a></li>
-        <li><a href="#api">API Reference</a></li>
-        <li><a href="#quickstart">Quick Start</a></li>
-      </ul>
-    </div>
-
-    <div class="footer-col">
-      <h4>Legal</h4>
-      <ul>
-        <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/PrivacyPolicy.md" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/TermsOfAgreement.md" target="_blank" rel="noopener">Terms of Agreement</a></li>
-        <li><a href="https://github.com/dwaytu/Capstone-Main/blob/main/AcceptableUsePolicy.md" target="_blank" rel="noopener">Acceptable Use</a></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="footer-bottom">
-    <span>© 2025 SENTINEL · Davao Security &amp; Investigation Agency · Group 8 Capstone</span>
-    <span class="status-indicator">
-      <span class="dot" aria-hidden="true"></span>
-      All systems operational
-    </span>
-  </div>
-</footer>
-
+  <footer class="container footer">
+    <div>SENTINEL - Integrated Security Operations Platform for DSIA.</div>
+    <div>Maintained by Group 8 Capstone Team. Documentation deployed via GitHub Pages from <code>docs/</code>.</div>
+  </footer>
 </body>
 </html>
