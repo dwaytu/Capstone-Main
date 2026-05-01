@@ -23,6 +23,11 @@
 	],
 	"settings": {
 		"java.configuration.updateBuildConfiguration": "automatic",
+		"java.import.exclusions": [
+			"**/node_modules/**",
+			"**/apps/android-capacitor/node_modules/**",
+			"**/apps/android-capacitor/android/capacitor-cordova-android-plugins/**"
+		],
 		"workbench.browser.openLocalhostLinks": true,
 		"workbench.browser.enableChatTools": true,
 		"chatgpt.openOnStartup": false,
