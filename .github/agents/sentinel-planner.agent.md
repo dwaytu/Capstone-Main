@@ -1,7 +1,7 @@
 ---
 name: sentinel-planner
 description: "Repo-specific planner for SENTINEL. Converts requests into phased delivery plans with clear owners, file scope, contracts, and verification. Never implements."
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.3-Codex (copilot)
 disable-model-invocation: false
 user-invocable: true
 ---

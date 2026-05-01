@@ -1,7 +1,7 @@
 ---
 name: sentinel-qa-lead
 description: "Browser-first QA lead for SENTINEL. Owns acceptance testing, role-based validation, responsive checks, evidence capture, and release-readiness recommendations."
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.3-Codex (copilot)
 disable-model-invocation: false
 user-invocable: true
 ---

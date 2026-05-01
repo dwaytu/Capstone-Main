@@ -22,20 +22,40 @@ The result is intentionally narrower than the generic Gem stack:
 
 | Agent | Model | Role | Primary Use |
 | --- | --- | --- | --- |
-| `sentinel-orchestrator` | `Claude Opus 4.6` | Coordinates work and sequencing | Cross-stack features, complex fixes, release prep |
-| `sentinel-planner` | `Claude Opus 4.6` | Converts requests into a delivery plan | Scope, phases, file ownership, verification |
+| `sentinel-orchestrator` | `GPT-5.3-Codex` | Coordinates work and sequencing | Cross-stack features, complex fixes, release prep |
+| `sentinel-planner` | `GPT-5.3-Codex` | Converts requests into a delivery plan | Scope, phases, file ownership, verification |
 | `sentinel-backend-engineer` | `GPT-5.3-Codex` | Owns Rust/Axum/Postgres work | Services, handlers, routes, SQL, auth |
 | `sentinel-frontend-engineer` | `GPT-5.3-Codex` | Owns React/Tailwind/Tauri/Capacitor work | Dashboards, shells, UI states, responsive UX |
-| `sentinel-designer` | `Gemini 3.1 Pro` | Owns UI direction and design critique | Visual hierarchy, responsive direction, premium UX |
-| `sentinel-qa-lead` | `Claude Opus 4.6` | Owns browser-first validation | Acceptance, regressions, mobile/desktop, evidence |
+| `sentinel-designer` | `GPT-5.3-Codex` | Owns UI direction and design critique | Visual hierarchy, responsive direction, premium UX |
+| `sentinel-qa-lead` | `GPT-5.3-Codex` | Owns browser-first validation | Acceptance, regressions, mobile/desktop, evidence |
 
 ## Support Specialists
 
 | Agent | Model | Role | Use When |
 | --- | --- | --- | --- |
-| `sentinel-capstone-documenter` | `Claude Opus 4.6` | Governed academic/project documentation | Capstone paper updates, evidence-backed narrative alignment |
-| `sentinel-security-reviewer` | `Claude Opus 4.6` | Security, auth, route exposure, OWASP review | Auth, permissions, secrets, sensitive config |
+| `sentinel-capstone-documenter` | `GPT-5.3-Codex` | Governed academic/project documentation | Capstone paper updates, evidence-backed narrative alignment |
+| `sentinel-security-reviewer` | `GPT-5.3-Codex` | Security, auth, route exposure, OWASP review | Auth, permissions, secrets, sensitive config |
 | `sentinel-release-manager` | `GPT-5.3-Codex` | Governed multi-platform release execution | Versioning, artifacts, release workflow |
+
+## Leadership Structure
+
+This repo uses a software-company style delegation model:
+
+- CTO: `sentinel-orchestrator`
+- Head of Planning: `sentinel-planner`
+- Head of Backend Engineering: `sentinel-backend-engineer`
+- Head of Frontend Engineering: `sentinel-frontend-engineer`
+- Head of Design: `sentinel-designer`
+- Head of QA: `sentinel-qa-lead`
+- Head of Security: `sentinel-security-reviewer`
+- Head of Release/DevOps: `sentinel-release-manager`
+- Head of Documentation: `sentinel-capstone-documenter`
+
+## Model Policy
+
+- Default model for SENTINEL orchestration and coding work is `GPT-5.3-Codex`.
+- For coding tasks, do not switch away from `GPT-5.3-Codex` unless the user explicitly requests a different model.
+- Keep delegation role-based and file-scoped to preserve accountability.
 
 ## Operating Model
 

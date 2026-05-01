@@ -1,7 +1,7 @@
 ---
 name: sentinel-security-reviewer
 description: "Security and permission reviewer for SENTINEL. Audits auth, route exposure, data access, secrets, CORS, and production-sensitive configuration. Never implements."
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.3-Codex (copilot)
 disable-model-invocation: false
 user-invocable: true
 ---

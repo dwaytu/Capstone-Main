@@ -38,8 +38,8 @@ It manages:
 - `apps/android-capacitor/`: Capacitor Android shell consuming `DasiaAIO-Frontend/app-dist`
 - `apps/desktop-tauri/`: Tauri desktop shell consuming `DasiaAIO-Frontend/app-dist`
 - Root docs:
-  - `SYSTEM_AUDIT_REPORT.md`
-  - `explanation.md`
+  - `archive/2026-05-01-safe-cleanup/reports/SYSTEM_AUDIT_REPORT.md`
+  - `archive/2026-05-01-safe-cleanup/misc/explanation.md`
   - `SENTINEL - Group 8.md`
   - `TermsOfAgreement.md`
   - `PrivacyPolicy.md`

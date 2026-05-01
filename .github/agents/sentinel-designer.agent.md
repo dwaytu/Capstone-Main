@@ -1,7 +1,7 @@
 ---
 name: sentinel-designer
 description: "Design specialist for SENTINEL. Owns UI direction, visual hierarchy, responsive behavior, accessibility-aware design critique, and premium command-center presentation."
-model: Gemini 3.1 Pro (Preview) (copilot)
+model: GPT-5.3-Codex (copilot)
 disable-model-invocation: false
 user-invocable: true
 ---

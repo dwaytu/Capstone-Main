@@ -1,8 +1,24 @@
 {
 	"folders": [
 		{
-			"name": "Capstone Main",
+			"name": "00 Root Governance",
 			"path": "."
+		},
+		{
+			"name": "01 Frontend",
+			"path": "DasiaAIO-Frontend"
+		},
+		{
+			"name": "02 Backend",
+			"path": "DasiaAIO-Backend"
+		},
+		{
+			"name": "03 Apps",
+			"path": "apps"
+		},
+		{
+			"name": "04 Docs",
+			"path": "docs"
 		}
 	],
 	"settings": {
@@ -10,6 +26,40 @@
 		"workbench.browser.openLocalhostLinks": true,
 		"workbench.browser.enableChatTools": true,
 		"chatgpt.openOnStartup": false,
-		"chatgpt.runCodexInWindowsSubsystemForLinux": true
+		"chatgpt.runCodexInWindowsSubsystemForLinux": true,
+		"files.exclude": {
+			"**/.git": true,
+			"**/.venv": true,
+			"**/node_modules": true,
+			"**/tmp": true,
+			"**/target": true,
+			"**/app-dist": true,
+			"**/dist": true,
+			"**/build": true,
+			"**/.turbo": true,
+			"**/.next": true
+		},
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/tmp": true,
+			"**/target": true,
+			"**/app-dist": true,
+			"**/dist": true,
+			"**/build": true
+		},
+		"files.watcherExclude": {
+			"**/.git/objects/**": true,
+			"**/.git/subtree-cache/**": true,
+			"**/node_modules/**": true,
+			"**/target/**": true,
+			"**/tmp/**": true
+		},
+		"explorer.fileNesting.enabled": true,
+		"explorer.fileNesting.expand": false,
+		"explorer.fileNesting.patterns": {
+			"README.md": "AGENTS.md,COPILOT.md,PROJECT_MEMORY.md,CHATGPT_SYSTEM_GUIDE.md,QUICK_START_GUIDE.md,PRODUCTION_ROLLOUT.md,SYSTEM_FLOW_DIAGRAMS.md,CHANGELOG.md,architecture.md",
+			"SENTINEL - Group 8.md": "SENTINEL - Group 8.pdf",
+			"package.json": "package-lock.json"
+		}
 	}
 }

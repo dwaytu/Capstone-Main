@@ -97,11 +97,19 @@ apps/desktop-tauri/      Tauri wrapper for desktop (Windows/macOS/Linux)
 | Doc | Purpose |
 |-----|---------|
 | [COPILOT.md](COPILOT.md) | Full technical reference (stack, API routes, DB tables, env vars) |
+| [PROJECT_MEMORY.md](PROJECT_MEMORY.md) | Persistent cross-session project memory for Codex |
 | [CHATGPT_SYSTEM_GUIDE.md](CHATGPT_SYSTEM_GUIDE.md) | System guide for new AI sessions |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 | [PRODUCTION_ROLLOUT.md](PRODUCTION_ROLLOUT.md) | Multi-platform deployment guide |
 | [SYSTEM_FLOW_DIAGRAMS.md](SYSTEM_FLOW_DIAGRAMS.md) | Auth, approval, and operational flow diagrams |
 | [DasiaAIO-Backend/scripts/RAILWAY_LIVE_ACCOUNT_RUNBOOK.md](DasiaAIO-Backend/scripts/RAILWAY_LIVE_ACCOUNT_RUNBOOK.md) | Railway production provisioning |
+
+## Persistent Memory
+
+- At the start of every new Codex session in this workspace, read `PROJECT_MEMORY.md` before planning or implementation.
+- Treat `PROJECT_MEMORY.md` as the canonical cross-session context source for ongoing decisions, known constraints, and active workstreams.
+- After meaningful work (feature changes, architectural decisions, environment/process changes, resolved incidents, or important discoveries), update `PROJECT_MEMORY.md` in concise, factual entries.
+- Keep entries implementation-focused for future AI sessions and avoid storing secrets, tokens, private keys, or credentials.
 
 ## Repo-Local AI Routing
 
@@ -125,3 +133,13 @@ When working inside this workspace, treat the following `.github` files as the e
 If a task overlaps multiple areas, apply the most specific routing first, then layer the supporting `.github/instructions/*` or `.github/skills/*` files that match the risk area.
 
 Unless the user explicitly chooses another workflow, treat the SENTINEL Development Team as the preferred repo-specific layer on top of Gem Team. Start with `sentinel-orchestrator`; fall back to `gem-*` agents when the broader framework is the better fit.
+
+## Orchestration Policy
+
+- Default orchestration leadership model:
+  - CTO: `sentinel-orchestrator`
+  - Department heads: `sentinel-planner`, `sentinel-backend-engineer`, `sentinel-frontend-engineer`, `sentinel-designer`, `sentinel-qa-lead`, `sentinel-security-reviewer`, `sentinel-release-manager`, `sentinel-capstone-documenter`
+- Default model policy for repo work:
+  - use `GPT-5.3-Codex` for coding tasks
+  - keep delegation file-scoped with one clear owner per task
+  - avoid overlapping edits across parallel delegates

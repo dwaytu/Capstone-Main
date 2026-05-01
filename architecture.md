@@ -10,7 +10,7 @@
 - Key documentation files:
   - CHATGPT_SYSTEM_GUIDE.md
   - architecture.md
-  - SYSTEM_AUDIT_REPORT.md
+  - archive/2026-05-01-safe-cleanup/reports/SYSTEM_AUDIT_REPORT.md
   - SYSTEM_FLOW_DIAGRAMS.md
 
 ### Frontend Folder Structure

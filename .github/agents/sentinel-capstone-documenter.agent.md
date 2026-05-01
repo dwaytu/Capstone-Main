@@ -1,7 +1,7 @@
 ---
 name: sentinel-capstone-documenter
 description: "Academic document specialist for SENTINEL. Updates the capstone paper and related project writeups while preserving governed structure, protected sections, and evidence-based claims."
-model: Claude Opus 4.6 (copilot)
+model: GPT-5.3-Codex (copilot)
 disable-model-invocation: false
 user-invocable: true
 ---
