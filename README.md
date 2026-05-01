@@ -1,13 +1,15 @@
-# SENTINEL Capstone Main
+﻿# SENTINEL Capstone Main
 
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://dwaytu.github.io/Capstone-Main/)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://dwaytu.github.io/Capstone-Main/)
+[![Release](https://img.shields.io/github/v/release/dwaytu/Capstone-Main?display_name=tag)](https://github.com/dwaytu/Capstone-Main/releases)
+[![Release Workflow](https://github.com/dwaytu/Capstone-Main/actions/workflows/release.yml/badge.svg)](https://github.com/dwaytu/Capstone-Main/actions/workflows/release.yml)
+[![Docs Workflow](https://github.com/dwaytu/Capstone-Main/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/dwaytu/Capstone-Main/actions/workflows/deploy-docs.yml)
 
-**📖 Documentation:** https://dwaytu.github.io/Capstone-Main/
+SENTINEL is a full-stack security operations and asset management platform with a shared React frontend and platform wrappers for Web, Desktop, and Android.
 
-SENTINEL is a full-stack security operations and asset management platform with a shared React frontend and platform wrappers for web, desktop, and Android.
+Documentation: https://dwaytu.github.io/Capstone-Main/
 
 ## Downloads
-
 - Web (latest): https://dasiasentinel.xyz/
 - Desktop installer (MSI/EXE): https://github.com/dwaytu/Capstone-Main/releases/latest
 - Android APK: https://github.com/dwaytu/Capstone-Main/releases/latest
@@ -89,3 +91,17 @@ Release tags follow semantic versioning: `vMAJOR.MINOR.PATCH` (for example `v1.0
 ## Documentation
 
 - Main docs: https://dwaytu.github.io/Capstone-Main/
+- Workspace navigation map: `/docs/WORKSPACE_NAVIGATION.md`
+- Railway autodeploy setup: `/docs/RAILWAY_AUTODEPLOY.md`
+- Codex workflow contract: `/.github/instructions/codex-working-contract.instructions.md`
+- Codex workflow quickstart: `/docs/CODEX_WORKFLOW.md`
+- Codex system map: `/docs/CODEX_SYSTEM_MAP.md`
+
+## Codex Verification
+
+Run the full verification pipeline from repository root:
+
+```bash
+npm run verify:all
+```
+

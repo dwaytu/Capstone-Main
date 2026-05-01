@@ -1,0 +1,167 @@
+name: Railway Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'DasiaAIO-Backend/**'
+      - 'DasiaAIO-Frontend/**'
+      - '.github/workflows/railway-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: Deploy backend service
+        required: true
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: Deploy frontend service
+        required: true
+        default: true
+        type: boolean
+      railway_environment:
+        description: Railway environment name or ID (optional override)
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-config:
+    name: Validate Railway CI Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      railway_environment: ${{ steps.resolve.outputs.railway_environment }}
+    steps:
+      - name: Resolve Railway environment target
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ENV_TARGET="${{ github.event.inputs.railway_environment }}"
+          if [ -z "$ENV_TARGET" ]; then
+            ENV_TARGET="${{ vars.RAILWAY_ENVIRONMENT }}"
+          fi
+          if [ -z "$ENV_TARGET" ]; then
+            echo "::error::Missing Railway environment. Set vars.RAILWAY_ENVIRONMENT or provide workflow input railway_environment."
+            exit 1
+          fi
+
+          echo "railway_environment=$ENV_TARGET" >> "$GITHUB_OUTPUT"
+
+      - name: Validate required repository variables
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+          for key in RAILWAY_PROJECT_ID RAILWAY_BACKEND_SERVICE RAILWAY_FRONTEND_SERVICE; do
+            if [ -z "${!key:-}" ]; then
+              echo "::error::Missing repository variable: $key"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::Configure repository variables before running this workflow."
+            exit 1
+          fi
+        env:
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_BACKEND_SERVICE: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+          RAILWAY_FRONTEND_SERVICE: ${{ vars.RAILWAY_FRONTEND_SERVICE }}
+
+      - name: Validate Railway token secret exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${RAILWAY_TOKEN:-}" ]; then
+            echo "::error::Missing secret: RAILWAY_TOKEN"
+            exit 1
+          fi
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  deploy-backend:
+    name: Deploy Backend to Railway
+    needs: validate-config
+    if: github.event_name == 'push' || inputs.deploy_backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy backend service
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_BACKEND_SERVICE: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+          RAILWAY_ENVIRONMENT: ${{ needs.validate-config.outputs.railway_environment }}
+        run: |
+          set -euo pipefail
+          railway --version
+          railway up DasiaAIO-Backend \
+            --path-as-root \
+            --ci \
+            --service "$RAILWAY_BACKEND_SERVICE" \
+            --environment "$RAILWAY_ENVIRONMENT" \
+            --project "$RAILWAY_PROJECT_ID"
+
+  deploy-frontend:
+    name: Deploy Frontend to Railway
+    needs: validate-config
+    if: github.event_name == 'push' || inputs.deploy_frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy frontend service
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_FRONTEND_SERVICE: ${{ vars.RAILWAY_FRONTEND_SERVICE }}
+          RAILWAY_ENVIRONMENT: ${{ needs.validate-config.outputs.railway_environment }}
+        run: |
+          set -euo pipefail
+          railway --version
+          railway up DasiaAIO-Frontend \
+            --path-as-root \
+            --ci \
+            --service "$RAILWAY_FRONTEND_SERVICE" \
+            --environment "$RAILWAY_ENVIRONMENT" \
+            --project "$RAILWAY_PROJECT_ID"

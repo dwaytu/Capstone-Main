@@ -711,3 +711,110 @@ SENTINEL should ultimately become:
 > A guard-first, supervisor-aware, command-grade operational platform that feels deployable, believable, and professionally designed.
 
 That is the north star.
+
+---
+
+# 27) WORKSPACE ORGANIZATION MEMORY (2026-05-01)
+
+## Intent
+Improve repository readability without risky path moves that could break imports, scripts, or deployment workflows.
+
+## Changes applied
+- Curated multi-root VS Code workspace in `Capstone Main.code-workspace`:
+  - `00 Root Governance`
+  - `01 Frontend`
+  - `02 Backend`
+  - `03 Apps`
+  - `04 Docs`
+- Added workspace/file hygiene defaults in:
+  - `Capstone Main.code-workspace`
+  - `.vscode/settings.json`
+- Hidden generated/clutter-heavy paths from Explorer/Search:
+  - `node_modules`, `target`, `tmp`, `dist`, `build`, `app-dist`, `.venv`
+- Enabled file nesting for cleaner root browsing:
+  - governance docs grouped under `README.md`
+  - `SENTINEL - Group 8.pdf` nested under `SENTINEL - Group 8.md`
+  - `package-lock.json` nested under `package.json`
+- Added navigation guide: `docs/WORKSPACE_NAVIGATION.md`
+- Linked navigation guide in `README.md` documentation section.
+
+## Rationale
+This approach makes the workspace look professional and easier to read while preserving existing runtime and build behavior.
+
+## Safe cleanup pass
+- A reversible clutter-reduction pass moved legacy implementation/audit reports and misc historical files from root into `archive/2026-05-01-safe-cleanup/`.
+- Root login screenshots were relocated to `docs/screenshots/login/` to keep evidence assets in documentation space.
+- Temporary extracted artifacts under `tmp/docx_read` were archived, and `tmp/` was cleaned.
+- Documentation references in `architecture.md` and `CHATGPT_SYSTEM_GUIDE.md` were updated to the archived audit/explanation paths.
+
+## Railway automation pass
+- Added GitHub Actions workflow `.github/workflows/railway-deploy.yml` for automated Railway deployment of backend and frontend services on `main` changes and manual dispatch.
+- Added setup guide `docs/RAILWAY_AUTODEPLOY.md` with required secret (`RAILWAY_TOKEN`) and repository variables (`RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT`, `RAILWAY_BACKEND_SERVICE`, `RAILWAY_FRONTEND_SERVICE`).
+- Added local deployment script `scripts/railway-deploy.ps1` and root npm shortcuts:
+  - `npm run deploy:railway`
+  - `npm run deploy:railway:backend`
+  - `npm run deploy:railway:frontend`
+- Added VS Code extension recommendations for workflow/deployment authoring (`github-actions`, `docker`, `yaml`, `rust-analyzer`).
+
+---
+
+# 28) ORCHESTRATION POLICY MEMORY (2026-05-01)
+
+## Leadership model
+SENTINEL orchestration now follows a software-company delegation structure:
+- CTO: `sentinel-orchestrator`
+- Department heads:
+  - `sentinel-planner`
+  - `sentinel-backend-engineer`
+  - `sentinel-frontend-engineer`
+  - `sentinel-designer`
+  - `sentinel-qa-lead`
+  - `sentinel-security-reviewer`
+  - `sentinel-release-manager`
+  - `sentinel-capstone-documenter`
+
+## Model default
+- Default model for orchestration and coding workflows is `GPT-5.3-Codex`.
+- Team manifests under `.github/agents/` and policy docs were updated to keep this default stable across new sessions.
+
+---
+
+# 29) LOCAL SMOKE + FEEDBACK SCHEMA FIX MEMORY (2026-05-01)
+
+## Backend reliability fix
+- Added missing `feedback` table bootstrap in `DasiaAIO-Backend/src/db.rs` to match existing feedback handlers (`/api/feedback`, `/api/feedback/status`) and stop runtime 500 errors on local deployments without that table.
+- Added feedback indexes:
+  - `idx_feedback_user_id`
+  - `idx_feedback_created_at`
+- Verified with `cargo check` and container rebuild (`docker compose up -d --build backend`).
+
+## Local smoke baseline (web + mobile-webview)
+- Local stack validated at:
+  - backend: `http://localhost:5000`
+  - frontend: `http://localhost:5173`
+- API health confirmed: `/api/health` returned `status: ok`.
+- Feedback API verified after fix using authenticated superadmin request to `/api/feedback` (no relation error).
+
+## Browser smoke evidence
+- Playwright artifacts written under:
+  - `DasiaAIO-Frontend/output/playwright/local-smoke-fast/`
+  - `DasiaAIO-Frontend/output/playwright/local-smoke-roles/`
+  - `DasiaAIO-Frontend/output/playwright/local-smoke-guard/`
+- Role coverage includes `superadmin`, `admin`, `supervisor`, and `guard` in desktop and Android-sized webview contexts.
+
+## Packaging checks
+- Desktop packaging validated with `npm run build:desktop` (Tauri MSI + NSIS outputs generated).
+- Android wrapper validated with:
+  - `npm run build:android` (Vite mobile build + Capacitor sync)
+  - `apps/android-capacitor/android/gradlew.bat :app:assembleDebug` (debug APK build success)
+
+---
+
+# 30) GUARD MAP TILE PARITY MEMORY (2026-05-01)
+
+- Guard map rendering no longer depends on OpenStreetMap embed iframe visuals alone; it now uses a Leaflet map surface with the same theme-aware Carto tile source policy used by elevated command map views (`dark_all` for dark theme, `rastertiles/voyager` for light theme).
+- Implemented as lazy-loaded guard map canvas to preserve existing Jest guard-dashboard test stability while improving runtime visual parity.
+- Verification run:
+  - `npm test -- --runTestsByPath src/__tests__/guardDashboardRedesign.test.tsx --runInBand` (pass)
+  - `npm run build` in frontend (pass)
+  - Browser evidence screenshot: `DasiaAIO-Frontend/output/playwright/guard-map-carto-parity.png`.
