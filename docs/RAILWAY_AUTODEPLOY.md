@@ -14,16 +14,17 @@ In Railway project `SENTINEL`:
 
 1. Open service **Backend** (`9ad1e8f5-fb2f-4636-9dfd-a494b87ad0f6`)
 2. Go to service **Settings > Source**
-3. Connect GitHub repo: `dwaytu/Capstone-Main`
+3. Connect GitHub repo: `dwaytu/DasiaAIO-Backend`
 4. Set:
    - Branch: `main`
-   - Root Directory: `DasiaAIO-Backend`
+   - Root Directory: repository root
 5. Enable automatic deploy on push
 
 Repeat for service **Frontend** (`84f3c619-05ff-43aa-90c4-b524339fd1b3`) with:
 
+- Source repo: `dwaytu/DasiaAIO-Frontend`
 - Branch: `main`
-- Root Directory: `DasiaAIO-Frontend`
+- Root Directory: repository root
 
 ## 2) Keep build/deploy contracts in repo
 

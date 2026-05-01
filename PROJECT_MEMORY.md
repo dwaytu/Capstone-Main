@@ -826,8 +826,16 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Deployment model is now Railway-native GitHub autodeploy per service (Backend + Frontend), with service source wiring managed in Railway UI and branch/root-directory mapping owned there.
 - The repo-local GitHub Actions workflow `.github/workflows/railway-deploy.yml` was removed to prevent repeated CI auth failures from GitHub-hosted runners.
 - `docs/RAILWAY_AUTODEPLOY.md` now documents the canonical setup:
-  - Backend root: `DasiaAIO-Backend`
-  - Frontend root: `DasiaAIO-Frontend`
-  - Branch: `main`
+  - Backend source repo: `dwaytu/DasiaAIO-Backend` (branch `main`)
+  - Frontend source repo: `dwaytu/DasiaAIO-Frontend` (branch `main`)
   - Auto-deploy on push enabled in Railway service source settings.
 - Local manual fallback remains available via `scripts/railway-deploy.ps1` and root `npm run deploy:railway*` commands.
+
+## Finalization snapshot
+- Railway service source status:
+  - Frontend auto-deploy: enabled
+  - Backend auto-deploy: enabled
+  - Wait for CI: disabled on both
+- Deploy-trigger pushes executed to service repos without touching local WIP files:
+  - Frontend trigger commit: `87d30fc` (`dwaytu/DasiaAIO-Frontend`)
+  - Backend trigger commit: `9235b71` (`dwaytu/DasiaAIO-Backend`)
