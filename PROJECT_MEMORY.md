@@ -818,3 +818,16 @@ SENTINEL orchestration now follows a software-company delegation structure:
   - `npm test -- --runTestsByPath src/__tests__/guardDashboardRedesign.test.tsx --runInBand` (pass)
   - `npm run build` in frontend (pass)
   - Browser evidence screenshot: `DasiaAIO-Frontend/output/playwright/guard-map-carto-parity.png`.
+
+---
+
+# 31) RAILWAY DEPLOY MODEL MEMORY (2026-05-01)
+
+- Deployment model is now Railway-native GitHub autodeploy per service (Backend + Frontend), with service source wiring managed in Railway UI and branch/root-directory mapping owned there.
+- The repo-local GitHub Actions workflow `.github/workflows/railway-deploy.yml` was removed to prevent repeated CI auth failures from GitHub-hosted runners.
+- `docs/RAILWAY_AUTODEPLOY.md` now documents the canonical setup:
+  - Backend root: `DasiaAIO-Backend`
+  - Frontend root: `DasiaAIO-Frontend`
+  - Branch: `main`
+  - Auto-deploy on push enabled in Railway service source settings.
+- Local manual fallback remains available via `scripts/railway-deploy.ps1` and root `npm run deploy:railway*` commands.
