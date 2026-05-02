@@ -7,6 +7,8 @@
     "release:notes": "node scripts/generate-release-notes.js",
     "release:rename-artifact": "node scripts/rename-artifacts.js",
     "verify:all": "powershell -ExecutionPolicy Bypass -File scripts/codex-verify.ps1",
+    "verify:capstone:quick": "powershell -ExecutionPolicy Bypass -File scripts/capstone-readiness.ps1 -Mode quick",
+    "verify:capstone:full": "powershell -ExecutionPolicy Bypass -File scripts/capstone-readiness.ps1 -Mode full",
     "deploy:railway": "powershell -ExecutionPolicy Bypass -File scripts/railway-deploy.ps1 -Target both",
     "deploy:railway:backend": "powershell -ExecutionPolicy Bypass -File scripts/railway-deploy.ps1 -Target backend",
     "deploy:railway:frontend": "powershell -ExecutionPolicy Bypass -File scripts/railway-deploy.ps1 -Target frontend",

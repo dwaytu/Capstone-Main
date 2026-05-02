@@ -1,0 +1,60 @@
+{
+  "generatedAt": "2026-05-02T16:06:17.480Z",
+  "baseUrl": "http://127.0.0.1:5173",
+  "outputDir": "docs/plan/capstone-readiness-20260502/evidence/phase5-smoke-2026-05-02T16-06-11-404Z",
+  "summary": {
+    "total": 2,
+    "failed": 0,
+    "a11yChecks": 2,
+    "a11yFailed": 0
+  },
+  "results": [
+    {
+      "mode": "desktop-web",
+      "role": "superadmin",
+      "ok": true,
+      "screenshot": "docs/plan/capstone-readiness-20260502/evidence/phase5-smoke-2026-05-02T16-06-11-404Z/desktop-web-superadmin.png",
+      "consoleErrors": [
+        "WebSocket connection to 'wss://backend-production-0c47.up.railway.app/api/tracking/ws' failed: HTTP Authentication failed; no valid credentials available",
+        "WebSocket connection to 'wss://backend-production-0c47.up.railway.app/api/tracking/ws' failed: HTTP Authentication failed; no valid credentials available"
+      ],
+      "a11y": null,
+      "a11yChecks": []
+    },
+    {
+      "mode": "android-webview",
+      "role": "guard",
+      "ok": true,
+      "screenshot": "docs/plan/capstone-readiness-20260502/evidence/phase5-smoke-2026-05-02T16-06-11-404Z/android-webview-guard.png",
+      "consoleErrors": [],
+      "a11y": {
+        "emergencyPillCount": 3,
+        "emergencyPillMinHeight": 44,
+        "panicButtonWidth": 64,
+        "panicButtonHeight": 64,
+        "mobileNavButtonCount": 0,
+        "mobileNavMinHeight": null
+      },
+      "a11yChecks": [
+        {
+          "key": "emergency-contacts-touch-target",
+          "pass": true,
+          "observed": 44,
+          "threshold": 44
+        },
+        {
+          "key": "panic-button-touch-target",
+          "pass": true,
+          "observed": {
+            "width": 64,
+            "height": 64
+          },
+          "threshold": {
+            "width": 64,
+            "height": 64
+          }
+        }
+      ]
+    }
+  ]
+}
