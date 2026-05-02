@@ -1266,3 +1266,31 @@ SENTINEL orchestration now follows a software-company delegation structure:
   - `role-guard-dashboard-mobile.png`
 - Capture evidence report:
   - `docs/assets/readme-screenshot-refresh-report.json`
+
+---
+
+# 45) DARKMODE README CAPTURE + AO WINDOWS STABILIZATION (2026-05-03)
+
+## README screenshot refresh (dark mode)
+- Added repeatable capture utility:
+  - `scripts/refresh-readme-screenshots-dark.mjs`
+- Regenerated role dashboard images used by root `README.md` in dark mode:
+  - `docs/assets/role-superadmin-dashboard-desktop.png`
+  - `docs/assets/role-admin-dashboard-desktop.png`
+  - `docs/assets/role-supervisor-dashboard-desktop.png`
+  - `docs/assets/role-guard-dashboard-desktop.png`
+  - `docs/assets/role-superadmin-dashboard-mobile.png`
+  - `docs/assets/role-admin-dashboard-mobile.png`
+  - `docs/assets/role-supervisor-dashboard-mobile.png`
+  - `docs/assets/role-guard-dashboard-mobile.png`
+- Screenshot mode adjusted to viewport capture (`fullPage: false`) to avoid oversized blank trailing areas in mobile images.
+- Updated root `README.md` line to state that the visual set was refreshed in dark mode.
+
+## AO stabilization on Windows
+- Verified AO runtime state:
+  - `ao start` -> running (dashboard at `http://localhost:3000`)
+  - `ao status` -> project loaded (`capstone-main`)
+- Addressed Windows-specific `ao doctor` failure path:
+  - AO package expected Unix shell checks (`ao-doctor.sh` + `/bin/bash`) and exited non-zero on Windows.
+  - Added a Windows-safe doctor behavior by patching local AO CLI command logic to skip shell-script doctor stage on `win32` and continue with config-aware checks.
+  - Post-fix result: `ao doctor` exits successfully with warning-only output for optional notifier configuration.

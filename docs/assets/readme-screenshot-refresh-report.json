@@ -1,15 +1,17 @@
 {
-  "generatedAt": "2026-05-02T17:01:27.810Z",
+  "generatedAt": "2026-05-02T19:58:45.905Z",
   "frontendBaseUrl": "http://127.0.0.1:5173",
-  "mode": "ui-login-capture",
+  "mode": "ui-login-capture-darkmode",
   "captures": [
     {
       "role": "superadmin",
       "variant": "desktop",
       "route": "/dashboard",
-      "finalUrl": "http://127.0.0.1:5173/operations-map",
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
       "screenshot": "docs/assets/role-superadmin-dashboard-desktop.png",
-      "dismissed": [],
+      "dismissed": [
+        "location-consent"
+      ],
       "consoleErrors": [],
       "networkErrors": []
     },
@@ -27,7 +29,7 @@
       "role": "admin",
       "variant": "desktop",
       "route": "/dashboard",
-      "finalUrl": "http://127.0.0.1:5173/operations-map",
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
       "screenshot": "docs/assets/role-admin-dashboard-desktop.png",
       "dismissed": [],
       "consoleErrors": [],
@@ -47,7 +49,7 @@
       "role": "supervisor",
       "variant": "desktop",
       "route": "/dashboard",
-      "finalUrl": "http://127.0.0.1:5173/operations-map",
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
       "screenshot": "docs/assets/role-supervisor-dashboard-desktop.png",
       "dismissed": [],
       "consoleErrors": [],

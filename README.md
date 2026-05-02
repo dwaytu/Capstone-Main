@@ -38,7 +38,7 @@ Capstone Main/
 
 ## Platform Visuals
 
-Screenshots below were refreshed from the current local build on May 3, 2026.
+Screenshots below were refreshed from the current local build in **dark mode** on May 3, 2026.
 
 <table>
   <tr>
