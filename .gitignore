@@ -23,3 +23,15 @@ apps/desktop-tauri/node_modules/
 apps/desktop-tauri/src-tauri/target/
 apps/desktop-tauri/src-tauri/target-alt/
 apps/desktop-tauri/src-tauri/target-release/
+
+# Local tooling/vendor clones (kept outside VCS history)
+awesome-codex-skills/
+external-tools/
+
+# Local runtime scratch artifacts
+tmp/*.log
+tmp/*.err.log
+tmp/*.out.log
+tmp/*.json
+tmp/*.cjs
+tmp/*.ps1

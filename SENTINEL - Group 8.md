@@ -315,6 +315,8 @@ Process
 - Shift scheduling, attendance validation, no-show detection, replacement coordination, and supervisor oversight.
 - Firearm issuance and return workflows with permit validation, maintenance scheduling, and custody traceability.
 - MDR ingestion workflows that stage imported roster rows, apply matching and reviewer resolution, and commit or reject batches with auditable status transitions.
+- MDR validation workflows that enforce row-level quality checks, duplicate identifier detection, and pending/error resolution before batch commit is allowed.
+- MDR compliance workflows that produce batch-level section/status summaries, validation issue counts, and MDR operations-health indicators for command monitoring.
 - Vehicle allocation, driver assignment, trip lifecycle management, and preventive and corrective maintenance tracking.
 - Incident reporting, emergency escalation, support ticket handling, notification delivery, and live operational monitoring.
 - Guard movement reconstruction, including active roster monitoring, historical trail replay, patrol reconstruction, and geofence escalation.

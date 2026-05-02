@@ -38,22 +38,40 @@ Capstone Main/
 
 ## Platform Visuals
 
+Screenshots below were refreshed from the current local build on May 3, 2026.
+
 <table>
   <tr>
     <td align="center"><strong>Superadmin Desktop</strong></td>
-    <td align="center"><strong>Guard Mobile</strong></td>
-  </tr>
-  <tr>
-    <td><img src="./docs/assets/role-superadmin-dashboard-desktop.png" alt="Superadmin desktop dashboard" width="100%" /></td>
-    <td><img src="./docs/assets/role-guard-dashboard-mobile.png" alt="Guard mobile dashboard" width="100%" /></td>
-  </tr>
-  <tr>
-    <td align="center"><strong>Supervisor Desktop</strong></td>
     <td align="center"><strong>Admin Desktop</strong></td>
   </tr>
   <tr>
-    <td><img src="./docs/assets/role-supervisor-dashboard-desktop.png" alt="Supervisor desktop dashboard" width="100%" /></td>
+    <td><img src="./docs/assets/role-superadmin-dashboard-desktop.png" alt="Superadmin desktop dashboard" width="100%" /></td>
     <td><img src="./docs/assets/role-admin-dashboard-desktop.png" alt="Admin desktop dashboard" width="100%" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Supervisor Desktop</strong></td>
+    <td align="center"><strong>Guard Desktop</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/assets/role-supervisor-dashboard-desktop.png" alt="Supervisor desktop dashboard" width="100%" /></td>
+    <td><img src="./docs/assets/role-guard-dashboard-desktop.png" alt="Guard desktop dashboard" width="100%" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Superadmin Mobile</strong></td>
+    <td align="center"><strong>Admin Mobile</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/assets/role-superadmin-dashboard-mobile.png" alt="Superadmin mobile dashboard" width="100%" /></td>
+    <td><img src="./docs/assets/role-admin-dashboard-mobile.png" alt="Admin mobile dashboard" width="100%" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Supervisor Mobile</strong></td>
+    <td align="center"><strong>Guard Mobile</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/assets/role-supervisor-dashboard-mobile.png" alt="Supervisor mobile dashboard" width="100%" /></td>
+    <td><img src="./docs/assets/role-guard-dashboard-mobile.png" alt="Guard mobile dashboard" width="100%" /></td>
   </tr>
 </table>
 

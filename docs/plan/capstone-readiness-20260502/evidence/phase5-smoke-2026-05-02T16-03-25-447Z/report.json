@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-05-02T16:03:37.842Z",
+  "baseUrl": "http://127.0.0.1:5173",
+  "outputDir": "docs/plan/capstone-readiness-20260502/evidence/phase5-smoke-2026-05-02T16-03-25-447Z",
+  "summary": {
+    "total": 2,
+    "failed": 2,
+    "a11yChecks": 0,
+    "a11yFailed": 0
+  },
+  "results": [
+    {
+      "role": "superadmin",
+      "mode": "desktop-web",
+      "ok": false,
+      "error": "login failed: Invalid credentials",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 ()",
+        "Failed to load resource: the server responded with a status of 400 ()"
+      ]
+    },
+    {
+      "role": "guard",
+      "mode": "android-webview",
+      "ok": false,
+      "error": "login failed: Invalid credentials",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 400 ()"
+      ]
+    }
+  ]
+}

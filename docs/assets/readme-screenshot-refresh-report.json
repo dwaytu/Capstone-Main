@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-05-02T17:01:27.810Z",
+  "frontendBaseUrl": "http://127.0.0.1:5173",
+  "mode": "ui-login-capture",
+  "captures": [
+    {
+      "role": "superadmin",
+      "variant": "desktop",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:5173/operations-map",
+      "screenshot": "docs/assets/role-superadmin-dashboard-desktop.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "superadmin",
+      "variant": "mobile",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
+      "screenshot": "docs/assets/role-superadmin-dashboard-mobile.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "admin",
+      "variant": "desktop",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:5173/operations-map",
+      "screenshot": "docs/assets/role-admin-dashboard-desktop.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "admin",
+      "variant": "mobile",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
+      "screenshot": "docs/assets/role-admin-dashboard-mobile.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "supervisor",
+      "variant": "desktop",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:5173/operations-map",
+      "screenshot": "docs/assets/role-supervisor-dashboard-desktop.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "supervisor",
+      "variant": "mobile",
+      "route": "/dashboard",
+      "finalUrl": "http://127.0.0.1:5173/dashboard",
+      "screenshot": "docs/assets/role-supervisor-dashboard-mobile.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "guard",
+      "variant": "desktop",
+      "route": "/overview",
+      "finalUrl": "http://127.0.0.1:5173/overview",
+      "screenshot": "docs/assets/role-guard-dashboard-desktop.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "guard",
+      "variant": "mobile",
+      "route": "/overview",
+      "finalUrl": "http://127.0.0.1:5173/overview",
+      "screenshot": "docs/assets/role-guard-dashboard-mobile.png",
+      "dismissed": [],
+      "consoleErrors": [],
+      "networkErrors": []
+    }
+  ]
+}

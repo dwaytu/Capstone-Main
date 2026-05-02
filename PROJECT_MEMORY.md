@@ -1241,3 +1241,28 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Notes
 - Desktop smoke capture used controlled session injection to avoid auth-rate-limit instability during repeated UI logins.
 - Controlled desktop capture surfaced non-blocking websocket auth warnings in console; these did not block readiness gates.
+
+---
+
+# 44) AO-FIRST USER PREFERENCE + README SCREENSHOT REFRESH (2026-05-03)
+
+## User workflow preference
+- The user explicitly requested AO as the default operating mode for all future prompts in this workspace.
+- Operational rule for new sessions:
+  - start from AO workflow first (`agent-orchestrator` + repo `docs/ao-team` prompts),
+  - only fall back to direct single-agent execution if AO is unavailable or blocked,
+  - keep coding tasks on `GPT-5.3-Codex` per existing orchestration policy.
+
+## README visual refresh
+- Replaced root README dashboard imagery with current-role screenshots generated from the active local SENTINEL build (not legacy captures).
+- Refreshed assets under `docs/assets/`:
+  - `role-superadmin-dashboard-desktop.png`
+  - `role-admin-dashboard-desktop.png`
+  - `role-supervisor-dashboard-desktop.png`
+  - `role-guard-dashboard-desktop.png`
+  - `role-superadmin-dashboard-mobile.png`
+  - `role-admin-dashboard-mobile.png`
+  - `role-supervisor-dashboard-mobile.png`
+  - `role-guard-dashboard-mobile.png`
+- Capture evidence report:
+  - `docs/assets/readme-screenshot-refresh-report.json`

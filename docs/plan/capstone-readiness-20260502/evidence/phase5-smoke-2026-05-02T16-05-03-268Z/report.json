@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-05-02T16:05:09.392Z",
+  "baseUrl": "http://127.0.0.1:5173",
+  "outputDir": "docs/plan/capstone-readiness-20260502/evidence/phase5-smoke-2026-05-02T16-05-03-268Z",
+  "summary": {
+    "total": 2,
+    "failed": 0,
+    "a11yChecks": 2,
+    "a11yFailed": 0
+  },
+  "results": [
+    {
+      "mode": "desktop-web",
+      "role": "superadmin",
+      "ok": true,
+      "screenshot": "docs/plan/capstone-readiness-20260502/evidence/phase5-smoke-2026-05-02T16-05-03-268Z/desktop-web-superadmin.png",
+      "consoleErrors": [
+        "Error fetching data: TypeError: users2.filter is not a function\n    at fetchData (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:391:38)",
+        "Error fetching data: TypeError: users2.filter is not a function\n    at fetchData (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:391:38)",
+        "[pageerror] users.filter is not a function",
+        "Error handled by React Router default ErrorBoundary: TypeError: users.filter is not a function\n    at SuperadminDashboard (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:639:33)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:14630:28)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:15972:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19169:15)\n    at performConcurrentWorkOnRoot (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18728:83)\n    at workLoop (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:197:42)",
+        "Error handled by React Router default ErrorBoundary: TypeError: users.filter is not a function\n    at SuperadminDashboard (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:639:33)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:14630:28)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:15972:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19169:15)\n    at performConcurrentWorkOnRoot (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18728:83)\n    at workLoop (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:197:42)",
+        "[pageerror] users.filter is not a function",
+        "Error handled by React Router default ErrorBoundary: TypeError: users.filter is not a function\n    at SuperadminDashboard (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:639:33)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:14630:28)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:15972:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18786:28)\n    at performConcurrentWorkOnRoot (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18734:30)",
+        "Error handled by React Router default ErrorBoundary: TypeError: users.filter is not a function\n    at SuperadminDashboard (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:639:33)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:14630:28)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:15972:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18786:28)\n    at performConcurrentWorkOnRoot (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18734:30)",
+        "The above error occurred in the <SuperadminDashboard> component:\n\n    at SuperadminDashboard (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:251:32)\n    at Suspense\n    at SuspenseWrapper (http://127.0.0.1:5173/src/router/index.tsx:93:28)\n    at LegacyPage (http://127.0.0.1:5173/src/router/index.tsx:144:23)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:6395:26)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:7177:26)\n    at RoleGuard (http://127.0.0.1:5173/src/router/guards.tsx:92:29)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:6395:26)\n    at Outlet (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:7177:26)\n    at div\n    at AppShell (http://127.0.0.1:5173/src/components/layout/AppShell.tsx:33:3)\n    at RenderedRoute (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:6395:26)\n    at RenderErrorBoundary (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:6305:5)\n    at DataRoutes (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:7093:3)\n    at Router (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:7186:13)\n    at RouterProvider (http://127.0.0.1:5173/node_modules/.vite/deps/react-router.js?v=e18c44ea:6861:3)\n    at LocationProvider (http://127.0.0.1:5173/src/context/LocationContext.tsx:40:36)\n    at UIProvider (http://127.0.0.1:5173/src/context/UIContext.tsx:59:30)\n    at AuthProvider (http://127.0.0.1:5173/src/context/AuthContext.tsx:41:32)\n    at ErrorBoundary (http://127.0.0.1:5173/src/components/ErrorBoundary.tsx:8:5)\n    at App\n    at ThemeProvider (http://127.0.0.1:5173/src/context/ThemeProvider.tsx:26:3)\n\nReact will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary.",
+        "React Router caught the following error during render TypeError: users.filter is not a function\n    at SuperadminDashboard (http://127.0.0.1:5173/src/components/admin/SuperadminDashboard.tsx:639:33)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:11596:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:14630:28)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:15972:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19806:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19251:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19190:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:19169:15)\n    at recoverFromConcurrentError (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18786:28)\n    at performConcurrentWorkOnRoot (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-LPF6KSF2.js?v=16d4ea1c:18734:30)"
+      ],
+      "a11y": null,
+      "a11yChecks": []
+    },
+    {
+      "mode": "android-webview",
+      "role": "guard",
+      "ok": true,
+      "screenshot": "docs/plan/capstone-readiness-20260502/evidence/phase5-smoke-2026-05-02T16-05-03-268Z/android-webview-guard.png",
+      "consoleErrors": [],
+      "a11y": {
+        "emergencyPillCount": 3,
+        "emergencyPillMinHeight": 44,
+        "panicButtonWidth": 64,
+        "panicButtonHeight": 64,
+        "mobileNavButtonCount": 0,
+        "mobileNavMinHeight": null
+      },
+      "a11yChecks": [
+        {
+          "key": "emergency-contacts-touch-target",
+          "pass": true,
+          "observed": 44,
+          "threshold": 44
+        },
+        {
+          "key": "panic-button-touch-target",
+          "pass": true,
+          "observed": {
+            "width": 64,
+            "height": 64
+          },
+          "threshold": {
+            "width": 64,
+            "height": 64
+          }
+        }
+      ]
+    }
+  ]
+}
