@@ -353,7 +353,7 @@ Generate selected artifacts sequentially (file I/O is fast, no benefit from para
 gsd-sdk query generate-dev-preferences --analysis "$ANALYSIS_PATH" --json
 ```
 
-Display: "✓ Generated $gsd-dev-preferences at D:/Dwight/Capstone Main/.codex/commands/gsd/dev-preferences.md"
+Display: "✓ Generated $gsd-dev-preferences at D:/Dwight/Capstone Main/.codex/skills/gsd-dev-preferences/SKILL.md"
 
 **For AGENTS.md profile section (if selected):**
 
@@ -412,7 +412,7 @@ Your profile:    D:/Dwight/Capstone Main/.codex/get-shit-done/USER-PROFILE.md
 Then list paths for each generated artifact:
 ```
 Artifacts:
-  ✓ $gsd-dev-preferences   D:/Dwight/Capstone Main/.codex/commands/gsd/dev-preferences.md
+  ✓ $gsd-dev-preferences   D:/Dwight/Capstone Main/.codex/skills/gsd-dev-preferences/SKILL.md
   ✓ AGENTS.md section       ./AGENTS.md
   ✓ Global AGENTS.md        D:/Dwight/Capstone Main/.codex/AGENTS.md
 ```

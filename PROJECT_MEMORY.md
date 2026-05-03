@@ -1319,3 +1319,27 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Use GSD for complex multi-phase work (planning/execution/verification loops), with minimal surface to reduce overhead.
 - Use Caveman on-demand (`$caveman lite`) for long debugging/planning sessions to reduce token burn.
 - Keep Caveman off for panel-facing prose/readme/capstone manuscript writing when polished language is needed.
+
+---
+
+# 47) GSD BROWNFIELD BOOTSTRAP FOR SENTINEL (2026-05-03)
+
+## What changed
+- Upgraded repo-local GSD install from minimal to full surface:
+  - command used: `npx get-shit-done-cc@latest --codex --local`
+  - installed full skill/agent/hook set under `.codex/` for brownfield workflows like `gsd-map-codebase`.
+- Verified brownfield mapper prerequisites:
+  - `agents_installed: true`
+  - `missing_agents: []`
+
+## Planning artifacts initialized for existing SENTINEL codebase
+- Created `.planning/` baseline for brownfield execution (not a new product):
+  - `.planning/PROJECT.md`
+  - `.planning/REQUIREMENTS.md`
+  - `.planning/ROADMAP.md`
+  - `.planning/STATE.md`
+  - `.planning/codebase/{architecture,concerns,conventions,integrations,stack,structure,testing}.md`
+
+## Working mode
+- Caveman explicitly enabled by user for active interaction.
+- AO remains disabled; direct Codex + GSD execution path remains default.

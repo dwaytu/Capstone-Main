@@ -272,9 +272,20 @@ Phases needing validation: run `$gsd-validate-phase {N}` for each flagged phase.
 
 ## ▶ Next Up — [${PROJECT_CODE}] ${PROJECT_TITLE}
 
-**Plan gap closure** — create phases to complete milestone
+**Close the gaps inline** — gap planning happens as part of this audit's
+output (see the Unsatisfied Requirements, Cross-Phase Issues, Broken Flows,
+and Nyquist Coverage sections above). Insert one closure phase per gap (or
+per group of related gaps) using the standard phase chain:
 
-$gsd-plan-milestone-gaps
+$gsd-phase --insert <N> "Close gap: <REQ-ID> — <description>"
+$gsd-discuss-phase <N>
+$gsd-plan-phase <N>
+$gsd-execute-phase <N>
+
+For Nyquist-coverage gaps flagged in the table above, prefer running
+`$gsd-validate-phase <N>` for each flagged phase (and `$gsd-secure-phase
+<N>` if SECURITY.md was flagged) before inserting a new closure phase —
+they may close the gap retroactively without a new phase.
 
 ───────────────────────────────────────────────────────────────
 
@@ -312,9 +323,13 @@ All requirements met. No critical blockers. Accumulated tech debt needs review.
 
 $gsd-complete-milestone {version}
 
-**B. Plan cleanup phase** — address debt before completing
+**B. Plan a cleanup phase** — address the debt above before completing.
+Insert a closure phase using the standard chain:
 
-$gsd-plan-milestone-gaps
+$gsd-phase --insert <N> "Address tech debt: <area>"
+$gsd-discuss-phase <N>
+$gsd-plan-phase <N>
+$gsd-execute-phase <N>
 
 ───────────────────────────────────────────────────────────────
 </offer_next>
