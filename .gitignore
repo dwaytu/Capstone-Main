@@ -29,6 +29,7 @@ awesome-codex-skills/
 external-tools/
 
 # Local runtime scratch artifacts
+tmp/run-logs/
 tmp/*.log
 tmp/*.err.log
 tmp/*.out.log
