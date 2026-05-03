@@ -1,5 +1,5 @@
 {
-    "checkedAt":  "2026-05-03T00:06:51.7558866+08:00",
+    "checkedAt":  "2026-05-03T15:32:47.4301089+08:00",
     "mode":  "full",
     "baseUrl":  "http://127.0.0.1:5000",
     "summary":  {
@@ -20,7 +20,7 @@
                                     "command":  "npm run build",
                                     "directory":  "D:\\Dwight\\Capstone Main\\DasiaAIO-Frontend"
                                 },
-                       "checkedAt":  "2026-05-03T00:06:42.7816202+08:00"
+                       "checkedAt":  "2026-05-03T15:32:45.0177194+08:00"
                    },
                    {
                        "name":  "backend_cargo_check",
@@ -32,7 +32,7 @@
                                     "command":  "cargo check",
                                     "directory":  "D:\\Dwight\\Capstone Main\\DasiaAIO-Backend"
                                 },
-                       "checkedAt":  "2026-05-03T00:06:48.1170640+08:00"
+                       "checkedAt":  "2026-05-03T15:32:45.4406147+08:00"
                    },
                    {
                        "name":  "backend_cargo_test",
@@ -44,7 +44,7 @@
                                     "command":  "cargo test",
                                     "directory":  "D:\\Dwight\\Capstone Main\\DasiaAIO-Backend"
                                 },
-                       "checkedAt":  "2026-05-03T00:06:50.1543346+08:00"
+                       "checkedAt":  "2026-05-03T15:32:46.7903929+08:00"
                    },
                    {
                        "name":  "api_health",
@@ -62,10 +62,10 @@
                                                                    }
                                                  },
                                     "status":  "ok",
-                                    "timestamp":  "2026-05-02T16:06:50.206707110+00:00",
-                                    "uptimeSeconds":  202
+                                    "timestamp":  "2026-05-03T07:32:46.812100600+00:00",
+                                    "uptimeSeconds":  76
                                 },
-                       "checkedAt":  "2026-05-03T00:06:50.2522571+08:00"
+                       "checkedAt":  "2026-05-03T15:32:46.8655471+08:00"
                    },
                    {
                        "name":  "api_login",
@@ -77,7 +77,7 @@
                                     "tokenIssued":  true,
                                     "endpoint":  "/api/login"
                                 },
-                       "checkedAt":  "2026-05-03T00:06:50.3731118+08:00"
+                       "checkedAt":  "2026-05-03T15:32:46.9271225+08:00"
                    },
                    {
                        "name":  "api_mdr_ops_health",
@@ -93,7 +93,7 @@
                                     "reviewingBatches":  0,
                                     "staleReviewingBatches24h":  0
                                 },
-                       "checkedAt":  "2026-05-03T00:06:50.3910691+08:00"
+                       "checkedAt":  "2026-05-03T15:32:46.9496916+08:00"
                    },
                    {
                        "name":  "api_tracking_map_data",
@@ -103,10 +103,10 @@
                        "message":  "ok",
                        "data":  {
                                     "activeTrips":  0,
-                                    "trackingPoints":  0,
+                                    "trackingPoints":  1,
                                     "clientSites":  0
                                 },
-                       "checkedAt":  "2026-05-03T00:06:50.4198340+08:00"
+                       "checkedAt":  "2026-05-03T15:32:46.9746916+08:00"
                    },
                    {
                        "name":  "tracking_smoke_script",
@@ -120,15 +120,14 @@
                                     "[3/5] Low-accuracy heartbeat should be rejected (accepted=false)...",
                                     "[4/5] High-accuracy heartbeat should be accepted...",
                                     "[5/5] Map snapshot verification...",
-                                    "NOTE: high-accuracy sample not visible in current map snapshot for this role/context; heartbeat acceptance already verified.",
                                     "PASS: tracking smoke test succeeded.",
                                     {
                                         "baseUrl":  "http://127.0.0.1:5000",
                                         "command":  "tracking_smoke_test.ps1",
-                                        "trackingIdentifier":  "supervisor"
+                                        "trackingIdentifier":  "guard"
                                     }
                                 ],
-                       "checkedAt":  "2026-05-03T00:06:51.7221997+08:00"
+                       "checkedAt":  "2026-05-03T15:32:47.4237031+08:00"
                    }
                ]
 }

@@ -1,0 +1,4 @@
+{
+    "statusCode":  201,
+    "responseBody":  "{\"incidentId\":\"c117bef1-d33a-4878-9846-4c3e6c904420\",\"message\":\"Incident reported successfully\"}"
+}

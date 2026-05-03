@@ -1,0 +1,102 @@
+[
+    {
+        "role":  "superadmin",
+        "endpoint":  "/api/incidents",
+        "status":  200
+    },
+    {
+        "role":  "superadmin",
+        "endpoint":  "/api/tracking/map-data",
+        "status":  200
+    },
+    {
+        "role":  "superadmin",
+        "endpoint":  "/api/tracking/consent",
+        "status":  200
+    },
+    {
+        "role":  "superadmin",
+        "endpoint":  "/api/alerts/predictive",
+        "status":  200
+    },
+    {
+        "role":  "superadmin",
+        "endpoint":  "/api/trips",
+        "status":  200
+    },
+    {
+        "role":  "admin",
+        "endpoint":  "/api/incidents",
+        "status":  200
+    },
+    {
+        "role":  "admin",
+        "endpoint":  "/api/tracking/map-data",
+        "status":  200
+    },
+    {
+        "role":  "admin",
+        "endpoint":  "/api/tracking/consent",
+        "status":  200
+    },
+    {
+        "role":  "admin",
+        "endpoint":  "/api/alerts/predictive",
+        "status":  200
+    },
+    {
+        "role":  "admin",
+        "endpoint":  "/api/trips",
+        "status":  200
+    },
+    {
+        "role":  "supervisor",
+        "endpoint":  "/api/incidents",
+        "status":  200
+    },
+    {
+        "role":  "supervisor",
+        "endpoint":  "/api/tracking/map-data",
+        "status":  200
+    },
+    {
+        "role":  "supervisor",
+        "endpoint":  "/api/tracking/consent",
+        "status":  200
+    },
+    {
+        "role":  "supervisor",
+        "endpoint":  "/api/alerts/predictive",
+        "status":  200
+    },
+    {
+        "role":  "supervisor",
+        "endpoint":  "/api/trips",
+        "status":  200
+    },
+    {
+        "role":  "guard",
+        "endpoint":  "/api/incidents",
+        "status":  200
+    },
+    {
+        "role":  "guard",
+        "endpoint":  "/api/tracking/map-data",
+        "status":  200
+    },
+    {
+        "role":  "guard",
+        "endpoint":  "/api/tracking/consent",
+        "status":  200
+    },
+    {
+        "role":  "guard",
+        "endpoint":  "/api/alerts/predictive",
+        "status":  403
+    },
+    {
+        "role":  "guard",
+        "endpoint":  "/api/trips",
+        "status":  403
+    }
+]

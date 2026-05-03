@@ -7,27 +7,27 @@
 
 ### Identity and Governance
 
-- [ ] **AUTH-01**: Role-based login supports `guard`, `supervisor`, `admin`, `superadmin`.
-- [ ] **AUTH-02**: Protected routes enforce role authorization and session validity.
-- [ ] **AUTH-03**: Legal/policy acceptance gating is recorded and auditable.
+- [x] **AUTH-01**: Role-based login supports `guard`, `supervisor`, `admin`, `superadmin`.
+- [x] **AUTH-02**: Protected routes enforce role authorization and session validity.
+- [x] **AUTH-03**: Legal/policy acceptance gating is recorded and auditable.
 
 ### Operations Command and Staffing
 
-- [ ] **OPS-01**: Elevated roles can access dashboard, approvals, schedule, and alerts via operational shell.
-- [ ] **OPS-02**: Shift/swap and replacement flows function with controlled degraded handling when backend parity endpoints are unavailable.
-- [ ] **OPS-03**: Mission/trip/assignment views remain role-appropriate and operationally usable.
+- [x] **OPS-01**: Elevated roles can access dashboard, approvals, schedule, and alerts via operational shell.
+- [x] **OPS-02**: Shift/swap and replacement flows function with controlled degraded handling when backend parity endpoints are unavailable.
+- [x] **OPS-03**: Mission/trip/assignment views remain role-appropriate and operationally usable.
 
 ### Field Guard Workflow
 
-- [ ] **GRD-01**: Guard mission workspace supports check-in/out and incident submission.
-- [ ] **GRD-02**: Guard SOS and emergency-contact actions remain accessible on mobile.
-- [ ] **GRD-03**: Offline queue preserves critical field actions until connectivity is restored.
+- [x] **GRD-01**: Guard mission workspace supports check-in/out and incident submission.
+- [x] **GRD-02**: Guard SOS and emergency-contact actions remain accessible on mobile.
+- [x] **GRD-03**: Offline queue preserves critical field actions until connectivity is restored.
 
 ### Asset and Compliance
 
-- [ ] **AST-01**: Firearm and armored-car management workflows are available to authorized roles.
-- [ ] **AST-02**: Permit/compliance checks and status surfaces are visible and actionable.
-- [ ] **AST-03**: MDR import staging/review/commit flow is available with guarded commit behavior.
+- [x] **AST-01**: Firearm and armored-car management workflows are available to authorized roles.
+- [x] **AST-02**: Permit/compliance checks and status surfaces are visible and actionable.
+- [x] **AST-03**: MDR import staging/review/commit flow is available with guarded commit behavior.
 
 ### Situational Awareness and Reliability
 
@@ -54,18 +54,18 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| OPS-01 | Phase 1 | Pending |
-| OPS-02 | Phase 2 | Pending |
-| OPS-03 | Phase 2 | Pending |
-| GRD-01 | Phase 2 | Pending |
-| GRD-02 | Phase 2 | Pending |
-| GRD-03 | Phase 3 | Pending |
-| AST-01 | Phase 3 | Pending |
-| AST-02 | Phase 3 | Pending |
-| AST-03 | Phase 3 | Pending |
+| AUTH-01 | Phase 1 | Complete (2026-05-03) |
+| AUTH-02 | Phase 1 | Complete (2026-05-03) |
+| AUTH-03 | Phase 1 | Complete (2026-05-03) |
+| OPS-01 | Phase 1 | Complete (2026-05-03) |
+| OPS-02 | Phase 2 | Complete (2026-05-03) |
+| OPS-03 | Phase 2 | Complete (2026-05-03) |
+| GRD-01 | Phase 2 | Complete (2026-05-03) |
+| GRD-02 | Phase 2 | Complete (2026-05-03) |
+| GRD-03 | Phase 3 | Complete (2026-05-03) |
+| AST-01 | Phase 3 | Complete (2026-05-03) |
+| AST-02 | Phase 3 | Complete (2026-05-03) |
+| AST-03 | Phase 3 | Complete (2026-05-03) |
 | MAP-01 | Phase 4 | Pending |
 | MAP-02 | Phase 4 | Pending |
 | REL-01 | Phase 4 | Pending |

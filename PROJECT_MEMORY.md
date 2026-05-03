@@ -1343,3 +1343,17 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Working mode
 - Caveman explicitly enabled by user for active interaction.
 - AO remains disabled; direct Codex + GSD execution path remains default.
+
+---
+
+# 48) DEFAULT EXECUTION MODE UPDATE (2026-05-03)
+
+## User default preference
+- Effective default for this workspace:
+  - GSD workflow enabled by default for phase-driven work.
+  - Caveman Lite mode enabled by default for regular coding/debug/planning exchanges.
+  - AO remains disabled by default unless the user explicitly asks to use AO for a specific run.
+
+## Practical execution rule
+- Start from direct Codex + GSD flow (`discuss -> plan -> execute -> smoke evidence`) for all project phases.
+- Keep responses concise/compressed by default (Caveman Lite style), but switch to polished prose for panel-facing docs or when explicitly requested.

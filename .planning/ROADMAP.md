@@ -6,9 +6,9 @@ This roadmap stabilizes and verifies objective-critical operational paths on the
 
 ## Phases
 
-- [ ] **Phase 1: Governance Baseline Lock** - Validate current scope, map objective-critical flows, and close high-risk auth/shell regressions.
-- [ ] **Phase 2: Role Workflow Reliability** - Harden elevated + guard operational workflows across desktop/mobile with smoke-backed fixes.
-- [ ] **Phase 3: Asset and MDR Integrity** - Stabilize asset lifecycle and MDR import/review/commit critical paths.
+- [x] **Phase 1: Governance Baseline Lock** - Validate current scope, map objective-critical flows, and close high-risk auth/shell regressions.
+- [x] **Phase 2: Role Workflow Reliability** - Harden elevated + guard operational workflows across desktop/mobile with smoke-backed fixes.
+- [x] **Phase 3: Asset and MDR Integrity** - Stabilize asset lifecycle and MDR import/review/commit critical paths.
 - [ ] **Phase 4: Platform Release Confidence** - Verify web/desktop/android release readiness and objective evidence coverage.
 
 ## Phase Details
@@ -24,8 +24,8 @@ This roadmap stabilizes and verifies objective-critical operational paths on the
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Baseline route/shell/access verification and defect catalog
-- [ ] 01-02: Auth + shell bugfix batch with smoke rerun
+- [x] 01-01: Baseline route/shell/access verification and defect catalog
+- [x] 01-02: Auth + shell bugfix batch with smoke rerun
 
 ### Phase 2: Role Workflow Reliability
 **Goal**: Stabilize role-specific operational workflows and mobile parity.
@@ -38,8 +38,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: Elevated workflow reliability fixes
-- [ ] 02-02: Guard workflow reliability fixes
+- [x] 02-01: Elevated workflow reliability fixes
+- [x] 02-02: Guard workflow reliability fixes
 
 ### Phase 3: Asset and MDR Integrity
 **Goal**: Ensure operational asset and MDR flows stay correct under real usage.
@@ -52,8 +52,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 03-01: Asset + permit workflow stabilization
-- [ ] 03-02: MDR workflow stabilization and validation
+- [x] 03-01: Asset + permit workflow stabilization
+- [x] 03-02: MDR workflow stabilization and validation
 
 ### Phase 4: Platform Release Confidence
 **Goal**: Validate cross-platform delivery and capstone objective evidence coverage.
@@ -73,7 +73,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Governance Baseline Lock | 0/2 | Not started | - |
-| 2. Role Workflow Reliability | 0/2 | Not started | - |
-| 3. Asset and MDR Integrity | 0/2 | Not started | - |
+| 1. Governance Baseline Lock | 2/2 | Completed | 2026-05-03 |
+| 2. Role Workflow Reliability | 2/2 | Completed | 2026-05-03 |
+| 3. Asset and MDR Integrity | 2/2 | Completed | 2026-05-03 |
 | 4. Platform Release Confidence | 0/2 | Not started | - |
