@@ -1292,5 +1292,30 @@ SENTINEL orchestration now follows a software-company delegation structure:
   - `ao status` -> project loaded (`capstone-main`)
 - Addressed Windows-specific `ao doctor` failure path:
   - AO package expected Unix shell checks (`ao-doctor.sh` + `/bin/bash`) and exited non-zero on Windows.
-  - Added a Windows-safe doctor behavior by patching local AO CLI command logic to skip shell-script doctor stage on `win32` and continue with config-aware checks.
+- Added a Windows-safe doctor behavior by patching local AO CLI command logic to skip shell-script doctor stage on `win32` and continue with config-aware checks.
   - Post-fix result: `ao doctor` exits successfully with warning-only output for optional notifier configuration.
+
+---
+
+# 46) GSD + CAVEMAN INSTALL (AO-OFF DEFAULT) (2026-05-03)
+
+## Installed tooling
+- Installed Get Shit Done (GSD) for Codex in repo-local minimal mode:
+  - command: `npx get-shit-done-cc@latest --codex --local --minimal`
+  - local skills created under:
+    - `.codex/skills/gsd-new-project`
+    - `.codex/skills/gsd-discuss-phase`
+    - `.codex/skills/gsd-plan-phase`
+    - `.codex/skills/gsd-execute-phase`
+    - `.codex/skills/gsd-help`
+    - `.codex/skills/gsd-update`
+- Installed Caveman skills for Codex using Windows-safe copy mode:
+  - workspace install: `npx skills add JuliusBrussee/caveman -a codex --copy --yes`
+  - global install: `npx skills add JuliusBrussee/caveman -a codex --copy --yes --global`
+  - cave skills available under `.agents/skills/*` (workspace and global).
+
+## Usage policy in this workspace
+- AO remains disabled by default (user preference).
+- Use GSD for complex multi-phase work (planning/execution/verification loops), with minimal surface to reduce overhead.
+- Use Caveman on-demand (`$caveman lite`) for long debugging/planning sessions to reduce token burn.
+- Keep Caveman off for panel-facing prose/readme/capstone manuscript writing when polished language is needed.
