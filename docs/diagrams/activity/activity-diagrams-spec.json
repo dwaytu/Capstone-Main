@@ -1,0 +1,118 @@
+{
+  "lanes": ["User (Role)", "SENTINEL Application", "System Validation/Rules", "Data/Records"],
+  "diagrams": [
+    {
+      "slug": "guard-activity-diagram",
+      "title": "Figure 8. Guard Activity Diagram",
+      "steps": [
+        {"id":"G01","label":"Start","type":"start","lane":0},
+        {"id":"G02","label":"Open Login Screen","type":"process","lane":1},
+        {"id":"G03","label":"Enter Guard Credentials","type":"process","lane":0},
+        {"id":"G04","label":"Credentials Valid?","type":"decision","lane":2,
+          "no":{"id":"G05","label":"Display Error Message","type":"process","lane":1,"loopTo":"G03"}
+        },
+        {"id":"G06","label":"Approved and Policy Accepted?","type":"decision","lane":2,
+          "no":{"id":"G07","label":"Complete Approval/Policy Requirements","type":"process","lane":0,"loopTo":"G06"}
+        },
+        {"id":"G08","label":"Open Guard Dashboard","type":"process","lane":1},
+        {"id":"G09","label":"Review Schedule, Duty Status, Notifications","type":"process","lane":0},
+        {"id":"G10","label":"Shift/Duty Available?","type":"decision","lane":2,
+          "no":{"id":"G11","label":"Review Alerts / Submit Ticket / Update Profile","type":"process","lane":0,"loopTo":"G21"}
+        },
+        {"id":"G12","label":"Perform Check-In","type":"process","lane":0},
+        {"id":"G13","label":"Location Consent and Permission Available?","type":"decision","lane":2,
+          "no":{"id":"G14","label":"Resolve Consent/Permission Prompt","type":"process","lane":1,"loopTo":"G13"}
+        },
+        {"id":"G15","label":"Perform Patrol and Field Duty","type":"process","lane":0},
+        {"id":"G16","label":"Incident/Support Needed?","type":"decision","lane":2,
+          "no":{"id":"G18A","label":"Continue Duty Monitoring","type":"process","lane":0,"loopTo":"G19"}
+        },
+        {"id":"G17","label":"Submit Incident / Support / Panic Escalation","type":"process","lane":1},
+        {"id":"G18","label":"Continue Duty Monitoring","type":"process","lane":0},
+        {"id":"G19","label":"Perform Check-Out","type":"process","lane":0},
+        {"id":"G20","label":"Review Remaining Tasks","type":"process","lane":0},
+        {"id":"G21","label":"Logout","type":"process","lane":0},
+        {"id":"G22","label":"End","type":"end","lane":0}
+      ]
+    },
+    {
+      "slug": "supervisor-activity-diagram",
+      "title": "Figure 9. Supervisor Activity Diagram",
+      "steps": [
+        {"id":"S01","label":"Start","type":"start","lane":0},
+        {"id":"S02","label":"Login as Supervisor","type":"process","lane":0},
+        {"id":"S03","label":"Credentials/Approval/Policy Valid?","type":"decision","lane":2,
+          "no":{"id":"S04","label":"Resolve Missing Access Requirements","type":"process","lane":1,"loopTo":"S02"}
+        },
+        {"id":"S05","label":"Open Supervisor Dashboard","type":"process","lane":1},
+        {"id":"S06","label":"Review Schedules, Attendance, Team Status","type":"process","lane":0},
+        {"id":"S07","label":"No-Show/Coverage Gap Detected?","type":"decision","lane":2,
+          "no":{"id":"S12A","label":"Monitor Alerts/Incidents/Support","type":"process","lane":0,"loopTo":"S13"}
+        },
+        {"id":"S08","label":"Start Replacement Workflow","type":"process","lane":1},
+        {"id":"S09","label":"Identify Available Guard","type":"process","lane":0},
+        {"id":"S10","label":"Assign Replacement","type":"process","lane":0},
+        {"id":"S11","label":"Confirm Deployment and Update Status","type":"process","lane":3},
+        {"id":"S12","label":"Monitor Alerts/Incidents/Support","type":"process","lane":0},
+        {"id":"S13","label":"Review Live Tracking, History, Geofence","type":"process","lane":0},
+        {"id":"S14","label":"Operational Issue Requires Action?","type":"decision","lane":2,
+          "no":{"id":"S16A","label":"Record Decision and Continue Monitoring","type":"process","lane":3,"loopTo":"S17"}
+        },
+        {"id":"S15","label":"Coordinate Corrective Action/Escalation","type":"process","lane":0},
+        {"id":"S16","label":"Record Decision and Continue Monitoring","type":"process","lane":3},
+        {"id":"S17","label":"Review Performance and Command Summary","type":"process","lane":0},
+        {"id":"S18","label":"Logout","type":"process","lane":0},
+        {"id":"S19","label":"End","type":"end","lane":0}
+      ]
+    },
+    {
+      "slug": "administrator-activity-diagram",
+      "title": "Figure 10. Administrator Activity Diagram",
+      "steps": [
+        {"id":"A01","label":"Start","type":"start","lane":0},
+        {"id":"A02","label":"Login as Administrator","type":"process","lane":0},
+        {"id":"A03","label":"Credentials/Approval/Policy Valid?","type":"decision","lane":2,
+          "no":{"id":"A04","label":"Resolve Missing Access Requirements","type":"process","lane":1,"loopTo":"A02"}
+        },
+        {"id":"A05","label":"Open Administrator Dashboard","type":"process","lane":1},
+        {"id":"A06","label":"Manage Users, Approvals, Role Records","type":"process","lane":0},
+        {"id":"A07","label":"Manage Schedules and Assignments","type":"process","lane":0},
+        {"id":"A08","label":"Manage Firearms/Permits/Vehicles/Trips","type":"process","lane":0},
+        {"id":"A09","label":"Review Incidents, Support, Notifications","type":"process","lane":0},
+        {"id":"A10","label":"Access Dashboards, Analytics, Reports","type":"process","lane":0},
+        {"id":"A11","label":"Compliance/Operational Issue Found?","type":"decision","lane":2,
+          "no":{"id":"A14A","label":"Finalize Administrative Tasks","type":"process","lane":0,"loopTo":"A15"}
+        },
+        {"id":"A12","label":"Apply Corrective Administrative Action","type":"process","lane":0},
+        {"id":"A13","label":"Validate Updated Records and Status","type":"process","lane":3},
+        {"id":"A14","label":"Return to Incident/Support Review","type":"process","lane":0},
+        {"id":"A15","label":"Logout","type":"process","lane":0},
+        {"id":"A16","label":"End","type":"end","lane":0}
+      ]
+    },
+    {
+      "slug": "superadmin-activity-diagram",
+      "title": "Figure 11. Superadmin Activity Diagram",
+      "steps": [
+        {"id":"SA01","label":"Start","type":"start","lane":0},
+        {"id":"SA02","label":"Login as Superadmin","type":"process","lane":0},
+        {"id":"SA03","label":"Credentials/Approval/Policy Valid?","type":"decision","lane":2,
+          "no":{"id":"SA04","label":"Resolve Missing Access Requirements","type":"process","lane":1,"loopTo":"SA02"}
+        },
+        {"id":"SA05","label":"Open Superadmin Command Dashboard","type":"process","lane":1},
+        {"id":"SA06","label":"Review Global KPIs and Service Health","type":"process","lane":0},
+        {"id":"SA07","label":"Manage Roles, Permissions, Policies","type":"process","lane":0},
+        {"id":"SA08","label":"Review Audit Logs and Forensic Intelligence","type":"process","lane":0},
+        {"id":"SA09","label":"Security/Policy Issue Detected?","type":"decision","lane":2,
+          "no":{"id":"SA13A","label":"Approve Strategic Oversight Actions","type":"process","lane":0,"loopTo":"SA14"}
+        },
+        {"id":"SA10","label":"Apply Governance/Access/Policy Updates","type":"process","lane":0},
+        {"id":"SA11","label":"Validate Cross-Module and Role Impact","type":"process","lane":3},
+        {"id":"SA12","label":"Review Updated Global Status","type":"process","lane":0},
+        {"id":"SA13","label":"Return to Global KPI Review","type":"process","lane":0},
+        {"id":"SA14","label":"Logout","type":"process","lane":0},
+        {"id":"SA15","label":"End","type":"end","lane":0}
+      ]
+    }
+  ]
+}

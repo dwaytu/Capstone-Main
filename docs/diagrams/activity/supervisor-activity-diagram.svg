@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="2490" viewBox="0 0 1360 2490">
+<defs>
+<marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#1f2937"/></marker>
+</defs>
+<rect x="0" y="0" width="1360" height="2490" fill="#f8fafc"/>
+<text x="680" y="36" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#0f172a">Figure 9. Supervisor Activity Diagram</text>
+<rect x="40" y="56" width="320" height="2420" fill="#ffffff" stroke="#cbd5e1"/>
+<text x="200" y="84" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#0f172a">User (Role)</text>
+<rect x="360" y="56" width="320" height="2420" fill="#f1f5f9" stroke="#cbd5e1"/>
+<text x="520" y="84" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#0f172a">SENTINEL Application</text>
+<rect x="680" y="56" width="320" height="2420" fill="#ffffff" stroke="#cbd5e1"/>
+<text x="840" y="84" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#0f172a">System Validation/Rules</text>
+<rect x="1000" y="56" width="320" height="2420" fill="#f1f5f9" stroke="#cbd5e1"/>
+<text x="1160" y="84" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#0f172a">Data/Records</text>
+<circle cx="200" cy="120" r="12" fill="#111827"/>
+<text x="220" y="124" font-family="Arial" font-size="11" fill="#111827">Start</text>
+<path d="M 200 135 L 200 214" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="214" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="245" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Login as Supervisor</text>
+<path d="M 200 276 L 840 325" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<polygon points="840,325 935,370 840,415 745,370" fill="#fef3c7" stroke="#1f2937" stroke-width="1.5"/>
+<text x="840" y="363" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Credentials/Approval/Policy</text>
+<text x="840" y="377" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Valid?</text>
+<path d="M 840 415 L 520 464" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="850" y="433.5" font-family="Arial" font-size="11" font-weight="700" fill="#065f46">Yes</text>
+<rect x="527" y="342" rx="9" ry="9" width="210" height="56" fill="#fff7ed" stroke="#9a3412" stroke-width="1.2"/>
+<text x="632" y="363.5" text-anchor="middle" font-family="Arial" font-size="10.5" fill="#7c2d12">Resolve Missing Access</text>
+<text x="632" y="376.5" text-anchor="middle" font-family="Arial" font-size="10.5" fill="#7c2d12">Requirements</text>
+<path d="M 935 370 L 1005 370 L 1005 332 L 632 342" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="963" y="362" font-family="Arial" font-size="11" font-weight="700" fill="#7c2d12">No</text>
+<path d="M 632 398 L 632 206 L 200 214" fill="none" stroke="#9a3412" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="395" y="464" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="520" y="495" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Open Supervisor Dashboard</text>
+<path d="M 520 526 L 200 589" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="589" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="613" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Review Schedules, Attendance,</text>
+<text x="200" y="627" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Team Status</text>
+<path d="M 200 651 L 840 700" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<polygon points="840,700 935,745 840,790 745,745" fill="#fef3c7" stroke="#1f2937" stroke-width="1.5"/>
+<text x="840" y="738" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">No-Show/Coverage Gap</text>
+<text x="840" y="752" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Detected?</text>
+<path d="M 840 790 L 520 839" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="850" y="808.5" font-family="Arial" font-size="11" font-weight="700" fill="#065f46">Yes</text>
+<rect x="207" y="717" rx="9" ry="9" width="210" height="56" fill="#fff7ed" stroke="#9a3412" stroke-width="1.2"/>
+<text x="312" y="738.5" text-anchor="middle" font-family="Arial" font-size="10.5" fill="#7c2d12">Monitor</text>
+<text x="312" y="751.5" text-anchor="middle" font-family="Arial" font-size="10.5" fill="#7c2d12">Alerts/Incidents/Support</text>
+<path d="M 935 745 L 1005 745 L 1005 707 L 312 717" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="963" y="737" font-family="Arial" font-size="11" font-weight="700" fill="#7c2d12">No</text>
+<path d="M 312 773 L 312 1456 L 200 1464" fill="none" stroke="#9a3412" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="395" y="839" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="520" y="870" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Start Replacement Workflow</text>
+<path d="M 520 901 L 200 964" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="964" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="995" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Identify Available Guard</text>
+<path d="M 200 1026 L 200 1089" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="1089" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="1120" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Assign Replacement</text>
+<path d="M 200 1151 L 1160 1214" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="1035" y="1214" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="1160" y="1238" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Confirm Deployment and Update</text>
+<text x="1160" y="1252" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Status</text>
+<path d="M 1160 1276 L 200 1339" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="1339" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="1363" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Monitor</text>
+<text x="200" y="1377" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Alerts/Incidents/Support</text>
+<path d="M 200 1401 L 200 1464" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="1464" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="1488" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Review Live Tracking, History,</text>
+<text x="200" y="1502" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Geofence</text>
+<path d="M 200 1526 L 840 1575" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<polygon points="840,1575 935,1620 840,1665 745,1620" fill="#fef3c7" stroke="#1f2937" stroke-width="1.5"/>
+<text x="840" y="1613" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Operational Issue</text>
+<text x="840" y="1627" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Requires Action?</text>
+<path d="M 840 1665 L 200 1714" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="850" y="1683.5" font-family="Arial" font-size="11" font-weight="700" fill="#065f46">Yes</text>
+<rect x="1119" y="1592" rx="9" ry="9" width="210" height="56" fill="#fff7ed" stroke="#9a3412" stroke-width="1.2"/>
+<text x="1224" y="1613.5" text-anchor="middle" font-family="Arial" font-size="10.5" fill="#7c2d12">Record Decision and</text>
+<text x="1224" y="1626.5" text-anchor="middle" font-family="Arial" font-size="10.5" fill="#7c2d12">Continue Monitoring</text>
+<path d="M 935 1620 L 1005 1620 L 1005 1582 L 1224 1592" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="963" y="1612" font-family="Arial" font-size="11" font-weight="700" fill="#7c2d12">No</text>
+<path d="M 1224 1648 L 1224 1956 L 200 1964" fill="none" stroke="#9a3412" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="75" y="1714" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="1738" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Coordinate Corrective</text>
+<text x="200" y="1752" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Action/Escalation</text>
+<path d="M 200 1776 L 1160 1839" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="1035" y="1839" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="1160" y="1863" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Record Decision and Continue</text>
+<text x="1160" y="1877" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Monitoring</text>
+<path d="M 1160 1901 L 200 1964" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="1964" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="1988" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Review Performance and Command</text>
+<text x="200" y="2002" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Summary</text>
+<path d="M 200 2026 L 200 2089" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="75" y="2089" rx="10" ry="10" width="250" height="62" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+<text x="200" y="2120" text-anchor="middle" font-family="Arial" font-size="11" fill="#111827">Logout</text>
+<path d="M 200 2151 L 200 2230" fill="none" stroke="#1f2937" stroke-width="1.6" marker-end="url(#arrow)"/>
+<circle cx="200" cy="2245" r="14" fill="#ffffff" stroke="#111827" stroke-width="2"/>
+<circle cx="200" cy="2245" r="8" fill="#111827"/>
+<text x="220" y="2249" font-family="Arial" font-size="11" fill="#111827">End</text>
+</svg>
