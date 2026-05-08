@@ -1,0 +1,37 @@
+ONE COMMAND (from repo root)
+cd "D:\Dwight\Capstone Main"
+npm run start:local
+
+Optional (skip npm install check):
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -SkipInstall
+
+If backend shows ADMIN_CODE insecure default error, run once:
+(Get-Content "D:\Dwight\Capstone Main\DasiaAIO-Backend\.env") -replace '^ADMIN_CODE=122601$', 'ADMIN_CODE=LOCAL-839274' | Set-Content "D:\Dwight\Capstone Main\DasiaAIO-Backend\.env"
+
+
+Terminal 1 (Backend)
+cd "D:\Dwight\Capstone Main\DasiaAIO-Backend"
+
+# one-time (if .env missing)
+Copy-Item .env.example .env
+
+# make sure Postgres is running and DATABASE_URL in .env is correct
+cargo run --bin server
+
+
+Terminal 2 (Frontend)
+cd "D:\Dwight\Capstone Main\DasiaAIO-Frontend"
+
+# one-time (if dependencies not installed)
+npm install
+
+# make sure frontend points to local backend
+# in .env.local put:
+# VITE_API_BASE_URL=http://localhost:5000
+
+npm run dev
+
+Start all (1 script command)
+cd "D:\Dwight\Capstone Main"
+npm run start:local
+

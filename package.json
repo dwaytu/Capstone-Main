@@ -2,6 +2,7 @@
   "version": "1.0.0",
   "license": "UNLICENSED",
   "scripts": {
+    "start:local": "powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1",
     "release:version": "node scripts/release-version.js",
     "release:sync-version": "node scripts/sync-release-version.js",
     "release:notes": "node scripts/generate-release-notes.js",

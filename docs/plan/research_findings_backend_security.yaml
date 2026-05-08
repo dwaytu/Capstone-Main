@@ -150,7 +150,7 @@ findings:
       file: DasiaAIO-Backend/src/main.rs
       lines: 1567-1569
       file2: DasiaAIO-Backend/src/handlers/health.rs
-      lines: 29-50
+      lines2: 29-50
     recommendation: |
       Keep `/api/health` public but minimal (just "ok"/"degraded").
       Restrict `/api/health/system` to authenticated superadmin users.
