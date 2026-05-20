@@ -1,0 +1,272 @@
+{
+  "generatedAt": "2026-05-20T00:31:11.736Z",
+  "frontendBaseUrl": "http://127.0.0.1:5173",
+  "totalModules": 26,
+  "captures": [
+    {
+      "figure": 12,
+      "caption": "User Login Module",
+      "route": "/login",
+      "role": null,
+      "url": "http://127.0.0.1:5173/login",
+      "screenshot": "docs/screenshots/development-current/Figure-12-user-login-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 13,
+      "caption": "Superadmin Dashboard Module",
+      "route": "/dashboard",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/dashboard",
+      "screenshot": "docs/screenshots/development-current/Figure-13-superadmin-dashboard-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 14,
+      "caption": "Administrator Dashboard Module",
+      "route": "/dashboard",
+      "role": "admin",
+      "url": "http://127.0.0.1:5173/dashboard",
+      "screenshot": "docs/screenshots/development-current/Figure-14-administrator-dashboard-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 15,
+      "caption": "Supervisor Dashboard Module",
+      "route": "/dashboard",
+      "role": "supervisor",
+      "url": "http://127.0.0.1:5173/dashboard",
+      "screenshot": "docs/screenshots/development-current/Figure-15-supervisor-dashboard-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 16,
+      "caption": "Guard Dashboard Module",
+      "route": "/overview",
+      "role": "guard",
+      "url": "http://127.0.0.1:5173/overview",
+      "screenshot": "docs/screenshots/development-current/Figure-16-guard-dashboard-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 17,
+      "caption": "Approvals Module",
+      "route": "/approvals",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/approvals",
+      "screenshot": "docs/screenshots/development-current/Figure-17-approvals-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 18,
+      "caption": "Scheduling Module",
+      "route": "/schedule",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/schedule",
+      "screenshot": "docs/screenshots/development-current/Figure-18-scheduling-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 19,
+      "caption": "Calendar Module",
+      "route": "/calendar",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/calendar",
+      "screenshot": "docs/screenshots/development-current/Figure-19-calendar-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 20,
+      "caption": "Operations Map Module",
+      "route": "/operations-map",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/operations-map",
+      "screenshot": "docs/screenshots/development-current/Figure-20-operations-map-module.png",
+      "consoleErrors": [
+        "WebSocket connection to 'ws://localhost:5000/api/tracking/ws' failed: Connection closed before receiving a handshake response",
+        "WebSocket connection to 'ws://localhost:5000/api/tracking/ws' failed: Connection closed before receiving a handshake response",
+        "WebSocket connection to 'ws://localhost:5000/api/tracking/ws' failed: Connection closed before receiving a handshake response",
+        "WebSocket connection to 'ws://localhost:5000/api/tracking/ws' failed: Connection closed before receiving a handshake response"
+      ],
+      "networkErrors": []
+    },
+    {
+      "figure": 21,
+      "caption": "Management Module",
+      "route": "/manage",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/manage",
+      "screenshot": "docs/screenshots/development-current/Figure-21-management-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 22,
+      "caption": "MDR Import Module",
+      "route": "/mdr-import",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/mdr-import",
+      "screenshot": "docs/screenshots/development-current/Figure-22-mdr-import-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 23,
+      "caption": "Missions Module",
+      "route": "/missions",
+      "role": "supervisor",
+      "url": "http://127.0.0.1:5173/missions",
+      "screenshot": "docs/screenshots/development-current/Figure-23-missions-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 24,
+      "caption": "Trips Module",
+      "route": "/trips",
+      "role": "supervisor",
+      "url": "http://127.0.0.1:5173/trips",
+      "screenshot": "docs/screenshots/development-current/Figure-24-trips-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 25,
+      "caption": "Inbox Module",
+      "route": "/inbox",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/inbox",
+      "screenshot": "docs/screenshots/development-current/Figure-25-inbox-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 26,
+      "caption": "Support Module",
+      "route": "/support",
+      "role": "guard",
+      "url": "http://127.0.0.1:5173/support",
+      "screenshot": "docs/screenshots/development-current/Figure-26-support-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 27,
+      "caption": "Feedback Submission Module",
+      "route": "/feedback",
+      "role": "guard",
+      "url": "http://127.0.0.1:5173/feedback",
+      "screenshot": "docs/screenshots/development-current/Figure-27-feedback-submission-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 28,
+      "caption": "Feedback Dashboard Module",
+      "route": "/feedback-dashboard",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/feedback-dashboard",
+      "screenshot": "docs/screenshots/development-current/Figure-28-feedback-dashboard-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 29,
+      "caption": "Firearms Module",
+      "route": "/firearms",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/firearms",
+      "screenshot": "docs/screenshots/development-current/Figure-29-firearms-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 30,
+      "caption": "Firearm Allocation Module",
+      "route": "/allocation",
+      "role": "admin",
+      "url": "http://127.0.0.1:5173/allocation",
+      "screenshot": "docs/screenshots/development-current/Figure-30-firearm-allocation-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 31,
+      "caption": "Firearm Permits Module",
+      "route": "/permits",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/permits",
+      "screenshot": "docs/screenshots/development-current/Figure-31-firearm-permits-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 32,
+      "caption": "Armored Cars Module",
+      "route": "/armored-cars",
+      "role": "admin",
+      "url": "http://127.0.0.1:5173/armored-cars",
+      "screenshot": "docs/screenshots/development-current/Figure-32-armored-cars-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 33,
+      "caption": "Maintenance Module",
+      "route": "/maintenance",
+      "role": "admin",
+      "url": "http://127.0.0.1:5173/maintenance",
+      "screenshot": "docs/screenshots/development-current/Figure-33-maintenance-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 34,
+      "caption": "Analytics Module",
+      "route": "/analytics",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/analytics",
+      "screenshot": "docs/screenshots/development-current/Figure-34-analytics-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 35,
+      "caption": "Audit Module",
+      "route": "/audit",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/audit",
+      "screenshot": "docs/screenshots/development-current/Figure-35-audit-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 36,
+      "caption": "Profile Module",
+      "route": "/profile",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/profile",
+      "screenshot": "docs/screenshots/development-current/Figure-36-profile-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    },
+    {
+      "figure": 37,
+      "caption": "Settings Module",
+      "route": "/settings",
+      "role": "superadmin",
+      "url": "http://127.0.0.1:5173/settings",
+      "screenshot": "docs/screenshots/development-current/Figure-37-settings-module.png",
+      "consoleErrors": [],
+      "networkErrors": []
+    }
+  ]
+}

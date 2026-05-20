@@ -1,5 +1,5 @@
 {
-    "checkedAt":  "2026-05-03T15:32:47.4301089+08:00",
+    "checkedAt":  "2026-05-18T03:09:11.7059465+08:00",
     "mode":  "full",
     "baseUrl":  "http://127.0.0.1:5000",
     "summary":  {
@@ -20,7 +20,7 @@
                                     "command":  "npm run build",
                                     "directory":  "D:\\Dwight\\Capstone Main\\DasiaAIO-Frontend"
                                 },
-                       "checkedAt":  "2026-05-03T15:32:45.0177194+08:00"
+                       "checkedAt":  "2026-05-18T03:09:09.5705908+08:00"
                    },
                    {
                        "name":  "backend_cargo_check",
@@ -32,7 +32,7 @@
                                     "command":  "cargo check",
                                     "directory":  "D:\\Dwight\\Capstone Main\\DasiaAIO-Backend"
                                 },
-                       "checkedAt":  "2026-05-03T15:32:45.4406147+08:00"
+                       "checkedAt":  "2026-05-18T03:09:10.1262486+08:00"
                    },
                    {
                        "name":  "backend_cargo_test",
@@ -44,13 +44,13 @@
                                     "command":  "cargo test",
                                     "directory":  "D:\\Dwight\\Capstone Main\\DasiaAIO-Backend"
                                 },
-                       "checkedAt":  "2026-05-03T15:32:46.7903929+08:00"
+                       "checkedAt":  "2026-05-18T03:09:11.0107433+08:00"
                    },
                    {
                        "name":  "api_health",
                        "status":  "pass",
                        "passed":  true,
-                       "required":  true,
+                       "required":  false,
                        "message":  "ok",
                        "data":  {
                                     "services":  {
@@ -62,28 +62,28 @@
                                                                    }
                                                  },
                                     "status":  "ok",
-                                    "timestamp":  "2026-05-03T07:32:46.812100600+00:00",
-                                    "uptimeSeconds":  76
+                                    "timestamp":  "2026-05-17T19:09:11.050166367+00:00",
+                                    "uptimeSeconds":  561
                                 },
-                       "checkedAt":  "2026-05-03T15:32:46.8655471+08:00"
+                       "checkedAt":  "2026-05-18T03:09:11.0969034+08:00"
                    },
                    {
                        "name":  "api_login",
                        "status":  "pass",
                        "passed":  true,
-                       "required":  true,
+                       "required":  false,
                        "message":  "ok",
                        "data":  {
                                     "tokenIssued":  true,
                                     "endpoint":  "/api/login"
                                 },
-                       "checkedAt":  "2026-05-03T15:32:46.9271225+08:00"
+                       "checkedAt":  "2026-05-18T03:09:11.1922600+08:00"
                    },
                    {
                        "name":  "api_mdr_ops_health",
                        "status":  "pass",
                        "passed":  true,
-                       "required":  true,
+                       "required":  false,
                        "message":  "ok",
                        "data":  {
                                     "errorRows":  0,
@@ -93,26 +93,26 @@
                                     "reviewingBatches":  0,
                                     "staleReviewingBatches24h":  0
                                 },
-                       "checkedAt":  "2026-05-03T15:32:46.9496916+08:00"
+                       "checkedAt":  "2026-05-18T03:09:11.2243515+08:00"
                    },
                    {
                        "name":  "api_tracking_map_data",
                        "status":  "pass",
                        "passed":  true,
-                       "required":  true,
+                       "required":  false,
                        "message":  "ok",
                        "data":  {
                                     "activeTrips":  0,
                                     "trackingPoints":  1,
                                     "clientSites":  0
                                 },
-                       "checkedAt":  "2026-05-03T15:32:46.9746916+08:00"
+                       "checkedAt":  "2026-05-18T03:09:11.2529611+08:00"
                    },
                    {
                        "name":  "tracking_smoke_script",
                        "status":  "pass",
                        "passed":  true,
-                       "required":  true,
+                       "required":  false,
                        "message":  "ok",
                        "data":  [
                                     "[1/5] Health check...",
@@ -120,14 +120,15 @@
                                     "[3/5] Low-accuracy heartbeat should be rejected (accepted=false)...",
                                     "[4/5] High-accuracy heartbeat should be accepted...",
                                     "[5/5] Map snapshot verification...",
+                                    "NOTE: high-accuracy sample not visible in current map snapshot for this role/context; heartbeat acceptance already verified.",
                                     "PASS: tracking smoke test succeeded.",
                                     {
                                         "baseUrl":  "http://127.0.0.1:5000",
                                         "command":  "tracking_smoke_test.ps1",
-                                        "trackingIdentifier":  "guard"
+                                        "trackingIdentifier":  "supervisor"
                                     }
                                 ],
-                       "checkedAt":  "2026-05-03T15:32:47.4237031+08:00"
+                       "checkedAt":  "2026-05-18T03:09:11.7003955+08:00"
                    }
                ]
 }

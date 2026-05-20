@@ -1,0 +1,1334 @@
+ 
+i 
+May 2026 
+ 
+ 
+GAD ABRAHAM M. JOSE 
+DWIGHT KARL B. GAGA-A 
+APPLE JOHN D. LUMINGKIT 
+HECTOR PHILLIP P. LACIERDA 
+HANZ LOURENZ FRANK J. RIBU 
+ 
+ 
+ 
+ 
+ 
+ 
+of Science in Information Systems 
+of the Requirements for the Degree Bachelor 
+In Partial Fulfillment 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+STI College Tagum 
+Information and Communications Technology Program 
+Proposal Presented to the Faculty of the 
+A Capstone Project  
+ 
+ 
+ 
+ 
+ 
+ 
+INVESTIGATION AGENCY, INC.
+MANAGEMENT   SYSTEM   FOR DAVAO SECURITY & 
+SENTINEL: AN INTEGRATED SECURITY OPERATIONS 
+----------------Page (0) Break----------------
+ 
+ii 
+May 12, 2026 
+ 
+ 
+ 
+ 
+ 
+Program Head 
+Mr. Eldito C. Loquinio, MIT 
+ 
+ 
+NOTED BY: 
+ 
+ 
+ 
+Capstone Project Coordinator 
+Mr. Allimar M. Nuevo, MM, CGSP, CHIA 
+ 
+ 
+APPROVED FOR PROPOSAL DEFENSE: 
+ 
+ 
+Capstone Project Adviser 
+Mr. Eldito C. Loquinio, MIT 
+ 
+ 
+ENDORSED BY: 
+ 
+ 
+ 
+has been examined and is recommended for Proposal Defense. 
+for the degree Bachelor of Science in Information Systems 
+In Partial Fulfilment of the Requirements  
+ 
+                                                             
+                                                             
+                                                            Gad Abraham M. Jose 
+                                                            Dwight Karl B. Gaga-a 
+                                                            Apple John D. Lumingkit 
+                                                            Hector Phillip P. Lacierda 
+NAME OF PROPONENTS:            Hanz Lourenz Frank J. Ribu 
+ 
+Investigation Agency, INC. 
+Management System for Davao Security & 
+TITLE OF RESEARCH:         SENTINEL: An Integrated Security Operations 
+ 
+ 
+ENDORSEMENT FORM FOR PROPOSAL DEFENSE        
+----------------Page (1) Break----------------
+ 
+iii 
+May 12, 2026 
+ 
+ 
+ 
+Capstone Project Coordinator                                    Program Head 
+CHIA 
+Mr. Allimar M. Nuevo, MM, CGSP,                      Mr. Eldito C. Loquinio, MIT 
+ 
+ 
+ 
+Noted: 
+ 
+ 
+ 
+ 
+Lead Panelist 
+Mr. Benjamin M. Mahinay, MIT 
+ 
+ 
+ 
+Panel Member                                                 Panel Member 
+Ms. Iris Mae Mendoza, MIT                 Mr. Allimar M. Nuevo, MM, CGSP, CHIA 
+ 
+ 
+ 
+ 
+of Bachelor of Science in Information Systems 
+Panel in partial fulfillment of the requirements for the degree 
+Accepted and approved by the Capstone Project Review 
+ 
+ 
+ 
+Capstone Project Adviser 
+Mr. Eldito C. Loquinio, MIT 
+been examined and is recommended for acceptance and approval. 
+of  the  requirements  for  the  degree  of  Bachelor  of  Science  in Information  Systems,  has 
+D. Lumingkit, Dwight Karl B. Gaga-a and Gad Abraham M. Jose, in partial fulfillment 
+submitted by Hanz Lourenz Frank J. Ribu , Hector Phillip P. Lacierda , Apple John 
+Management System for Davao Security & Investigation Agency, INC. prepared and 
+This capstone project proposal titled: SENTINEL: An Integrated Security Operations 
+ 
+ 
+APPROVAL SHEET    
+----------------Page (2) Break----------------
+ 
+iv 
+                                                 
+ 
+REFERENCES                                                                                                                         46 
+Design of Software, System, Product, and/or Processes                                                      34 
+Requirements Analysis                                                                                                         28 
+METHODOLOGY                                                                                                                    22 
+Review of Related Literature/Studies/Systems                                                                    13 
+Scope and Limitations                                                                                                            9 
+Objectives                                                                                                                               4 
+Purpose and Description                                                                                                         3 
+Project Context                                                                                                                       1 
+INTRODUCTION                                                                                                                       1 
+TABLE OF CONTENTS                                                                                                           iv 
+APPROVAL SHEET                                                                                                                  iii 
+ENDORSEMENT FORM FOR PROPOSAL DEFENSE                                                           ii 
+TITLE PAGE                                                                                                                              i 
+             
+TABLE OF CONTENTS   
+----------------Page (3) Break----------------
+STI College Tagum 
+1
+ 
+increased  the  demand  for  advanced  technology  and  innovation  to  ensure  peace  and 
+Regional  Development  Plan  2023  to  2028,  the  region's  rapid  economic  growth  has 
+position as a leading safe haven in Southeast Asia (PIA, 2025). According to the Davao 
+Agency, Inc. operates in a landscape that has prioritized a culture of security to sustain its 
+       In  the  specific  context  of  the  Davao  Region,  the  Davao  Security  and  Investigation 
+advanced patrol monitoring and digital reporting systems (Abad, 2025). 
+that absenteeism and the abandonment of posts are most prevalent in agencies that lack 
+Furthermore, national studies on the effect iveness of Philippine security guards identify 
+for  deploying  personnel  with  expired  licenses  or  unauthorized  firearms  (Jur.ph,  2025). 
+Rules and Regulations, agencies can be fined up to P5,000,000 or face license revocation 
+agencies face strict liability for administrative negligence. Under the law’s Implementing 
+No. 11917 (2022). This law introduced a regime of professionalized accountability where 
+legislation through the Private Security Services Industry Act, also known as Republic Act 
+         The necessity for these technological advancements is echoed in recent Philippine 
+structured, real-time monitoring (Aguinis, 2022).            
+social  loafing,  a  phenomenon  where  individual  reliability  decreases  in  the  absence  of 
+transparent, data-driven tracking is essential to maintaining accountability and preventing 
+supported   by   modern   performance   management   theories   which   emphasize   that 
+security  breaches  in  critical  infrastructure  (Shiyanbola  et  al.,  2023).  This  movement  is 
+personnel  gaps  significantly  increase  vacancy  time,  which  remains  a  primary  driver  of 
+Global  research  in  workforce  capacity  indicates  that  manual,  reactive  responses  to 
+integrity digital ecosystems to address the discovery lag inherent in human-led monitoring. 
+The  private  security  global  industry  is  transitioning  toward  automated,  high -
+Project Context 
+INTRODUCTION    
+----------------Page (4) Break----------------
+STI College Tagum 
+2
+ 
+ 
+ 
+ 
+ 
+defensible model of security management. 
+replacement, ensuring that the agency moves from a reactive stance to a proactive, legally 
+detected,  the  system  immediately  flags  the  vacancy  and  identifies  the  nearest  qualified 
+of legacy systems (Scofield, 2025). When an operational gap such as a missed check-in is 
+native memory safety and asynchronous performance that prevents the data races typical 
+SENTINEL utilizes the Rust programming language and the Axum framework, providing 
+central   records.   To   manage   high-concurrency   requests   from   hundreds   of   guards, 
+the system automatically verifies their license validity and firearm authorization against 
+compliance checks into the daily operational workflow. Before a guard can be deployed, 
+high-performance  single  source  of  truth.  The  system  works  by  embedding  real-time 
+vulnerabilities by centralizing personnel profiles, firearm telemetry, and shift logs into a 
+         SENTINEL is an integrated digital ecosystem designed to resolve these cumulative 
+undetected for hours, directly compromising the safety of local clients. 
+For DASIA Tagum, this represents a critical vulnerability where site vacancies may go 
+abandonment of posts due to inconsistent manual oversight (Ondos and Origines, 2025). 
+performance,   yet   many   regional   agencies   still   struggle   with   inattentiveness   and 
+compensation,   punctuality,   and   alertness   are   the   primary   determinants   of   guard 
+Recent  local  research  conducted  in  the  Davao  Region  specifically  highlights  that 
+security in high-traffic logistics and commercial hubs like Tagum City (NEDA XI, 2024). 
+----------------Page (5) Break----------------
+STI College Tagum 
+3
+ 
+field roles. 
+Inbox timelines, and incident workflows support faster coordination across command and 
+deployment conditions, and site -aware activity. Geofence monitoring, notifications,  quick 
+operational  records  to  provide  timely  visibility  of  personnel  movement,  incident  status, 
+At the command level, the platform integrates live tracking signals with structured 
+asset accountability and reduce service disruption. 
+issuance,  return,  maintenance,  trip  visibility,  and  permit-sensitive  checks,  to  strengthen 
+high-priority actions. SENTINEL also manages firearm and vehicle lifecycles, including 
+out actions, emergency contact access, panic escalation, and selected offline continuity for 
+continuity. For field use, the implemented guard experience includes check-in and check-
+replacement  handling,  and  role-specific  dashboard  workflows  to  sustain  deployment 
+         Operationally,  the  system  supports  scheduling,  attendance,  no  -show  detection, 
+registration through the login experience.            
+mediated, approval-governed, and policy -gated rather than exposed as open publ  ic self-
+institutional review. In the current user -facing product, protected access is administrator -
+controls restrict sensitive functions to authorized users and preserve traceable records for 
+notification workflows, and real-time situational awareness. Role-based and policy-based 
+workforce administration, asset and permit compliance, incident coordination, support and 
+SENTINEL   provides   unified   support   for   identity   and   access   governance, 
+supports timely command decisions, field coordination, and institutional accountability. 
+by  consolidating  core  operational  processes  into  a  role  -governed  environment  that 
+Security and Investigation Agency, Inc. The study addresses fragmented manual oversight 
+SENTINEL as an integrated security operations and decision-support platform for Davao 
+The primary purpose of this capstone project is to design, implement, and deliver 
+Purpose and Description 
+----------------Page (6) Break----------------
+STI College Tagum 
+4
+ 
+acceptance with traceable metadata. 
+1.3   Preserve    session    continuity,    revocation,    and    first-use    legal-policy 
+operational users. 
+1.2   Maintain    role-based    approval    and    account-activation    controls    for 
+and password recovery under administrator-governed approval controls. 
+1.1   Support  account  onboarding,  identity  verification,  secure  authentication, 
+1.   Strengthen identity, access, and legal-policy governance for all users. 
+Specific Objectives 
+monitoring, and governance visibility across Web, Desktop, and Android platforms. 
+to  improve  their  workforce  continuity,  asset  accountability,  incident  coordination,  live 
+stakeholders of Davao Security & Intelligence Agency, Inc. The purpose of this system is 
+integrated,  role-governed,  multi-platform  security  operations  management  system  for  the 
+The  main  objective  of  this  study  is  to  develop  a  system  named  SENTINEL,  an 
+General Objective 
+Objectives 
+dashboard panels, tabs, and shell overlays rather than fully separated standalone pages. 
+environments,  although  some  secondary  workflows  are  still  delivered  through  shared 
+Android    maintains    consistent    behavior    and    policy    enforcement    across    runtime 
+limiting, and service-health monitoring. Cross-platform delivery across Web, Desktop, and 
+session  management,  legal-policy  acceptance  gating,  audit  and  forensic  logging,  rate 
+Security and governance controls are embedded as core functions, including secure 
+preserve human authority for final operational decisions. 
+deterministic fallback behavior where continuity is required. These outputs are assistive and 
+staffing  risk,  maintenance  risk,  incident  classification,  and  incident  summarization,  with 
+SENTINEL further includes analytics and hybrid AI  -assisted decision support for 
+----------------Page (7) Break----------------
+STI College Tagum 
+5
+ 
+5.3   Enforce  permit-aware  workflows  that  reduce  deployment  of  non-compliant 
+5.2   Apply automated expiry awareness and compliance-sensitive workflow checks. 
+5.1   Maintain permit records, including expiring, valid, and revoked credentials. 
+5.   Sustain permit and compliance-sensitive deployment management. 
+4.3   Track firearm maintenance schedules, pending work, and completion records. 
+cases. 
+4.2   Record issuance and return activities, active allocations, and overdue custody 
+checks. 
+4.1   Maintain  firearm  records,  status  tracking,  and  permit-sensitive  deployment 
+4.   Enforce firearm inventory, issuance, and custody accountability. 
+actions. 
+3.4   Support guard safety escalation and selected offline continuity for critical field 
+availability. 
+3.3   Detect    no-show    events,    coordinate    replacements,    and    manage    guard 
+records. 
+3.2   Capture  attendance,  check-in/check-out,  and  presence  history  with  traceable 
+3.1   Manage shift schedules and duty assignments with conflict-aware coordination. 
+3.   Strengthen scheduling, attendance, and workforce continuity processes. 
+and quick-action workflows for command and field users. 
+2.3   Surface role-appropriate dashboard views, shared command -shell task access, 
+based listings. 
+2.2   Maintain guard approval queues, approval status tracking, and searchable role -
+supervisor, and guard. 
+2.1   Manage personnel records and role assignments for superadmin, administrator, 
+2.   Operationalize centralized personnel administration and command visibility. 
+----------------Page (8) Break----------------
+STI College Tagum 
+6
+ 
+9.1   Record incident recording, active incident monitoring, and status progression. 
+9.   Strengthen incident management and real-time movement intelligence. 
+during field operations. 
+8.5   Enable  emergency  contact  access  and  panic-incident  escalation  for  guards 
+tasks and operational history. 
+8.4   Provide a unified role-based action inbox and workflow timeline for prioritized 
+events. 
+8.3   Issue  timely  alerts  for  incidents,  workflow  exceptions,  and  decision-critical 
+8.2   Deliver notifications, status tracking, and operational message management. 
+8.1   Handle ticket submission and role-appropriate case review. 
+8.   Deliver support, communication, notification, and emergency-escalation services. 
+or replacement candidates. 
+7.3   Capture client evaluations, review performance evidence, and identify overtime 
+decisions. 
+7.2   Generate  merit  scores  and  ranked  guard  results  for  staffing  and  supervision 
+review. 
+7.1   Coordinate mission assignment, deployment monitoring, and field instructions 
+7.   Manage mission operations and merit-based performance evaluation. 
+6.4   Track vehicle maintenance schedules, service history, and operational status. 
+traceability. 
+6.3   Document  trip  lifecycles   from  assignment  to   completion  with  historical 
+6.2   Manage driver assignments, driver-vehicle linkage, and trip preparation. 
+6.1   Maintain armored vehicle records, allocations, returns, and active-use visibility. 
+6.   Manage armored vehicle fleet and trip operations. 
+personnel and assets. 
+----------------Page (9) Break----------------
+STI College Tagum 
+7
+ 
+12.1  Maintain audit logs and forensic event records for critical operational actions. 
+12. Institutionalize governance, security, and auditability mechanisms. 
+alerts. 
+11.3  Enable  map-linked  situational  review  and  proximity -based  operational 
+11.2  Provide continuous live-tracking updates for command monitoring. 
+operational displays. 
+11.1  Visualize  guards,  routes,  vehicles,  and  client  sites  through  map -based 
+11. Enable map-based situational awareness for command and field operations. 
+deterministic fallback behavior when needed. 
+maintenance  risk,  incident  classification,  and  incident  summarization,  with 
+10.3  Apply  hybrid  AI  assistance  for  guard  absence  risk,  replacement  suggestions, 
+patterns, and staffing capacity risk. 
+10.2  Generate  predictive  alerts  for  permit  expiry,  maintenance  risk,  absenteeism 
+command metrics. 
+10.1  Present operational overviews, trend indicators, guard reliability insights, and 
+10. Provide analytics, predictive intelligence, and decision support. 
+operational response. 
+9.6   Expose  geofence-driven  monitoring  outcomes  for  supervisory  review  and 
+9.5   Detect geofence transitions and raise anomaly alerts for leadership review. 
+monitoring. 
+9.4   Provide  live  tracking,  path  replay,  patrol  reconstruction,  and  active  roster 
+visibility. 
+9.3   Maintain   client-site   records,   shift   proximity   awareness,   and   deployment 
+context. 
+9.2   Capture live location points, guard presence signals, and map-linked operational 
+----------------Page (10) Break----------------
+STI College Tagum 
+8
+ 
+ 
+use, including readable status presentation and touch-safe critical controls. 
+14.3  Maintain accessible, role -appropriate command surfaces for desktop and field 
+requester IP, and user agent. 
+14.2  Preserve  legal  acceptance  metadata,  including  timestamp,  policy  version, 
+Acceptable Use Policy before protected access. 
+14.1  Require  first-use  acceptance  of  Terms  of  Agreement,  Privacy  Policy,  and 
+14. Maintain compliant and accessible operational use. 
+13.5  Enforce controlled release governance and verified Android distribution. 
+Desktop, and Android targets. 
+13.4  Validate consistent behavior, connectivity, and session governance across Web, 
+operations. 
+13.3  Deliver  the  mobile  runtime  through  Capacitor  Android  packaging  for  field 
+deployment. 
+13.2  Deliver  the  desktop  runtime  through  Tauri  packaging  for  command-center 
+13.1  Deliver the web runtime for browser-based command and operational access. 
+13. Implement and validate cross-platform runtime delivery. 
+reconstruction, and anomaly detection. 
+12.5  Provide   forensic   audit   intelligence   for   filtered   timelines,   actor-specific 
+accountability. 
+12.4  Preserve    authorization-denial    and    access-failure    records    for    forensic 
+throttling, and rate controls. 
+12.3  Sustain  service  readiness  and  abuse  protection  through  health  monitoring, 
+session revocation controls. 
+12.2  Enforce  authenticated  access,  authorization  checks,  presence  monitoring,  and 
+----------------Page (11) Break----------------
+STI College Tagum 
+9
+ 
+operational monitoring. 
+●   Release  and  service-health  records  required  for  runtime  governance  and 
+IP traces for security accountability. 
+●   Authentication lockout records, session lifecycle records, and audit source-
+forensic activity traces, and anomaly evidence for post-incident review. 
+●   Geofence  events,  site  geofence  definitions,  movement-history  records, 
+and audit logs. 
+emergency  alerts,  location  records,  inbox  summaries,  workflow  history, 
+●   Missions,   incidents,   support   tickets,   notifications,   predictive   alerts, 
+maintenance history. 
+●   Armored vehicle assets, allocations, driver assignments, trip records, and 
+compliance data. 
+●   Firearm  inventory  records,  allocations,  maintenance  history,  and  permit-
+consent records. 
+schedules, attendance logs, availability status, merit indicators, and legal -
+●   Personnel  profiles,  role  and  approval  data,  licensing  and  permit  records, 
+Data 
+platform delivery across Web, Desktop, and Android environments. 
+situational  monitoring,  decision-support  outputs,  forensic  audit  visibility,  and  cross -
+workflows, centralized operational records, quick -action coordination surfaces, real -time 
+Republic  Act  No.  11917  (2022).  The  scope  includes  role-governed  command  and  field 
+governance  requirements  of  a  private  security  agency  within  the  regulatory  context  of 
+                 The SENTINEL system covers the implemented operational, compliance, and 
+Scope 
+Scope and Limitations 
+----------------Page (12) Break----------------
+STI College Tagum 
+10
+ 
+historical trail replay, patrol reconstruction, and geofence escalation. 
+●   Guard   movement   reconstruction,   including   active   roster   monitoring, 
+notification delivery, and live operational monitoring. 
+●   Incident   reporting,   emergency   escalation,   support   ticket   handling, 
+preventive and corrective maintenance tracking. 
+●   Vehicle  allocation,  driver  assignment,  trip  lifecycle  management,  and 
+maintenance scheduling, and custody traceability. 
+●   Firearm    issuance    and    return    workflows    with    permit    validation, 
+coordination, and supervisor oversight. 
+●   Shift  scheduling,  attendance  validation,  no-show  detection,  replacement 
+offline continuity, and map-supported navigation. 
+instructions  review,  emergency-contact  access,  panic  escalation,  selected 
+●   Mission-first  guard  workflows  for  field  reporting,  attendance  actions, 
+workflow history. 
+approvals,  incidents,  notifications,  asset-related  actions,  shift  issues,  and 
+●   Role-based   inbox   and   quick-action   workflows   for   prioritized   tasks, 
+preserving usable shell behavior across desktop and mobile form factors. 
+●   Desktop command dashboards support adjustable navigation density while 
+scheduling, audit review, and profile management. 
+●   Role-based  dashboards  for  command  monitoring,  approvals,  analytics, 
+operational access is granted. 
+●   Approval   workflows   for   newly   onboarded   guard   accounts   before 
+verification, authentication, recovery, and profile maintenance. 
+●   Account     lifecycle     workflows,     including     controlled     onboarding, 
+Process 
+----------------Page (13) Break----------------
+STI College Tagum 
+11
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+synchronization, audit telemetry, and governed release packaging.  
+●   Dockerized  deployment and service -based architecture with live tracking 
+role-based data control. 
+●   Centralized PostgreSQL database with relational integrity, auditability, and 
+●   React + TypeScript frontend and Rust + Axum backend services.  
+Android (Capacitor). 
+●   Cross-platform runtime deployment for Web, Desktop (Tauri), and Mobile 
+●   Web-based application accessible on desktop and mobile browsers.  
+Technology  
+permissions and dashboard views.      
+●   Superadmin,  Administrator,  Supervisor,  and  Guard  roles  with  distinct 
+People  
+acceptance capture, and access gating until accepted.         
+●   Legal   confirmation   workflows,   including   policy   review,   mandatory 
+revocation, and lockout persistence.      
+●   Session    security    workflows,    including    renewal    control,    sign            -out 
+activity reconstruction, anomaly review, and case sequencing.          
+●   Audit  forensics  workflows,  including  timeline  filtering,  actor            -specific 
+----------------Page (14) Break----------------
+STI College Tagum 
+12
+ 
+ 
+ 
+ 
+standalone modules. 
+panels,  tabs,  and  shell  overlays  rather  than  being  deployed  as  fully  independent 
+command surfaces, while some workflows remain consolidated within shared dashboard 
+geofence-zone  administration,  are  not  yet  fully  exposed  through  complete  end-user 
+backend-supported  capabilities,  such  as  direct  training-record  administration  and  full 
+deployment within the present study; and (4) implementation constraints, wherein certain 
+Web, Windows desktop, and Android environments, thereby excluding iOS and macOS 
+constraints, wherein the implemented native runtime support of the system is limited to 
+advisory  in  nature  and  do  not  supersede  human  operational  judgment;  (3)  platform 
+position  of  field  personnel.  In  addition,  AI -assisted  and  predictive  outputs  remain 
+location tracking remains less precise and may not consistently reflect the exact real-time 
+provides more accurate and reliable location data for operational monitoring   , IP -based 
+partial offline support for selected high-priority guard actions. While GPS-based tracking 
+location  updates,  device  GPS  accuracy,  network  stability,  and  the  provision  of  only 
+(2) technological constraints related to the system’s dependence on application-generated 
+security hardware ecosystems such as CCTV, IoT sensors, and access  -control devices; 
+systems,  human  resource  platforms,  government  licensing  databases,  and  third-party 
+include, but are not limited to: (1) the exclusion of direct integration with external payroll 
+beyond the intended scope and implementation coverage of the developed system. These 
+The  limitations  of  this  study  refer  to  the  exclusions  and  constraints  that  were 
+Limitation of the Study 
+----------------Page (15) Break----------------
+STI College Tagum 
+13
+ 
+(Shiyanbola et al., 2023). 
+increase  "vacancy  time,"  directly  correlating  with  higher  security  bre  ach  probabilities 
+optimization  emphasizes  that  manual,  reactive  responses  to  workforce  gaps  significantly 
+human   intervention   fail   to   address   "discovery   lag."   Research   in   workforce   capacity 
+represent a critical vulnerability where manual processes  relying on phone calls and delayed 
+guard presence. As identified in the operational risks of DASIA Tagum, "No-Show" incidents 
+Operational continuity in the private security sector is heavily dependent on reliable 
+is deployed without valid legal authorization. 
+transition from reactive compliance to a proactive stance, ensuring that no personnel or asset 
+manual  audits.  By  leveraging  system-driven  triggers  for  license  expirations,  PSAs  can 
+monitoring  is  a  "significant  advancement"  that  eliminates  the  "discovery  lag"  inherent  in 
+suggests  that  for  organizations  managing  complex,  shifting  rules,  the  use  of  automated 
+Compliance Tracking (ARCT). Research by Khinvasara, T., Shankar, A., & Wong, C. (2024) 
+This  regulatory  pressure  has  necessitated  a  move  toward  Automated  Regulatory 
+from ₱50,000 to ₱100,000 per violation, or up to ₱5,000,000 for agency-wide license failures. 
+administrative negligence, such as deploying an unlicensed guard, can result in fines ranging 
+(LESP)  and  firearm  permits.  The  act  introduces  a  "strict  liability"  framework  where 
+(PSAs) maintain highly accurate, digitized records of License to Exercise Security Profession 
+the law’s Implementing Rules and Regulations (IRR) mandate that Private Security Agencies 
+industry toward a regime of "Professionalized Accountability." According to Jur.ph (2025), 
+(Republic  Act  No.  11917,  2022)  effectively  repealed  the  outdated  RA  5487, shifting  the 
+transition  in  over  fifty  years.  The  enactment  of  the  Private  Security  Services  Industry  Act 
+            The Philippine private security sector is currently navigating its most significant legal 
+Related Literature 
+Review of Related Literature/Studies/Systems 
+----------------Page (16) Break----------------
+STI College Tagum 
+14
+ 
+prerequisite  for  generating  the  legally  defensible  audit  logs  required  by  the  National 
+identified as the primary defense against the misallocation of high   -risk equipment and is a 
+in  real-time,  leading  to  potential  administrative  negligence.  Centralized  digital  tracking  is 
+where the status of a weapon and the permit validity of the assigned guard are not reconciled 
+trained, and compliant guards carry weapons. Manual processes often suffer from "data drift," 
+2022).  The  law  mandates  strict  accountability  for  firearms,  requiring  that  only  authorized, 
+legal necessity under the Private Security Services Industry  Act (Republic Act  No. 11917, 
+The systematic allocation of firearms is a matter of both Chain of Custody (CoC) and 
+performance is directly linked to future opportunities (Tan et al., 2024). 
+guard reliability but also fosters a culture of accountability, as guards understand that their 
+objective data rather than subjective selection. This transparency not only increases overall 
+metrics such as punctuality and client feedback logs  ensures that shift allocation is based on 
+For  security  agencies  like  DASIA  Tagum,  implementing  centralized  performance 
+lack of individual accountability. 
+Loafing," a psychological phenomenon where em ployees decrease effort due to a perceived 
+posits that the absence of a structured performance management framework leads to "Social 
+shifts,  rewards,  and  responsibilities  are  allocated  within  an  organization.  Aguinis  (2022) 
+framework  is  essential  for  maintaining  Distributive  Justice,  the  perceived  fairness  of  how 
+The  transition  from  inconsistent,  manual  tracking  to  a  structured,  data    -driven 
+operational vacancy time (TrackTik, 2025). 
+data  to  alert  administrators  of  potential  gaps  before  they  occur,  drastically  reducing  the 
+advanced algorithms now enable "predictive scheduling," which analyzes historical No-Show 
+crisis  management  to  proactive  risk  mitigation  (Al-Khafajiy  et  al.,  2022).  Furthermore, 
+replacements based on real-time availability, shifting the organizational stance from reactive 
+Modern  systems  mitigate  this  by  automating  the  identification  and  deployment  of 
+----------------Page (17) Break----------------
+STI College Tagum 
+15
+ 
+2024), ensuring that every asset movement is tied to a verifiable digital identity. 
+legally defensible Audit Logs required by the National Cybersecurity Plan 2023-2028 (DICT, 
+personnel  table.  This  high  level  of  relational  integrity  is  a  prerequisite  for  generating  the 
+vehicle cannot be logically "double-booked" or assigned to a guard who does not exist in the 
+In  the  SENTINEL  ecosystem,  these  constraints  ensure  that  a  firearm  or  armored 
+defense against "data drift." 
+implementation of Foreign Key Constraints and Unique Exclusion Constraints is the primary 
+Isolation,  Durability)  properties.  Nguyen,  R.  (2025)  emphasizes  that  PostgreSQL’s 
+RDBMS for enterprise planning due to its strict adherence to ACID (Atomicity, Consistency, 
+"Single  Source  of  Truth."  PostgreSQL  (2025)  is  recognized  as  the  premier  open-source 
+In  an  Integrated  Operations  Platform,  the  database  must  serve  as  the  immutable 
+when processing complex relational logic across personnel, vehicle, and firearm databases. 
+degradation. This "asynchronous-first" design allows the system to remain responsive even 
+hundreds  of  simultaneous  "check-in"  requests  during  shift  rotations  without  performance 
+SENTINEL, this means the Attendance Tracking and No-Show Detection modules can handle 
+performance   web   services   where   scalability   and   raw   speed   are   non-negotiable.   For 
+asynchronous  runtime.  As  highlighted  by  NashTech  (2025),  Axum  is  designed  for  high-
+Complementing  the  language  is  the  Axum  framework,  which  is  built  on  the  Tokio 
+firearm tracking. 
+vulnerabilities  that  often  plague  systems  handling  high-concurrency  data  like  real-time 
+This  ensures  that  SENTINEL  is  natively  resistant  to  buffer  overflows  and  data  races , 
+provides a fundamental architectural advantage: Memory Safety without a Garbage Collector. 
+critical systems. Scofield, M. B. (2025) argues that Rust’s "ownership and borrowing" model 
+The selection of the backend technical stack is a core security decision for mission   -
+Cybersecurity Plan 2022-2028 (DICT, 2024; PNP-SOSIA, 2022). 
+----------------Page (18) Break----------------
+STI College Tagum 
+16
+ 
+leading platforms such as TrackTik and Guardhouse. 
+functional  blueprint  of  SENTINEL  is  informed  by  the  performance  of  several  industry-
+transparent,  inescapable  layer  of  accountability  that  manual  logs  could  not  match.  The 
+significantly  higher  levels  of  alertness  and  punctuality  because  the  system  provided  a 
+found   that   Philippine   security   guards   operating   under   digital   monitoring   exhibited 
+site coverage reliability. Locally, ResearchGate (2025) cites a study by Respicio (2023) which 
+that real-time, asynchronous detection models allow for a proactive 11.8% improvement in 
+supervisors only identify a personnel gap after a shift has failed. Their study demonstrates 
+Optimization"  highlights  a  flaw  in  traditional  security:  "discovery  lag."  This  occurs  when 
+Furthermore, research  by  Shiyanbola,  J.  O.,  et  al.  (2023)  on  "Workforce  Capacity 
+internal data tampering. 
+rather  than  treating  it  as  an  afterthought,  tightens  process  integrity  and  reduces  the  risk  of 
+verification. These findings suggest that hardwiring compliance into the system architecture, 
+unauthorized  access  violations  and  reclaimed  36%  of  staff  time  previously  lost  to  manual 
+utilizing unified Access Control and Resource Planning (ERP) systems saw a 27% drop in 
+operational integrity. A study by Atlam, H. F., & Yang, Y. (2025) found that organizations 
+            Empirical   research   confirms   that   automated   oversight   is   a   primary   driver   of 
+----------------Page (19) Break----------------
+STI College Tagum 
+17
+ 
+feeds (TrackTik, 2025). 
+administrative  burdens  through  automated  compliance  tracking  and  real-time  intelligence 
+approximately  20%.  This  efficiency  is  primarily  attributed  to  the  reduction  of  manual 
+resilient   architecture,   which   users   report   has   increased   operational   efficiency   by 
+consolidate alarm monitoring, guard dispatch, and business administration into a si ngle 24/7 
+cost  remains  a  barrier  for  mid-sized firms. TrackTik’s success is anchored in its ability to 
+facing an "AI adoption paradox" where the value of predictive scheduling is recognized, but 
+Trackforce 2025 Physical Security Operations Benchmark Report, the industry is currently 
+static  scheduling  toward  an  integrated,  AI -driven  operational  model.  According  to  the 
+TrackTik  (2025)  has  redefined  security  workforce  management  by  moving  beyond 
+Figure 1. TrackTik 
+             
+----------------Page (20) Break----------------
+STI College Tagum 
+18
+ 
+ 
+ 
+(GetApp, 2026). 
+logic  that  SENTINEL  adapts  to  specifically  meet  the  stringent  requirements  of  RA  11917 
+in  Compliance"  module  provides  a  specialized  framework  for  daily  license  verification,  a 
+workflow, reportedly reducing office-based administrative time by 40–60%. Its "Confidence 
+mitigates  this  by  unifying  scheduling,  GPS  tracking,  and  invoicing  into  a  streamlined 
+administrative  tasks,  such  as  re -entering  data  across  fragmented  systems.  Guardhouse 
+(2026) indicates that security employees often lose an average of 15 hours per week to routine 
+a  measurable  barrier  to  performance  in  the  mid-2020s.  Research  from  NODE  Magazine 
+Guardhouse (2026) addresses the specific administrative "overload" that has become 
+Figure 2. Guardhouse 
+             
+             
+----------------Page (21) Break----------------
+STI College Tagum 
+19
+ 
+ 
+ 
+ 
+mirrored in SENTINEL’s Performance Analytics Dashboard (Securitas, 2026). 
+allows  supervisors  to  identify  risk  patterns  before  they  escalate,  a  core  design  principle 
+transforms  disparate  incident  reports  into  actionable  statistics  and  trend  highlights.  This 
+Technology, 2025). MySecuritas operationalizes this by providing a unified dashboard that 
+understanding  is  now  a  top  priority  for  30%  of  security  decision     -makers  (Securitas 
+Outlook  Report  identifies  that  the  rapid  advancement  of  generative  AI  for  contextual 
+Understanding"  and  proactive  risk  management.  The  Securitas  2026  Global  Technology 
+Securitas "MySecuritas" (2026) represents the industry’s shift toward "Situational 
+Figure 3. MySecuritas 
+ 
+----------------Page (22) Break----------------
+STI College Tagum 
+20
+ 
+emphasize the importance of integrating operational data to improve organizational visibility 
+Across  the  reviewed  literature,  several  consistent  themes  emerge.  Researchers 
+ecosystem. 
+managed  in  siloed  armory  or  fleet  software ,  into  the  primary  workforce  management 
+2025).  SENTINEL  fills  this  niche  by  integrating  these  high-stakes  logistics,  traditionally 
+a Digital Chain of Custody for high-risk assets like firearms and armored car fleets (Hardcat, 
+gap" in specialized asset tracking; most platforms lack the deep rela tional logic required for 
+Technical evaluations of generic guard management systems suggest a persistent "visibility 
+focus remains on incident management and officer accountability (Silvertrac Software, 2026). 
+excels in field reporting and checkpoint verification via mobile applications, its architectur al 
+accountability,  particularly  in  parking  and  property  management  environments.  While  it 
+Silvertrac Software (2026) is widely utilized for "Proof of Performance" and on  -site 
+Figure 4. Silvertrac Software 
+ 
+ 
+----------------Page (23) Break----------------
+STI College Tagum 
+21
+ 
+enterprise system. 
+regulatory  compliance  verification,  and  real-time  operational  dashboards  within  a  single 
+compliance.   It  provides    a  centralized  solution   that  integrates  scheduling  automation, 
+Management,  allowing  local  agencies   to  achieve  multinational  levels  of  visibility   and 
+Philippine-specific   licensing   (RA   11917),   Firearm   Custody,   and   Armored   Car   Fleet 
+void by combining high -concurrency Rust/Axum architecture with modules specifically for 
+within a unified platform tailored to security agencies. The SENTINEL system addresses this 
+that  combine  workforce  management,  compliance  monitoring,  and  operational  oversight 
+The reviewed  literature therefore reveals a  clear research gap in  integrated systems 
+Philippine law. 
+However,  these  systems  often  fail  to  accommodate  the  granular  administrative  nuances  of 
+industry standard is defined by Real -Time Accountability and Centralized Data Ownership. 
+surveillance monitoring. Global systems like TrackTik and Guardhouse demonstrate that the 
+systems often address only a single domain of operations, such as workforce scheduli   ng or 
+and  operational  dashboards  are  increasingly  adopted  across  industries.  However,  existing 
+Technological trends such as automated scheduling algorithms, attendance tracking, 
+limitations of fragmented monitoring tools and manual processes. 
+and decision -making. Studies from both Philippine and international contexts highlight the 
+----------------Page (24) Break----------------
+STI College Tagum 
+22
+ 
+            Release readiness was evaluated through structured quality checks, build verification, 
+checks verified that each increment satisfied defined criteria before carry-forward. 
+platform runtime review. Sprint reviews documented completed increments, while acceptance 
+integration checks, role-permission verification, browser-based acceptance review, and cross-
+            Validation was embedded throughout the Scrum cycle through scenario-based testing, 
+system rules, and data behavior. 
+decision-support features. Regular integration checkpoints ensured consistency of workflows, 
+movement  monitoring,  notification  and  inbox  workflows,  guard   -safety  functions,  and 
+account   governance,   workforce   continuity,   asset   compliance,   incident   coordination, 
+            Sprint  planning  and  backlog  refinement  emphasized  high-risk  domains,  including 
+prioritized backlog items tied to operational risk and institutional requirements. 
+implementation, integration, validation, packaging, review, and refinement. Each sprint used 
+            Development   was   organized   into   successive   sprints   that   covered   planning, 
+Figure 5. Agile Model 
+through incremental, testable, and reviewable capability sets. 
+This  study  adopted  Agile  methodology,  specifically  Scrum,  to  deliver  SENTINEL 
+ 
+METHODOLOG    Y 
+----------------Page (25) Break----------------
+STI College Tagum 
+23
+ 
+                                                 
+with functional scope. 
+approach in which reliability, accountability, security, and usability were developed together 
+decisions  and  reduce  operational  disruption.  Overall,  the  methodology  shows  an  Agile 
+and governed platform packaging before each major milestone to support controlled rollout 
+----------------Page (26) Break----------------
+STI College Tagum 
+22
+ 
+Figure 6. Work Breakdown Structure 
+----------------Page (27) Break----------------
+STI College Tagum 
+23
+ 
+4.   Leaflet  +  OpenStreetMap:  Will  be  used  for  operational  map  rendering,  live  marker 
+across command center, operations, and resource modules.  
+3.   Tailwind  CSS:  Will  be  used  for  utility-driven,  responsive  interface  implementation 
+2.   Vite: Will be used for fast local startup and production build pipelines.  
+dashboard modules with strict typing.  
+1.   React + TypeScript:  Will be u sed to build reusable, role -aware UI components and 
+system’s web-based functionalities. 
+display.  Additionally,  a  stable  broadband  internet  connection  is  necessary  to  support  the 
+requirements,  and  a  screen  resolution  of  at  least  1366x768  is  needed  for  proper  interface 
+and improved system responsiveness. Integrated graphics are sufficient for the system’s visual 
+and performance. In terms of storage, a 250 GB SSD is required to provide faster data access 
+should have a minimum of 8 GB of RAM, although 16 GB is preferred for better multitasking 
+least  a  Ryzen  3  is  recommended  to  handle  basic  processing  tasks  efficiently.  The  system 
+a computer or laptop running on Windows 10 or Windows   11. A processor equivalent to at 
+ensure smooth operation during development, deployment, and daily use, the system requires 
+platform  like  SENTINEL,  as  they  directly  affect  system  performance  and  reliability.  To 
+            Hardware  specifications  play  a  crucial  role  in  the  development  of  a  web-based 
+implementation: 
+without codebase duplication. The proponents used the following technologies in the current 
+backend operations, traceable relational data, real-time tracking, and cross-platform delivery 
+implementation requirements: role-based dashboards, secure API contracts, high-concurrency 
+desktop  and  mobile  runtime  wrappers.  Technology  selection  was  based  on  concrete 
+            SENTINEL is implemented as a web-first integrated security operations platform with 
+Technologies to be used in the System 
+Technical Background 
+----------------Page (28) Break----------------
+STI College Tagum 
+24
+ 
+                                                 
+and verifiable release governance for the Android deployment target. 
+release keystore required for signed APK and AAB distribution, supporting controlled 
+15. Android  release  signing  tooling:  Will  be  used  to  generate,  encode,  and  manage  the 
+managing the release of MSI and EXE files. 
+14. Git and GitHub: Will be used for version control, collaboration, change tracking, and 
+management. 
+13. Namecheap:   Will   be   used   for   domain   registration   and   domain -level   DNS 
+managed service hosting. 
+12. Railway:  Will  be  used  as  a  cloud  deployment  platform  for  backend  runtime  and 
+password reset codes, and operational notifications. 
+11. Resend:  Will  be  used  for  transactional  email  delivery  such  as  verification  codes, 
+center deployment.  
+10. Tauri:  Will be u sed  to package the same frontend for Windows desktop command  -
+9.   Capacitor: Will be used to package the web frontend for Android field deployment.  
+session management across user roles. 
+8.   Secure token-based authentication: Will be used to enforce protected access and stable 
+orchestration and deployment parity.  
+7.   Docker  +  Docker  Compose :  Will  be  ed  to  standardize  local  backend/database 
+outputs, and audit logs.  
+schedules, attendance, firearms, vehicles, incidents, notifications, tracking points, AI 
+6.   PostgreSQL:  Will  be sed  as  the  central  transactional  database  for  users,  approvals, 
+orchestration.  
+5.   Rust  +  Axum:  Will  be  used  for  backend  API  handlers,  middleware,  and  service 
+visualization, and client-site management.  
+----------------Page (29) Break----------------
+STI College Tagum 
+25
+ 
+System and 
+Assurance  
+Testing and Quality                                                                                                                                                                                                                           
+and retrospective  
+Review, testing, 
+trip modules  
+permit, vehicle, and 
+Iteration 3: Asset,                                                                                                                                                                                                                              
+and retrospective 
+Review, testing, 
+replacement  
+attendance, and 
+Scheduling, 
+Iteration 2:                                                                                                                                                                                                                                         
+testing, and review 
+Frontend shell, 
+database design 
+architecture and 
+Iteration 1: Core                                                                                                                                                                                                                                
+reporting setup 
+planning and 
+alignment Sprint 
+and requirements 
+Planning Kickoff                                                                                                                                                                                                                               
+scheduling 
+Initial planning and 
+objectives  
+Define scope and 
+Project Initiation                                                                                                                                                                                                                                
+ACTIVITY 
+FEBRUARY      MARCH             APRIL                MAY                  JUNE                  JULY                  AUGUST           SEPTEMBER     OCTOBER         NOVEMBER     DECEMBER 
+MONTH                                                                                                                                                                                                                                                                                                        
+Gantt Chart of Activities 
+----------------Page (30) Break----------------
+STI College Tagum 
+26
+ 
+ 
+Completed                               Ongoing                                Not Started 
+Legends:                                                                                              
+Figure 7. Gantt Chart of Activities 
+final submission 
+preparation and 
+turnover Defense 
+Final review and 
+Project Closure                                                                                                                                                                                                                                  
+updates 
+documentation 
+Support and 
+refinements 
+Monitoring and 
+Refinement 
+SMaintenance and                                                                                                                                                                                                                             
+documentation 
+technical 
+User training and 
+setup  
+and environment 
+Release preparation 
+Deployment                                                                                                                                                                                                                                       
+defect resolution 
+Security, UAT, and 
+integration testing  
+----------------Page (31) Break----------------
+STI College Tagum 
+27
+ 
+ 
+ 
+implementation process. 
+system.  It  outlines  the  project  phases,  major  activities,    and  purposes  throughout  the 
+Table  1  presents  the  scheduled  activities  for  the  development  of  the  SENTINEL 
+deliverables 
+2026                         Closure                 outputs,  prepare  defense  materials,  and  hand  over 
+December              Phase 9 - Project         To  complete  the  final  review,  consolidate  project 
+2026                      Refinement              stakeholder feedback 
+December             Maintenance and         update   documentation,   and   incorporate   approved 
+November -                   Phase 8 -                To   monitor   system   performance,   address   issues, 
+documentation turnover 
+2026                      Deployment             environments,    and    conduct    user    training    and 
+November                    Phase 7 -                To    prepare    release    builds,    configure    runtime 
+Assurance 
+and Quality              permissions, user acceptance, and defect correction 
+October 2026           Phase 6 - Testing         To validate end -to-end system behavior, security, role 
+2026 
+September                                                  AI-assisted, and cross -platform packaging features  
+August -            Phase 5 - Iteration 3       To  implement  asset,  compliance,  tracking,  analytics, 
+workflows 
+incident     handling,     notifications,     and     support 
+2026                                                      including     scheduling,     attendance,     replacement, 
+June - July           Phase 4 - Iteration 2       To    implement    workforce    continuity    workflows, 
+approvals, and frontend shell development 
+2026                                                      design,    database    setup,    authentication,    RBAC, 
+April - May          Phase 3 - Iteration 1       To  build  the  project  foundation  through  architecture 
+mechanisms 
+backlog,     and     establish     sprint     and     reporting 
+March 2026           Phase 2 - Planning        To  conduct  kickoff  activities,  organize  the  product 
+Initiation                prepare the initial development schedule 
+February 2026          Phase 1 - Project         To define the project scope, identify stakeholders, and 
+Month                    Activity                                               Purpose 
+Table 1: Calendar of Activities           
+personnel, and required resources. 
+phased  sequence  defined  in  the  WBS  and  Gantt  schedule,  including  objectives,  involved 
+progress, with each bar representing a week. The calendar of activities summarizes the same 
+duration. Activities are listed on the left, and the schedule is at the top right. Bars indicate task 
+            Figure 7  represents the  Gantt chart   of activities that summarizes the tasks and their 
+Calendar of Activities 
+----------------Page (32) Break----------------
+STI College Tagum 
+28
+ 
+requirements  analysis  prioritizes  role-governed  access,  real-time  operational  awareness,  and 
+weak  traceability  of  sensitive  asset  workflows.  Based  on  current  implementation,  the 
+operational pain points: fragmented coordination, delayed visibility, compliance exposure, and 
+            The  requirements  baseline  for  SENTINEL  was  defined  from  actual  private-security 
+system-supported approach.   
+manual or fragmented procedures are improved through a more centralized, role-governed, and 
+in the SENTINEL system. It highlights the major operational areas in which the traditional 
+Table 3 presents the comparison between the existing process and the proposed process 
+outputs.                        decisions. 
+driven decision-making.           decision-support                  command 
+traceability and data-               and AI-assisted              better-informed 
+analysis, limiting            dashboards, analytics,         capability, and 
+support               records and manual           visibility, operational        improved review 
+and decision          depends on scattered            audit logs, forensic              traceability, 
+Auditability           Operational review           SENTINEL provides               Stronger 
+command dashboards.           intervention. 
+awareness.                      monitoring, and                 operational 
+delayed supervisory             tracking, geofence              more timely 
+monitoring           patrol visibility, and              notifications, live           coordination, and 
+live                manual updates, weak                 workflows,                awareness, faster 
+handling and       field monitoring rely on          structured incident               situational 
+Incident            Incident reporting and         SENTINEL provides              Improved 
+auditable records. 
+and traceability risks.              centralized and 
+increasing compliance           workflows through            fragmentation. 
+or manual records,                   maintenance                 reduced record 
+monitoring       managed through separate         vehicle, trip, and          accountability, and 
+compliance            and trip records are                firearm, permit,          visibility, improved 
+Asset and         Firearm, permit, vehicle,       SENTINEL manages       Better compliance 
+platform. 
+communication.            in a unified operational 
+monitoring and delayed      replacement workflows           continuity. 
+depend on manual                  detection, and                  deployment 
+continuity        replacement coordination          actions, no-show                  improved 
+and workforce      no-show detection, and        schedules, attendance      workforce gaps and 
+Scheduling        Scheduling, attendance,      SENTINEL centralizes      Faster response to 
+SENTINEL                 Improvement 
+Process Area      Existing / Old Process        Proposed Process in              Expected 
+Table 3. Comparison of the Existing Process and the Proposed Process        
+Requirements Analysis 
+----------------Page (33) Break----------------
+STI College Tagum 
+29
+ 
+but PostgreSQL was preferred for stronger advanced SQL features, robust JSONB support, and 
+records. MySQL/MariaDB were considered because they are widely used relational sys  tems, 
+integrity  across  users,  approvals,  shifts,  attendance,  firearms,  vehicles,  incidents,  and  audit 
+            For  persistence,  PostgreSQL  was  selected  because  SENTINEL  requires  relational 
+centric API enforcement with fine-grained control. 
+simplicity, but Rust + Axum better matched the team's objective of memory-safe, middleware-
+overhead  for  this  capstone  scope.  Go  +  Gin/Fiber  was  also  considered  for  performance  and 
+and mature tooling,  yet it introduces a larger operational footprint and greater configuration 
+security-sensitive operations. Java + Spring Boot was considered for enterprise-grade structure 
+support,  but  the  project  prioritized  compile-time  safety  and  stricter  runtime  guarantees  for 
+Node.js  +  Express  was  considered  because  of  rapid  API  prototyping  and  broad  ecosystem 
+reliability  requirements  for  authentication,  approvals,  tracking,  and  analytics  endpoints. 
+            For backend processing, Rust + Axum was selected to meet concurrency, security, and 
+mapping, and cross-module state handling. 
+also considered, but TypeScript was chosen to reduce contract errors in role logic, API payload 
+component strategy were already established around React patterns. Plain JavaScript React was 
+learning  curve  and  progressive  adoption  model,  but  the  existing  codebase  and  shared 
+the  team's  component-by-component  delivery  pace.  Vue  was  considered  for  its  simpler 
+injection and strong conventions; however, its heavier pro ject structure was less aligned with 
+Angular  was  considered  because  it  provides  a  full  framework  with  built-in  dependency 
+satisfy  modular  dashboard  composition,  strict  role -based  rendering,  and  rapid   iteration. 
+implementation preference. For the frontend layer, React + TypeScript + Vite was selected to 
+            Technology and software selection was treated as a requirements decision, not only an 
+domains. 
+auditable  process  execution  across  personnel,  equipment,  vehicle,  incident,  and  analytics 
+----------------Page (34) Break----------------
+STI College Tagum 
+30
+ 
+Capacitor (Android) wrappers to meet cross-platform access requirements without maintaining 
+            For  deployment  targets,  the  system  uses  a  web-first  core  with  Tauri  (desktop)  and 
+interrupted.  
+polling  model  balances  responsiveness  wi th  continuity  when  persistent  connections  are 
+repeated requests for active command -center monitoring. The implemented websocket -plus-
+considered for implementation simplicity, but they introduce higher latency and unnecessary 
+handling and live snapshot exchange patterns used in tracking views. Polling-only models were 
+simplifies  one-way  streaming,  but  websocket  transport  better  supports  bidirectional  session 
+selected  as  a  hybrid  requirement.  Server -Sent  Events  (SSE)  was  considered  because  it 
+            For  real-time  operational  visibility,  websocket  streaming  with  polling  fallback  was 
+web map architecture.  
+chosen for cost efficiency, integration flexibility, and direct alignment with the implemented 
+complexity  exceeds  current  implementation  needs.  OpenStreetMap  +  Leaflet  was  therefore 
+long-running  dashboards.  ArcGIS  was  considered  for  enterprise  GIS  depth,  but  its  platform 
+recurring usage costs and token-governed access create additional operational dependency for 
+was  considered  because  it  offers  strong  vector  map  tooling  and  customizable  styles,  yet 
+billing and API quota sensitivity are less favorable for continuous monitoring views. Mapbox 
+because  it  provides  high-quality  basemaps,  geocoding,  and  route  services,  but  usage-based 
+rendering  while  retaining  implementation control.  Google  Maps  Platform  was  considered 
+satisfy real-time operational map requirements, client -site management, and location marker 
+            For  mapping  and  geospatial  visualization,  OpenStreetMap  +  Leaflet  was  selected  to 
+naturally enforced in PostgreSQL. 
+compliance  and  cross-entity  constraints  require  strong  relational  guarantees  that  are more 
+because   of   schema   flexibility   and   rapid   document   modeling;   however,   SENTINEL's 
+flexible indexing for mixed transactional and analytical workloads. MongoDB was considered 
+----------------Page (35) Break----------------
+STI College Tagum 
+31
+ 
+acceptance,  cross-platform  runtime  delivery  across  Web, 
+workflows, role-based access control, mandatory legal-policy 
+verification,  approval,  secure  authentication,  password-reset 
+•    The system shall support administrator-mediated onboarding, 
+1.   All Users 
+and legal compliance.  
+Requirements, which establish the technical benchmarks for security, real-time performance, 
+(from  high-level  Superadmin  oversight  to  Guard  field  actions),  and  Non-Functional 
+Functional Requirements, which detail the distinct tools and permissions for each user role 
+and quality standards necessary to modernize security operations for DASIA. It is divided into 
+            Serves as the blueprint for the system’s development, defining the specific capabilities 
+Requirements Documentation 
+release validation that directly supports the implemented system lifecycle. 
+The selected tooling stack provides repeatable setup, traceable change history, and  controlled 
+Kubernetes  adoption)  were  considered  excessive  for  current  scale  and  capstone  constraints. 
+and onboarding inconsistency. Alternative orchestration-heavy stacks (for example, immediate 
+requirements. Manual host -based installation was considered but increases environment drift 
+controlled  release  workflows  were  selected  to  satisfy  reproducibility  and  maintainability 
+            For operational tooling, Docker/Compose, managed runtime deployment, and version-
+implementation divergence. 
+wrapper strategy preserves feature parity across Web, Desktop, and Android while reducing 
+specific delivery, but they would require duplicate UI and integration maintenance. The chosen 
+posture. React Native and fully native Android/desktop tracks were c  onsidered for platform -
+of mature tooling, but Tauri was preferred for a lighter runtime footprint and tighter security 
+separate business logic per platform. Electron was considered for desktop packaging because 
+----------------Page (36) Break----------------
+STI College Tagum 
+32
+ 
+5.   Guard 
+feedback. 
+ticketing and notification workflows; and submit authenticated 
+workflows, and AI-assisted decision-support outputs; manage 
+geofence-alert views; use command dashboards, quick Inbox 
+real-time tracking, movement-history, active-deployment, and 
+attendance, no-show conditions, and replacement actions; access 
+•    The system shall enable supervisor users to monitor schedules, 
+4.   Supervisor 
+feedback through the constrained feedback workflow. 
+operational ticketing and notifications, and submit authenticated 
+command  dashboards  and  quick  Inbox  workflows,  handle 
+manage firearm and armored vehicle lifecycle records, access 
+workflows,  support  scheduling  and  workforce  coordination, 
+•    The system shall enable administrator users to govern personnel 
+3.   Admin 
+review. 
+log visibility, and forensic audit intelligence for investigative 
+feedback dashboard for aggregate and record-level review, audit-
+decision-support outputs, ticketing and notification visibility, a 
+dashboards,  shared  quick  Inbox  workflows,  AI-assisted 
+•    The system shall provide superadmin users with command-level 
+2.   Superadmin 
+documentation portal. 
+Windows desktop, and Android, and access to a release-oriented 
+----------------Page (37) Break----------------
+STI College Tagum 
+33
+ 
+ 
+accountability, and regulatory compliance. 
+events  shall  be  recorded  with  timestamped  metadata  suitable  for  institutional  review, 
+full redesign. Finally, for compliance traceability, legal acceptance and policy-governance 
+additional modules, integrations, and platform targets may be introduced without requiring a 
+respect to scalability, the system architecture shall remain API-driven and modular so that 
+session continuity, renewal, and termination behaviors to protect ongoing operations. With 
+operational work and timeline context. In terms of reliability, the system shall maintain secure 
+minimizing workflow friction through the use of a shared quick Inbox action for urgent 
+and modular user-interface navigation that reduce operator context switching, while further 
+decision-making. With respect to usability, the system shall provide role-centered dashboards 
+responsive dashboards and timely operational updates suitable for near-real-time supervisory 
+integrity of operational data and workflows. In terms of performance, the system shall maintain 
+security events, account-protection controls, and abuse-resistance measures to preserve the 
+shall enforce strong authentication, role-based authorization, approval-gated access, auditable 
+usability, reliability, scalability, and compliance traceability. In terms of security, the system 
+The  non-functional  requirements  of  SENTINEL  emphasize  security,  performance, 
+Non-functional Requirements 
+escalation, and submit authenticated feedback. 
+controls,  access  mission-critical  field  actions  such  as  panic 
+movement -history  features  subject  to  policy  and  consent 
+support-related workflows, use self-scoped live tracking and 
+receive  and  respond  to  notifications,  submit  incident  and 
+and  assigned  resources,  perform  attendance-related  actions, 
+•    The system shall enable guard users to access personal schedules 
+----------------Page (38) Break----------------
+STI College Tagum 
+34
+ 
+Figure 8. Guard Activity Diagram 
+Design of Software, System, Product, and/or Processes 
+----------------Page (39) Break----------------
+STI College Tagum 
+35
+ 
+ 
+monitoring until check-out and session closure. 
+occurs,  the  guard  submits  an  incident  or  panic/support  escalation  record,  then  returns  to 
+field  duty,  and  stays  in  a  duty-monitoring  loop.  When  an  incident  or  urgent  support  event 
+performs check -in, confirms location/device access for tracking, executes patrol or assigned 
+sending  support  concerns,  and  updating  profile  details.  If  an  active  shift  exists,  the  guard 
+active  shift  is  assigned,  the  guard  remains  on non-duty  activities  such  as  reviewing  alerts, 
+first guard dashboard, the process branches based on whether an active shift is available. If no 
+the required approval or acceptance step before dashboard access proceeds. From the mission-
+policy acceptance are already in a valid state; if a requirement is missing, the guard completes 
+secure logout. The flow first validates credentials, then verifies whether account approval and 
+Figure  8  illustrates  the  Guard  workflow  from  authentication  to  duty  completion  and 
+----------------Page (40) Break----------------
+STI College Tagum 
+36
+ 
+Figure 9. Supervisor Activity Diagram 
+----------------Page (41) Break----------------
+STI College Tagum 
+37
+ 
+ 
+monitoring, followed by secure logout. 
+branch  for  operational  issues  that  requires  corrective  action  logging  before  returning  to 
+The workflow then moves to live tracking and team  -performance review, with an escalation 
+continues command  monitoring  activities, including  incidents, alerts, and support  workload. 
+deployment before updating operational status. When no immediate gap exists, the supervisor 
+coordination   by   selecting   available   personnel,   issuing   reassignment,   and   confirming 
+no-show,  absence,  or  coverage  gaps  are  detected,  the  supervisor  initiates  replacement 
+schedules, attendance, and team status. The main control point is staffing-gap detection: when 
+review. After login and access -state validation, the supervisor opens the dashboard to inspect 
+Figure 9 presents the Supervisor workflow from authenticated access to end-of-session 
+----------------Page (42) Break----------------
+STI College Tagum 
+38
+ 
+Figure 10. Administrator Activity Diagram 
+----------------Page (43) Break----------------
+STI College Tagum 
+39
+ 
+ 
+administrator finalizes the current workset and closes the session through secure logout. 
+validates  updated  records,  and  returns  to  the  management  cycle.  If  no  issue  is  detected,  the 
+operational  or  compliance  issue  is  detected,  the  administrator  applies  corrective  action, 
+incident-support-notification queue and in dashboard analytics for o perational visibility. If an 
+(firearm, permit, vehicle, and trip). After each management action, updates are reflected in the 
+user/approval  records,  scheduling  and  assignment  records,  or  asset/compliance  records 
+administrator enters the command dashboard and selects the required management funct   ion: 
+a   single   fixed   sequence.   After   successful   authentication   and   access-state   checks,   the 
+Figure 10 outlines the Administrator workflow as a governed control cycle rather than 
+----------------Page (44) Break----------------
+STI College Tagum 
+40
+ 
+Figure 11. Superadmin Activity Diagram 
+----------------Page (45) Break----------------
+STI College Tagum 
+41
+ 
+ 
+Figure 12. User Login Module 
+ 
+verification and password reset workflows. 
+each  with  role -scoped  dashboard  access  and  permissions.  It  will  also  support  account 
+The login process will su pport Superadmin, Administrator, Supervisor, and Guard accounts, 
+            This module will enable secure access to the system through role-based authentication. 
+governance controls, and operational data services progressed in parallel.  
+            SENTINEL was developed through iterative Agile delivery in which user workflows, 
+Development 
+through secure logout. 
+When no issues are detected, strategic oversight approvals proceed and the superadmin exits 
+modules  and  user-role  boundaries,  and  re-evaluated  through  updated  global  status  review. 
+governance  issues.  When  issues  exist,  policy/access  changes  are  applied,  validated  across 
+and  cross-module  governance  actions.  The  decision  node  checks  for  policy,  security,  or 
+governance controls: role and permission policy administration, audit-log and forensic review, 
+global  KPIs,  service  health,  and  high-level  command  status.  The  role  then  branches  into 
+login and access-state validation, the superadmin enters the command dashboard and reviews 
+Figure 11 describes the Superadmin workflow as a system-wide governance loop. After 
+----------------Page (46) Break----------------
+STI College Tagum 
+42
+ 
+track incidents and alerts, and review duty coverage performance.  
+Supervisors  will  monitor  attendance  and  schedules,  detect  no-shows,  initiate  replacements, 
+This  module  will  support  day-to-day  field  supervision  and  deployment  continuity. 
+Figure 14. Administrator Module 
+ 
+views. 
+notifications,  and  system-level  operational  updates,  with  access  to  reporting  and  analytics 
+Administrators  will  manage  users,  approvals,  schedules,  asset  records,  compliance  entries, 
+This module will serve as the operations management gateway for administrative users. 
+ 
+Figure 13. Superadmin Module 
+ 
+strategic operational settings to maintain security and compliance across all modules. 
+Superadmin  will  manage  global  role  policies,  permission  structures,  audit  visibility,  and 
+This module will serve as the system governance layer for platform -wide control. The 
+----------------Page (47) Break----------------
+STI College Tagum 
+43
+ 
+administrators with real-time staffing visibility. 
+no-show  detection.  It  will  coordinate  replacement  workflows  and  provide  supervisors  and 
+This module will handle shift planning, assignment mapping, attendance capture, and 
+ 
+Figure 16. Guard Module 
+ 
+notifications, submit support tickets, and manage allowed profile updates. 
+Guards  will  view  schedules  and  assignments,  perform  check  -in  and  check -out,  review 
+This module will serve as the field  -user  workspace for execution of  assigned duties. 
+ 
+Figure 15. Supervisor Module 
+ 
+----------------Page (48) Break----------------
+STI College Tagum 
+44
+ 
+across workforce, compliance, and incident management activities. 
+and report generation for management and audit purposes. It will support data-driven decisions 
+This module will provide operational summaries, trend analysis, reliability indicators, 
+ 
+Figure 18. Asset and Compliance Module 
+ 
+requirements. 
+armored vehicle tracking, and related compliance controls aligned with RA 11917 operational 
+This  module  will  centralize  firearm  records,  permit  validity,  maintenance  entries, 
+ 
+Figure 17. Scheduling and Attendance Module 
+ 
+----------------Page (49) Break----------------
+STI College Tagum 
+45
+ 
+                                                 
+ 
+Figure 19. Analytics and Reporting Module 
+ 
+----------------Page (50) Break----------------
+STI College Tagum 
+46
+ 
+Khinvasara,  T.,  Shankar,  A.,  &  Wong,  C.  (2024).  Survey  of  Artificial  Intelligence  for 
+Retrieved from https://jur.ph/law/summary/the-private-security-services-industry-act 
+Jur.ph.  (2025).  The  Private  Security  Services  Industry  Act:  Law  Summary  and  IRR. 
+equipment-inventory-tracking/ 
+in   Managing   Firearms   Securely .   Retrieved   from    https://hardcat.com/police-
+Hardcat. (2025). Law Enforcement Equipment & Armory Management System: Challenges 
+https://www.getapp.com/operations-management-software/a/guardhouse/ 
+Guardhouse.  (2026).  2026  Pricing,  Features,  Reviews  &  Alternatives.  Retrieved  from 
+from https://www.getapp.com/operations-management-software/a/guardhouse/ 
+GetApp.  (2026).  Guardhouse  2026  Pricing,  Features,  Reviews  &  Alternatives.  Retrieved 
+https://dict.gov.ph/national-cyber-security-plan 
+Cybersecurity   Plan   2023-2028:   A   Whole-of-Nation   Roadmap.   Retrieved   from 
+Department of Information and Communications Technology (DICT). (2024). National 
+https://doi.org/10.3390/fi17060262 
+ABAC       Risk-Aware       Access       Control       Approach .       Retrieved       from 
+Atlam,  H.  F.,  &  Yang,  Y.  (2025).  Enhancing  Healthcare  Security:  A  Unified  RBAC  and 
+https://doi.org/10.1016/j.future.2022.06.012 
+coordination   model.   Future   Generation   Computer   Systems.   Retrieved   from 
+Al-Khafajiy, M., et al. (2022). Enabling high performance fog computing through fog-2-fog 
+https://edge.sagepub.com/aguinispm5e 
+Aguinis, H. (2022). Performance Management (5th ed.). SAGE Publications. Retrieved from 
+https://doi.org/10.13140/RG.2.2.30981.41442 
+Private                  Security                  Industry.                  Retrieved                  from 
+Abad,  R.  (2025).  How  Effective  Is  Your  Security  Guard?  An  Inquiry  into  the  Philippine 
+ 
+REFERENCES   
+----------------Page (51) Break----------------
+STI College Tagum 
+47
+ 
+Retrieved   from  https://www.scribd.com/document/691228276/Approved -IRR-RA-
+PNP-SOSIA.  (2022).  Implementing  Rules  and  Regulations  of  Republic  Act  No.  11917. 
+https://www.postgresql.org/docs/17/acid.html  
+Integrity             and             ACID             Compliance.             Retrieved             from 
+PostgreSQL  Global  Development  Group.  (2025).  PostgreSQL  17  Documentation:  Data 
+top-safety-ranking-in-southeast-asia/  
+Information  Agency.  Retrieved  from  https://pia.gov.ph/news/davao -city-maintains-
+PIA.  (2025).  Davao  City  Maintains  Top  Safety  Ranking  in  Southeast  Asia .  Philippine 
+https://www.ojs.udb.ac.id/icohetech/article/view/5657   
+Surveillance                           System .                           Retrieved                           from 
+Ondos,  M.  U.,  &  Origines,  D.  V.  (2025).   Android-Based  Guard  Monitoring  and  Site 
+2026-is-the-year-businesses-must-finally-address-admin-overload 
+Overload.  Retrieved  from https://www.node-magazine.com/thoughtleadership/why -
+NODE  Magazine.  (2026).  Why  2026  is  the  Year  Businesses  Must  Finally  Address  Admin 
+depth 
+Transactions.   Retrieved   from  https://medium.com/engineering/postgresql-acid-in-
+Nguyen,  R.  (2025).  PostgreSQL  ACID  In-Depth:  Reliability  and  Consistency  in  Modern 
+davao-regional-development-plan-2023-2028/ 
+Development  Authority.  Retrieved  from https://rdc11.neda.gov.ph/rdc-xi-approves-
+NEDA XI. (2024) . Davao Regional Development Plan 2023 -2028. National Economic and 
+services-with-rust-and-axum/ 
+Retrieved    from    https://blog.nashtechglobal.com/building-high-performance-web-
+NashTech.  (2025).    Building  High -Performance  Web  Services  with  Rust  and  Axum. 
+https://doi.org/10.9734/jerr/2024/v26i71217 
+Automated         Regulatory         Compliance         Tracking.         Retrieved         from 
+----------------Page (52) Break----------------
+STI College Tagum 
+48
+ 
+ 
+ 
+https://www.tracktik.com/wp-content/uploads/2025/10/2025BenchmarkReport-1.pdf 
+TrackTik.  (2025).  Physical  Security  Operations  Benchmark  Report  2025.  Retrieved  from 
+security-guard-management-software-for-2025/ 
+Retrieved   from  https://www.tracktik.com/resources/blog -articles/top-5-end-to-end-
+TrackTik.  (2025).  Top  5  End-to-End  Security  Guard  Management  Software  for  2025.  
+digital-transformation-of-security-and-the-role-of-ai/ 
+White Paper. Retrieved from https://www.securitas.ie/news-insights/whitepapers/the-
+Tan, K., et al. (2024).  The digital transformation of security and the role of AI.  Securitas 
+Environments. Retrieved from https://www.irejournals.com/paper-details/1704408 
+Shiyanbola,  J.  O.,  et  al.  (2023).  A  Workforce  Capacity  Optimization  Model  for  Lean 
+global-technology-outlook-report 
+https://www.securitastechnology.com/news/securitas-technology-releases-2026-
+Security                           Technology.                           Retrieved                           from 
+Securitas  Technology.  (2025).  2026  Global  Technology  Outlook  Report:  The  State  of 
+Retrieved from https://www.securitas.com/en/security-solutions/mysecuritas/ 
+Securitas.  (2026).   Control  Security  from  Anywhere   -  MySecuritas  Product  Overview . 
+High-Performance/dp/B0CX7N4K6J 
+Services.  Retrieved  from https://www.amazon.com/Rust-Axum-Web-Development-
+Scofield, M. B. (2025).  Rust Axum Web Development: Build High -Performance APIs and 
+https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/2/95597 
+Republic Act No. 11917. (2022). The Private Security Services Industry Act. Retrieved from 
+11917 
+----------------Page (53) Break----------------

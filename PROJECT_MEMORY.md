@@ -1472,3 +1472,58 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Hardened one-command launcher:
   - Updated `scripts/start-local.ps1` to auto-rewrite stale local DB URL (`postgres:password`) to docker-compose default (`postgres:postgres`) to avoid backend boot failure.
 - Smoke evidence saved at: `DasiaAIO-Frontend/output/playwright/create-guard-flow/report.json` with role screenshots in the same folder.
+
+---
+
+# 53) CAPSTONE STABILIZATION SPRINT (LIVE TRACKING + OPS MAP + SOS) (2026-05-18)
+
+## Scope executed
+- Browser-first stabilization/verification focused on:
+  - guard mobile live tracking path,
+  - superadmin desktop Operations Map path,
+  - guard SOS/offline queue behavior,
+  - role dashboard shell/navigation sanity.
+
+## Environment findings
+- `npm run verify:capstone:full` passed (frontend build + backend tests) with known non-blocking Vite chunk warnings.
+- Local backend health was initially blocked because Postgres was not listening on `:5432`.
+- Recovery path used:
+  - `docker compose -f DasiaAIO-Backend/docker-compose.yml up -d postgres backend`
+  - backend health then returned `status: ok` at `http://localhost:5000/api/health`.
+
+## Product fix applied
+- Fixed guard SOS interaction layering on mobile:
+  - file: `DasiaAIO-Frontend/src/components/guards/PanicButton.tsx`
+  - change: raised container z-index from `z-40` to `z-(--z-toast)` so the button is above the guard sticky region and reliably tappable.
+
+## Verification evidence
+- Browser smoke artifact:
+  - `DasiaAIO-Frontend/output/playwright/capstone-stabilization-sprint/report.json`
+- Key verified outcomes:
+  - guard mobile: login, tracking status visibility, map tab surface, emergency contacts bar, SOS offline queue (`queueCountAfterSos: 1`), queue banner visible.
+  - superadmin desktop: Operations Map route, heading, map controls, and data-state surface visible.
+  - role sanity: `superadmin`, `admin`, `supervisor`, `guard` all login with shell/navigation visible in smoke capture.
+
+---
+
+# 54) DASHBOARD FLICKER STABILIZATION (2026-05-18)
+
+## Symptom observed
+- Users reported visible screen/panel flicker while staying on role dashboards.
+- Root pattern: several command-center data hooks flipped `loading=true` on every periodic refresh cycle (15s), causing repeated loading-state flashes.
+
+## Product fix applied
+- Updated command-center polling hooks to preserve `loading` as first-load only, while subsequent refreshes happen in-place:
+  - `DasiaAIO-Frontend/src/hooks/useOpsSummary.ts`
+  - `DasiaAIO-Frontend/src/hooks/useOpsShifts.ts`
+  - `DasiaAIO-Frontend/src/hooks/useOpsAssets.ts`
+  - `DasiaAIO-Frontend/src/hooks/useIncidents.ts`
+  - `DasiaAIO-Frontend/src/hooks/usePredictiveAlerts.ts`
+  - `DasiaAIO-Frontend/src/hooks/useGuardAbsencePrediction.ts`
+  - `DasiaAIO-Frontend/src/hooks/useReplacementSuggestions.ts`
+  - `DasiaAIO-Frontend/src/hooks/useVehicleMaintenancePrediction.ts`
+- Implementation detail:
+  - each hook now uses a `hasLoadedOnceRef` gate; `setLoading(true)` is applied only before first successful/failed fetch, eliminating recurring UI flash during polling.
+
+## Validation
+- Frontend build: `cd DasiaAIO-Frontend && npm run build` -> PASS.
