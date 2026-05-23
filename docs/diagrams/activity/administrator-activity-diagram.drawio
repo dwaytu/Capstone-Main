@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Codex">
   <diagram id="administrator-activity-diagram" name="Figure 10. Administrator Activity Diagram">
-    <mxGraphModel dx="1488" dy="936" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1950" background="#ffffff" math="0" shadow="0">
+    <mxGraphModel dx="1047" dy="659" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1950" background="#ffffff" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -19,11 +19,11 @@
         <mxCell id="6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f2937;fontColor=#111827;" value="Reject Access or Complete&#xa;Missing Requirements" vertex="1">
           <mxGeometry height="64" width="320" x="760" y="251" as="geometry" />
         </mxCell>
+        <mxCell id="NOFwGwx55vZsFXpdC5ws-44" edge="1" parent="1" source="7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=light-dark(#000000,#000000);" target="NOFwGwx55vZsFXpdC5ws-42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f2937;fontColor=#111827;" value="Open Administrator Dashboard" vertex="1">
           <mxGeometry height="64" width="300" x="390" y="380" as="geometry" />
-        </mxCell>
-        <mxCell id="8" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#1f2937;fontColor=#111827;" value="Select Management&#xa;Function" vertex="1">
-          <mxGeometry height="90" width="200" x="440" y="480" as="geometry" />
         </mxCell>
         <mxCell id="9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f2937;fontColor=#111827;" value="Manage User and&#xa;Approval Records" vertex="1">
           <mxGeometry height="64" width="260" x="120" y="620" as="geometry" />
@@ -80,31 +80,31 @@
         <mxCell id="25" edge="1" parent="1" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="7" value="Yes">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="26" edge="1" parent="1" source="7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="8">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="27" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="9">
+        <mxCell id="27" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="9">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="250" y="590" />
               <mxPoint x="250" y="620" />
             </Array>
+            <mxPoint x="540.037037037037" y="569.9833333333333" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="28" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="10">
+        <mxCell id="28" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="10">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="540" y="590" />
               <mxPoint x="610" y="620" />
             </Array>
+            <mxPoint x="540.037037037037" y="569.9833333333333" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="29" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="11">
+        <mxCell id="29" edge="1" parent="1" source="NOFwGwx55vZsFXpdC5ws-42" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="11">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
+              <mxPoint x="540" y="590" />
               <mxPoint x="900" y="590" />
-              <mxPoint x="960" y="620" />
             </Array>
+            <mxPoint x="540.037037037037" y="569.9833333333333" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="30" edge="1" parent="1" source="9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="12">
@@ -165,6 +165,9 @@
         </mxCell>
         <mxCell id="42" edge="1" parent="1" source="19" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1f2937;endArrow=block;endFill=1;" target="20">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NOFwGwx55vZsFXpdC5ws-42" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f2937;fontColor=#111827;" value="Select Management Function" vertex="1">
+          <mxGeometry height="64" width="190" x="445" y="480" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

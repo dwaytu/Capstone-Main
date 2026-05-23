@@ -1527,3 +1527,21 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Validation
 - Frontend build: `cd DasiaAIO-Frontend && npm run build` -> PASS.
+
+---
+
+# 55) CAPSTONE DEFENSE STUDY GUIDE (2026-05-20)
+
+## What changed
+- Added `docs/capstone/SENTINEL_DEFENSE_STUDY_GUIDE.md`.
+- The guide consolidates defense preparation from the current manuscript, architecture notes, system flow diagrams, readiness pack, and latest live-tracking smoke evidence.
+
+## Guide coverage
+- What to read first for defense preparation.
+- One-minute project pitch and problem statement framing.
+- Complete role-based and technical system flows, including login, protected requests, live tracking, emergency/SOS, scheduling, asset compliance, and cross-platform release flow.
+- Panel demo script, evidence references, possible panel questions with prepared answers, memorization sheet, and final review checklist.
+
+## Notes
+- Existing manuscript/PDF files were not modified.
+- PDF text extraction was not available in the shell environment because `pdftotext` and Python were unavailable, so the current `SENTINEL - Group 8.md` manuscript source was used as the content authority.
