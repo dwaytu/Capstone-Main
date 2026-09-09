@@ -10,6 +10,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if (-not [string]::IsNullOrWhiteSpace($env:RAILWAY_TOKEN) -and -not [string]::IsNullOrWhiteSpace($env:RAILWAY_API_TOKEN)) {
+  throw "Set only one Railway token: RAILWAY_TOKEN or RAILWAY_API_TOKEN."
+}
+
+$RailwayToken = if (-not [string]::IsNullOrWhiteSpace($env:RAILWAY_TOKEN)) {
+  $env:RAILWAY_TOKEN
+} else {
+  $env:RAILWAY_API_TOKEN
+}
+
 function Require-Value {
   param(
     [string]$Name,
@@ -20,7 +30,7 @@ function Require-Value {
   }
 }
 
-Require-Value -Name "RAILWAY_TOKEN" -Value $env:RAILWAY_TOKEN
+Require-Value -Name "RAILWAY_TOKEN or RAILWAY_API_TOKEN" -Value $RailwayToken
 Require-Value -Name "RAILWAY_PROJECT_ID" -Value $ProjectId
 Require-Value -Name "RAILWAY_ENVIRONMENT" -Value $Environment
 
