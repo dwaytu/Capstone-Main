@@ -118,7 +118,7 @@ These are the five improvement phases from the panel recommendations. They are s
 
 ### Phase 4: Request and Approval Enhancement
 
-**Status:** Approval and audit infrastructure exists; service/deposit request coverage must be confirmed and completed as a distinct workflow.
+**Status:** Implemented on 2026-09-09. Phase-specific backend, frontend, live API, database migration, and browser acceptance checks passed. The full 17-test browser suite is green; the frontend CI workflow was also corrected to use Node 22 for the Jest Web API shim.
 
 **Work:**
 
@@ -151,7 +151,7 @@ These are the five improvement phases from the panel recommendations. They are s
 1. Keep the Phase 1 paper scope frozen as the implementation contract.
 2. Implement Phase 2 DTR reporting because it becomes the attendance source for later analytics. **Complete for this increment.**
 3. Implement Phase 3 firearm compliance reporting and expiration notifications. **Complete for this increment.**
-4. Confirm and implement Phase 4 service/deposit request approval workflow.
+4. Phase 4 service/deposit request approval workflow. **Complete for this increment.**
 5. Recalculate and refine Phase 5 analytics using the expanded trusted data.
 6. Run the functionality-completion gate after each phase and freeze only after all required workflows pass.
 
@@ -272,10 +272,8 @@ Do not attach passwords, JWTs, production URLs with secrets, or private keys to 
 
 ## 9. Immediate Next Actions
 
-1. Rerun the mutation audit against its disposable database and isolated ports after the local service harness is available.
-2. Keep the current iteration stable while the mutation evidence is refreshed; do not start Phase 4 or 5 until that controlled run passes.
-3. Confirm and implement Phase 4 service/deposit request approval workflow.
-4. Recalculate and refine Phase 5 analytics using the expanded trusted data.
-5. Run `npm run verify:release -- -RequireApi -RunBrowserSmoke` after each increment.
-6. Execute `npm run audit:functionality` with approved local QA accounts after each workflow change.
-7. Freeze the build only after all required workflows pass; fix release-blocking defects afterward.
+1. Keep the current Phase 4 release stable and monitor the Railway deployment.
+2. Recalculate and refine Phase 5 analytics using the expanded trusted data.
+3. Run `npm run verify:release -- -RequireApi -RunBrowserSmoke` after each increment.
+4. Execute `npm run audit:functionality` with approved local QA accounts after each workflow change.
+5. Freeze the build only after all required workflows pass; fix release-blocking defects afterward.
