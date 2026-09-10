@@ -69,16 +69,20 @@ Never assume `user` is a valid role — the legacy `user → guard` shim has bee
 let id = utils::generate_id(); // UUID v4
 ```
 
-### 2.6 AI / Ollama integration
+### 2.6 Rule-based operational decision support
 
-`services::incident_ai_classifier::classify_incident_async(description)` calls the Ollama HTTP API
-with a keyword-classifier fallback. Env vars:
+The active runtime has no Ollama, hosted LLM, or external AI dependency. Operational decision-support
+services use deterministic scoring and keyword/rule logic. Their outputs are advisory indicators for
+human supervisor or administrator review, not automatic decisions.
 
-| Var | Default |
-|---|---|
-| `OLLAMA_BASE_URL` | `http://localhost:11434` |
-| `OLLAMA_MODEL` | `llama3` |
-| `OLLAMA_API_KEY` | *(none)* |
+Current route families:
+
+- `GET /api/analytics/guard-absence-risk`
+- `GET /api/analytics/replacement-suggestions?post_id=...`
+- `GET /api/analytics/vehicle-maintenance-risk`
+- `POST /api/analytics/incident-severity`
+- `POST /api/analytics/incident-summary`
+- `GET /api/alerts/operational-risk`
 
 ### 2.7 Guard absence prediction weights
 
@@ -182,12 +186,15 @@ backed by:
 | POST | `/api/auth/login` | JWT login |
 | POST | `/api/auth/register` | User registration |
 | GET | `/api/firearms?page=&pageSize=` | Paginated firearms list |
+| GET | `/api/firearms/compliance-report?status=&windowDays=&page=&pageSize=` | Consolidated firearm custody, permit, maintenance, and expiry report |
+| POST | `/api/firearms/compliance-notifications` | Deduplicated expiry notifications for approved supervisors and administrators |
 | GET | `/api/guard-replacement/availability/:id` | Guard availability |
 | POST | `/api/guard-replacement/set-availability` | Toggle available flag |
 | GET | `/api/tracking/guard/:id/history` | Guard location history |
 | POST | `/api/tracking/guard/:id/checkin` | Guard check-in |
 | POST | `/api/incidents` | Create incident |
-| POST | `/api/ai/classify-incident` | LLM severity classification |
+| POST | `/api/analytics/incident-severity` | Rule-based incident severity triage |
+| POST | `/api/analytics/incident-summary` | Deterministic incident summary and key-phrase extraction |
 | GET | `/api/notifications` | Current user notifications |
 | POST | `/api/shifts/swap-request` | Guard shift swap request |
 | GET | `/api/shifts/swap-requests` | List swap requests |
@@ -219,7 +226,7 @@ backed by:
 | `client_sites` | Sites with `latitude` / `longitude` |
 | `notifications` | In-app notifications (`type`, `user_id`, `related_shift_id`) |
 | `guard_shift_swaps` | Shift swap requests (`requester_id`, `target_id`, `status`) |
-| `incidents` | Reported incidents with AI-assigned severity |
+| `incidents` | Reported incidents with manually selected priority and status |
 | `firearm_allocations` | Guard ↔ firearm allocation records |
 | `clients` | Client organizations (name, address, phone, branch) |
 | `guard_assignments` | Guard ↔ client post assignments with status |
@@ -239,11 +246,6 @@ JWT_SECRET=...
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8080
 
-# Ollama AI
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3
-OLLAMA_API_KEY=
-
 # Prediction weights (must sum to 1.0)
 ABSENCE_WEIGHT_ABSENCES=0.5
 ABSENCE_WEIGHT_LATE=0.3
@@ -251,6 +253,9 @@ ABSENCE_WEIGHT_LEAVE=0.2
 
 # Background tasks
 GEOFENCE_ALERT_INTERVAL_SECS=300
+# Missing check-in alerts (defaults: 60 seconds and 15 minutes)
+SHIFT_ALERT_INTERVAL_SECS=60
+SHIFT_CHECK_IN_GRACE_MINUTES=15
 ```
 
 ---

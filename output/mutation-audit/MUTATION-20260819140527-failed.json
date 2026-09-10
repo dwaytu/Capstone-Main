@@ -1,0 +1,21 @@
+{
+  "tag": "MUTATION-20260819140527",
+  "results": [
+    {
+      "name": "schedule creation via UI",
+      "status": "PASS",
+      "shiftId": "861a7287-b58e-4881-b3ec-1b28136dff62"
+    },
+    {
+      "name": "attendance check-in via UI",
+      "status": "PASS",
+      "shiftId": "861a7287-b58e-4881-b3ec-1b28136dff62"
+    },
+    {
+      "name": "attendance check-out via UI",
+      "status": "FAIL",
+      "message": "page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\""
+    }
+  ],
+  "error": "page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\""
+}

@@ -1545,3 +1545,295 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Notes
 - Existing manuscript/PDF files were not modified.
 - PDF text extraction was not available in the shell environment because `pdftotext` and Python were unavailable, so the current `SENTINEL - Group 8.md` manuscript source was used as the content authority.
+---
+
+# 56) SHIFT SCHEDULE JSON CONTRACT FIX (2026-08-19)
+
+## Symptom observed
+- Add New Schedule modal showed: `Failed to deserialize the JSON body into the target type: missing field guardId`.
+
+## Root cause
+- Frontend schedule create/edit requests were sending snake_case JSON fields (`guard_id`, `client_site`, `start_time`, `end_time`), while the Rust `CreateShiftRequest` model uses `#[serde(rename_all = "camelCase")]` and expects `guardId`, `clientSite`, `startTime`, and `endTime`.
+
+## Fix applied
+- Updated `DasiaAIO-Frontend/src/components/admin/SuperadminDashboard.tsx` schedule creation payload to camelCase.
+- Updated `DasiaAIO-Frontend/src/components/EditScheduleModal.tsx` schedule update payload to camelCase.
+- Added snake_case aliases to `DasiaAIO-Backend/src/models.rs` so older clients remain compatible.
+
+## Validation
+- Frontend build: `cd DasiaAIO-Frontend && npm run build` -> PASS.
+- Backend check: `cd DasiaAIO-Backend && cargo check` -> PASS.
+- Runtime API probe with camelCase body reached auth validation (`401 Missing Authorization header`) instead of JSON deserialization failure.
+---
+
+# 57) AI HYBRID ASSISTANCE REMOVAL (2026-08-19)
+
+## Panel-driven change
+- Defense panel requested removal of AI hybrid assistance from SENTINEL.
+
+## Product decision
+- Removed external AI/LLM behavior from active backend/frontend code.
+- Reframed remaining useful outputs as rule-based operational analytics and risk scoring.
+- Human supervisors/admins remain responsible for final decisions.
+
+## Code changes
+- Renamed backend AI-facing modules to neutral decision-support/scoring names.
+- Removed Groq/OpenAI/LLM incident-classification behavior; incident severity triage is now deterministic keyword scoring only.
+- Replaced public `/api/ai/*` usage with `/api/analytics/*` routes and `/api/alerts/operational-risk`.
+- Updated frontend labels from AI/predictive wording to operational alerts, incident triage, generated summaries, and maintenance risk.
+
+## Documentation changes
+- Updated `SENTINEL - Group 8.md` implementation/objective/scope wording to remove AI hybrid assistance claims.
+- Left AI mentions inside the Review of Related Literature and References untouched because those sections are protected by paper-maintenance instructions.
+- Updated `docs/capstone/SENTINEL_DEFENSE_STUDY_GUIDE.md` to match the revised analytics/risk-scoring framing.
+
+## Validation
+- Backend check: `cd DasiaAIO-Backend && cargo check` -> PASS.
+- Frontend build: `cd DasiaAIO-Frontend && npm run build` -> PASS.
+---
+
+# 58) CAPSTONE DOCX TO MARKDOWN SYNC (2026-08-19)
+
+## User request
+- User updated `SENTINEL - Group 8.docx` and requested `SENTINEL - Group 8.md` be updated from it.
+
+## Work performed
+- Converted the current DOCX content into Markdown and replaced `SENTINEL - Group 8.md`.
+- Extracted DOCX images into `docs/capstone/paper-media`; updated images `img-32.png` through `img-35.png` changed from the DOCX source.
+- Verified the revised Markdown contains the six summarized specific objectives from the DOCX.
+
+## AI wording check
+- SENTINEL implementation/scope/objective claims remain free of AI hybrid assistance wording after sync.
+- Remaining AI mentions are in the Review of Related Literature and References only.
+---
+
+# 59) INBOX API INTEGRATION BUG FIX (2026-08-19)
+
+## Symptom audited
+- Elevated role inbox panels were still using relative `/api/...` fetch URLs, which hit the Vite frontend origin because no `/api` proxy is configured.
+- The same panels and role inbox summary helper treated backend list responses as raw arrays, while current backend endpoints return envelopes such as `{ incidents }`, `{ shifts }`, `{ notifications }`, `{ firearms }`, and `{ allocations }`.
+- `AdminInboxPanel` requested stale `/api/analytics/metrics`, which is not registered by the backend.
+
+## Fix applied
+- Added `src/components/inbox/inboxPayloads.ts` to extract arrays from both legacy raw-array payloads and backend envelope payloads.
+- Updated `AdminInboxPanel`, `SupervisorInboxPanel`, `SuperadminInboxPanel`, and `roleInboxSummary` to use `API_BASE_URL` and unwrap backend response envelopes.
+- Replaced admin inbox metrics fetch with existing `GET /api/analytics` and mapped overview fields into the small metrics chip model.
+- Added abort cleanup for the full inbox panel fetch effects.
+- Added `inboxPayloads.test.ts` for envelope parsing coverage.
+
+## Validation
+- Targeted frontend inbox tests: `npm test -- --runInBand --runTestsByPath src/components/inbox/__tests__/inboxPayloads.test.ts src/components/inbox/__tests__/roleInboxSummary.firearmEndpoint.test.ts src/components/inbox/__tests__/pendingApprovals.test.ts` -> PASS.
+- Frontend full tests: `npm test -- --runInBand` -> PASS, 22 suites / 103 tests.
+- Frontend build: `npm run build` -> PASS.
+- Backend check: `cargo check` -> PASS.
+- Backend tests: `cargo test` -> PASS.
+---
+
+# 60) GUARD PERFORMANCE REPORT ANALYTICS (2026-08-19)
+
+## Panel recommendation implemented
+- Added clearer graphical performance metrics, evaluation, and analytics reporting for guard operations.
+
+## Backend changes
+- Added `GET /api/analytics/guard-performance-report` in `src/main.rs` using the existing analytics permission gate.
+- Added `get_guard_performance_report` in `src/handlers/analytics.rs`.
+- The endpoint accepts optional `from=YYYY-MM-DD` and `to=YYYY-MM-DD` filters.
+- The report aggregates per-guard and summary metrics from `shifts`, `attendance`, `punctuality_records`, `incidents`, `client_evaluations`, `guard_merit_scores`, and `guard_shift_swaps`.
+- Returned metrics include attendance rate, late check-ins, completed shifts, no-shows, incident reports, average client rating, merit score, and replacement frequency.
+
+## Frontend changes
+- Reworked `src/components/PerformanceDashboard.tsx` from a reliability-only table into a full Guard Performance Report.
+- Added KPI cards, date filters, native SVG bar charts, workload bars, replacement-frequency chart, and a detailed metrics table.
+- Kept charts native SVG/HTML; no charting library was added.
+
+## Validation
+- Backend check: `cargo check` -> PASS.
+- Backend tests: `cargo test` -> PASS.
+- Frontend build: `npm run build` -> PASS.
+- Frontend tests: `npm test -- --runInBand` -> PASS, 22 suites / 103 tests.
+
+---
+
+# 61) FULL SYSTEM BUG AUDIT AND REMEDIATION (2026-08-19)
+
+## Backend fixes
+- Enforced strict user-management hierarchy (`superadmin > admin > supervisor > guard`) for user updates, deletion, and profile-photo actions; self-service remains allowed where intended.
+- Reworked user updates to validate the complete payload before one bound update, accept camelCase and snake_case aliases, parse date-only/RFC3339 license dates, and reject unsupported or oversized profile-photo data URLs.
+- Made attendance check-in/check-out transactional and idempotent, tied attendance to the assigned shift, and restricted scheduling to approved verified guard accounts.
+- Persisted no-shows to `punctuality_records`, prevented duplicate detection/notifications, and added startup migrations for legacy databases missing `shifts.grace_period_minutes` and `shifts.replacement_status`.
+- Corrected guard performance no-show aggregation to avoid counting the same absence twice.
+
+## Frontend fixes
+- Converted schedule form local dates/times to UTC correctly, supported overnight shifts, and restored active check-in state from shift-specific attendance after refresh.
+- Preserved distinct offline actions by comparing method, URL, and canonical body; SOS and incident actions now queue only network/offline failures, not server validation/authentication errors.
+- Fixed request timeout behavior when callers provide an AbortSignal and added abort cleanup across operational data hooks.
+- Fixed strict TypeScript defects in the account modal, MDR review, and offline queue.
+- Removed the duplicate guard location banner and corrected the expanded emergency-contact safety region so content and SOS/contact controls do not overlap at 390px or 320px widths.
+
+## Dependency remediation
+- Updated direct `dompurify` and `react-router` dependencies and applied compatible audit fixes to the frontend build/test dependency graph.
+- `npm audit --json` now reports zero vulnerabilities across production and development dependencies.
+
+## Verification
+- Backend: `cargo check`, `cargo test` (28 unit, 2 integration, 15 release-blocker), and `cargo clippy --all-targets` passed; Clippy reports 27 existing non-behavioral style warnings.
+- Frontend: strict `tsc --noEmit`, 25 Jest suites / 119 tests, and Vite production build passed.
+- Docker/live PostgreSQL probes passed for health, analytics (179 guards), role-hierarchy denial, date/alias user updates, profile-photo validation, approved-guard scheduling, duplicate check-in/check-out, and duplicate-free no-show detection. All temporary records were removed.
+- Headless Playwright UI smoke passed for performance desktop/mobile and guard mobile/narrow-mobile with no page errors, API errors, horizontal overflow, or SOS/contact intersections.
+
+# 62) RELEASE READINESS PHASE (2026-08-19)
+
+## Work completed
+- Added `docs/RELEASE_READINESS_GUIDE.md` with scope, execution order, acceptance criteria, panel-comment action register, defense-demo sequence, residuals, and go/no-go rules.
+- Added root `npm run verify:release`, implemented by `scripts/release-readiness.ps1`.
+- Added frontend `npm run audit:smoke`; parameterized local QA credentials through `AUDIT_SUPERADMIN_*` and `AUDIT_GUARD_*` environment variables.
+- Strengthened browser smoke failures to include all unexpected API responses at HTTP 400 or higher, not only HTTP 500 responses.
+- Updated `COPILOT.md`, `architecture.md`, and `README.md` so current routes and documentation describe deterministic rule-based operational analytics and human-reviewed decisions, with no active Ollama/LLM integration claim.
+- Renamed active incident-form state from AI-prefixed terminology to neutral rule-based triage terminology.
+
+## Verification
+- `npm run verify:release -- -RequireApi -RunBrowserSmoke` -> PASS.
+- Frontend TypeScript -> PASS.
+- Frontend tests -> 25 suites / 119 tests passed.
+- Frontend production build -> PASS.
+- `npm audit --audit-level=high` -> 0 vulnerabilities.
+- Backend `cargo check` -> PASS.
+- Backend `cargo test` -> 45 meaningful tests passed (28 unit, 2 integration, 15 release-blocker).
+- Backend `cargo clippy --all-targets` -> PASS with 27 existing non-behavioral warnings.
+- Local API health -> PASS.
+- Playwright browser smoke -> performance desktop/mobile and guard mobile/narrow-mobile passed with no page errors, API errors, horizontal overflow, or SOS/contact intersections.
+
+## Remaining handoff
+- Rehearse and freeze the defense deck against the current build.
+- Keep production credentials, CORS, database backup/restore, and signed Android release validation as deployment-owned checks.
+- Treat Clippy and Vite optimization warnings as follow-up cleanup unless they become release blockers.
+
+# 63) POST-DEFENSE IMPLEMENTATION ROADMAP ADDED (2026-08-19)
+
+## Work completed
+- Expanded `docs/RELEASE_READINESS_GUIDE.md` with the five panel-driven roadmap phases:
+  1. Documentation and scope revision
+  2. DTR and attendance enhancement
+  3. Firearm compliance enhancement
+  4. Request and approval enhancement
+  5. Analytics and evaluation enhancement
+- Added status, deliverables, dependencies, completion evidence, and sequencing for each phase.
+- Clarified that release readiness is the verification gate applied after each roadmap increment, not a replacement for the post-defense feature plan.
+
+# 64) PHASE 1 VERIFIED AND PHASE 2 DTR IMPLEMENTED (2026-08-19)
+
+## Phase 1 verification
+- Verified the current `SENTINEL - Group 8.md` paper has one revised general objective and six summarized specific objectives.
+- Verified the active purpose, objectives, scope, and limitations sections no longer claim AI hybrid assistance, Ollama, or an LLM feature.
+- Preserved historical AI-related literature and references because they are protected paper sections, not active system scope.
+- Recorded Phase 1 as complete for the paper revision; the PowerPoint and defense guide still require final synchronization before the defense.
+
+## Phase 2 implementation
+- Added elevated-role `GET /api/attendance/dtr` with guard, date range, site, status, pagination, date validation, derived attendance status, lateness, and total-hours fields.
+- Added the `/dtr` frontend report for superadmin, admin, and supervisor roles with filter controls, paginated table, print action, CSV download, loading, empty, and error states.
+- Added DTR navigation and route regression expectations.
+- Extended browser smoke to validate DTR desktop/mobile rendering and an actual CSV download.
+
+## Verification
+- Docker backend rebuilt and live health check passed.
+- Live DTR endpoint returned a paginated record and correctly returned an empty filtered result for `status=completed`.
+- Invalid date and reversed date-range probes returned `400` with clear validation errors.
+- Backend: `cargo test` -> 30 unit, 2 integration, and 15 release-blocker tests passed.
+- Frontend: 25 Jest suites / 119 tests passed; production build passed.
+- Browser smoke: performance desktop/mobile, DTR desktop/mobile, and guard mobile/narrow-mobile passed with no page errors, API errors, horizontal overflow, or SOS/contact intersections; CSV download passed.
+
+# 65) FUNCTIONALITY COMPLETION: FIREARM COMPLIANCE (2026-08-19)
+
+## Scope decision
+- Defense rehearsal work is intentionally out of the active implementation scope because the outline defenses are complete.
+- Current priority is functional completeness, controlled-pilot readiness, and repeatable regression evidence.
+
+## Phase 3 implementation
+- Added elevated-role firearm compliance reporting at `GET /api/firearms/compliance-report` with filters, pagination, custody data, permit expiry state, maintenance state, and compliance summary metrics.
+- Added deduplicated expiry and overdue notifications at `POST /api/firearms/compliance-notifications`.
+- Added the `Firearm Compliance` frontend page with KPI cards, filters, consolidated compliance table, print, CSV export, refresh, and notification synchronization.
+- Fixed the firearm API contract by serializing firearm, allocation, permit, and guard-allocation models as camelCase for the React frontend.
+- Added idempotent startup schema alterations for allocation return date, notes, and issuer metadata that existing handlers already require.
+- Corrected notification selection so permits marked `expired` are still reported as overdue.
+
+## Verification
+- Full `npm run verify:release -- -RequireApi -RunBrowserSmoke` passed.
+- Frontend: TypeScript, 25 Jest suites / 119 tests, production build, and dependency audit passed with 0 vulnerabilities.
+- Backend: compile, 32 unit tests, 2 integration tests, 15 release-blocker tests, and Clippy passed; existing non-blocking Clippy warnings remain.
+- Live API checks passed for the compliance report, camelCase firearm payloads, notification synchronization, invalid status, and invalid window validation.
+- Browser smoke passed for performance, DTR, firearm compliance, and guard views on desktop/mobile, with no page errors, API failures, horizontal overflow, or guard SOS/contact intersections.
+
+## Next implementation increment
+- Phase 4 service/deposit request lifecycle and approval tracking remains next.
+- Phase 5 analytics and evaluation refinement follows after Phase 4.
+
+# 66) CURRENT-ITERATION BROWSER ACCEPTANCE AUDIT (2026-08-19)
+
+## Browser audit
+- Added `DasiaAIO-Frontend/scripts/manual-functionality-audit.mjs` and the `npm run audit:functionality` command.
+- Audited authenticated superadmin, admin, supervisor, and guard accounts across 86 desktop/mobile route checks.
+- Clicked 370 non-destructive controls including filters, refresh, print, CSV, calendar navigation, compliance alert synchronization, quick inbox, profile menus, and responsive layouts.
+- Final audit result: zero page errors, console errors, API errors, request failures, or horizontal overflow. JSON evidence is saved under `DasiaAIO-Frontend/test-results/system-audit/manual-functionality-audit.json`.
+- Destructive mutations were intentionally excluded because they require disposable fixtures and cleanup ownership; this audit proves read/navigation/control behavior, not every create/update/delete lifecycle.
+
+## Defects found and fixed
+- Fixed guard permit reads to call `/api/guard-firearm-permits/:guard_id` instead of the elevated all-permits endpoint, removing the guard-role 403.
+- Fixed guard calendar loading to skip the elevated `/api/trips` feed; trips now load only for elevated roles.
+- Corrected the audit harness to ignore navigation-aborted requests and avoid disabled select options, so results represent application failures rather than test timing artifacts.
+
+## Verification
+- `npm run audit:functionality` -> PASS: 86 route checks, 370 control clicks, zero failures.
+- `npm run verify:release -- -RequireApi -RunBrowserSmoke` -> PASS.
+- Frontend: TypeScript, 25 Jest suites / 119 tests, production build, and dependency audit passed with 0 vulnerabilities.
+- Backend: compile, 32 unit tests, 2 integration tests, 15 release-blocker tests, and Clippy passed with existing non-blocking warnings.
+
+## Readiness decision
+- The current implemented iteration is accepted for the non-mutating browser acceptance scope.
+- Before claiming total end-to-end functionality, run controlled fixture-based mutation tests for schedule creation, attendance check-in/out, incident submission, approvals, firearm allocation/return, maintenance, feedback, support tickets, MDR import, and logout/session expiry.
+- Phase 4 and Phase 5 remain deferred until the team chooses to resume feature implementation.
+
+# 67) FINAL ACCEPTANCE AUDIT RESULT (2026-08-19)
+
+- Final `npm run audit:functionality` passed with 86 route/viewport checks, 475 safe control interactions, and zero failures.
+- The final pass included responsive menu and More-drawer interactions plus profile-menu logout/session exit checks for all four roles.
+- The saved report `DasiaAIO-Frontend/test-results/system-audit/manual-functionality-audit.json` is the current evidence artifact.
+- This is acceptance-complete for navigation, read paths, controls, overlays, responsive layout, authorization reads, and session exit. It is not a claim that every data-changing workflow has been executed against the shared database.
+
+# 68) FIXTURE-BASED MUTATION AUDIT AND ATTENDANCE CONTRACT FIX (2026-08-19)
+
+## Audit result
+- Created a disposable PostgreSQL clone and ran browser-driven mutation coverage against isolated backend/frontend services.
+- Passed 12 workflows: schedule creation, attendance check-in/out, incidents, support tickets, feedback, firearm allocation, firearm return, maintenance schedule/complete, guard approval, and MDR import/reject.
+- Final evidence: `output/mutation-audit/MUTATION-20260819140813.json` with zero page errors, console errors, or API errors.
+- The disposable database was dropped after the run; the shared `guard_firearm_system` database was not mutated.
+
+## Defect fixed
+- Guard attendance actions sent snake_case JSON (`guard_id`, `shift_id`, `attendance_id`) while Rust request models require camelCase (`guardId`, `shiftId`, `attendanceId`). This caused HTTP 422 responses. Updated direct and offline-queue payloads in `DasiaAIO-Frontend/src/components/guards/UserDashboard.tsx`.
+- Frontend tests, TypeScript, and production build passed after the fix.
+
+## Remaining boundary
+- Firearm return and firearm maintenance scheduling/completion backend routes passed through authenticated browser-context requests, but the current frontend exposes no corresponding mutation controls. Add those controls before claiming full click-complete UI coverage or explicitly accept them as out of scope.
+- Added `scripts/mutation-functionality-audit.mjs` and the frontend `audit:mutations` command for repeatable fixture-based coverage.
+
+# 69) POST-FIX RELEASE GATE (2026-08-19)
+
+- `npm run verify:release -- -RequireApi -RunBrowserSmoke` passed after the attendance payload fix.
+- Frontend TypeScript, 25 Jest suites / 119 tests, production build, npm audit, backend compile/tests/Clippy, API health, and browser smoke all passed.
+- Browser smoke passed performance, DTR, firearm compliance, and guard mobile/narrow-mobile checks with no page/API/layout failures.
+- Existing non-blocking Vite dynamic-import warnings and 27 Clippy warnings remain.
+
+# 70) PHASE 4 REQUEST AND APPROVAL WORKFLOW (2026-09-09)
+
+## Implementation
+- Added operational_requests and operational_request_events with constrained states, request-linked notifications, resource duplicate protection, and chronological domain history.
+- Added service, deposit, return, and firearm-registration suggestion workflows. Registration remains human-controlled; approval never creates a firearm automatically.
+- Guards and other authenticated roles create their own requests. Supervisors/admins/superadmins review; only admins/superadmins fulfill. Self-review is denied.
+- Explicit deposit/return completion updates firearm allocation and firearm custody atomically, or unassigns equipment after ownership validation.
+- Added request UI to guard navigation, elevated Requests and Approvals views, role inboxes, sidebar navigation, and /requests deep links.
+- Added status, type, priority, requester, and date filtering plus correction/resubmission, cancellation, decision reasons, fulfillment controls, and event history.
+
+## Verification
+- Backend: 37 unit tests, 2 integration tests, and 15 release-blocker tests passed. Startup migration and health checks passed on the existing local PostgreSQL database.
+- Frontend: TypeScript, 26 Jest suites / 123 tests, production build, and 2 Phase 4 Playwright scenarios passed.
+- Live API lifecycle passed guard submission, supervisor review, admin fulfillment, authorization denials, correction/resubmission, cancellation, history, and atomic firearm return; temporary fixtures were removed.
+- Strict Clippy reports no Phase 4 findings but remains blocked by 27 pre-existing findings in unrelated modules.
+- The older full Playwright suite is not globally green because existing guard-dashboard expectations/mocks and local login credentials are stale; refresh them before the next full release gate.

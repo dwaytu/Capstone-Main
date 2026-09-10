@@ -1,0 +1,16 @@
+{
+  "tag": "MUTATION-20260819140347",
+  "results": [
+    {
+      "name": "schedule creation via UI",
+      "status": "PASS",
+      "shiftId": "a9e594bf-73fb-4a64-a6b5-fa9fdb3565e9"
+    },
+    {
+      "name": "attendance check-in via UI",
+      "status": "FAIL",
+      "message": "() => checkInButton.click() /api/guard-replacement/attendance/check-in returned 422: \"Failed to deserialize the JSON body into the target type: missing field `guardId` at line 1 column 101\""
+    }
+  ],
+  "error": "() => checkInButton.click() /api/guard-replacement/attendance/check-in returned 422: \"Failed to deserialize the JSON body into the target type: missing field `guardId` at line 1 column 101\""
+}

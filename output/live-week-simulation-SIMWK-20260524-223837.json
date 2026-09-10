@@ -1,0 +1,626 @@
+﻿{
+    "simId":  "SIMWK-20260524-223837",
+    "baseUrl":  "https://backend-production-0c47.up.railway.app",
+    "startedAt":  "2026-05-24T22:38:37.3631909+08:00",
+    "days":  [
+                 {
+                     "date":  "2026-05-18",
+                     "heartbeats":  [
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "be3f0bcc-80b7-4f34-9f59-ca8bd83d1799"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "7f19a300-61fa-48a7-a1e2-f4221416b02b"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "7ce14684-faeb-45fd-a8b2-eeba7472de42"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "9d3f036a-5cd8-4c9c-9084-e2b370748445"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "1b188676-e42a-408e-9200-91d8001a9a88"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "fb359567-81b4-4e42-9043-76c3bbfdf21c"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "622ab55d-f934-4ca4-bd9a-493f9e7bb9f4"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "a87bb7ad-d24c-440d-b442-b6016eec9331"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "78394132-9d3b-4539-a301-00b811e9a917"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "50d917db-0f54-425f-97f6-3c13a6b4feb9"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "c20c81bf-7fbd-48fa-8e31-40eb32ac7860"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "81b33dab-eb80-4908-b210-09286579c545"
+                                        }
+                                    ],
+                     "incidents":  [
+                                       {
+                                           "created":  true,
+                                           "incidentId":  "efbb703e-58ff-4831-a6ce-d87ffe3f6e72"
+                                       }
+                                   ],
+                     "tickets":  [
+                                     {
+                                         "created":  true,
+                                         "ticketId":  "b0d561ab-c3e3-4874-b04a-3a34221f6ecd"
+                                     }
+                                 ],
+                     "mapChecks":  [
+                                       {
+                                           "viewer":  "supervisor",
+                                           "trackingPoints":  1
+                                       },
+                                       {
+                                           "viewer":  "superadmin",
+                                           "trackingPoints":  1
+                                       }
+                                   ],
+                     "errors":  [
+
+                                ]
+                 },
+                 {
+                     "date":  "2026-05-19",
+                     "heartbeats":  [
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "0f30bb86-17f5-43fd-bfc4-94b40f4f206a"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "10ba2e89-5411-45f4-95ba-5c4ef5afc5c8"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "882bb3b6-df8b-4f52-a335-ee14f1102fb1"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "9e200be4-40f0-450d-8ce5-1fe37443f549"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "bc4ca401-8688-4928-8e2f-bed689019231"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "b136b9da-000b-4d39-bc09-f0f53872fde5"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "732d3f6f-2657-4ffb-a86a-68100850533b"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "98d73880-2d6c-40cb-ab5f-af95894c07b1"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "8f5d8bf3-f31d-40bc-8933-1e4a1805dcc3"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "45cd1f7d-1ff7-4afd-8bd6-486e380bbb2b"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "f9d4d94b-b90d-4890-8ae9-26393a622ecf"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "fb123e76-c8de-4b04-a005-0c70afe79f13"
+                                        }
+                                    ],
+                     "incidents":  [
+
+                                   ],
+                     "tickets":  [
+
+                                 ],
+                     "mapChecks":  [
+                                       {
+                                           "viewer":  "supervisor",
+                                           "trackingPoints":  1
+                                       },
+                                       {
+                                           "viewer":  "superadmin",
+                                           "trackingPoints":  1
+                                       }
+                                   ],
+                     "errors":  [
+
+                                ]
+                 },
+                 {
+                     "date":  "2026-05-20",
+                     "heartbeats":  [
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "6c9a762c-0f90-4b0f-b600-52583ec23a3f"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "261308b7-08a4-4daa-979b-62a8e10c6a33"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "2d795373-5b3b-4c64-abd1-6d404525dc97"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "e5f569a4-a87e-4308-94fa-de215e3fcc95"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "085d87c6-50c4-4941-8299-3149417b0c3f"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "c9aee402-92e4-4233-bc46-ded770f63d1c"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "126d13de-596e-4032-8ef1-383a56ebe52c"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "3c8e1fd5-feb9-4622-99e1-7a4bf38da8ac"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "33bc3d01-c96b-4e02-b222-31eaff8c85b4"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "2f73cf8a-e3ad-44a7-9c14-e44ac6bc9b3c"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "8375490f-3109-4357-a396-4f6c087426fd"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "ca33daaf-71a9-4207-aaf0-e344c235d8eb"
+                                        }
+                                    ],
+                     "incidents":  [
+                                       {
+                                           "created":  true,
+                                           "incidentId":  "1707bdd1-c060-4790-a6ce-a738ed6c4e71"
+                                       }
+                                   ],
+                     "tickets":  [
+
+                                 ],
+                     "mapChecks":  [
+                                       {
+                                           "viewer":  "supervisor",
+                                           "trackingPoints":  1
+                                       },
+                                       {
+                                           "viewer":  "superadmin",
+                                           "trackingPoints":  1
+                                       }
+                                   ],
+                     "errors":  [
+
+                                ]
+                 },
+                 {
+                     "date":  "2026-05-21",
+                     "heartbeats":  [
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "37d13294-568c-43d3-b3af-fbeb41842c88"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "c8b7b824-652f-46ad-b47b-7319c82f39dc"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "66d2aff9-e198-405a-8f09-f54c1dbff211"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "e5c719a1-1446-4169-8267-f347a59d864a"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "97aea16c-83f2-4a02-855e-d2527e13db7d"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "17e7cdc7-adc5-44d2-b3a4-f5f219ed3e14"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "1e3312d2-891b-437f-a113-76a4eae9e039"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "0eeba0b3-7763-4ab6-8656-14e4b6c88c5b"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "4e444c57-861e-43ba-9ee4-619f6a35fd0c"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "bf041ac3-0a25-4222-a3c2-d333fc98d9fb"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "61275fa5-e5ea-400a-a549-f482f07414e2"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "7542dc9e-f4f4-40bf-b7a6-72e61415012a"
+                                        }
+                                    ],
+                     "incidents":  [
+
+                                   ],
+                     "tickets":  [
+                                     {
+                                         "created":  true,
+                                         "ticketId":  "eb9ffde5-5fa2-486d-9bce-62b568520d45"
+                                     }
+                                 ],
+                     "mapChecks":  [
+                                       {
+                                           "viewer":  "supervisor",
+                                           "trackingPoints":  1
+                                       },
+                                       {
+                                           "viewer":  "superadmin",
+                                           "trackingPoints":  1
+                                       }
+                                   ],
+                     "errors":  [
+
+                                ]
+                 },
+                 {
+                     "date":  "2026-05-22",
+                     "heartbeats":  [
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "8b97de6d-fc13-48ce-acb6-4b0baf703c33"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "6d747067-c7f4-403c-b31f-e4d605d6204e"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "5dc41a10-9cb8-4948-a121-7cc69ebfbd12"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "26339f10-4e2f-4ded-9e55-34d5685c1e34"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "614cf531-3630-45b7-9cac-78ef59830b6a"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "bdafea9b-4e9c-4497-9516-daa0cbac7332"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "6548f78d-35e7-4f4c-b997-50c7e150d90c"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "0befa224-1a5c-493d-974c-06bca3e65861"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "724b98ff-f43b-414f-8848-9a71195d0d8d"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "7c6a2711-9441-4e78-953c-831100f0894b"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "20390a34-397c-4686-b273-54a0c4ac1f40"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "e385635e-5bfc-46a5-ae33-2217d06e977c"
+                                        }
+                                    ],
+                     "incidents":  [
+                                       {
+                                           "created":  true,
+                                           "incidentId":  "7d63e01f-824f-4781-b9d0-91f2124ee1e2"
+                                       }
+                                   ],
+                     "tickets":  [
+
+                                 ],
+                     "mapChecks":  [
+                                       {
+                                           "viewer":  "supervisor",
+                                           "trackingPoints":  1
+                                       },
+                                       {
+                                           "viewer":  "superadmin",
+                                           "trackingPoints":  1
+                                       }
+                                   ],
+                     "errors":  [
+
+                                ]
+                 },
+                 {
+                     "date":  "2026-05-23",
+                     "heartbeats":  [
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "7713a32f-627b-40a5-a37b-af2b1a6cb5e7"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "7d669a9b-f77a-4604-888f-691decbc0f40"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "ddc50efd-b763-4a63-93d7-60ac767277ab"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "e8da4ed5-21a8-42d3-9724-e0fea0e417f9"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "aa255584-4ace-42d3-81b6-583894fa0722"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "91b851b7-974b-4000-9556-39e87f082096"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "3b4c08e4-4ae6-4b18-bb6b-44e0f24bb32a"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "be7468e5-2e3e-425c-a3c6-d493108133d9"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "71d77f2e-b900-4614-82c2-015e509d8519"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "b37aeb04-1c3d-457a-9216-05a31094e33c"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "f1ede63e-14c9-4268-8228-39b6074fbbc8"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "fd5b5cf3-6d33-4780-a134-f2d1b61ff537"
+                                        }
+                                    ],
+                     "incidents":  [
+
+                                   ],
+                     "tickets":  [
+
+                                 ],
+                     "mapChecks":  [
+                                       {
+                                           "viewer":  "supervisor",
+                                           "trackingPoints":  1
+                                       },
+                                       {
+                                           "viewer":  "superadmin",
+                                           "trackingPoints":  1
+                                       }
+                                   ],
+                     "errors":  [
+
+                                ]
+                 },
+                 {
+                     "date":  "2026-05-24",
+                     "heartbeats":  [
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "6e9917f6-20db-4f63-9bf1-894bd461e331"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "d957ee2e-8af4-430d-af0b-0d576d5adf80"
+                                        },
+                                        {
+                                            "role":  "guard",
+                                            "accepted":  true,
+                                            "trackingId":  "d55780e4-de49-4ad8-ac21-16ca034ad4d9"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "5c9349e2-30d5-40e6-8f3d-6eb68871f36e"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "1dd2a284-b6dd-4c81-9879-62f32e29a3a3"
+                                        },
+                                        {
+                                            "role":  "supervisor",
+                                            "accepted":  true,
+                                            "trackingId":  "5b089514-673f-4b93-915a-c25f5e7f63f1"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "2055d274-1e7b-4134-a721-664b90117ca6"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "06400279-c30e-4459-b260-908f9fabb981"
+                                        },
+                                        {
+                                            "role":  "admin",
+                                            "accepted":  true,
+                                            "trackingId":  "e4401fe9-a9ed-4c85-9cec-33acd420db45"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "051c6074-5967-4ff6-89e4-9aee636392f2"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "773896f0-3a71-4795-ae6a-bf0d6d7cc687"
+                                        },
+                                        {
+                                            "role":  "superadmin",
+                                            "accepted":  true,
+                                            "trackingId":  "4e4a321d-6ab0-4a57-b25d-1acb1637508d"
+                                        }
+                                    ],
+                     "incidents":  [
+                                       {
+                                           "created":  true,
+                                           "incidentId":  "90e3b643-5c7e-4fcd-9073-22aa7c9f9f73"
+                                       }
+                                   ],
+                     "tickets":  [
+                                     {
+                                         "created":  true,
+                                         "ticketId":  "dfb9f0d0-8c57-4329-9b71-8fb8c44634c6"
+                                     }
+                                 ],
+                     "mapChecks":  [
+                                       {
+                                           "viewer":  "supervisor",
+                                           "trackingPoints":  1
+                                       },
+                                       {
+                                           "viewer":  "superadmin",
+                                           "trackingPoints":  1
+                                       }
+                                   ],
+                     "errors":  [
+
+                                ]
+                 }
+             ],
+    "totals":  {
+                   "heartbeatsAttempted":  84,
+                   "heartbeatsAccepted":  84,
+                   "heartbeatsRejected":  0,
+                   "incidentsCreated":  4,
+                   "ticketsCreated":  3,
+                   "mapSnapshots":  14,
+                   "errors":  0
+               },
+    "finishedAt":  "2026-05-24T22:39:02.4190676+08:00"
+}

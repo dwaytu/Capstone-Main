@@ -120,6 +120,7 @@ npm run build:android
 
 ```bash
 npm run verify:all
+npm run verify:release
 npm run verify:capstone:quick
 npm run verify:capstone:full
 ```
@@ -137,6 +138,7 @@ npm run verify:capstone:full
 - Workspace navigation: `docs/WORKSPACE_NAVIGATION.md`
 - Railway runbook: `docs/RAILWAY_AUTODEPLOY.md`
 - Capstone readiness pack: `docs/plan/capstone-readiness-20260502/`
+- Current release-readiness guide: `docs/RELEASE_READINESS_GUIDE.md`
 - Project memory for Codex sessions: `PROJECT_MEMORY.md`
 
 ## License

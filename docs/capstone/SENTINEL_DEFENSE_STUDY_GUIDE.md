@@ -1,6 +1,6 @@
 # SENTINEL Capstone Defense Study Guide
 
-Last updated: 2026-05-20
+Last updated: 2026-08-19
 
 This guide is built from the current manuscript, repository architecture notes, system flow diagrams, and readiness evidence. Use it as your main review document before the capstone defense.
 
@@ -26,7 +26,7 @@ Read in this order. Do not try to memorize every implementation file first; memo
 | Project Context | Why private security operations need digital oversight, real-time monitoring, compliance traceability, and faster response to guard gaps. |
 | Purpose and Description | SENTINEL is a role-governed security operations and decision-support platform for DASIA. |
 | Objectives | The objectives group into identity/access, personnel, scheduling, assets, incidents/tracking, analytics, governance, and cross-platform delivery. |
-| Scope and Limitations | Web, Windows desktop, Android, PostgreSQL, live tracking, audit, AI assistance, but no payroll, government licensing database, CCTV/IoT, iOS, or full external hardware integration. |
+| Scope and Limitations | Web, Windows desktop, Android, PostgreSQL, live tracking, audit, analytics, but no payroll, government licensing database, CCTV/IoT, iOS, or full external hardware integration. |
 | Requirements Analysis | Existing process is manual/fragmented; proposed process centralizes operations, compliance, incident handling, live monitoring, auditability, and decision support. |
 | Design and Development | Role activity diagrams, modules, screenshots, and implementation story. |
 
@@ -34,7 +34,7 @@ Read in this order. Do not try to memorize every implementation file first; memo
 
 SENTINEL is an integrated, role-governed security operations platform for Davao Security and Investigation Agency, Inc. It replaces fragmented manual coordination with a centralized system for personnel records, approvals, schedules, attendance, incidents, firearms, armored vehicles, trips, live tracking, audit logs, and decision support. The system is built with a React and TypeScript frontend, a Rust and Axum backend, and a PostgreSQL database. It runs across web, Windows desktop through Tauri, and Android through Capacitor.
 
-The main value of SENTINEL is operational continuity and accountability. Guards can see assignments, check in and out, report incidents, access emergency contacts, and use panic escalation. Supervisors and command roles can monitor attendance, live movement, incidents, resources, and compliance-sensitive workflows. Superadmin users can review global operational status, audit logs, approvals, and governance controls. The system is designed so that critical decisions remain human-controlled while dashboards, alerts, tracking, and AI-assisted outputs improve visibility and response time.
+The main value of SENTINEL is operational continuity and accountability. Guards can see assignments, check in and out, report incidents, access emergency contacts, and use panic escalation. Supervisors and command roles can monitor attendance, live movement, incidents, resources, and compliance-sensitive workflows. Superadmin users can review global operational status, audit logs, approvals, and governance controls. The system is designed so that critical decisions remain human-controlled while dashboards, alerts, tracking, and rule-based analytics improve visibility and response time.
 
 ## 3. Defense Thesis In One Sentence
 
@@ -203,7 +203,7 @@ flowchart TD
 | Android | Capacitor | Reuses the web frontend while enabling Android packaging and field access. |
 | Maps | Leaflet and OpenStreetMap/Carto tiles | Cost-efficient operational mapping without dependence on paid map quotas for continuous monitoring. |
 | Real-time | WebSocket plus polling fallback | Faster live updates when available, but resilient when persistent connections fail. |
-| AI support | Backend AI/predictive services with deterministic fallback | Assistive outputs for risk, replacement, maintenance, classification, and summary, without removing human authority. |
+| Analytics support | Backend rule-based scoring and operational alert services | Advisory outputs for risk, replacement, maintenance, incident triage, and summary, without removing human authority. |
 
 ## 8. Main Database Domains
 
@@ -216,7 +216,7 @@ You do not need to recite every table, but know the domains:
 | Tracking and geofence | tracking_points, geofence_events, client sites | Supports live map visibility and movement reconstruction. |
 | Incidents and support | incidents, support tickets, notifications, inbox events | Supports reporting, escalation, and coordination. |
 | Assets and compliance | firearms, firearm_allocations, permits, armored cars, trips, maintenance | Supports accountability over controlled equipment and fleet operations. |
-| Analytics and AI | predictions, summaries, classification outputs | Supports command decisions, but remains advisory. |
+| Analytics and risk scoring | risk scores, summaries, triage outputs | Supports command decisions, but remains advisory. |
 | Governance | audit_logs, forensic events, consent metadata, health records | Supports review, compliance, and accountability. |
 
 ## 9. Demo Script For Defense
@@ -269,7 +269,7 @@ Phrase to use:
 | What is included in your scope? | Role-based access, personnel administration, approvals, schedules, attendance, guard field actions, emergency support, incidents, live tracking, map views, firearms, permits, armored vehicles, trips, maintenance, analytics, audit, and cross-platform delivery. |
 | What is not included? | External payroll/HR integration, government licensing database integration, CCTV/IoT/access-control hardware integration, iOS deployment, and fully independent pages for every backend-supported capability. |
 | Why are some workflows still in shared panels or tabs? | The capstone prioritized operational coverage and role-based access. Some workflows are consolidated in shared command surfaces to preserve usability and avoid unnecessary page fragmentation. |
-| Is the AI fully autonomous? | No. AI and predictive outputs are assistive only. Human users remain responsible for final decisions. |
+| Are analytics decisions automatic? | No. Rule-based analytics are advisory only. Human users remain responsible for final decisions. |
 | Can it replace supervisors? | No. SENTINEL supports supervisors by improving visibility, traceability, and decision context. It does not replace human judgment. |
 
 ### C. Methodology And Requirements
@@ -341,14 +341,14 @@ Phrase to use:
 | What is the difference between incident and support? | Incidents are operational/security events. Support tickets are assistance or issue reports that may be technical or operational. |
 | How are urgent events prioritized? | Critical events can surface through dashboards, inbox/timeline workflows, notifications, and command monitoring views. |
 
-### J. Analytics And AI
+### J. Analytics And Risk Scoring
 
 | Question | Strong Answer |
 |---|---|
-| What AI features are included? | Guard absence risk, replacement suggestions, maintenance risk, incident classification, and incident summarization. |
-| Are AI decisions final? | No. The AI is assistive. Human users make final operational decisions. |
-| What happens if the AI service fails? | The design includes deterministic fallback behavior where continuity is required, so the system does not depend entirely on AI availability. |
-| Why include AI at all? | To help command roles notice patterns and prioritize decisions faster, especially around staffing, incidents, and maintenance. |
+| What analytics features are included? | Guard absence risk, replacement suggestions, maintenance risk, incident triage, incident summarization, operational alerts, and performance dashboards. |
+| Are analytics decisions final? | No. The system provides advisory indicators. Human users make final operational decisions. |
+| What happens if a scoring module is unavailable? | Core workflows such as login, scheduling, incident reporting, tracking, and asset records remain usable because scoring is advisory. |
+| Why include rule-based scoring? | To help command roles notice patterns and prioritize decisions faster, especially around staffing, incidents, and maintenance. |
 
 ### K. Validation And Readiness
 
@@ -381,7 +381,7 @@ Phrase to use:
 | What is your strongest feature? | The strongest feature is the connected operational flow: guard field actions feed command visibility through live tracking, incidents, notifications, audit records, and role-based dashboards. |
 | What is your weakest area? | External integration and production-scale field validation. The system is implemented and evidence-backed, but real agency rollout would need longer pilot testing and integrations. |
 | If GPS fails, does the system fail? | No. GPS-dependent features lose precision, but the rest of the operational platform remains usable. Location accuracy is a limitation, not the entire system. |
-| If the AI gives a wrong recommendation, who is liable? | The system treats AI as assistive only. Human decision-makers remain responsible for final operational decisions. |
+| If the system gives a weak recommendation, who is liable? | The system treats recommendations as advisory only. Human decision-makers remain responsible for final operational decisions. |
 
 ## 12. Short Answers To Memorize
 
@@ -393,7 +393,7 @@ Phrase to use:
 | Stack | "React, TypeScript, Vite, Tailwind frontend; Rust, Axum, SQLx backend; PostgreSQL database; Tauri desktop; Capacitor Android." |
 | Main security controls | "JWT authentication, role-based authorization, approval-gated access, legal-policy acceptance, audit logging, rate limiting, and session controls." |
 | Live tracking | "Guard devices send location heartbeats; the backend stores tracking points and updates command maps through WebSocket snapshots with polling fallback." |
-| AI boundary | "AI is advisory, not autonomous. Human users keep final authority." |
+| Analytics boundary | "Rule-based analytics are advisory, not autonomous. Human users keep final authority." |
 | Limitations | "No payroll, HR, government licensing, CCTV/IoT, iOS, or full external hardware integrations in this study." |
 | Proof it works | "Readiness evidence shows builds, backend checks/tests, API health, login, tracking map data, platform builds, and role smoke tests." |
 
@@ -421,7 +421,7 @@ Phrase to use:
    - "We validate through readiness reports, build checks, API health, role smoke tests, tracking evidence, and platform packaging evidence."
 
 8. Explain limitations honestly.
-   - "External systems and hardware integrations are outside current scope. AI remains advisory. GPS and network reliability affect live tracking accuracy."
+   - "External systems and hardware integrations are outside current scope. Rule-based analytics remain advisory. GPS and network reliability affect live tracking accuracy."
 
 9. Close with value.
    - "SENTINEL makes security operations more visible, traceable, and responsive."
@@ -430,7 +430,7 @@ Phrase to use:
 
 | Avoid Saying | Say This Instead |
 |---|---|
-| "The AI decides who to assign." | "The AI assists with recommendations; humans decide." |
+| "The system automatically decides who to assign." | "The system provides recommendations; humans decide." |
 | "Tracking is always accurate." | "Tracking depends on GPS, device permission, and network conditions." |
 | "Everything is fully production-ready." | "The project has readiness evidence and platform builds, but real deployment still requires environment hardening and pilot validation." |
 | "It replaces security personnel." | "It supports security personnel with better visibility and accountability." |

@@ -1,0 +1,21 @@
+{
+  "tag": "MUTATION-20260819140453",
+  "results": [
+    {
+      "name": "schedule creation via UI",
+      "status": "PASS",
+      "shiftId": "683525a8-4cee-471e-a8ed-dc9e19b31344"
+    },
+    {
+      "name": "attendance check-in via UI",
+      "status": "PASS",
+      "shiftId": "683525a8-4cee-471e-a8ed-dc9e19b31344"
+    },
+    {
+      "name": "attendance check-out via UI",
+      "status": "PASS",
+      "shiftId": "683525a8-4cee-471e-a8ed-dc9e19b31344"
+    }
+  ],
+  "error": "locator.waitFor: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/incident report submitted/i) to be visible\u001b[22m\n"
+}

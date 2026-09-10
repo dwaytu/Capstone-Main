@@ -1,0 +1,56 @@
+{
+  "tag": "LIVE1D-202605241449",
+  "baseUrl": "https://dasiasentinel.xyz",
+  "startedAt": "2026-05-24T14:49:16.136Z",
+  "roles": [
+    {
+      "role": "superadmin",
+      "steps": [
+        "login_dashboard",
+        "operations_map_opened",
+        "schedule_opened",
+        "add_schedule_modal_opened",
+        "site_dropdown_visible_options_2"
+      ],
+      "consoleErrors": [],
+      "apiErrors": []
+    },
+    {
+      "role": "admin",
+      "steps": [
+        "login_dashboard",
+        "operations_map_opened",
+        "schedule_opened",
+        "add_schedule_modal_opened",
+        "site_dropdown_visible_options_2"
+      ],
+      "consoleErrors": [],
+      "apiErrors": []
+    },
+    {
+      "role": "supervisor",
+      "steps": [
+        "login_dashboard",
+        "operations_map_opened",
+        "schedule_opened",
+        "add_schedule_modal_opened",
+        "site_dropdown_visible_options_2"
+      ],
+      "consoleErrors": [],
+      "apiErrors": []
+    },
+    {
+      "role": "guard",
+      "steps": [
+        "login_mission_view",
+        "map_opened",
+        "sos_button_not_found",
+        "report_incident_button_not_found",
+        "support_opened"
+      ],
+      "consoleErrors": [],
+      "apiErrors": []
+    }
+  ],
+  "finishedAt": "2026-05-24T14:49:41.097Z"
+}

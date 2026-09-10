@@ -1,0 +1,16 @@
+{
+  "tag": "MUTATION-20260819140314",
+  "results": [
+    {
+      "name": "schedule creation via UI",
+      "status": "PASS",
+      "shiftId": "a8c45d79-27a0-4a4d-af11-e34697ee004e"
+    },
+    {
+      "name": "attendance check-in via UI",
+      "status": "FAIL",
+      "message": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /check in.*start shift/i }).first() to be visible\u001b[22m\n"
+    }
+  ],
+  "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /check in.*start shift/i }).first() to be visible\u001b[22m\n"
+}

@@ -130,8 +130,8 @@
   - Merit scores and evaluations
   - Armored cars and fleet operations
   - Trips and trip management
-  - Analytics and predictive alerts
-  - AI endpoints
+  - Analytics and rule-based operational alerts
+  - Decision-support endpoints
   - Tracking and websocket map stream
   - Incidents
   - Health check
@@ -149,7 +149,7 @@
   - trip_management.rs
   - analytics.rs
   - alerts.rs
-  - ai.rs
+  - decision_support.rs
   - tracking.rs
   - incidents.rs
   - merit.rs
@@ -160,11 +160,11 @@
   - audit.rs
 
 ### Services
-- AI and predictive logic isolated in DasiaAIO-Backend/src/services:
+- Rule-based decision support and scoring isolated in DasiaAIO-Backend/src/services:
   - guard_prediction_service.rs
-  - replacement_ai_service.rs
+  - replacement_scoring_service.rs
   - vehicle_predictive_service.rs
-  - incident_ai_classifier.rs
+  - incident_severity_classifier.rs
   - incident_summary_service.rs
 
 ### Middleware
@@ -244,7 +244,7 @@
 - guard_merit_scores
 - client_evaluations
 
-#### AI Operational Intelligence Domain
+#### Operational Analytics and Risk Domain
 - guard_absence_predictions
 - smart_guard_replacements
 - incident_severity_classifications
@@ -263,9 +263,9 @@
   - audit_logs.actor_user_id -> users.id
   - notifications.user_id -> users.id
 
-### Operational Data vs AI Data
+### Operational Data vs Scoring Artifacts
 - Operational data supports day-to-day transactional workflows and current state.
-- AI data stores explainable outputs and scoring artifacts for decision support and auditability.
+- Scoring artifacts store explainable outputs for decision support and auditability. Final actions remain human-approved.
 
 ## 5. System Modules
 
@@ -279,7 +279,7 @@
 - Analytics
 - Calendar
 - Tracking
-- AI Prediction Modules
+- Decision Support and Operational Risk
 
 ### Module-to-Implementation Mapping
 - Command Center:
@@ -302,39 +302,39 @@
   - calendar event composition across shifts/trips/missions/maintenance
 - Tracking:
   - map-data, client-sites CRUD, heartbeat, points, websocket
-- AI Prediction Modules:
+- Decision-support modules:
   - absence risk, replacement suggestions, maintenance risk, severity classification, summarization, predictive alerts
 
-## 6. AI and Analytics Features
+## 6. Decision Support and Analytics Features
 
-### Prediction Engines
+### Rule-Based Risk Services
 - Guard absence prediction:
   - Service: guard_prediction_service.rs
-  - Endpoint: GET /api/ai/guard-absence-risk
+  - Endpoint: GET /api/analytics/guard-absence-risk
 - Vehicle predictive maintenance:
   - Service: vehicle_predictive_service.rs
-  - Endpoint: GET /api/ai/vehicle-maintenance-risk
+  - Endpoint: GET /api/analytics/vehicle-maintenance-risk
 - Smart replacement recommendations:
-  - Service: replacement_ai_service.rs
-  - Endpoint: GET /api/ai/replacement-suggestions
+  - Service: replacement_scoring_service.rs
+  - Endpoint: GET /api/analytics/replacement-suggestions
 
 ### Classification Systems
 - Incident severity classifier:
-  - Service: incident_ai_classifier.rs
-  - Endpoint: POST /api/ai/classify-incident
+  - Service: incident_severity_classifier.rs
+  - Endpoint: POST /api/analytics/incident-severity
 
 ### Summarization Features
 - Incident summarization and key phrase extraction:
   - Service: incident_summary_service.rs
-  - Endpoint: POST /api/ai/summarize-incident
+  - Endpoint: POST /api/analytics/incident-summary
 
-### Risk Scoring and Predictive Alerts
-- Predictive alert synthesis in alerts.rs:
+### Risk Scoring and Operational Alerts
+- Operational alert synthesis in alerts.rs:
   - permit expiry risk
   - vehicle maintenance overdue risk
   - repeated no-show personnel risk
   - guard capacity risk
-- Endpoint: GET /api/alerts/predictive
+- Endpoint: GET /api/alerts/operational-risk
 
 ### Analytics Features
 - Aggregated KPI analytics in analytics.rs:
@@ -503,12 +503,12 @@
 4. Backend pushes refreshed snapshot payloads over websocket.
 5. Frontend map/feed components update live state; polling fallback continues as resilience path.
 
-### AI Data Flow
-1. Frontend AI widget invokes AI endpoint.
-2. Backend AI handler calls deterministic service module.
+### Decision-Support Data Flow
+1. Frontend operational panel invokes an analytics endpoint.
+2. Backend decision-support handler calls a deterministic service module.
 3. Service computes score/classification/summary and may persist explainable artifacts.
 4. API returns structured output.
-5. Frontend renders AI output in command-center modules.
+5. Frontend renders an advisory operational indicator in command-center modules.
 
 ## 11. Release and Distribution Architecture
 
@@ -597,6 +597,6 @@
 
 ## Reviewer Notes
 - Architecture is endpoint-centric with middleware-enforced security and role policy.
-- Operational and AI data are clearly separated while linked by user/incident/asset identifiers.
+- Operational data and scoring artifacts are clearly separated while linked by user/incident/asset identifiers.
 - Real-time map behavior combines websocket push with polling fallback for resilience.
 - Frontend is modular and dashboard-driven, with role-aware view composition and hook-based data integration.

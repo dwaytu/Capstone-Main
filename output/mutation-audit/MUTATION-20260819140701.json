@@ -1,0 +1,106 @@
+{
+  "tag": "MUTATION-20260819140701",
+  "webBaseUrl": "http://127.0.0.1:5174",
+  "apiBaseUrl": "http://127.0.0.1:5001",
+  "startedAt": "2026-08-19T14:07:12.240Z",
+  "results": [
+    {
+      "name": "schedule creation via UI",
+      "status": "PASS",
+      "shiftId": "2013caca-a1bb-4fd6-9435-212dac89203d"
+    },
+    {
+      "name": "attendance check-in via UI",
+      "status": "PASS",
+      "shiftId": "2013caca-a1bb-4fd6-9435-212dac89203d"
+    },
+    {
+      "name": "attendance check-out via UI",
+      "status": "PASS",
+      "shiftId": "2013caca-a1bb-4fd6-9435-212dac89203d"
+    },
+    {
+      "name": "incident submission via UI",
+      "status": "PASS"
+    },
+    {
+      "name": "support ticket submission via UI",
+      "status": "PASS"
+    },
+    {
+      "name": "feedback submission via UI",
+      "status": "PASS"
+    },
+    {
+      "name": "firearm allocation via UI",
+      "status": "PASS",
+      "allocationId": "a3835eb8-22ac-4954-a0e6-55af3fb6dc8f"
+    },
+    {
+      "name": "firearm return via browser-context API (no UI action exposed)",
+      "status": "PASS",
+      "allocationId": "a3835eb8-22ac-4954-a0e6-55af3fb6dc8f"
+    },
+    {
+      "name": "firearm maintenance scheduling via browser-context API (no UI action exposed)",
+      "status": "PASS",
+      "maintenanceId": "ffff9d47-bdf7-4989-9c82-57b5bd597082"
+    },
+    {
+      "name": "firearm maintenance completion via browser-context API (no UI action exposed)",
+      "status": "PASS",
+      "maintenanceId": "ffff9d47-bdf7-4989-9c82-57b5bd597082"
+    },
+    {
+      "name": "guard approval via UI",
+      "status": "PASS",
+      "userId": "7b1a0f9e-4d32-4c8f-e7a6-5b4c3d2e1f09"
+    },
+    {
+      "name": "MDR import and reject via UI",
+      "status": "PASS",
+      "batchId": "75c0dbea-80b8-4825-b32c-7ba8e651583f"
+    }
+  ],
+  "diagnostics": {
+    "pageErrors": [
+      "superadmin: WebSocket closed without opened.",
+      "superadmin: WebSocket closed without opened.",
+      "guard: WebSocket closed without opened.",
+      "guard: WebSocket closed without opened.",
+      "guard: WebSocket closed without opened.",
+      "guard: WebSocket closed without opened.",
+      "guard: WebSocket closed without opened.",
+      "superadmin: WebSocket closed without opened.",
+      "superadmin: WebSocket closed without opened.",
+      "superadmin: WebSocket closed without opened."
+    ],
+    "consoleErrors": [
+      "superadmin: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "superadmin: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "superadmin: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "superadmin: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "guard: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "guard: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "guard: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "guard: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "guard: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "guard: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "guard: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "guard: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "guard: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "guard: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "superadmin: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "superadmin: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "superadmin: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "superadmin: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). ",
+      "superadmin: WebSocket connection to 'ws://localhost:5173/?token=pVgSRU9hMwad' failed: Error during WebSocket handshake: Unexpected response code: 400",
+      "superadmin: [vite] failed to connect to websocket (Error: WebSocket closed without opened.). "
+    ],
+    "apiErrors": []
+  },
+  "trackedIds": {
+    "shiftId": "2013caca-a1bb-4fd6-9435-212dac89203d",
+    "allocationId": "a3835eb8-22ac-4954-a0e6-55af3fb6dc8f"
+  }
+}
