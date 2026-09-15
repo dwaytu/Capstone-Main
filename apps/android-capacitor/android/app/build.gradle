@@ -112,6 +112,11 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Keep local debug installs separate from release-signed client builds.
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
         release {
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.release

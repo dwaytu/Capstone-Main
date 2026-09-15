@@ -1896,3 +1896,52 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Known platform boundary
 - Physical GPS hardware cannot be verified from this PC. Native Android location is implemented through Capacitor Geolocation and foreground heartbeat updates; background tracking is intentionally not implemented.
+
+# 75) ANDROID BACKGROUND LOCATION SERVICE (2026-09-15)
+
+## Implementation
+- Added a registered Capacitor `BackgroundLocation` plugin and Android `BackgroundLocationService` using a visible location foreground service.
+- Android now requests precise location, notification, and background-location access where required; the service sends consented precise heartbeat samples directly to the HTTPS API every 20 seconds while the app is backgrounded.
+- The React location context starts/stops the native service only for authenticated operational roles with legal and tracking consent, subscribes to native status events, and prevents duplicate JavaScript heartbeats on Capacitor.
+- The service uses `START_NOT_STICKY`, stops on authorization/consent failure, clears stale configuration on rejection, and exposes a persistent status for the foreground UI.
+
+## Verification
+- Frontend TypeScript passed; all 27 Jest suites and 125 tests passed.
+- `npm run build:android` passed and Capacitor sync recognized the native project.
+- Android `:app:assembleDebug` passed with the foreground service and Android 14 location declarations.
+
+## Boundary
+- At the time of this entry, physical Android background GPS, battery-saver behavior, and OEM task-killing behavior still required real-device verification. Web and desktop remain foreground-only by platform design.
+
+# 76) ANDROID DEVICE VERIFICATION AND PERMISSION-STATE FIX (2026-09-15)
+
+## Verification
+- A Xiaomi Android 14 device received the debug APK, logged in with a disposable approved guard account, and granted location, background-location, and notification permissions.
+- Android kept `BackgroundLocationService` in the foreground with its persistent notification while the app was sent to the home screen; location updates continued at the configured 20-second interval.
+- The device acquired live GPS/network fixes, but the indoor accuracy was approximately 79-100 m and was correctly rejected by the 35 m precision policy, so no false heartbeat was recorded.
+- Reinstalled app state correctly reported tracking paused for low precision instead of falsely claiming permission was missing.
+- The disposable production guard account was deleted through the authenticated admin API and verified unavailable; the debug APK and service were also removed from the device.
+
+## Fix
+- Capacitor now skips the browser Permissions API check, which could overwrite the native Android permission result during startup. A granted native result is applied immediately to the dashboard state.
+- Updated guard tracking copy to describe Android foreground-service background tracking and its permission, consent, network, and power-setting dependencies.
+
+## Boundary
+- An accepted production heartbeat still requires an outdoor or otherwise strong GPS fix at or below the configured 35 m threshold; no mock location was used.
+
+# 77) CROSS-ROLE AUDIT AND NAVIGATION CLEANUP (2026-09-15)
+
+## Verification
+- Full local browser functionality audit passed 86 route checks and 499 safe control interactions across superadmin, admin, supervisor, and guard roles on desktop and mobile viewports.
+- The audit reported zero page errors, console errors, API errors, request failures, or horizontal-overflow failures.
+- Frontend TypeScript, 27 Jest suites / 125 tests, web production build, Android web build and Capacitor sync, and the targeted 12-test Playwright suite passed.
+- Geolocation smoke with granted permission resolved the configured Davao-area position, produced no browser errors, and correctly hid the inactive-location banner.
+- Backend Docker builder compilation passed; backend tests in the Linux deployment toolchain passed all 43 unit tests. The Windows host `cargo test` remains unavailable without OpenSSL development libraries.
+- Frontend production dependency audit reported zero vulnerabilities at the high-severity threshold.
+
+## Fixes
+- Superadmin user-data loading now accepts an `AbortSignal`, cancels on navigation, and ignores expected abort errors so fast route changes do not create false console failures or stale state updates.
+- The guard dashboard E2E support-heading assertion now uses an exact accessible name, avoiding a false match against the empty-state text `No support tickets`.
+
+## Remaining boundary
+- The inactive-location banner shown in permissionless headless browser screenshots is expected behavior; a granted browser permission removes it. Physical Android background GPS was separately verified on a real device, while accepted heartbeat accuracy still depends on a strong GPS fix at or below the 35 m policy.

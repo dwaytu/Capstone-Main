@@ -34,7 +34,7 @@ If needed, override with LAN host in a local mode file (for example http://192.1
 
 ## Production Notes
 
-- Android manifest includes `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_FINE_LOCATION`, and `ACCESS_COARSE_LOCATION`.
+- Android manifest includes network, precise/coarse location, background location, foreground-service location, and notification permissions. Location and notification access are requested at runtime where Android requires it.
 - GPS permission is requested at runtime via Capacitor Geolocation before heartbeat tracking.
-- Heartbeat updates are foreground-driven from the web app runtime. Native background location services are not currently implemented in this wrapper.
+- Android background tracking runs through a visible location foreground service after the user accepts legal consent and precise location permission. The service sends heartbeat updates directly to the authenticated API, stops on logout/consent or authorization failure, and uses `START_NOT_STICKY` so stale sessions are not silently resurrected. Android may still restrict location for battery-saver/OEM policies, and the user must keep device location enabled.
 - Build outputs are generated from shared frontend assets so web/mobile/desktop stay API-compatible.
