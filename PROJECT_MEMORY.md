@@ -1945,3 +1945,14 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Remaining boundary
 - The inactive-location banner shown in permissionless headless browser screenshots is expected behavior; a granted browser permission removes it. Physical Android background GPS was separately verified on a real device, while accepted heartbeat accuracy still depends on a strong GPS fix at or below the 35 m policy.
+
+# 78) V1.2.2 RELEASE PUBLICATION (2026-09-15)
+
+## Release
+- Committed and pushed the frontend navigation-abort fix and Android background-location integration, then updated the main repository submodule pointer.
+- Published the governed `v1.2.2` release after GitHub Actions passed the quality gate and web, Windows desktop, and signed Android artifact jobs.
+- The public release contains the web archive, Windows MSI/EXE installers, and signed Android APK/AAB artifacts.
+
+## Production verification
+- `https://dasiasentinel.xyz` returned HTTP 200.
+- The Railway backend `/api/health` endpoint returned HTTP 200 with API, database, and WebSocket services up.
