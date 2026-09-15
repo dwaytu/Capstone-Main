@@ -1456,7 +1456,7 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ---
 
-## Session Update — 2026-05-08 (Local Workflow + Role Account Creation Smoke)
+## Session Update - 2026-05-08 (Local Workflow + Role Account Creation Smoke)
 
 - Fixed local frontend API targeting issue by setting `DasiaAIO-Frontend/.env.development.local` to `VITE_API_BASE_URL=http://localhost:5000`.
 - Root cause: Vite precedence made `.env.development.local` override `.env.local`, forcing local web builds to call Railway.
@@ -1837,3 +1837,24 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Live API lifecycle passed guard submission, supervisor review, admin fulfillment, authorization denials, correction/resubmission, cancellation, history, and atomic firearm return; temporary fixtures were removed.
 - Strict Clippy reports no Phase 4 findings but remains blocked by 27 pre-existing findings in unrelated modules.
 - The older full Playwright suite is not globally green because existing guard-dashboard expectations/mocks and local login credentials are stale; refresh them before the next full release gate.
+
+# 71) PHASE 5 ANALYTICS AND EVALUATION ENHANCEMENT (2026-09-10)
+
+## Implementation
+- Added a dedicated backend analytics service for operational resource availability and date-scoped client evaluation summaries, rating distribution, and trends.
+- Corrected analytics date boundaries to Asia/Manila, removed silent database-error-to-zero fallbacks, aligned attendance denominators, and normalized vehicle deployment status handling.
+- Added `GET /api/analytics/evaluations`; the main `/api/analytics` response now includes evaluation analytics and trend data.
+- Guard performance reports now use eligible guards, deduplicated no-shows, and date-scoped advisory merit calculations.
+- Added graphical available/unavailable comparisons for guards, firearms, and vehicles; attendance and evaluation charts; evaluation KPI cards; and performance CSV/print controls.
+- Evaluation submissions now validate ratings and guard/shift ownership, derive evaluator identity from authentication, and report partial recalculation failures without encouraging duplicate submissions.
+- Added analytics query indexes and a repeatable `npm run audit:phase5` Playwright audit.
+
+## Verification
+- Backend: formatting, compile, 42 unit tests, 2 integration tests, and 15 release-blocker tests passed. Clippy passed with 27 existing non-blocking warnings.
+- Frontend: TypeScript, 27 Jest suites / 125 tests, production build, and Phase 5 desktop/mobile browser audit passed.
+- Live local API: database migrations, all four analytics indexes, `/api/health`, and authenticated `/api/analytics/evaluations` passed.
+- Browser evidence contains no page, console, request, API, or horizontal-overflow failures; computed graph checks confirm visible dimensions and theme-token colors.
+
+## Scope boundary
+- Phase 5 reports current stored operational records; empty periods intentionally render zero/empty states instead of fabricated data.
+- No commit, push, or Railway deployment was performed as part of this implementation request.

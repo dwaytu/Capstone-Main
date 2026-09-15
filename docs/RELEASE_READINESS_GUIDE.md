@@ -134,17 +134,18 @@ These are the five improvement phases from the panel recommendations. They are s
 
 ### Phase 5: Analytics and Evaluation Enhancement
 
-**Status:** Implemented for the current guard performance report; continue refinement after DTR and firearm/request data are available.
+**Status:** Complete for the current trusted operational data set as of September 10, 2026.
 
 **Work:**
 
 - Show attendance rate, late check-ins, completed shifts, absences/no-shows, incident reports, client evaluation results, merit score, and replacement frequency.
 - Keep date filters and per-guard detail alongside summary KPIs and graphical reports.
-- Add evaluation trends and comparison views only when the underlying records have defined date and ownership rules.
+- Show date-scoped client evaluation summaries, rating distribution, and trend views using authenticated evaluator ownership.
 - Label all scores as advisory metrics and preserve the underlying records used to calculate them.
-- Revalidate the charts after DTR and compliance enhancements change the data set.
+- Show available and unavailable guards, firearms, and vehicles using operational status and assignment records.
+- Revalidate the charts whenever attendance, compliance, or request lifecycle rules change their source data.
 
-**Completion evidence:** `/api/analytics/guard-performance-report`, graphical dashboard screenshots, metric calculation tests, and live browser smoke.
+**Completion evidence:** `/api/analytics`, `/api/analytics/evaluations`, `/api/analytics/guard-performance-report`, metric calculation tests, and `npm run audit:phase5` desktop/mobile screenshots and browser assertions.
 
 ### Roadmap Sequence
 
@@ -152,7 +153,7 @@ These are the five improvement phases from the panel recommendations. They are s
 2. Implement Phase 2 DTR reporting because it becomes the attendance source for later analytics. **Complete for this increment.**
 3. Implement Phase 3 firearm compliance reporting and expiration notifications. **Complete for this increment.**
 4. Phase 4 service/deposit request approval workflow. **Complete for this increment.**
-5. Recalculate and refine Phase 5 analytics using the expanded trusted data.
+5. Recalculate and refine Phase 5 analytics using the expanded trusted data. **Complete for this increment.**
 6. Run the functionality-completion gate after each phase and freeze only after all required workflows pass.
 
 ## 4. Execution Order
