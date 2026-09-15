@@ -1871,3 +1871,16 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Verification
 - Linux Railway-equivalent Docker build passed with the backend delivery worker.
 - Backend Docker test run passed all 43 unit tests.
+
+# 73) RELEASE READINESS VERIFICATION (2026-09-15)
+
+## Release
+- Fixed the governed Android release workflow by overriding the obsolete `tools` SDK package default with `platform-tools`.
+- Published `v1.2.1` with non-empty web, Windows MSI/EXE, signed Android APK, and signed Android AAB artifacts.
+- Release quality gate passed frontend tests and backend tests; web, desktop, and Android artifact jobs all passed.
+
+## Production verification
+- Railway production Backend and Frontend deployments are successful.
+- `https://dasiasentinel.xyz` and the backend `/api/health` endpoint returned HTTP 200.
+- Production logs confirm database migrations completed and the notification worker started with email and Web Push enabled.
+- Native Capacitor Android push remains dependent on Firebase/FCM credentials and is not claimed until that provider configuration exists.
