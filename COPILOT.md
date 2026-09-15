@@ -259,7 +259,21 @@ GEOFENCE_ALERT_INTERVAL_SECS=300
 # Missing check-in alerts (defaults: 60 seconds and 15 minutes)
 SHIFT_ALERT_INTERVAL_SECS=60
 SHIFT_CHECK_IN_GRACE_MINUTES=15
+
+# External notification delivery (optional but required for production email/push)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=Sentinel DASIA <noreply@dasiasentinel.xyz>
+NOTIFICATION_EMAIL_ENABLED=true
+VAPID_PRIVATE_KEY=base64url_encoded_32_byte_private_key
+VAPID_SUBJECT=mailto:noreply@dasiasentinel.xyz
 ```
+
+Notifications are written to PostgreSQL first. A background delivery worker then
+sends email through Resend and browser push through VAPID/Web Push, recording
+delivery timestamps and retry metadata on `notifications`. Missing provider
+configuration disables only that external channel; in-app notifications remain
+available. The VAPID private key must never be placed in the frontend build or
+repository. The frontend build receives only `VITE_VAPID_PUBLIC_KEY`.
 
 ---
 

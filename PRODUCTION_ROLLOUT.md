@@ -15,6 +15,23 @@ Current production API URL:
 
 - https://backend-production-0c47.up.railway.app
 
+### External notifications
+
+The backend delivers persisted notifications asynchronously through Resend
+email and browser Web Push. Configure these Railway backend variables:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `NOTIFICATION_EMAIL_ENABLED=true`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT`
+
+Configure only the matching public key on the frontend build as
+`VITE_VAPID_PUBLIC_KEY`. Web Push is available to supported web and desktop
+browser runtimes and Android browser/PWA usage. Native Capacitor push requires
+an app-specific Firebase/FCM project and credentials; the signed Android build
+does not claim native remote push until those credentials are supplied.
+
 ## 2. Integration With Existing Railway Web
 
 Yes, production desktop and mobile integrate with your currently live Railway web deployment if they all point to the same backend API URL.

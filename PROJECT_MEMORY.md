@@ -1858,3 +1858,16 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Scope boundary
 - Phase 5 reports current stored operational records; empty periods intentionally render zero/empty states instead of fabricated data.
 - No commit, push, or Railway deployment was performed as part of this implementation request.
+
+# 72) PRODUCTION NOTIFICATION DELIVERY (2026-09-15)
+
+## Implementation
+- Added asynchronous notification delivery for persisted notifications through Resend email and VAPID/Web Push.
+- Added delivery timestamps, retry metadata, and historical backfill protection to the notifications table.
+- Added a backend delivery worker that preserves in-app notification writes when external providers are unavailable.
+- Added production environment documentation and configured Railway with a generated VAPID key pair without storing secrets in the repositories.
+- Kept native Capacitor push explicitly unclaimed because Firebase/FCM project credentials are not present; web push remains available to supported browser runtimes.
+
+## Verification
+- Linux Railway-equivalent Docker build passed with the backend delivery worker.
+- Backend Docker test run passed all 43 unit tests.

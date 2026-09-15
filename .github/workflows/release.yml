@@ -166,6 +166,7 @@ jobs:
           VITE_APP_VERSION: ${{ needs.prepare.outputs.release_tag }}
           VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/dwaytu/Capstone-Main/releases/latest
           VITE_RELEASE_DOWNLOAD_URL: https://github.com/dwaytu/Capstone-Main/releases/latest
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
           NODE_ENV: production
         run: |
           set -euo pipefail
@@ -231,6 +232,7 @@ jobs:
           $env:VITE_APP_VERSION = "${{ needs.prepare.outputs.release_tag }}"
           $env:VITE_LATEST_RELEASE_API_URL = "https://api.github.com/repos/dwaytu/Capstone-Main/releases/latest"
           $env:VITE_RELEASE_DOWNLOAD_URL = "https://github.com/dwaytu/Capstone-Main/releases/latest"
+          $env:VITE_VAPID_PUBLIC_KEY = "${{ vars.VITE_VAPID_PUBLIC_KEY }}"
           $env:VITE_WHATS_NEW = (Get-Content .release/whats-new.txt -Raw).Trim()
           $env:NODE_ENV = "production"
           npm run release:desktop --prefix DasiaAIO-Frontend
@@ -341,6 +343,7 @@ jobs:
           VITE_APP_VERSION: ${{ needs.prepare.outputs.release_tag }}
           VITE_LATEST_RELEASE_API_URL: https://api.github.com/repos/dwaytu/Capstone-Main/releases/latest
           VITE_RELEASE_DOWNLOAD_URL: https://github.com/dwaytu/Capstone-Main/releases/latest
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
           NODE_ENV: production
           CAPACITOR_ENV: production
           SENTINEL_APP_VERSION: ${{ needs.prepare.outputs.app_version }}
