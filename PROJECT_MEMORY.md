@@ -1956,3 +1956,44 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Production verification
 - `https://dasiasentinel.xyz` returned HTTP 200.
 - The Railway backend `/api/health` endpoint returned HTTP 200 with API, database, and WebSocket services up.
+
+# 79) INCIDENT SITE LABELS (2026-09-16)
+
+## Fix
+- Incident records now support an optional `site_name` field while retaining `location` for precise operational data.
+- Guard incident and SOS submissions include the current assigned site when available.
+- Command-center live events, active incidents, incident management, and severity monitoring display the site name instead of raw coordinate strings.
+- Legacy coordinate-only incidents resolve against the reporter's shift window when possible; otherwise they display `Unassigned site`.
+
+## Verification
+- Frontend TypeScript check passed.
+- All 28 Jest suites and 129 tests passed.
+- Frontend production build passed.
+
+# 81) OPERATIONAL REQUEST ROLE SEPARATION (2026-09-16)
+
+## Fix
+- Operational requests can now be submitted or resubmitted only by guards and supervisors.
+- Admins and superadmins retain request queue access and are the only roles allowed to review, approve, reject, return, start, complete, or fulfill requests.
+- The frontend hides `New Request` for admins and superadmins while retaining their review and fulfillment workflow.
+- The resubmission endpoint now uses the same requester-role authorization, preventing legacy elevated-role requests from bypassing the policy.
+- Startup permission cleanup removes the old elevated request-creation and supervisor-review rows from existing databases.
+- Pending-request notifications are sent only to admin and superadmin reviewers.
+
+## Verification
+- Frontend TypeScript check passed.
+- All 28 Jest suites and 129 tests passed.
+- Backend formatting check passed.
+- Backend production Docker image build passed.
+- Backend Docker release build passed; native Windows cargo check remains blocked by the host's missing OpenSSL development libraries.
+
+# 80) PREDICTIVE ALERT PRESENTATION CLEANUP (2026-09-16)
+
+## Fix
+- Removed confidence percentage and explanation text from the predictive operational alert cards.
+- Risk level and suggested action remain visible for operational triage.
+
+## Verification
+- Frontend TypeScript check passed.
+- All 28 Jest suites and 129 tests passed.
+- Frontend production build passed.
