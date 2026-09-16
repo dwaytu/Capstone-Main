@@ -9,7 +9,7 @@ This roadmap stabilizes and verifies objective-critical operational paths on the
 - [x] **Phase 1: Governance Baseline Lock** - Validate current scope, map objective-critical flows, and close high-risk auth/shell regressions.
 - [x] **Phase 2: Role Workflow Reliability** - Harden elevated + guard operational workflows across desktop/mobile with smoke-backed fixes.
 - [x] **Phase 3: Asset and MDR Integrity** - Stabilize asset lifecycle and MDR import/review/commit critical paths.
-- [ ] **Phase 4: Platform Release Confidence** - Verify web/desktop/android release readiness and objective evidence coverage.
+- [x] **Phase 4: Platform Release Confidence** - Verify web/desktop/android release readiness and objective evidence coverage.
 
 ## Phase Details
 
@@ -66,8 +66,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 04-01: Cross-platform smoke and release verification
-- [ ] 04-02: Objective evidence consolidation
+- [x] 04-01: Cross-platform smoke and release verification
+- [x] 04-02: Objective evidence consolidation
 
 ## Progress
 
@@ -76,4 +76,4 @@ Plans:
 | 1. Governance Baseline Lock | 2/2 | Completed | 2026-05-03 |
 | 2. Role Workflow Reliability | 2/2 | Completed | 2026-05-03 |
 | 3. Asset and MDR Integrity | 2/2 | Completed | 2026-05-03 |
-| 4. Platform Release Confidence | 0/2 | Not started | - |
+| 4. Platform Release Confidence | 2/2 | Completed | 2026-09-16 |

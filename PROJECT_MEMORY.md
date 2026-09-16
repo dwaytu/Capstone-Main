@@ -1970,6 +1970,22 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - All 28 Jest suites and 129 tests passed.
 - Frontend production build passed.
 
+# 87) CANONICAL GUARD ACCOUNT CREATION (2026-09-16)
+
+## Fix
+- Resource Management now routes guard creation to the shared `CreateGuardAccountModal` used by the operational dashboard.
+- The generic Management account form is limited to non-guard roles and is labeled `Add Account`.
+- The canonical guard form now sends and persists the MDR guard number through the managed-user API and user responses.
+- Supervisors no longer trigger unauthorized pending-approval requests from the shared operations summary, eliminating expected 403 console noise.
+
+## Verification
+- Frontend TypeScript check passed.
+- Backend Docker release build and local container restart passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- Role/viewport functionality audit passed: 85 route checks, 396 control interactions, zero failures.
+- Backend health returned 200 with API, database, and WebSocket services up.
+- Frontend production build passed.
+
 # 82) REQUEST PRIVACY, ARCHIVE, AND NOTIFICATION READ STATE (2026-09-16)
 
 ## Fix
@@ -1990,6 +2006,21 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Supervisor-created guard accounts are marked `pending`, while admin- and superadmin-created guard accounts are approved immediately.
 - Pending guard approval listing and approval/rejection actions are restricted to admin and superadmin roles. Supervisor approval permission and navigation were removed.
 - Rejection requires a reason. Approval/rejection notifications are sent to the guard and to the supervisor who created the account.
+
+# 85) PHASE 4 PLATFORM RELEASE CONFIDENCE (2026-09-16)
+
+## Fix
+- Added `operations-map` to the elevated operational-shell route set so direct navigation renders the map instead of falling back to the dashboard.
+- Added a repeatable `audit:phase4` browser audit covering superadmin and guard map surfaces, desktop/mobile layouts, theme behavior, tracking endpoints, authorization, diagnostics, and overflow.
+
+## Verification
+- Phase 4 map audit passed for command and guard roles on desktop and mobile. Map tiles rendered in every run; `map-data` and `active-guards` returned valid `200` payloads; guard client-site management remained correctly restricted with `403`.
+- Frontend TypeScript check passed; all 29 Jest suites and 131 tests passed.
+- Production web gate passed; Android/Capacitor and desktop/Tauri builds passed after the route fix.
+- GitHub Actions release run `34926862284` for `v1.2.2` is successful and contains web, Windows, signed Android APK, and signed Android AAB artifacts.
+
+## Boundary
+- The route fix is locally verified but is not included in the already published `v1.2.2` artifacts; it needs the next commit and governed release before client rollout.
 
 # 81) OPERATIONAL REQUEST ROLE SEPARATION (2026-09-16)
 
@@ -2033,3 +2064,72 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Frontend production build passed.
 - Backend formatting check passed.
 - Backend production Docker image build passed.
+
+# 84) UI HCI POLISH PHASES 0-9 (2026-09-16)
+
+## Completed
+- Executed the UI/HCI plan sequentially for all four roles: baseline audit, shared design system, shell/navigation, shared interaction components, guard UI, supervisor UI, admin UI, superadmin UI, accessibility/responsive polish, and regression/release gates.
+- Added configurable multi-viewport functionality auditing, role-safe supervisor approval routing, drawer focus management, consistent SOC controls, guard emergency-contact icons, semantic action colors, accessible elevated-role search labels, and a repeatable accessibility audit script.
+- Added phase evidence to `docs/UI_POLISH_PHASE_STATUS.md`.
+
+## Verification
+- TypeScript check passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- Full interaction audit passed: 223 route checks, 989 control interactions, zero failures.
+- Accessibility audit passed: 128 route checks, zero failures across 320px, 375px, 768px, and 1280px viewports.
+- Web, Android/Capacitor, and desktop/Tauri builds passed. Desktop MSI and NSIS installers were produced.
+- Existing Vite mixed static/dynamic `config.ts` import warning remains non-blocking.
+
+# 85) MOBILE SIDEBAR CLOSE CONTROL (2026-09-16)
+
+## Fix
+- Removed the visible X button from the mobile sidebar header at the user's request.
+- Preserved sidebar dismissal through the backdrop, Escape key, and global menu toggle.
+- Focus now moves to the first navigation control when the mobile sidebar opens, and returns to the triggering control when it closes.
+
+## Verification
+- TypeScript check passed.
+- Shell navigation tests passed: 7 tests.
+- Mobile functionality audit passed: 16 route checks, 104 control interactions, zero failures.
+
+# 86) GUARD ROSTER UI REFINEMENT (2026-09-16)
+
+## Fix
+- Refined the resource-management guard roster with a clearer personnel header, registered-count chip, consistent primary/neutral/danger actions, Lucide icons, improved row hierarchy, explicit missing-value labels, and an accessible responsive table caption and column scopes.
+
+## Verification
+- Full Jest suite passed: 29 suites and 131 tests.
+- TypeScript check passed.
+- Desktop and mobile functionality audit passed: 85 route checks, 396 control interactions, zero failures.
+- Frontend production build passed.
+
+# 88) REPO-WIDE UI STANDARDIZATION (2026-09-16)
+
+## Fix
+- Added shared semantic status classes, tokenized form-field styling, and a global minimum-size/focus baseline for buttons and form controls.
+- Migrated remaining legacy action/status styles across dashboards, admin tools, maps, firearms, merit, support, audit, settings, and placeholder panels.
+- Added `npm run audit:ui-consistency` to detect raw palette classes and action buttons missing a shared SOC variant.
+
+## Verification
+- UI consistency audit passed: 128 component files, 335 buttons, 184 form controls, zero findings.
+- Manual functionality audit passed: 85 route checks, 396 control interactions, zero failures.
+- Accessibility/responsive audits passed: 128 checks covering 320px, 375px, 768px, and 1280px viewport groups, zero failures.
+- TypeScript, 29 Jest suites/131 tests, and frontend production build passed.
+- A paced split was used for the accessibility matrix because the backend rate limiter returned 429 responses during an overly fast combined run.
+
+# 89) MDR RESOURCE EXPORT AND CLEAR (2026-09-16)
+
+## Fix
+- Added an MDR workspace export action that downloads current guard, firearm, and vehicle records as CSV.
+- Added a confirmation-protected delete-all action for those three resource groups.
+- Enforced admin/superadmin authorization in both middleware and the handler; the clear operation runs in one transaction and preserves elevated accounts, clients, MDR history, and audit records.
+- Cleared non-cascading guard references before deletion and recorded the operation with deletion counts in the audit log.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- Frontend production build passed.
+- UI consistency audit passed with zero findings.
+- Backend production Docker build passed.
+- Authorized admin export returned CSV sections for guards, firearms, and vehicles; guard delete attempt returned 403.
+- Isolated database fixture confirmed deletion counts, preserved admin account, cleared references, and created the clear audit event.

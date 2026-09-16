@@ -31,9 +31,9 @@
 
 ### Situational Awareness and Reliability
 
-- [ ] **MAP-01**: Theme-aware map panels render across roles (dark/light tile parity).
-- [ ] **MAP-02**: Tracking and presence endpoints support operational map visibility.
-- [ ] **REL-01**: Web, desktop, and Android build paths complete in governed pipeline.
+- [x] **MAP-01**: Theme-aware map panels render across roles (dark/light tile parity).
+- [x] **MAP-02**: Tracking and presence endpoints support operational map visibility.
+- [x] **REL-01**: Web, desktop, and Android build paths complete in governed pipeline.
 
 ## v2 Requirements
 
@@ -66,9 +66,9 @@
 | AST-01 | Phase 3 | Complete (2026-05-03) |
 | AST-02 | Phase 3 | Complete (2026-05-03) |
 | AST-03 | Phase 3 | Complete (2026-05-03) |
-| MAP-01 | Phase 4 | Pending |
-| MAP-02 | Phase 4 | Pending |
-| REL-01 | Phase 4 | Pending |
+| MAP-01 | Phase 4 | Complete (2026-09-16) |
+| MAP-02 | Phase 4 | Complete (2026-09-16) |
+| REL-01 | Phase 4 | Complete (2026-09-16) |
 
 **Coverage:**
 - v1 requirements: 15 total
@@ -77,4 +77,4 @@
 
 ---
 *Requirements defined: 2026-05-03*
-*Last updated: 2026-05-03 after GSD brownfield initialization*
+*Last updated: 2026-09-16 after Phase 4 release verification*
