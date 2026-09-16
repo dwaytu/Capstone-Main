@@ -1970,6 +1970,20 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - All 28 Jest suites and 129 tests passed.
 - Frontend production build passed.
 
+# 82) REQUEST PRIVACY, ARCHIVE, AND NOTIFICATION READ STATE (2026-09-16)
+
+## Fix
+- Request lists and details are requester-scoped for guards and supervisors; only admins and superadmins can see all request records.
+- Requesters can see only their own decision-relevant history: approved, needs correction, or rejected, including the decision reason. Cancellation and other internal audit events remain admin-only.
+- Admins and superadmins can clear terminal requests from the active list. Clearing archives the record and preserves its audit history; `Show cleared` restores it in the admin view.
+- Added read and unread notification controls, including mark-all-read, mark-all-unread, and per-notification toggles.
+
+## Verification
+- Frontend TypeScript check passed.
+- All 28 Jest suites and 129 tests passed.
+- Backend formatting check passed.
+- Backend production Docker image build passed.
+
 # 81) OPERATIONAL REQUEST ROLE SEPARATION (2026-09-16)
 
 ## Fix
@@ -1997,3 +2011,18 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Frontend TypeScript check passed.
 - All 28 Jest suites and 129 tests passed.
 - Frontend production build passed.
+
+# 83) MISSION RESOURCE SELECTION AND FIREARM COMPLIANCE (2026-09-16)
+
+## Fix
+- Mission assignment now loads approved, verified guards from `/api/guards` and uses the exact guard, firearm, and vehicle selected in the form.
+- Mission firearm choices are limited to available firearms with a current license expiry date; the backend enforces the same rule.
+- Firearm compliance now marks a missing firearm license as `no_permit`, uses the stored firearm license expiry date in the report, and includes firearm-license expirations in notification candidates.
+- Shared SOC button and form-control styles were applied to mission assignment, approval, firearm allocation, firearm inventory, vehicle, and client-site actions. Approval actions use green styling and destructive/cancel actions use red styling.
+
+## Verification
+- Frontend TypeScript check passed.
+- All 28 Jest suites and 129 tests passed.
+- Frontend production build passed.
+- Backend formatting check passed.
+- Backend production Docker image build passed.
