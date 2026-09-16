@@ -69,7 +69,6 @@ If ChatGPT is asked about roles, it should verify code paths before assuming doc
 
 Backend endpoints include:
 
-- `POST /api/register`
 - `POST /api/login`
 - `POST /api/verify`
 - `POST /api/resend-code`
@@ -83,13 +82,11 @@ Backend endpoints include:
 
 Behavior highlights:
 
-- Gmail-only validation for registration email
-- Public registration only creates guard accounts
-- Self-registered guard accounts start as `pending` approval
-- Login requires both email verification and `approval_status = approved`
+- Account creation is staff-managed through `POST /api/users`; public registration is disabled
+- Supervisor-created guard accounts start as `pending`; admin- and superadmin-created guard accounts are approved immediately
+- Login requires an approved account and the applicable legal-consent state
 - Admin/supervisor accounts should be created internally via authenticated management flows
-- Email verification required when email provider is configured
-- Email verification is mandatory for guard self-registration; registration is rejected when email verification provider is not configured
+- Existing verification endpoints remain available for legacy or account-recovery flows
 - Access and refresh JWTs issued on login; refresh sessions are persisted server-side and rotated on refresh
 - Password-reset codes are now generated at 8 digits by default, stored as hashes (not plaintext), and validated with account/IP lockout checks to reduce brute-force risk.
 - Password reset now redeems tokens atomically and revokes active refresh-token sessions in the same transaction after password update.
@@ -97,10 +94,10 @@ Behavior highlights:
 
 Approval workflow highlights (implemented):
 
-- Reviewer roles (`superadmin`, `admin`, `supervisor`) can list pending guard approvals
-- Reviewer roles can approve or reject pending guard accounts
-- Guard self-registration triggers reviewer notifications about pending approval
-- Approval/rejection action triggers a decision notification to the guard
+- Only `superadmin` and `admin` can list or action pending guard approvals
+- Only supervisor-created pending guard accounts enter the approval queue
+- Supervisor-created guard accounts notify admin and superadmin reviewers
+- Approval/rejection triggers decision notifications to the guard and the creating supervisor; rejection requires a reason
 
 ### B. Personnel and Scheduling
 

@@ -184,7 +184,7 @@ backed by:
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/api/auth/login` | JWT login |
-| POST | `/api/auth/register` | User registration |
+| POST | `/api/users` | Staff-managed account creation; supervisor-created guards require admin/superadmin approval |
 | GET | `/api/analytics?days=` | Date-scoped operational KPIs, resource availability, attendance, and evaluation charts |
 | GET | `/api/analytics/evaluations?days=` | Client evaluation summary, rating distribution, and daily trend |
 | GET | `/api/analytics/guard-performance-report?from=&to=` | Per-guard attendance, punctuality, incidents, evaluations, merit, and replacement metrics |

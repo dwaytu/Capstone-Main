@@ -1984,6 +1984,13 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Backend formatting check passed.
 - Backend production Docker image build passed.
 
+# 84) MANAGED GUARD ACCOUNT APPROVAL HIERARCHY (2026-09-16)
+
+- Public `/api/register` and `/api/auth/register` routes were removed. Guard accounts are created by authorized staff.
+- Supervisor-created guard accounts are marked `pending`, while admin- and superadmin-created guard accounts are approved immediately.
+- Pending guard approval listing and approval/rejection actions are restricted to admin and superadmin roles. Supervisor approval permission and navigation were removed.
+- Rejection requires a reason. Approval/rejection notifications are sent to the guard and to the supervisor who created the account.
+
 # 81) OPERATIONAL REQUEST ROLE SEPARATION (2026-09-16)
 
 ## Fix

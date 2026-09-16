@@ -6,7 +6,7 @@ This guide covers the fastest path to running SENTINEL for each platform.
 
 1. Open https://dasiasentinel.xyz/
 2. Sign in with your provisioned account credentials.
-3. If you are a new guard, register via the login page and wait for admin approval.
+3. New guard accounts are created by an authorized supervisor, admin, or superadmin. Supervisor-created accounts require admin or superadmin approval before login.
 
 ## Desktop (Windows)
 
@@ -94,7 +94,7 @@ Release builds require `VITE_API_BASE_URL` (HTTPS production URL) and `VITE_APP_
 
 ## Account Provisioning
 
-- **Guards**: Self-register via the login page. Accounts start as `pending` and require approval from an admin or supervisor.
+- **Guards**: Do not self-register. A supervisor may create a pending guard account, which requires admin or superadmin approval. Admin and superadmin-created guard accounts are active immediately.
 - **Admin/Supervisor**: Created by a superadmin through the user management interface.
 - **Superadmin**: Promoted via direct database update. See `DasiaAIO-Backend/scripts/railway_live_account_provision.sql`.
 
@@ -104,7 +104,7 @@ Release builds require `VITE_API_BASE_URL` (HTTPS production URL) and `VITE_APP_
 |------|--------|
 | `superadmin` | Full platform management, audit logs, user creation |
 | `admin` | User management, operational dashboards, approvals |
-| `supervisor` | Operational visibility, guard approvals, tracking |
+| `supervisor` | Operational visibility, guard account creation, tracking |
 | `guard` | Personal workspace, check-in/out, incident reporting |
 
 ## Troubleshooting

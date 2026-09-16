@@ -373,7 +373,7 @@
 ## 8. Security Model
 
 ### Authentication Flow
-1. User registration (guard self-registration requires verification and approval).
+1. Managed account provisioning (supervisor-created guard accounts require admin or superadmin approval; public self-registration is disabled).
 2. Email verification using short-lived code.
 3. Login validates credentials and approval status.
 4. JWT token issued and consumed as Bearer token by frontend API calls.

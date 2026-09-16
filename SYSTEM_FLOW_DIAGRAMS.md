@@ -1,26 +1,29 @@
 # SYSTEM FLOW DIAGRAMS
 
-Updated: 2026-04-03
+Updated: 2026-09-16
 
 ## 1. Authentication, Approval, and Legal Consent Flow
 
 ```mermaid
 flowchart TD
-    A[Guard submits registration] --> B[POST /api/register]
-    B --> C[User created as pending + unverified]
-    C --> D[Verification code issued]
-    D --> E[POST /api/verify]
-    E --> F[verified=true]
-    F --> G[Reviewer approves user]
-    G --> H[PUT /api/users/:id/approval]
-    H --> I[approval_status=approved]
-    I --> J[POST /api/login]
-    J --> K[Access token + refresh token]
-    K --> L{legal_consent_accepted?}
-    L -- No --> M[POST /api/legal/consent]
-    M --> N[Consent metadata persisted]
-    N --> O[Protected routes allowed]
-    L -- Yes --> O
+    A[Authorized staff creates guard account] --> B[POST /api/users]
+    B --> C{Creator role}
+    C -- Supervisor --> D[Account created as pending]
+    C -- Admin or Superadmin --> E[Account created as approved]
+    D --> F[Admin or Superadmin reviews guard details]
+    F --> G[PUT /api/users/:id/approval]
+    G --> H{Decision}
+    H -- Approve --> I[approval_status=approved]
+    H -- Reject --> J[approval_status=rejected + reason]
+    E --> K[POST /api/login]
+    I --> K
+    J --> L[Guard cannot log in]
+    K --> M[Access token + refresh token]
+    M --> N{legal_consent_accepted?}
+    N -- No --> O[POST /api/legal/consent]
+    O --> P[Consent metadata persisted]
+    P --> Q[Protected routes allowed]
+    N -- Yes --> Q
 ```
 
 ## 2. Protected API Request Lifecycle
