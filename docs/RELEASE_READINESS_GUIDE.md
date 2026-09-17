@@ -86,13 +86,13 @@ These are the five improvement phases from the panel recommendations. They are s
 
 ### Current Iteration Acceptance Audit
 
-**Status:** Passed for the current implemented scope.
+**Status:** Passed for the current implemented scope on 2026-09-17.
 
 **Coverage:**
 
 - Authenticated superadmin, admin, supervisor, and guard accounts.
-- 86 desktop/mobile route checks across the role-specific route matrix.
-- 481 safe browser control interactions, including filters, refresh, print, CSV export, calendar navigation, compliance alert synchronization, quick inbox, profile menu, responsive navigation, logout, and the new maintenance controls.
+- 85 desktop/mobile route checks across the role-specific route matrix.
+- 382 safe browser control interactions, including filters, refresh, print, CSV export, calendar navigation, compliance alert synchronization, quick inbox, profile menu, responsive navigation, logout, and maintenance controls.
 - No page errors, console errors, API errors, request failures, or horizontal overflow in the final audit.
 - Destructive actions such as delete, suspend, approval, SOS, and record creation were intentionally excluded from this non-mutating audit and require controlled test fixtures for end-to-end mutation testing.
 
@@ -100,7 +100,7 @@ These are the five improvement phases from the panel recommendations. They are s
 
 ### Fixture-Based Mutation Audit
 
-**Status:** Passed against a disposable clone of the local PostgreSQL database on 2026-08-19.
+**Status:** Passed against a disposable clone of the local PostgreSQL database on 2026-09-17.
 
 **Coverage:**
 
@@ -112,7 +112,7 @@ These are the five improvement phases from the panel recommendations. They are s
 - 12 mutation workflows passed with zero page errors, console errors, or API errors.
 - The original attendance contract defect was fixed: the guard UI now sends `guardId`, `shiftId`, and `attendanceId` to match the Rust API.
 
-**Evidence:** `output/mutation-audit/MUTATION-20260819140813.json` and `scripts/mutation-functionality-audit.mjs`. The shared `guard_firearm_system` database was not mutated; the disposable clone was dropped after the run.
+**Evidence:** `output/mutation-audit/MUTATION-20260917155027.json` and `scripts/mutation-functionality-audit.mjs`. The shared `guard_firearm_system` database was not mutated; the disposable clone was dropped after the run.
 
 **Resolved UI gap:** firearm return is now available from active allocation rows, while maintenance scheduling and completion controls are available from the maintenance view. Read-only browser verification confirmed the controls render and the scheduling form opens without page or API errors; destructive mutation execution remains covered by the disposable-database mutation audit.
 
@@ -138,9 +138,9 @@ These are the five improvement phases from the panel recommendations. They are s
 
 **Work:**
 
-- Show attendance rate, late check-ins, completed shifts, absences/no-shows, incident reports, client evaluation results, merit score, and replacement frequency.
+- Show attendance rate, late check-ins, completed shifts, absences/no-shows, incident reports, supervisor and administrator guard evaluation results, merit score, and replacement frequency.
 - Keep date filters and per-guard detail alongside summary KPIs and graphical reports.
-- Show date-scoped client evaluation summaries, rating distribution, and trend views using authenticated evaluator ownership.
+- Show date-scoped guard evaluation summaries, rating distribution, and trend views using authenticated supervisor or administrator evaluator ownership.
 - Label all scores as advisory metrics and preserve the underlying records used to calculate them.
 - Show available and unavailable guards, firearms, and vehicles using operational status and assignment records.
 - Revalidate the charts whenever attendance, compliance, or request lifecycle rules change their source data.
@@ -239,7 +239,7 @@ Do not attach passwords, JWTs, production URLs with secrets, or private keys to 
 | DTR reporting | Elevated roles can filter paginated DTR entries and use print/CSV actions without losing the source attendance status. |
 | Firearm compliance | Elevated roles can review custody, permit, maintenance, and expiry status, filter the register, and synchronize deduplicated alerts. |
 | No-shows | A missed shift creates one punctuality record and one notification event, even if detection runs repeatedly. |
-| Analytics | Performance report returns attendance, lateness, completed shifts, no-shows, incidents, client evaluation, merit, and replacement metrics. |
+| Analytics | Performance report returns attendance, lateness, completed shifts, no-shows, incidents, supervisor/admin guard evaluation, merit, and replacement metrics. |
 | Offline actions | Only network/offline failures are queued; validation and authorization failures remain visible to the user. |
 | Mobile safety | No horizontal overflow and no SOS/emergency-contact overlap at 390px and 320px widths. |
 | Dependencies | `npm audit --audit-level=high` reports no high or critical vulnerabilities. |
@@ -250,7 +250,7 @@ Do not attach passwords, JWTs, production URLs with secrets, or private keys to 
 | Panel direction | Action | Completion evidence |
 |---|---|---|
 | Performance metrics in graphs | Keep the Guard Performance Report with KPI cards, SVG charts, date filters, and metric table. | Browser smoke plus screenshot and endpoint response. |
-| Evaluation/analytics | Aggregate attendance, incidents, client ratings, merit, and replacements in one report. | `/api/analytics/guard-performance-report` and UI report. |
+| Evaluation/analytics | Aggregate attendance, incidents, supervisor/admin guard ratings, merit, and replacements in one report. | `/api/analytics/guard-performance-report` and UI report. |
 | DTR automation | Generate a filterable Daily Time Record from scheduled shifts, check-in/out, and punctuality records. | `/api/attendance/dtr`, DTR desktop/mobile screenshots, and print/CSV controls. |
 | Firearm reports/expiration notices | Implement consolidated firearm compliance visibility and deduplicated expiry notifications. | Role-based API/UI evidence, seeded expiry cases, and notification records. |
 | Service/deposit requests | Implement approval-gated request flows as a complete lifecycle. | Working route/UI evidence, authorization tests, and audit events. |

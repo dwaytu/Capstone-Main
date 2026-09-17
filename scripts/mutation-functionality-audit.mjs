@@ -78,7 +78,7 @@ async function loginPage(page, identifier) {
   await page.locator('#identifier, input[name="identifier"], input[autocomplete="username"], input[type="email"]').first().fill(identifier)
   await page.locator('#password, input[type="password"]').first().fill(password)
   await page.getByRole('button', { name: /^login$/i }).click()
-  await page.waitForTimeout(1800)
+  await page.waitForFunction(() => !window.location.pathname.endsWith('/login'), null, { timeout: 10_000 }).catch(() => {})
   if (page.url().includes('/login')) {
     const alert = (await page.locator('[role="alert"]').allTextContents()).join(' | ')
     throw new Error(`login did not complete for ${identifier}${alert ? `: ${alert}` : ''}`)

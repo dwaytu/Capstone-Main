@@ -1,0 +1,74 @@
+{
+  "tag": "MUTATION-20260917155027",
+  "webBaseUrl": "http://127.0.0.1:5174",
+  "apiBaseUrl": "http://127.0.0.1:5001",
+  "startedAt": "2026-09-17T15:50:34.946Z",
+  "results": [
+    {
+      "name": "schedule creation via UI",
+      "status": "PASS",
+      "shiftId": "3f05177b-0c2e-4533-8bb1-2b6749868fbd"
+    },
+    {
+      "name": "attendance check-in via UI",
+      "status": "PASS",
+      "shiftId": "3f05177b-0c2e-4533-8bb1-2b6749868fbd"
+    },
+    {
+      "name": "attendance check-out via UI",
+      "status": "PASS",
+      "shiftId": "3f05177b-0c2e-4533-8bb1-2b6749868fbd"
+    },
+    {
+      "name": "incident submission via UI",
+      "status": "PASS"
+    },
+    {
+      "name": "support ticket submission via UI",
+      "status": "PASS"
+    },
+    {
+      "name": "feedback submission via UI",
+      "status": "PASS"
+    },
+    {
+      "name": "firearm allocation via UI",
+      "status": "PASS",
+      "allocationId": "fc2e0448-d395-4333-8dcf-3ad23b6323d9"
+    },
+    {
+      "name": "firearm return via browser-context API (no UI action exposed)",
+      "status": "PASS",
+      "allocationId": "fc2e0448-d395-4333-8dcf-3ad23b6323d9"
+    },
+    {
+      "name": "firearm maintenance scheduling via browser-context API (no UI action exposed)",
+      "status": "PASS",
+      "maintenanceId": "8d524d3c-69ce-434c-b747-c7e170329686"
+    },
+    {
+      "name": "firearm maintenance completion via browser-context API (no UI action exposed)",
+      "status": "PASS",
+      "maintenanceId": "8d524d3c-69ce-434c-b747-c7e170329686"
+    },
+    {
+      "name": "guard approval via UI",
+      "status": "PASS",
+      "userId": "7b1a0f9e-4d32-4c8f-e7a6-5b4c3d2e1f09"
+    },
+    {
+      "name": "MDR import and reject via UI",
+      "status": "PASS",
+      "batchId": "5b92d5cd-2b6a-4f73-9dd9-312ccdcb6a72"
+    }
+  ],
+  "diagnostics": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "apiErrors": []
+  },
+  "trackedIds": {
+    "shiftId": "3f05177b-0c2e-4533-8bb1-2b6749868fbd",
+    "allocationId": "fc2e0448-d395-4333-8dcf-3ad23b6323d9"
+  }
+}

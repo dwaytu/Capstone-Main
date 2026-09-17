@@ -88,6 +88,36 @@ Noted:
 
 May 12, 2026
 
+TABLE OF CONTENTS
+
+TITLE PAGE i
+
+ENDORSEMENT FORM FOR PROPOSAL DEFENSE ii
+
+APPROVAL SHEET iii
+
+TABLE OF CONTENTS iv
+
+INTRODUCTION 1
+
+Project Context 1
+
+Purpose and Description 3
+
+Objectives 4
+
+Scope and Limitations 9
+
+Review of Related Literature/Studies/Systems 13
+
+METHODOLOGY 22
+
+Requirements Analysis 28
+
+Design of Software, System, Product, and/or Processes 34
+
+REFERENCES 55
+
 INTRODUCTION
 
 Project Context
@@ -116,17 +146,17 @@ The main objective of this study is to develop a system named SENTINEL, an integ
 
 Specific Objectives
 
-To provide secure, role-based access and approval-governed user management.
+Provide secure, approval-governed user access with identity verification, session management, account recovery, and legal-policy compliance.
 
-To automate personnel operations, including scheduling, attendance, DTR generation, check-in/check-out, and replacement coordination.
+Automate personnel operations, including scheduling, attendance, DTR generation, check-in/check-out, and replacement coordination.
 
-To strengthen firearm, permit, vehicle, and asset accountability through reports, expiration alerts, issuance tracking, and maintenance monitoring.
+Strengthen firearm, permit, vehicle, and asset accountability through reports, expiration alerts, issuance tracking, and maintenance monitoring.
 
-To support field operations through incident reporting, emergency escalation, service requests, notifications, and live monitoring.
+Support field operations through incident reporting, emergency escalation, service requests, notifications, and live monitoring.
 
-To provide performance evaluation and analytics through graphical reports on attendance, punctuality, incidents, assignments, and guard performance.
+Provide performance evaluation and analytics through graphical reports on attendance, punctuality, incidents, assignments, and guard performance.
 
-To deliver a traceable multi-platform system for Web, Desktop, and Android with audit logs, approval workflows, and operational reports.
+Deliver a traceable multi-platform system for Web, Desktop, and Android with audit logs, approval workflows, and operational reports.
 
 Scope and Limitations
 
@@ -275,7 +305,7 @@ Validation was embedded throughout the Scrum cycle through scenario-based testin
 
 Release readiness was evaluated through structured quality checks, build verification, and governed platform packaging before each major milestone to support controlled rollout decisions and reduce operational disruption. Overall, the methodology shows an Agile approach in which reliability, accountability, security, and usability were developed together with functional scope.
 
-Figure 6. Work Breakdown StructureFigure 6. Work Breakdown Structure
+Figure 6. Work Breakdown Structure
 ![](docs/capstone/paper-media/img-06.png)
 
 Technical Background
@@ -330,7 +360,7 @@ Gantt Chart of Activities
 | Maintenance and Refinement Monitoring and refinements Support and documentation updates |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | Project Closure Final review and turnover Defense preparation and final submission |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 
-Figure 7. Gantt Chart of ActivitiesCompletedOngoingNot StartedCompletedOngoingNot Started
+Figure 7. Gantt Chart of Activities
 
 Legends:
 

@@ -2129,7 +2129,751 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Frontend TypeScript check passed.
 - Full Jest suite passed: 29 suites and 131 tests.
 - Frontend production build passed.
-- UI consistency audit passed with zero findings.
+
 - Backend production Docker build passed.
 - Authorized admin export returned CSV sections for guards, firearms, and vehicles; guard delete attempt returned 403.
 - Isolated database fixture confirmed deletion counts, preserved admin account, cleared references, and created the clear audit event.
+
+# 90) LIVE OPERATIONS FEED LAYOUT FIX (2026-09-17)
+
+## Fix
+- Aligned the incident alert feed viewport with the live operations feed so alert cards and action controls are not clipped inside a shorter scroll area.
+- Standardized live-feed dismiss, acknowledge, and resolve controls with SOC button variants, accessible sizing, and Lucide icons.
+
+## Verification
+- Frontend production build passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- UI consistency audit passed with zero findings.
+- Local frontend served the updated modules on port 5173.
+- Local backend and database health returned 200 OK.
+
+# 91) NOTIFICATION TOAST READABILITY FIX (2026-09-17)
+
+## Fix
+- Corrected desktop toast positioning so notifications render below the header on the right instead of covering the sidebar.
+- Added an opaque elevated surface, clearer text hierarchy, safe text wrapping, larger dismiss control, and a subtle five-second progress animation.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- Frontend production build passed.
+- UI consistency audit passed with zero findings.
+- Local frontend served the updated notification module and backend health returned 200 OK.
+
+# 92) GEOFENCE RADIUS UNIT LABEL (2026-09-17)
+
+## Fix
+- Added a persistent `km` suffix to the geofence radius input in the Operational Map geofence manager so the default numeric value is unambiguous.
+- Kept the form state and API payload numeric in kilometers; existing geofence table output already includes the `km` unit.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- Frontend production build passed.
+- UI consistency audit passed with zero findings.
+- Local frontend served the updated `OperationalMapPanel` module and backend health returned 200 OK.
+
+# 93) GEOFENCE CONTROL CONSISTENCY (2026-09-17)
+
+## Fix
+- Removed browser number spinners from the geofence radius field while retaining keyboard and direct numeric input.
+- Switched the client-site selector and radius field to the shared `soc-field` styling for consistent dimensions and focus states.
+- Added an accessible description and hover explanation for the Active zone control; active zones are monitored for guard enter/exit alerts.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- Frontend production build passed.
+- UI consistency audit passed with zero findings.
+- Local frontend and backend health endpoints returned 200 OK.
+
+# 98) BACKEND-BACKED GUARD AVAILABILITY AND SHIFT READINESS (2026-09-17)
+
+## Fix
+- Replaced the guard dashboard's localStorage-only callout and equipment state with the existing backend availability record and a new per-shift `guard_shift_readiness` record.
+- Added authenticated readiness GET/PUT endpoints with guard self-access, supervisor-plus operational access, assigned-shift validation, item allow-list validation, and audit middleware on writes.
+- Extended availability updates to persist optional availability windows and notes, and restricted targets to guard accounts.
+- Added callout and readiness status fields to elevated shift data and surfaced them in the command-center deployment overview for supervisors, admins, and superadmins.
+- Removed the duplicate profile availability control so the guard dashboard is the single operational control surface.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 33 suites and 137 tests, including focused backend-backed readiness UI tests.
+- Frontend production build passed with the existing Vite dynamic-import warnings only.
+
+# 106) MDR COMMIT DUPLICATE-RESOURCE HARDENING (2026-09-17)
+
+## Fix
+- Fixed MDR client commits failing on the unique `(name, branch)` index when an existing client was not matched because workbook names contained spacing differences.
+- Client matching and commit reuse trimmed/case-normalized names and update existing client details instead of inserting duplicates.
+- Fixed armored-car commits where a workbook row matched one vehicle by plate and another by VIN. The importer now prefers the plate match and preserves the selected vehicle's existing VIN when identifiers conflict, preventing unique plate/VIN violations.
+
+## Verification
+- Rebuilt and restarted the backend Docker service successfully.
+- Retried the affected batch through the live API; it committed successfully and is recorded as `committed` in PostgreSQL.
+- API health returned `ok`.
+- Backend format and diff checks passed.
+
+# 107) MDR COMMIT SUMMARY FIELD PARITY (2026-09-17)
+
+## Fix
+- MDR commit summaries are serialized by the Rust API in camelCase, while the review modal was reading snake_case keys.
+- The modal now reads the API contract correctly, with snake_case fallback compatibility, so guard created/updated and blocked counts reflect the actual commit.
+
+## Verification
+- Latest committed batch audit recorded 153 guard updates and 0 new guard accounts; the database contains the updated guard records.
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with the existing Vite dynamic-import warnings only.
+- UI consistency audit passed with zero findings.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend compile verification remains blocked by the local Windows environment missing the OpenSSL development installation required by the existing `sqlx` native-tls dependency.
+- Backend Docker release build passed, compiling the server successfully on Linux.
+
+# 99) GUARD READINESS ITEM ALIGNMENT (2026-09-17)
+
+## Fix
+- Reduced the guard pre-shift readiness checklist to the required operational items: Uniform, Firearm, and Endorsement Form.
+- Kept the frontend labels, submitted keys, backend allow-list, completion rule, elevated status query, and tests aligned at three items.
+
+# 96) NATIVE SELECT TYPE-AHEAD CORRECTION (2026-09-17)
+
+## Correction
+- Removed the custom searchable combobox because the requested behavior is native dropdown type-ahead: users focus a selector and type the beginning of a name to jump to the matching option.
+- Restored the original native selectors and preserved the existing form state, option values, and API behavior.
+
+## Verification
+- Full Jest suite passed: 29 suites and 131 tests.
+- Frontend TypeScript check passed.
+- Frontend production build passed.
+- UI consistency audit passed with zero findings.
+
+# 95) SEARCHABLE ENTITY SELECTORS (2026-09-17)
+
+## Fix
+- Added a shared accessible `SearchableSelect` combobox with text filtering, keyboard navigation, selected-state feedback, empty states, and outside-click handling.
+- Applied it to long-list operational selectors for guards, client sites, firearms, vehicles, mission assignments, maintenance, and shift swaps.
+- Preserved existing selected values and parent callbacks; static short filters such as status and priority remain native dropdowns.
+
+## Verification
+- Full Jest suite passed: 30 suites and 133 tests, including focused searchable-select tests.
+- Frontend TypeScript check passed.
+- Frontend production build passed.
+- UI consistency audit passed with zero findings.
+- Local frontend and backend health endpoints returned 200 OK.
+
+# 94) GEOFENCE CONTROL HEIGHT ALIGNMENT (2026-09-17)
+
+## Fix
+- Set the client-site selector, radius input, and radius suffix wrapper to the shared 44px `h-11` height so the geofence form controls align consistently.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 29 suites and 131 tests.
+- Frontend production build passed.
+
+# 97) ELEVATED SOS ALERT POPUP (2026-09-17)
+
+## Fix
+- Added a prominent, opaque SOS alert dialog for active guard panic incidents on the shared elevated command center used by supervisors, admins, and superadmins.
+- The dialog shows the reporting guard, received time, site/location, and clear Acknowledge, Resolve SOS, and Dismiss actions.
+- Acknowledge updates the incident to investigating; Resolve updates it to resolved; Dismiss only hides the popup locally while leaving the incident in the existing live feed and notification path.
+- The popup uses the existing server-backed active-incident polling, so alerts sent from a guard device appear on elevated dashboards without changing SOS submission or offline queue behavior.
+
+## Verification
+- Focused SOS dialog tests passed: 2 tests.
+- Full Jest suite passed: 30 suites and 133 tests.
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 125) REMOVE COMMAND CENTER REFRESH PILL (2026-09-17)
+
+## Fix
+- Removed the `Dashboard refresh` freshness pill from the command-center header at the user's request.
+- Removed the unused local refresh timestamp state and component import; background polling remains unchanged.
+
+## Verification
+- Frontend TypeScript check passed.
+- Focused dashboard and navigation tests passed: 2 suites and 9 tests.
+- Frontend diff check passed.
+
+# 128) FEEDBACK HEADER SPACING (2026-09-17)
+
+## Fix
+- Added responsive internal padding to the Feedback Intelligence command panel so its border no longer sits against the heading, description, or Refresh action.
+
+## Verification
+- Frontend TypeScript check passed.
+- Feedback dashboard tests passed: 1 suite and 2 tests.
+- Frontend diff check passed.
+
+# 127) INBOX PRIORITY COLORS (2026-09-17)
+
+## Fix
+- Quick inbox priority badges now use red for Urgent, yellow for High, and green for Normal.
+- Full action-inbox priority bars use the same severity colors, including green for Normal.
+- Quick inbox badges use the explicit `soc-status-danger`, `soc-status-warning`, and `soc-status-success` styles for reliable rendering.
+
+## Verification
+- Frontend TypeScript check passed.
+- Focused inbox and navigation tests passed: 2 suites and 10 tests.
+- Frontend diff check passed.
+
+# 126) GUARD LICENSE NOTIFICATION PRIORITY (2026-09-17)
+
+## Fix
+- Guard license compliance notifications are now mapped to Urgent when expired and High when expiring soon.
+- Applied the priority mapping to the shared quick inbox and the admin, supervisor, and superadmin full inbox views.
+
+## Verification
+- Frontend TypeScript check passed.
+- Focused inbox and navigation tests passed: 2 suites and 10 tests.
+- Frontend diff check passed.
+
+# 124) COMMAND CENTER STATUS DATA CORRECTIONS (2026-09-17)
+
+## Fix
+- Command-center guard capacity now uses the approved, verified guard roster from `/api/guards`; unavailable roster data is shown as `--` instead of an artificial denominator.
+- Service availability now counts only the five service status fields, excluding the `lastChecked` timestamp.
+- System status now becomes Warning when any monitored service is offline, in addition to existing operational alert rules.
+- Renamed the dashboard freshness label from `SOC stream` to `Dashboard refresh` to reflect the current polling implementation.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 124) GUIDED CLIENT SITE AND CHECK-IN AREA SETUP (2026-09-17)
+
+## Fix
+- Added an atomic backend endpoint that creates a client site and its active radius geofence in one transaction.
+- Reworked the Operations Map client location manager to use site name, address or landmark, map-selected location, and a plain-language 100/250/500 meter check-in area selector.
+- Removed raw latitude/longitude fields and the separate Geofence Zone Manager from the visible setup workflow.
+- Compact site records now show address, check-in area, and active/inactive status; existing sites remain editable and their radius can be updated through the same form.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 129) DARK MODE DATE PICKER CONTRAST (2026-09-17)
+
+## Fix
+- Added explicit light and dark `color-scheme` declarations to the frontend theme roots so native date and datetime calendar controls remain visible in dark mode.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Backend `cargo fmt -- --check` passed.
+- Backend `cargo check` was blocked by the local Windows environment missing OpenSSL development files.
+- Authenticated browser verification was blocked because the local backend was unavailable and no credentials were provided.
+
+# 125) CLIENT SITE ACTION FEEDBACK (2026-09-17)
+
+## Fix
+- Made the Operations Map Add Client Site action scroll to and focus the guided site form.
+- Made Edit scroll to and focus the site name field.
+- Added visible saving, deleting, success, and validation feedback for site actions.
+- Added per-site delete loading state and contextual accessible labels for Edit and Delete controls.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 128) CLIENT SITE ACTION BUTTONS AND MAP RESIZE (2026-09-17)
+
+## Fix
+- Promoted the Operations Map Add Client Site action to the shared primary button style and added a clear add icon.
+- Styled Edit and Delete site actions with the shared controls and action icons, preserving delete loading feedback.
+- Aligned the Add Site and Save changes actions directly with the guard check-in-area selector, with responsive stacking on narrow screens.
+- Added Leaflet resize observation for the map and wrapper, including short post-transition refreshes, so sidebar collapse and expansion redraw the full tile area.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- `git diff --check` passed.
+
+# 129) CLIENT SITE LOCATION CONFIRMATION PIN (2026-09-17)
+
+## Fix
+- Replaced the temporary client-site draft circle with a visible yellow map pin.
+- The pin appears after a location is clicked, remains visible while the form is reviewed, and clears after save, cancel, or delete.
+- Added a pin popup that identifies the selected site location without presenting it as live GPS telemetry.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- `git diff --check` passed.
+
+# 130) OPERATIONS MAP METRIC LABEL ACCURACY (2026-09-17)
+
+## Fix
+- Renamed map summary metrics so telemetry counts are not presented as database trips, deployed-shift totals, or full-roster counts.
+- Changed the tracked-unit summary to use all returned tracking points rather than the currently visible map layers.
+- Added concise descriptions for reporting windows, schedule classification, and stale/offline guard reports.
+- Renamed the map component props and parent count variables to reflect recent guard and vehicle reports.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- `git diff --check` passed.
+
+# 131) CLIENT SITE CREATION ROUTE DEPLOYMENT FIX (2026-09-17)
+
+## Fix
+- Diagnosed client-site creation failure as a stale local backend container missing the combined `/api/tracking/client-sites/with-geofence` POST route.
+- Rebuilt and restarted the local backend with the current source.
+- Confirmed the route now reaches authentication with HTTP 401 instead of returning HTTP 405 for an unauthenticated request.
+
+## Deployment Note
+- The Railway backend still returns HTTP 405 for this route and requires a separate deployment of the current backend image before the production frontend can use the combined site-and-geofence operation.
+
+# 121) ALLOCATION DISPLAY IDENTIFIERS (2026-09-17)
+
+## Fix
+- Updated the all-allocation backend query to join guard and firearm records and return display fields alongside internal IDs.
+- Allocation UI now displays guard names and firearm serial/model labels; unmatched relationships display `Unknown guard` or `Unknown firearm` instead of UUIDs.
+- Rebuilt and restarted the local backend so the running API serves the new response shape.
+
+## Verification
+- Backend Docker release build passed.
+- Backend `cargo fmt --all -- --check` passed.
+- Frontend navigation/API tests passed: 2 suites and 16 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Local database check confirmed 270/270 allocations have matching guard names and firearm serial numbers.
+- Local backend `/api/health` returned HTTP 200.
+
+# 120) FIREARM ALLOCATION LABELS AND NAVIGATION (2026-09-17)
+
+## Fix
+- Added the Allocation destination to the superadmin sidebar because the role already has `manage_allocations` permission and the `/allocation` route was already registered.
+- Replaced raw guard and firearm UUIDs in the allocation table with guard names and firearm serial/model labels, retaining IDs only as fallback values when related records are unavailable.
+
+## Verification
+- Shell navigation test passed: 1 suite and 7 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 119) ANALYTICS PANEL SURFACE CONSISTENCY (2026-09-17)
+
+## Fix
+- Updated the Total Missions analytics panel to use the same shared `soc-dashboard-card` surface as the KPI and chart panels.
+- Analytics panels now avoid the isolated bright-box treatment while preserving warning-state styling and print output rules.
+
+## Verification
+- Focused analytics tests passed: 2 suites and 3 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 118) ANALYTICS FILTER PANEL SURFACE (2026-09-17)
+
+## Fix
+- Matched the analytics Period filter bar to the Resource Availability card by using the shared `soc-dashboard-card` surface styling.
+- Preserved the existing date-range selector, refresh action, and print-only visibility behavior.
+
+## Verification
+- Focused analytics tests passed: 2 suites and 3 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 121) MERIT FIRST-EVALUATION DEPLOYMENT (2026-09-17)
+
+## Verification
+- Rebuilt and restarted the local backend Docker service with the initial-guard merit query.
+- PostgreSQL data was preserved; the database reports 109 eligible guards and 0 existing merit-score rows.
+- Backend release Docker compilation completed successfully and the service is running on port 5000.
+
+# 120) INITIAL GUARD EVALUATION ACCESS (2026-09-17)
+
+## Fix
+- Merit rankings now include active, approved, verified guards who do not yet have a `guard_merit_scores` row.
+- Guards without prior scoring appear with zero initial metrics and a `Not evaluated` rank so supervisors and administrators can open the record and submit the first evaluation.
+- Guard detail requests now return an initial empty merit response instead of `Merit score not found`, while still rejecting invalid or ineligible guard accounts.
+- Updated the empty state to explain that eligible guards are required before evaluations can be entered.
+
+## Verification
+- Backend `cargo fmt --check` passed.
+- Focused frontend navigation and analytics tests passed: 9 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- UI consistency audit passed with zero findings.
+- Local frontend and backend health endpoints returned 200 OK.
+
+# 100) GEOFENCE AUTOMATIC SHIFT CHECK-IN (2026-09-17)
+
+## Fix
+- Added server-authoritative automatic check-in when a guard's accurate location is inside an active geofence for the guard's assigned site and the shift is currently in progress.
+- Reused the locked, idempotent attendance check-in path for both manual and geofence check-in, preventing duplicate attendance records and preserving manual fallback behavior.
+- Automatic check-ins record `check_in_source = 'geofence'` and create a guard notification.
+- Automatic evaluation runs on the first valid GPS sample and every subsequent heartbeat, and allows arrival up to one hour before shift start while the guard remains inside the zone.
+- Added a guard-dashboard attendance refresh so background-triggered check-ins appear after the app returns to the foreground.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 33 suites and 137 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- UI consistency audit passed with zero findings.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend Docker release build passed, compiling the server successfully on Linux.
+
+# 101) EMERGENCY CONTACTS UPDATE (2026-09-17)
+
+## Change
+- Centralized guard emergency contacts now list Branch Manager, Security Officer, Secretary, and Tech Support with the configured Philippine phone numbers.
+- Updated the field-instructions contact block to use the same four contacts and replaced the obsolete Operations Desk escalation reference with Security Officer.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 33 suites and 137 tests.
+- `git diff --check` passed with the repository's existing line-ending warning for `PROJECT_MEMORY.md`.
+
+# 102) MDR GUARD LICENSE IMPORT FIX (2026-09-17)
+
+## Fix
+- MDR commit now updates `license_number` and `license_expiry_date` when a staging row matches an existing guard, including guards matched by name.
+- MDR workbook parsing keeps Excel date-only cells as serial values to prevent timezone conversion from shifting Philippine dates back one day.
+- Added a regression test covering license extraction and the `10/7/2025` Excel date serial behavior.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 138 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend Docker release build passed, compiling the server successfully on Linux.
+
+# 103) MDR COMMIT ERROR-ROW RESOLUTION (2026-09-17)
+
+## Fix
+- MDR commit was correctly returning HTTP 409 when the staged batch still contained validation errors; the review UI did not provide an action for error rows, leaving the batch impossible to finish from the UI.
+- Error rows can now be explicitly included as matched/new or skipped. Including clears the validation error only after a required reviewer note; skipping preserves the original error for audit and excludes the row from the commit transaction.
+- Staging resolution verifies that the batch is still editable, records the decision and note in the MDR audit trail, and rejects missing notes for error-row decisions.
+
+## Verification
+- Live API test: unresolved batch commit returned 409; an error decision without a note returned 400; audited skip decisions reduced unresolved rows to zero; the batch then committed successfully.
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 107) GUARD ROSTER PAGINATION AND SEARCH (2026-09-17)
+
+## Fix
+- Guard roster now displays 10 records per page with Previous and Next controls.
+- Added submitted search for guard name, username, email, phone, guard number, and license number.
+- Search resets to page 1 and shows a clear no-results state; clearing the search restores the full roster.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 108) RESOURCE TAB HEADER STANDARDIZATION (2026-09-17)
+
+## Fix
+- Standardized Firearms, Vehicles, and Client Sites management headers to match the Guard Roster pattern.
+- Each tab now shows a section label, live registered-count badge, clear title, and concise operational description.
+- Existing add, delete, loading, and error behavior remains unchanged.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 109) ARMORED CAR CAPACITY REMOVAL (2026-09-17)
+
+## Fix
+- Removed capacity and passenger-capacity inputs and displays from armored-car management, fleet inventory, and mission vehicle selection.
+- New armored-car creation no longer requires capacity fields; the backend keeps legacy database columns and defaults them for compatibility with existing records and MDR imports.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend Docker release build passed and the local backend container restarted successfully.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend Docker release build passed, compiling and running the updated server successfully on Linux.
+
+# 104) MDR COMMIT RESULT CONFIRMATION (2026-09-17)
+
+## Fix
+- Added a modal result confirmation to MDR batch review so commit success, validation blocking, and request failures are visible immediately.
+- The blocked result explicitly states that no database changes were made and shows pending, ambiguous, error, and total unresolved counts.
+- Successful commit confirmation reports guard creation/update counts and confirms that valid license data was written.
+
+## Verification
+- Live current-batch API check returned HTTP 409 with 18 unresolved error rows; no commit was performed.
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 105) GUARD PASSWORD HANDOFF AND ACTIVATION (2026-09-17)
+
+## Fix
+- Added an admin/superadmin-only guard password endpoint at `/api/users/:id/password` with backend role and target-role enforcement, password-strength validation, refresh-session revocation, and audit middleware coverage.
+- Added a self-service `/api/users/:id/password/change` endpoint for guards to replace temporary credentials; the server stores only bcrypt hashes and clears the required-change flag.
+- Added `must_change_password` to the runtime user schema and login response. Imported MDR guards now receive a random unusable initial password and are marked for activation instead of sharing `changeme123!`.
+- Added a shared management modal with a generated temporary password, confirmation, copy action, and plain-language handoff instructions. It is available in the guard roster and elevated user-management table for admin and superadmin roles.
+- Added a blocking first-login password modal for activated guards after Terms of Agreement is accepted.
+
+## Verification
+- Backend Docker release build passed.
+- Backend formatting check passed.
+- Live API test created and removed a temporary guard, confirmed a valid admin-side password reset response, confirmed no password was returned, and confirmed `mustChangePassword: true`.
+- Weak-password validation returned HTTP 400.
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with the existing Vite dynamic-import warnings only.
+
+# 106) MANAGEMENT ROSTER PAGINATION AND LICENSE VISIBILITY (2026-09-17)
+
+## Fix
+- The management dashboard now requests up to 200 users, matching the backend pagination maximum, instead of displaying the default first 50 records.
+- Added license number, issued date, and expiry date to the shared `UserResponse` contract used by `/api/users` and `/api/guards`.
+- The guard roster now displays the license number and expiry date when available.
+
+## Verification
+- Live API returned 189 users and 180 guards for `page_size=200`; 148 guards have license numbers.
+- The imported sample guards now return their expected license numbers through the API.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend Docker release build passed.
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 140 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 110) DISABLE MDR VEHICLE IMPORTS AND SIMPLIFY A/C TABLES (2026-09-17)
+
+## Fix
+- MDR parsing now skips armored vehicle sections and warns that vehicles must be added manually in Resource Management.
+- Backend staging marks armored rows as ignored and commit logic skips them, including rows submitted by older clients or direct API callers.
+- Fleet inventory and vehicle management tables now show only A/C number and status, with management actions retained where applicable.
+- Existing vehicle records were retained; no destructive cleanup was performed.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 141 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend Docker release build passed.
+- Local backend health check returned API and database status `up`.
+
+# 117) ADD SCHEDULE ACTION POLISH (2026-09-17)
+
+## Fix
+- Updated the superadmin schedule header action to use the shared primary SOC button styling and a semantic calendar-plus icon.
+- Added a minimum touch target, descriptive title, explicit button type, and responsive stacking so the action remains clear on narrow screens.
+- Preserved the existing client-site loading and add-schedule modal behavior.
+
+## Verification
+- Full frontend Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 118) SUPERVISOR AND ADMIN GUARD EVALUATIONS (2026-09-17)
+
+## Fix
+- Reframed the evaluation workflow around supervisor, admin, and superadmin assessments because the system has no client account or client-link workflow.
+- Added a frontend evaluation permission for elevated roles and hid evaluation entry controls from non-authorized users.
+- Updated merit, analytics, performance, and CSV labels to describe guard/evaluator ratings instead of client ratings.
+- Kept the existing evaluation API fields and `client_evaluations` table for backward compatibility with stored records.
+- Renamed the backend submission handler to `submit_guard_evaluation`; the endpoint still requires supervisor-or-higher authorization and records evaluator identity and role.
+
+## Verification
+- Frontend production build passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Backend `cargo fmt --check` passed.
+- Backend `cargo check` remains blocked by the local Windows environment missing the OpenSSL development installation required by the existing dependency chain.
+
+# 119) MERIT SIDEBAR NAVIGATION (2026-09-17)
+
+## Fix
+- Added the Merit destination to the supervisor, admin, and superadmin sidebar navigation.
+- Kept Merit hidden from guard navigation through the existing elevated-role route and permission rules.
+
+## Verification
+- Focused shell navigation test passed: 7 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 117) BLANK EMAILS FOR MDR-IMPORTED GUARDS (2026-09-17)
+
+## Fix
+- MDR-created guard accounts now store a blank email instead of a generated `@sentinel.local` address.
+- Existing generated emails are cleared during backend startup only for guards linked to an MDR batch; real staff-assigned emails are preserved.
+- Replaced the users email constraint with a partial unique index so real emails remain unique while multiple imported guards may have blank emails.
+- Username and phone login remain available for imported guards.
+
+## Verification
+- Backend Docker release build passed.
+- Backend `cargo fmt --all -- --check` passed.
+- Frontend TypeScript check passed.
+- Local database migration confirmed 177 imported guards with blank emails and zero legacy imported addresses.
+- Local backend health check returned API and database status `up`.
+
+# 112) MODAL INPUT FOCUS RETENTION (2026-09-17)
+
+## Fix
+- Updated `SentinelModal` so changing an inline `onClose` callback during normal form rerenders does not restart modal focus setup.
+- Modal focus is now initialized only when the dialog opens, while Escape still uses the latest close callback.
+- Added a regression test confirming controlled inputs retain focus while typing.
+
+## Verification
+- Focused modal tests passed: 2 tests.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 113) USER MANAGEMENT PAGINATION AND CONTROL CLEANUP (2026-09-17)
+
+## Fix
+- User Management now displays 10 users per page on desktop and mobile.
+- Previous and Next buttons are functional and show the current page and visible range.
+- Search resets to page 1 and continues to work across the full allowed roster.
+- Removed the User Management role filter, status filter, tracking accuracy control, and roster-sync indicator.
+- Bulk selection now applies to the currently visible page while preserving existing account actions and role permissions.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 116) FIREARMS STATUS BADGE SPACING (2026-09-17)
+
+## Fix
+- Made Available, Issued, and Maint. firearm status badges explicitly vertical and centered so labels are separated from their counts.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 115) INCIDENT SEVERITY BADGE SPACING (2026-09-17)
+
+## Fix
+- Made severity summary badges explicitly vertical and centered so each label is separated from its count instead of rendering as `CRITICAL0`.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 114) SEPARATE APPROVALS FROM OPERATIONAL REQUESTS (2026-09-17)
+
+## Fix
+- Removed the duplicate Operational Requests panel from the Approvals page.
+- Approvals now focuses only on pending guard registrations and their approval actions.
+- The dedicated Requests page remains unchanged and continues to host the operational request queue.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 111) A/C-ONLY MANUAL VEHICLE CREATION (2026-09-17)
+
+## Fix
+- Simplified the Add Vehicle modal to one required A/C number field.
+- The create endpoint now requires only the A/C number; legacy VIN, model, and manufacturer payload fields remain optional for compatibility.
+- Existing database-required fields receive internal placeholders when omitted and are not shown as part of the vehicle workflow.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 141 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Backend `cargo fmt --all -- --check` passed.
+- Backend Docker release build passed.
+- Local backend health check returned API and database status `up`.
+
+# 122) GUARD LICENSE COMPLIANCE ALERTS (2026-09-17)
+
+## Fix
+- Added a guard license compliance report for approved, verified guards with expired, expiring-soon, no-license, and compliant statuses.
+- Added a 30-day default expiration window, configurable to 1-365 days, with pagination and CSV/print actions.
+- Added deduplicated guard-license expiry notifications for approved supervisors, admins, and superadmins using the existing notification inbox and delivery worker.
+- Added the Guard License Compliance page to elevated navigation at `/guards/compliance`.
+
+## Verification
+- Backend Docker release build passed.
+- Backend `cargo fmt --all -- --check` passed.
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Local backend health check returned API and database status `up`.
+- Local database report query resolved 180 approved guards: 148 with license numbers, 135 with expiry dates, 70 expired, 46 without license data, and 64 compliant.
+
+# 123) STABLE SIDEBAR ROUTE NAVIGATION (2026-09-17)
+
+## Fix
+- Wrapped desktop sidebar and elevated mobile route changes in React transitions so lazy-loaded pages do not replace the visible shell with a brief full-screen loading fallback.
+- Registered guard compliance as an operational shell route so navigation and mobile layout state remain consistent.
+- Stabilized the active sidebar highlight with an inset shadow so changing active items does not alter icon or label positioning.
+- Wrapped the main elevated dashboard's direct route navigation in the same transition path.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 124) RAILWAY CLIENT SITE CREATION DEPLOYMENT (2026-09-17)
+
+## Deployment
+- Deployed the current backend source to the Railway production Backend service.
+- Production `/api/health` returned HTTP 200 with API and database status up.
+- The combined `/api/tracking/client-sites/with-geofence` route now returns HTTP 401 without authentication instead of HTTP 405, confirming the route is registered and protected without modifying data.
+
+# 125) OPERATIONS MAP LEGEND SIMPLIFICATION (2026-09-17)
+
+## Fix
+- Reduced the operations map legend from separate entries for every guard heartbeat state and temporary marker to four concise concepts.
+- Kept guard state meaning in one note: green active, yellow stale, and red offline; purple markers represent clustered units.
+- Map entity classification remains data-driven: tracking points use `entityType`, with `vehicle` rendered as a vehicle and `guard` rendered as a guard.
+
+## Verification
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 128) VEHICLE ALLOCATION CLIENT SITE SELECTION (2026-09-17)
+
+## Fix
+- Replaced the free-text Client field in armored vehicle allocation with a dropdown populated from registered active client sites.
+- Displayed the site name with its address or landmark to make locations easier to distinguish.
+- Kept the existing allocation storage format human-readable by submitting the selected site name.
+- Disabled the field and explained the prerequisite when no active client sites are available.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 126) DRIVER-BASED VEHICLE MAP TRACKING (2026-09-17)
+
+## Feature
+- Connected the existing driver assignment workflow to armored-car inventory so supervisors can assign one approved guard to one vehicle and unassign them later.
+- Enforced that a guard and a vehicle each have at most one active driver assignment; a reassignment closes the previous active assignment.
+- Kept guard heartbeats stored against the guard for attendance and geofence processing, while the operations map presents the latest assigned guard heartbeat as the vehicle using the vehicle ID and A/C number.
+- Added assignment details and guard selection controls to the armored-car inventory.
+
+## Verification
+- Backend Docker release build and container restart passed.
+- Local backend health returned HTTP 200 with API, database, and websocket up.
+- Protected driver-assignment list returned HTTP 401 without authentication.
+- Frontend TypeScript check and production build passed with existing Vite dynamic-import warnings only.
+
+# 127) DRIVER SELECTOR NAME CLARITY (2026-09-17)
+
+## Fix
+- Removed guard roster numbers from the vehicle driver selector to avoid presenting them as tracking or vehicle identifiers.
+- Kept guard accounts separate; duplicate names are not merged automatically because local data contains distinct verified accounts sharing the same name.
+
+## Verification
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 131) STABILIZATION AUDIT BASELINE (2026-09-17)
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Functionality audit passed 85 role/route checks and 382 safe control interactions with no page, console, API, request, or overflow failures.
+- Accessibility audit passed 128 role/viewport checks across 320x844, 375x844, 768x1024, and 1280x900; phase 5 analytics audit passed on desktop and mobile.
+- Frontend dependency audit reported zero vulnerabilities at the high threshold.
+- Backend Docker release build and local health check passed.
+- Fresh disposable-database mutation audit passed all 12 workflows with zero page, console, or API diagnostics; the guard sticky-region fix also passed a normal mobile browser click reproduction.
+
+## Remaining Gate
+- Host Windows Rust checks remain blocked by missing OpenSSL development files; container or CI validation is required before release.
+- Clean commit/submodule review and deployment verification remain before commit, push, or deployment.
