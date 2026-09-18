@@ -2877,3 +2877,13 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Remaining Gate
 - Host Windows Rust checks remain blocked by missing OpenSSL development files; container or CI validation is required before release.
 - Clean commit/submodule review and deployment verification remain before commit, push, or deployment.
+
+# 132) VEHICLE PLATE NUMBER (2026-09-18)
+
+## Feature
+- Added a separate plate number field for armored vehicles while preserving the internal A/C number.
+- Enforced plate number entry for newly registered vehicles and added a case-insensitive unique database index.
+- Exposed plate numbers in fleet views and MDR resource exports; existing imported vehicles remain compatible and display `Not provided` until updated.
+
+## Verification
+- Frontend and backend validation remain pending before commit and push.
