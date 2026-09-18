@@ -1967,6 +1967,15 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Verification
 - Frontend TypeScript check passed.
+
+# 138) SIDEBAR BRAND ICON FRAME (2026-09-19)
+
+## Fix
+- Removed the redundant square frame around the SENTINEL reticle mark in the shared sidebar brand.
+- Preserved the reticle logo, increased its usable size, and kept the restrained theme-aware glow.
+
+## Verification
+- Frontend TypeScript check passed.
 - All 28 Jest suites and 129 tests passed.
 - Frontend production build passed.
 
@@ -2286,6 +2295,95 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Frontend TypeScript check passed.
 - Frontend production build passed with existing Vite dynamic-import warnings only.
 
+# 144) AUDIT TIMELINE ROW BOUND (2026-09-19)
+
+## Fix
+- Restored a 32rem maximum height for the desktop audit timeline table and kept overflow inside the table viewport.
+- Prevented the number of audit rows from expanding the entire left panel and page.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 143) AUDIT HEIGHT REGRESSION CORRECTION (2026-09-19)
+
+## Fix
+- Removed the forced full-height rule that made the audit timeline expand to the viewport.
+- Kept grid-row alignment, internal timeline scrolling, and bottom-pinned pagination without the oversized empty region.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 142) AUDIT COLUMN ALIGNMENT (2026-09-19)
+
+## Fix
+- Aligned the audit realtime timeline panel with the right-side analytics column on desktop.
+- The timeline table now uses the available panel height for internal scrolling, with pagination anchored to the shared bottom edge.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 141) AUDIT TIMELINE PANEL HEIGHT (2026-09-19)
+
+## Fix
+- Prevented the audit realtime timeline panel from stretching to match the taller right-side analytics column.
+- The panel now sizes to its table and pagination content, removing the unused blank area below the controls.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 140) ASSET PANEL INTERNAL SCROLLING (2026-09-19)
+
+## Fix
+- Vehicle maintenance and firearm status panels now use bounded responsive heights.
+- Their content areas scroll independently with hidden scrollbar chrome, while touch, wheel, and keyboard scrolling remain available.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 139) CLIENT SITE LIST PAGINATION (2026-09-19)
+
+## Fix
+- Client Location Manager now displays 10 client sites per page with range count, page indicator, and Previous/Next controls.
+- Map markers and other client-site consumers continue using the complete site collection.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 137) COMPLIANCE SIDEBAR ICON CONSISTENCY (2026-09-19)
+
+## Fix
+- Firearm Compliance now uses the same `BadgeCheck` icon as Guard License Compliance.
+
+## Verification
+- Frontend TypeScript check passed.
+
+# 135) SIDEBAR NAVIGATION ICONS (2026-09-19)
+
+## Fix
+- Replaced the shared sidebar's two-letter navigation markers with Lucide icons for every current route.
+- Preserved role-based navigation, active states, labels, collapsed-sidebar tooltips, and accessibility attributes.
+
+## Verification
+- Frontend TypeScript check passed.
+- Sidebar navigation tests passed: 2 suites and 8 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 136) SENTINEL SIDEBAR BRAND POLISH (2026-09-19)
+
+## Fix
+- Refined the shared sidebar brand lockup with a larger logo frame, clearer wordmark spacing, and a visible theme-aware system status light.
+- Preserved the compact-sidebar behavior and accessible status tooltip.
+
+## Verification
+- Frontend TypeScript check passed.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
 # 125) REMOVE COMMAND CENTER REFRESH PILL (2026-09-17)
 
 ## Fix
@@ -2341,6 +2439,17 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Verification
 - Frontend TypeScript check passed.
 - Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 134) MOBILE MORE MENU OVERLAY (2026-09-19)
+
+## Fix
+- Updated the elevated-role More drawer in both `AppShell` and `OperationalShell`.
+- Made the drawer use the elevated surface token, strengthened the theme-aware backdrop, and placed it above the mobile bottom navigation.
+- Added a bounded scroll area and responsive two-column mobile layout so long module lists remain readable on narrow screens.
+
+## Verification
+- Frontend TypeScript check passed.
 - Frontend production build passed with existing Vite dynamic-import warnings only.
 
 # 124) GUIDED CLIENT SITE AND CHECK-IN AREA SETUP (2026-09-17)
@@ -2887,3 +2996,16 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Verification
 - Frontend and backend validation remain pending before commit and push.
+
+# 133) SUPERVISOR DASHBOARD RBAC ALIGNMENT (2026-09-18)
+
+## Fix
+- Supervisor dashboard now loads the guard directory because the backend permits supervisor guard-account creation and user listing.
+- Renamed the dashboard panel and summary labels for supervisors so it no longer presents an empty admin-style user-management view.
+- Hid supervisor-incompatible approval and deletion actions that would otherwise return forbidden responses.
+- Restarted the stopped local PostgreSQL container; local backend health now reports API and database up.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 34 suites and 142 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
