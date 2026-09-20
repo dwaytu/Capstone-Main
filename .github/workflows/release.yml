@@ -116,8 +116,16 @@ jobs:
         working-directory: DasiaAIO-Frontend
         run: npm ci
 
+      - name: Type-check frontend
+        working-directory: DasiaAIO-Frontend
+        run: npx tsc --noEmit --incremental false
+
       - name: Run frontend tests
         run: npm test --prefix DasiaAIO-Frontend -- --runInBand
+
+      - name: Audit frontend dependencies
+        working-directory: DasiaAIO-Frontend
+        run: npm audit --audit-level=high
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable

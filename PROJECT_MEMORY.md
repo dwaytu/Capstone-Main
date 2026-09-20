@@ -2441,6 +2441,49 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Full Jest suite passed: 34 suites and 142 tests.
 - Frontend production build passed with existing Vite dynamic-import warnings only.
 
+# 135) ATTENTION-FIRST UX FOUNDATION (2026-09-19)
+
+## Fix
+- Added an elevated-dashboard `Needs attention` queue that converts real incident, staffing, firearm, approval, vehicle, and permit data into prioritized next actions.
+- Added workflow buttons that route users directly to the relevant operational area.
+- Made Intelligence, Resources, and System sidebar groups collapsed by default while preserving active-route reopening and collapsed-sidebar icon access.
+- Added Lucide icons to quick actions and guard primary navigation for faster visual scanning.
+- Added a guard `Next action` panel that explains the immediate field step based on shift/check-in state.
+- Created local restore tags named `restore-before-attention-ux-20260919` in the root repository and frontend submodule before implementation.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 35 suites and 144 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Responsive accessibility audit passed 128 role/viewport route checks with zero failures.
+- Browser smoke audit passed desktop, mobile, and narrow-mobile checks with zero page errors, API failures, overflow failures, or SOS/contact overlaps.
+
+# 136) OPERATIONAL PAGE HIERARCHY (2026-09-19)
+
+## Fix
+- Added shared `OperationalPageHeader` and `OperationalSummaryBand` components for consistent page purpose, primary actions, status context, and summary hierarchy.
+- Applied the shared structure to Calendar, Operational Requests, Guard License Compliance, and Firearm Compliance.
+- Replaced interchangeable compliance KPI cards with compact, icon-supported operational summary bands.
+- Created a stash restore point named `restore point before attention UX phase 2` in both the root repository and frontend submodule before Phase 2 changes.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 35 suites and 144 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Responsive accessibility audit passed 128 role/viewport route checks with zero failures.
+- Browser smoke audit passed desktop, mobile, and narrow-mobile checks with zero page errors, API failures, overflow failures, or SOS/contact overlaps.
+
+# 134) LOCAL STACK DISCONNECT RECOVERY (2026-09-19)
+
+## Fix
+- Restored the local PostgreSQL container after it had exited while the backend container remained running.
+- Recreated the backend through `docker compose up -d` so it rejoined the Compose network and resolved the `postgres` hostname correctly.
+
+## Verification
+- PostgreSQL reports healthy in `docker compose ps`.
+- `GET http://127.0.0.1:5000/api/health` returns HTTP 200 with API and database up.
+- Local Vite frontend remains available on port 5173.
+
 # 134) MOBILE MORE MENU OVERLAY (2026-09-19)
 
 ## Fix
@@ -2450,7 +2493,45 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Verification
 - Frontend TypeScript check passed.
+
+# 137) ATTENTION UX AUDIT AND RESOURCE WORKFLOWS (2026-09-19)
+
+## Audit corrections
+- Prevented the command dashboard from showing a false all-clear when one or more operational summary sources fail; failed sources now preserve last-known values and expose a degraded queue state.
+- Corrected duplicate page heading semantics by keeping the shell-owned `h1` and using `h2` in shared operational page headers.
+- Fixed narrow-screen guard navigation labels, mobile attention actions, sidebar group target sizes, summary-band separators, compliance tones, and duplicate Calendar summary content.
+- Demoted the checked-in guard checkout action and added confirmation when checkout occurs before the scheduled shift end.
+
+## Phase 3 implementation
+- Applied the shared operational header and summary hierarchy to Firearm Maintenance and Firearm Allocation.
+- Added data-derived maintenance and custody summaries, clearer primary actions, separated work forms from registers, and available-firearm filtering in the allocation form.
+- Added focused tests for maintenance and allocation summary/action behavior and degraded operational summary handling.
+- Created stash restore points named `restore point before attention UX phase 3` in both the root repository and frontend submodule before implementation.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 37 suites and 149 tests.
 - Frontend production build passed with existing Vite dynamic-import warnings only.
+- Responsive accessibility audit passed 128 role/viewport route checks with zero failures.
+- Browser smoke audit passed desktop, mobile, and 320px guard checks with zero page, API, overflow, or overlap failures.
+- Firearm Maintenance and Firearm Allocation passed dedicated desktop, mobile, and 320px Playwright checks with one `h1`, no horizontal overflow, working form toggles, and no page errors.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 138) MERIT SCORECARD AND NON-BLOCKING ELEVATED WORKSPACE (2026-09-19)
+
+## Fix
+- Reworked the Merit workspace around a scan-first ranking summary: eligible guards, evaluated coverage, average score, and evaluations awaiting action now precede the ranking register.
+- Converted the guard detail view into ordered scorecard, score-driver, evaluation-trend, and feedback sections using the shared operational header and summary band instead of nested KPI cards.
+- Improved narrow-screen ranking scanability by deferring secondary punctuality and evaluator-rating table columns to wider screens while retaining the primary scorecard action.
+- Added retry feedback for unavailable rankings and visible contextual feedback when a guard scorecard or its evaluation history cannot load.
+- Removed the elevated-role global browser-location prompt because it obscured unrelated workspace pages; guard location and consent workflows remain owned by the guard workspace.
+- Created a Phase 4 restore point in both repositories before implementation: `restore point before attention UX phase 4`.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 38 suites and 152 tests, including new Merit summary, scorecard, and retry coverage.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Accessibility, smoke, UI-consistency, and Phase 5 desktop/mobile browser audits passed with zero failures, overflow, page errors, console errors, request failures, or API errors.
 
 # 124) GUIDED CLIENT SITE AND CHECK-IN AREA SETUP (2026-09-17)
 
@@ -3009,3 +3090,206 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Frontend TypeScript check passed.
 - Full Jest suite passed: 34 suites and 142 tests.
 - Frontend production build passed with existing Vite dynamic-import warnings only.
+
+# 139) ATTENTION-FIRST UX PHASE 5: ANALYTICS FLOW (2026-09-20)
+
+## Fix
+- Reworked the Analytics workspace from a custom mission hero and repeated KPI cards into a shared operational header, action-aware status context, and compact operational summary band.
+- Moved the report print action into the responsive shared header, fixing the verified 390px clipping defect without changing print behavior.
+- Reframed the reporting-period selector as a labeled reporting control that stacks safely on mobile.
+- Converted guard-evaluation metrics into the same scan-friendly summary treatment and retained all chart data, API requests, calculations, retry behavior, and export behavior.
+- Added focused component coverage and browser assertions for the Analytics heading, reporting controls, and unclipped print action.
+- Created a Phase 5 restore point in both repositories before implementation: `restore point before attention UX phase 5`.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 38 suites and 153 tests.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Accessibility audit passed 128 role and viewport checks with zero failures.
+- Analytics browser audit passed at desktop and 390px mobile widths with zero overflow, page errors, console errors, request failures, or API errors.
+- Browser smoke and UI-consistency audits passed with zero failures.
+
+## Current UX Program
+- Completed: Phase 1 attention foundation, Phase 2 operational page hierarchy, Phase 3 resource workflow and audit corrections, Phase 4 merit workspace and non-blocking shell, and Phase 5 analytics flow.
+- Next: Phase 6 guard mobile decision path, Phase 7 elevated reporting and resource-register consistency, and Phase 8 cross-role accessibility and release acceptance.
+
+# 140) ATTENTION-FIRST UX PHASE 6: GUARD MOBILE DECISION PATH (2026-09-20)
+
+## Fix
+- Reordered the guard mission path so the current duty action appears before a location-sharing remediation panel; non-mission tabs still show the same remediation panel at their top.
+- Made the duty status responsive at narrow widths by stacking the tracking chip below the post details instead of compressing the post into a narrow column.
+- Collapsed secondary tracking telemetry behind a native `Tracking details` disclosure while preserving all status, accuracy, source, and execution information.
+- Made the mission action authoritative for the current shift; the matching schedule row now states its status instead of duplicating Check In or Check Out.
+- Reworked the default-expanded emergency contacts into a four-contact, two-column call grid with 44px targets, then positioned the one-tap SOS control above the measured dock with safe-area spacing.
+- Created a Phase 6 restore point in both repositories before implementation: `restore point before attention UX phase 6`.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 38 suites and 154 tests.
+- Guard Playwright regression suite passed all 7 scenarios, including the 375px first-viewport action assertion.
+- Frontend production build passed with existing Vite dynamic-import warnings only.
+- Browser smoke audit reported zero 390px and 320px overflow or SOS/contact overlap failures.
+- Accessibility audit passed 128 role and viewport checks, and UI-consistency audit reported zero findings.
+
+## Current UX Program
+- Completed: Phase 1 attention foundation, Phase 2 operational page hierarchy, Phase 3 resource workflow and audit corrections, Phase 4 merit workspace and non-blocking shell, Phase 5 analytics flow, and Phase 6 guard mobile decision path.
+- Next: Phase 7 elevated reporting and resource-register consistency, and Phase 8 cross-role accessibility and release acceptance.
+
+# 141) ATTENTION-FIRST UX PHASE 7: REPORTING AND RESOURCE REGISTERS (2026-09-20)
+
+## Fix
+- Standardized Performance, DTR, Firearm Inventory, and Armored Fleet around the shared operational page header and summary band so each screen leads with current state and next review signal instead of a wall of equal KPI cards.
+- Made the performance report surface missed duties and late check-ins as the immediate review action while keeping detailed incidents, merit, and replacement metrics in the report below.
+- Added real loaded-state summaries to the firearm inventory, explicit scoped table headers, and component-level horizontal table scrolling for narrow screens.
+- Added DTR record/page context and fleet-readiness summaries without introducing new aggregation endpoints or changing existing API requests, exports, or mutations.
+- Created a Phase 7 restore point in both repositories before implementation: `restore point before attention UX phase 7`.
+
+## Verification
+- Frontend TypeScript check passed.
+- Focused DTR, firearm shell, and shared modal Jest regressions passed.
+- Full frontend Jest suite passed: 38 suites and 155 tests.
+- Frontend production build and high-severity dependency audit passed; the existing Vite dynamic-import warnings remain non-blocking.
+
+# 142) ATTENTION-FIRST UX PHASE 8: CROSS-ROLE ACCESSIBILITY AND RELEASE ACCEPTANCE (2026-09-20)
+
+## Fix
+- Removed duplicate elevated-role mobile navigation by recognizing nested compliance, DTR, and management routes as OperationalShell-owned.
+- Replaced the command-center nested `main` landmark with a labeled section so pages expose one visible main landmark.
+- Migrated AppShell policy, consent, release, and update prompts to the focus-trapping SentinelModal. The Terms prompt remains non-dismissible while initially focusing its first actionable control.
+- Extended the responsive accessibility audit to validate one visible main landmark, unique named navigation landmarks, and a working skip-to-content link on every role route.
+- Added frontend type-check and dependency-audit steps to the release quality gate, plus an opt-in browser-acceptance switch in `release-readiness.ps1` for functionality, accessibility, and Playwright checks against a provisioned environment.
+- Updated the functionality audit to support both operational and fallback More drawers and their accessible close labels.
+
+## Verification
+- Accessibility audit passed 128 role/viewport checks with zero failures and zero rate-limit warnings.
+- Functionality audit passed 85 role/route checks and 374 safe control interactions with zero failures.
+- Focused browser regression suite passed all 12 guard, inbox, and operational-request scenarios.
+- The full live-smoke Playwright suite still requires provisioned `E2E_USERNAME` and `E2E_PASSWORD`; unauthenticated smoke tests are intentionally blocked by that guard.
+
+## Current UX Program
+- Completed: all eight attention-first UX phases.
+- Remaining release gates before a production deployment: provisioned-account live smoke, platform-specific desktop build, and signed Android build/device verification. No source or UX phases remain.
+
+# 143) SIDEBAR NAVIGATION HOVER STATE (2026-09-20)
+
+## Fix
+- Confirmed `Sidebar.tsx` has no hover or selected-index state, no shared animated indicator, no index-based item keys, and derives the active item directly from the shell-provided current view.
+- Removed the sidebar background transition that left a stale gray hover fade after pointer exit.
+- Scoped the gray hover treatment to non-active items and explicitly preserved the cyan active treatment while the active item is hovered.
+- Added a focused Sidebar regression test that verifies exactly one route-derived active item and immediate navigation reporting.
+
+## Verification
+- Sidebar Jest regression test passed.
+- Frontend TypeScript check and production build passed; existing Vite dynamic-import warnings remain unrelated.
+- Chromium verification of the actual sidebar CSS rules passed: inactive hover, immediate hover removal, active-plus-hover cyan priority, and active state while another item is hovered.
+
+# 144) SIDEBAR ACCORDION ROUTE STATE (2026-09-20)
+
+## Fix
+- Corrected the sidebar accordion effect that depended on `collapsedGroups` and immediately reopened a manually collapsed active group.
+- The active route remains derived from `activeView`; group visibility remains controlled by `collapsedGroups`.
+- The active route group now opens only on initial sidebar load or when navigation enters a different group, including direct nested-route loads.
+
+## Verification
+- Sidebar regression coverage verifies active-group manual collapse, parent rerender resilience, cross-group auto-expansion, and independent Operations, Resources, and System toggles.
+- Focused Jest suite and frontend TypeScript check passed.
+
+# 145) USABILITY AUDIT AND INITIAL OPERATOR CLARITY INCREMENT (2026-09-20)
+
+## Audit
+- The shared operational page header, summary band, attention queue, focus-trapping modal, and notification patterns already cover much of the requested non-technical usability direction without changing SENTINEL's command-center visual identity.
+- Remaining high-impact friction was concentrated in dashboard scan order, firearm-custody terminology and return confirmation, and the requests master-detail selection flow.
+
+## Fix
+- Reordered the dashboard so Needs Attention appears before system status, named today's operational snapshot, moved shift execution above detailed monitoring, and clarified the risk-alert description.
+- Clarified firearm allocation language: active custody now explicitly means firearms currently issued, the register explains that it is issuance/return history, and its empty state tells staff how to begin.
+- Replaced the browser firearm-return confirmation with the existing SentinelModal. It names the firearm and guard, explains the custody consequence, preserves historical records, blocks duplicate return submissions, and retains keyboard/focus behavior.
+- Requests now automatically load the first available request's details for review. Auto-selection is deliberately suspended while creating a new request so a correction request cannot be accidentally reused. The empty list explains both why it is clear and what will happen next.
+
+## Verification
+- Full frontend Jest suite passed: 39 suites, 160 tests.
+- Operational-request Playwright suite passed all 4 flows, including automatic first-request selection and new-request isolation.
+- Frontend type-check and production build passed; existing Vite dynamic-import warnings remain unrelated.
+
+# 146) USABILITY SECOND INCREMENT: CONFIRMATION, REPORTING, AND FORM CLARITY (2026-09-20)
+
+## Audit
+- The existing `SentinelModal` already provides the required focus trap, keyboard escape behavior, and scroll locking, but destructive paths were inconsistent: user deletion used native browser dialogs and several resource/client-site removals had no confirmation.
+- DTR, MDR, and Merit already contained most underlying operational data, but labels and empty/error feedback did not consistently explain the workflow to a non-technical user.
+
+## Fix
+- Added shared `ConfirmationDialog`, built on `SentinelModal`, with explicit cancel/confirm labels, duplicate-confirm protection, disabled controls during submission, and retained focus behavior.
+- Replaced all `window.confirm` usages under frontend `src`: user account single/bulk deletion, firearm/vehicle/client-site removal, map client-site deletion, clearing completed requests, and early guard checkout now require in-application confirmation.
+- Kept confirmation wording conservative when backend retention is not explicitly known. Existing confirmed retention language remains for request clearing and firearm return.
+- Clarified DTR as an attendance, check-in/check-out, and working-hours review; added filter guidance, export feedback, and a more actionable empty state.
+- Clarified MDR as the Master Data Register workflow: supported workbook import, validation, staged review, and commit. Empty history and load errors now explain the next action without exposing raw request failures.
+- Clarified Merit scores as the implemented attendance, punctuality, and evaluator-rating inputs; made score interpretation, evaluator comments, empty evaluations, and load failures easier to understand.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 40 suites and 162 tests, including new shared confirmation cancel, single-confirm, and in-flight duplicate-prevention coverage.
+- Frontend production build passed with the existing non-blocking Vite dynamic-import warnings only.
+- Focused Chromium Playwright coverage passed all 11 guard-dashboard and operational-request flows.
+- `rg` confirmed no `window.confirm` usage remains under frontend `src`.
+
+# 147) REJECTION REASON DIALOG (2026-09-20)
+
+## Fix
+- Replaced the native `window.prompt` used to collect a reason when rejecting a pending guard account in both admin and superadmin approval workflows.
+- Added the shared `RejectApprovalDialog`, built on `SentinelModal`, with request context, labelled textarea, whitespace validation, in-dialog retry feedback, processing state, and duplicate-submission protection.
+- Preserved the existing `PUT /api/users/:id/approval` contract and `{ action: 'reject', reason }` payload; successful approvals retain the existing refresh and notification behavior.
+- Failed submissions leave the modal open with the entered reason intact and show a generic operational error rather than a raw network error.
+
+## Verification
+- TypeScript check passed.
+- Full frontend Jest suite passed: 42 suites and 168 tests, including dialog validation, cancel, success, failure retention, duplicate prevention, and exact admin approval payload coverage.
+- Production build passed with the existing non-blocking Vite dynamic-import warnings.
+- Focused Chromium operational-request suite passed all 4 flows.
+- `rg` confirmed no `window.prompt` usage remains under frontend `src`.
+
+# 148) GUARD ID AND SCHEDULING SEARCH (2026-09-20)
+
+## Audit
+- The existing MDR `guard_number` field is optional and has no uniqueness constraint, so it is not a safe operational identifier.
+- Scheduling already receives eligible approved guards from `/api/guards` and sends the internal guard UUID in its existing shift payload.
+
+## Fix
+- Added dedicated `guard_code` values in `G-0001` format. PostgreSQL sequence, trigger, unique index, check constraint, and advisory-lock-protected backfill ensure IDs are stable, unique, never reused, and safely assigned to concurrent guard creation and MDR imports.
+- Returned `guard_code` from user and guard APIs, and returned `guardCode` from account creation so the creation confirmation can display the assigned operational ID.
+- Added shared `GuardSearchSelect` to Add New Schedule. It filters the already eligible guard list by Guard ID, name, or username and returns the unchanged internal UUID to scheduling.
+- Added Guard ID visibility and search support to the Resource Management guard roster. The legacy MDR guard number remains separate.
+
+## Verification
+- Frontend TypeScript check, full Jest suite (44 suites, 173 tests), production build, and focused Chromium schedule test passed.
+- Rust formatting and diff checks passed. `cargo check` is blocked locally before source compilation by missing Windows OpenSSL development libraries / `VCPKG_ROOT`.
+
+# 149) GUARD ID DISPLAY AND SCHEDULE SELECTOR FOLLOW-UP (2026-09-20)
+
+## Root Cause
+- The Guard ID source/API path was already implemented as `users.guard_code`, but the local Docker backend image predated that source change. Its connected PostgreSQL database therefore had no `guard_code` column, causing Resource Management to correctly show its unavailable-ID fallback.
+- The initial `GuardSearchSelect` hid all options until text was entered and rendered its absolute list in a zero-height wrapper, allowing it to visually collide with following schedule fields.
+
+## Fix
+- Rebuilt and recreated the local backend container from the current source. The startup migration created and backfilled `guard_code`; all 180 local guard records now have a stable `G-####` value.
+- Changed `GuardSearchSelect` to show every eligible guard on open, support whitespace-tolerant partial Guard ID matching, retain its UUID selection value, use a fixed-height field with a clear dropdown indicator, and render its max-height scrollable list in normal modal flow below its helper text.
+- Added roster Guard ID/search coverage and extended browser schedule coverage to assert both initial options and the non-overlapping list-to-site layout.
+
+## Verification
+- TypeScript check passed.
+- Full frontend Jest suite passed: 45 suites, 176 tests.
+- Production frontend build passed with existing non-blocking Vite dynamic-import warnings.
+- Focused Chromium schedule selector regression passed, including the internal UUID schedule payload assertion.
+
+# 150) CLIENT SITE SEARCHABLE SCHEDULE SELECTOR (2026-09-20)
+
+## Fix
+- Extracted the shared keyboard-accessible `SearchableSelect` primitive from the guard-only schedule selector. Guard selection remains a small adapter over the shared component.
+- Replaced Add New Schedule's native Client Site select with the same searchable combobox pattern. It opens with all active client sites, searches names and addresses case-insensitively with partial and whitespace-tolerant matching, displays an address as compact option context, and keeps selection values concise.
+- Preserved the existing schedule contract: client site selection continues to send the selected site name as `clientSite`, because the guard-replacement API currently stores `client_site` as text rather than a client-site UUID.
+- Fixed schedule client-site normalization to retain the API-provided address. The API already returned the field; it was previously discarded before reaching the UI.
+
+## Verification
+- TypeScript check passed.
+- Full frontend Jest suite passed: 46 suites, 179 tests.
+- Production frontend build passed with the existing non-blocking Vite dynamic-import warnings.
+- Focused Chromium schedule regression passed: opening one selector closes the other, client-site name/address search works, fields stay in flow, and the unchanged schedule payload is submitted.

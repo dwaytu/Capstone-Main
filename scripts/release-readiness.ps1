@@ -2,6 +2,7 @@ param(
   [string]$FrontendUrl = "http://localhost:5173",
   [string]$BaseUrl = "http://localhost:5000",
   [switch]$RunBrowserSmoke,
+  [switch]$RunBrowserAcceptance,
   [switch]$RequireApi,
   [switch]$SkipClippy,
   [switch]$SkipAudit
@@ -96,6 +97,40 @@ if ($RunBrowserSmoke) {
   }
 } else {
   Write-Host "Browser smoke: SKIPPED (use -RunBrowserSmoke with Vite running)" -ForegroundColor Yellow
+}
+
+if ($RunBrowserAcceptance) {
+  Run-Check "Browser functionality acceptance" {
+    Push-Location $frontendDir
+    try {
+      $env:AUDIT_BASE_URL = $FrontendUrl
+      npm run audit:functionality
+    } finally {
+      Pop-Location
+    }
+  }
+
+  Run-Check "Browser accessibility acceptance" {
+    Push-Location $frontendDir
+    try {
+      $env:AUDIT_BASE_URL = $FrontendUrl
+      npm run audit:a11y
+    } finally {
+      Pop-Location
+    }
+  }
+
+  Run-Check "Browser end-to-end acceptance" {
+    Push-Location $frontendDir
+    try {
+      $env:E2E_BASE_URL = $FrontendUrl
+      npm run test:e2e
+    } finally {
+      Pop-Location
+    }
+  }
+} else {
+  Write-Host "Browser acceptance: SKIPPED (use -RunBrowserAcceptance with a running frontend and role test accounts)" -ForegroundColor Yellow
 }
 
 Write-Host ""
