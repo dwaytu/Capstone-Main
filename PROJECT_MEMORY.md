@@ -3293,3 +3293,83 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Full frontend Jest suite passed: 46 suites, 179 tests.
 - Production frontend build passed with the existing non-blocking Vite dynamic-import warnings.
 - Focused Chromium schedule regression passed: opening one selector closes the other, client-site name/address search works, fields stay in flow, and the unchanged schedule payload is submitted.
+
+# 151) PROFILE AND SETTINGS USABILITY PASS (2026-09-20)
+
+## Fix
+- Profile now separates editable personal information from read-only account information, account activity, and guard-only license credentials. It fetches the authenticated user's supported `guard_code`, verification state, and account timestamps from the existing self-profile endpoint; the endpoint now returns those already-stored fields without changing existing values.
+- Removed the Profile device-notification toggle and placed the real push-subscription control in Settings. Settings now contains only implemented device push notifications, password change using the existing self-service endpoint, and the persisted dark/light display preference.
+- Replaced the direct profile-photo removal request with the shared in-application confirmation dialog. Profile saves are disabled until a change is made and show clear validation and save feedback.
+- Removed local-only email, in-app, and supervisor alert switches because they did not control delivery behavior. Assignment, timezone, date/time format, emergency-contact, and login-history controls remain absent because current APIs do not safely expose or apply them.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full Jest suite passed: 48 suites and 183 tests, including new Profile, Settings, and Change Password coverage.
+- Production frontend build passed with existing non-blocking Vite dynamic-import warnings only.
+- Focused Chromium Profile/Settings flow passed using an isolated authenticated test session and API responses.
+- Rust formatting check passed for the additive user response model change.
+
+# 152) SUPERVISOR MANAGEMENT ACCESS AND CLARITY (2026-09-21)
+
+## Fix
+- Supervisors now see Management and can use the existing resource-management workspace to create and update guard accounts, firearms, vehicles, and client sites. Account deletion is omitted for them and explained once at page level, rather than shown as repeated per-row denial messages.
+- Guard-account creation remains backend-authorized: `create_user_by_actor` normalizes roles and applies `utils::can_create_role`, so direct Supervisor API requests can create only `guard` accounts and receive `403 Forbidden` for Supervisor, Admin, or Superadmin targets.
+- Settings switches now communicate both states with compact ON/OFF labels and a moving thumb. Feedback ratings now preview gold stars and show both the selected star count and a numeric score.
+
+## Verification
+- Frontend TypeScript check passed.
+- Full frontend Jest suite passed: 51 suites and 187 tests.
+- Production frontend build passed with existing non-blocking Vite dynamic-import warnings only.
+- Focused Chromium Settings flow passed.
+- Backend Supervisor role-creation regression test passed in a Linux Rust container; native Windows cargo test remains environment-blocked by missing OpenSSL development libraries.
+
+# 153) INBOX TRIAGE AND COMPLIANCE NOTIFICATION DEDUPLICATION (2026-09-21)
+
+## Fix
+- Unified the role-specific full Inbox views behind one accessible master-detail triage component with filters for All, Unread, Incidents, Compliance, and Requests. The active item is selected in the list and its details and relevant action remain visible in a dedicated pane.
+- Made the header bell count use the persisted notification API's exact unread count, while the separate Needs Attention preview continues to show actionable operational work. Quick Inbox no longer repeats persisted notification and compliance alerts that it also renders in its notification list.
+- Added readable relative timestamps, business-date formatting for older items, compliance expiry context, semantic list buttons, visible keyboard focus states, and status labels combined with existing severity colors.
+- Corrected backend notification totals to query all notifications rather than the 50-item display window. Compliance alerts now remain singular while unread: handlers check unread state, inserts are race-safe with a partial unique index, and startup migration consolidates legacy unread duplicates while preserving read history.
+
+## Verification
+- Frontend TypeScript, focused Inbox Jest tests, full Jest suite, production build, and focused Chromium Inbox workflow passed.
+- The rebuilt local Docker backend became healthy. PostgreSQL verified the compliance partial unique index, found zero existing duplicate unread compliance groups, and rejected a duplicate insert within a transaction.
+
+# 154) FEEDBACK PANEL SPACING AND RATING STAR VISIBILITY (2026-09-21)
+
+## Fix
+- Added standard command-panel padding to the feedback form header, loading state, submitted state, and form so its labels, controls, and submit action no longer sit against panel borders.
+- Replaced the un-emitted semantic star fill utility with Tailwind arbitrary CSS-variable utilities backed by SENTINEL's existing warning tokens. Selected and persisted ratings now show a visible gold fill in both light and dark themes while unselected stars remain outlined.
+
+## Verification
+- TypeScript, focused FeedbackForm Jest coverage, and focused Chromium feedback flow passed. The browser test verifies both selected and saved stars have a rendered SVG fill.
+
+# 155) SETTINGS SWITCH COLOR STATE TREATMENT (2026-09-21)
+
+## Fix
+- Replaced visible ON/OFF text in the shared Settings switch with a compact color-and-position treatment: cyan track and right-positioned thumb for enabled, neutral gray track and left-positioned thumb for disabled.
+- The control retains its semantic `switch` role, stable visible control name, `aria-checked` state, focus treatment, and disabled behavior, so the visual simplification does not remove state information for assistive technology.
+
+## Verification
+- TypeScript, focused Settings Jest tests, and focused Chromium Profile/Settings coverage passed.
+
+# 156) COMPACT ENTERPRISE SETTINGS SWITCH GEOMETRY (2026-09-21)
+
+## Fix
+- Refined the shared Settings switch to a conventional horizontal 44 by 24 pixel pill track with an 18 pixel circular thumb. The thumb travels 20 pixels between its left and right positions.
+- The shared switch explicitly overrides the global 44 pixel button minimum height. Compact controls require this local exception; otherwise a 44 pixel wide track becomes a circular 44 by 44 control.
+- Preserved cyan enabled and neutral disabled tracks, short transitions, `role="switch"`, `aria-checked`, visible focus state, and disabled styling.
+
+## Verification
+- TypeScript, focused Settings Jest tests, focused Chromium Profile/Settings coverage, and production build passed.
+
+# 157) PROFILE PHOTO POSITIONING AND UPLOAD FIX (2026-09-21)
+
+## Fix
+- Corrected the Profile photo chooser to match the backend's accepted image types: JPEG, PNG, and WebP. GIF was previously advertised and selectable in the frontend but rejected by backend validation.
+- Added a modal profile-photo positioning step using `react-easy-crop`. Users can drag within a circular frame and adjust zoom before saving; the selected crop is rendered locally as a bounded 512 by 512 PNG and sent through the existing `profilePhoto` API payload.
+- Expanded the image Content Security Policy with `blob:` so browser-created local image URLs can be rendered and cropped without allowing arbitrary script or network sources.
+- The crop dialog reuses `SentinelModal`, including focus management, keyboard handling, Escape behavior when not saving, and focus restoration.
+
+## Verification
+- Frontend TypeScript check, full Jest suite (54 suites / 194 tests), production build, focused profile unit coverage, and focused Chromium profile/settings workflow passed.
