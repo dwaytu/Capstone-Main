@@ -3373,3 +3373,74 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Verification
 - Frontend TypeScript check, full Jest suite (54 suites / 194 tests), production build, focused profile unit coverage, and focused Chromium profile/settings workflow passed.
+
+# 158) RAILWAY PRESENTATION ENVIRONMENT AND CAPSTONE DATASET (2026-10-01)
+
+## Deployment
+- Created a dedicated Railway `presentation` environment with separate Frontend, Backend, and Postgres services. It is isolated from the production database and has its own authentication secrets, frontend API target, restricted CORS origin, disabled email delivery, and no inherited Resend or VAPID secrets.
+- Public URLs are `https://frontend-presentation.up.railway.app` and `https://backend-presentation.up.railway.app`. The Backend uses `CAPSTONE_DATASET_MODE=true`, `CAPSTONE_PRESENTATION_ENVIRONMENT=presentation`, and `CAPSTONE_REFERENCE_DATE=2026-10-17T17:00:00+08:00`.
+
+## Dataset and Safety
+- Added the `capstone-dataset` backend binary and `scripts/capstone-presentation-dataset.ps1`. Both `seed` and `reset` require the presentation-mode environment gate and explicit `CAPSTONE_SEED_CONFIRM=PRESENTATION_DATASET_CONFIRMED` confirmation. Seed also rejects a target that matches the supplied production source and reads production master guards/sites only through SELECTs.
+- Seeded batch `capstone-october-2026` with 50 source-derived guards, 11 existing Tagum sites, schedules through 2026-10-17 excluding Sundays, attendance/DTR, replacement/no-show/late cases, incidents, requests, notifications, feedback, asset allocation, trip, and audit data. No firearm or car maintenance records were seeded.
+- The server adds a session-scoped `sentinel_now()` SQL function. In normal environments it returns physical current time; presentation Backend pool connections configure it with the reference time so time-window queries remain presentation-deterministic without changing production behavior.
+
+## Verification
+- Railway verified distinct presentation and production Postgres endpoints before seed. Presentation contained 53 users (50 guards), 11 sites, 750 shifts, 749 attendance rows, 22 feedback entries, 4 incidents, and 5 operational requests; Sunday shifts and maintenance records were both zero. Production has no presentation seed ledger.
+- Exact backend source compiled in Linux Docker with `cargo check --release --bin server --bin capstone-dataset`. Hosted health, seeded admin login, and presentation-frontend CORS preflight returned HTTP 200. The normal legal-consent gate remains active for seeded accounts.
+
+# 159) LIVE PRODUCTION CAPSTONE DATASET (2026-10-01)
+
+## Correction and Deployment
+- The final capstone dataset is deployed in the existing Railway `production` environment behind `https://dasiasentinel.xyz`; the separate `presentation` environment is not the browser-facing final deployment.
+- The existing production Frontend and domain were not redirected or redeployed. The existing Backend was deployed with additive provenance-ledger migrations and the optional capstone reference clock. Production authentication configuration, users, roles, permissions, and passwords were not changed.
+
+## Safety
+- Created and archive-validated a PostgreSQL 17 custom pre-seed dump at `tmp/sentinel-production-pre-capstone-20261001.dump` (SHA-256 recorded in the deployment session). The production Postgres volume also supports Railway-managed backups through its Backups panel.
+- The live seeder requires `CAPSTONE_TARGET_DATABASE_URL` explicitly, `CAPSTONE_TARGET_ENVIRONMENT=production`, `CAPSTONE_DATASET_MODE=true`, `CAPSTONE_SEED_CONFIRM=LIVE_CAPSTONE_DATASET_CONFIRMED`, and the protected active Superadmin ID. It cannot fall back to `DATABASE_URL`.
+- `capstone_seed_batches` and `capstone_seed_records` track only generated IDs. Reset removes only those IDs in dependency order; it never truncates production tables or deletes master users/sites/assets.
+
+## Seed Result
+- Batch `capstone-live-october-2026` completed with 2,580 tracked rows from existing production master records: 50 existing active guards, 11 existing Tagum sites, 750 shifts, 749 attendance rows, 747 punctuality rows, 140 readiness rows, replacements, incidents, requests, notifications, performance/evaluation data, 22 feedback rows, tracking points, predictions, and 51 audit entries.
+- Existing OSCAR GAGA-A Admin and SENDRICK SOLIS Supervisor accounts were reused. The protected Superadmin remained active, superadmin, and had the same password-hash fingerprint before and after seed. No firearm or vehicle maintenance records were added.
+
+# 160) LIVE CAPSTONE FEEDBACK LANGUAGE (2026-10-02)
+
+- Translated only the 22 feedback records tracked by `capstone-live-october-2026` from English to Bisaya/Cebuano. Existing untracked feedback was not changed.
+- Updated `DasiaAIO-Backend/src/bin/capstone_dataset.rs` with the same Bisaya source comments, then redeployed the production Backend so a future controlled batch reset preserves the translated comments.
+- Verified production ledger feedback count remains 22, zero original English comments remain in that batch, and `https://backend-production-0c47.up.railway.app/api/health` returned HTTP 200.
+
+# 161) LIVE CAPSTONE MERIT-EVALUATION CONSISTENCY (2026-10-02)
+
+- Corrected the capstone merit seed invariant: `client_rating` is stored as a 0-100 contribution (`average_rating * 20`), while `average_client_rating` remains on the 1-5 display scale.
+- The seed now creates one visible evaluation for every seeded merit score and attributes it only to existing active `SENDRICK SOLIS` (supervisor) or `OSCAR GAGA-A` (admin) accounts. It no longer uses generic client-representative evaluators.
+- Repaired production only through the `capstone-live-october-2026` ledger: updated 24 existing generated evaluations, added and tracked 26 missing generated evaluations, and reconciled 50 generated merit-score rows. No untracked evaluations or merit rows were changed.
+- Production verification: all 50 seeded scorecards have a visible history matching their evaluation count, correct rating scaling, and authorized Oscar/Sendrick attribution; MONTON, ANTONIO now has 96 contribution points, 4.8/5, one visible review by SENDRICK SOLIS. Backend deployment and `/api/health` returned HTTP 200.
+
+# 162) USER MANAGEMENT ACTIVITY HISTORY (2026-10-02)
+
+- The Users table previously labeled `users.last_seen_at` as Last Login even though it is an authenticated-presence field and capstone operational records do not populate it. This created misleading `Never / Signal No signal` rows for participants with recorded work.
+- `GET /api/users` now returns `last_activity_at`: real authenticated presence when present, otherwise the most recent recorded attendance, shift, feedback, evaluation, support-ticket, or successful audit activity. This is computed at read time and does not alter account records or fabricate authentication events.
+- Admin and Superadmin user management now label and display this value as `Last Activity`; online status still depends exclusively on `last_seen_at` and cannot be inflated by historical activity.
+- Production verification found recorded activity for all 50 capstone guards plus existing OSCAR GAGA-A and SENDRICK SOLIS accounts. Backend and `https://dasiasentinel.xyz` both returned HTTP 200 after deployment.
+
+# 163) MERIT RANKING RATING CONTRACT (2026-10-02)
+
+- `GET /api/merit/rankings` incorrectly returned `average_client_rating` (the 1-5 display value) as `client_rating`, although the Merit ranking and scorecard frontend contract treats `client_rating` as a 0-100 contribution and converts it to a five-star display by dividing by 20.
+- The resulting second conversion made a correct 4.8 rating display as 0.2. The ranked query now returns `guard_merit_scores.client_rating`, matching the scorecard endpoint and existing frontend contract.
+- Deployed to production and verified health HTTP 200. MONTON, ANTONIO retains `client_rating = 96` and `average_client_rating = 4.8`, so the ranking now renders 4.8 stars without changing stored data.
+
+# 164) MDR DATA CLEANSING AND LIVE NORMALIZATION (2026-10-02)
+
+- Added `services/mdr_data_cleansing.rs` as the shared MDR canonicalization layer. New imports now retain `raw_payload`, store field-level `cleansing_changes`, and surface non-inferred name-order flags for reviewer attention. Blank markers, whitespace, Philippine mobile-phone format, dates, identifier casing/spacing, and known firearm brands are normalized before matching.
+- MDR candidate matching now compares canonical license/serial keys and canonical name text without reordering name tokens. Multiple candidates remain `ambiguous`; no identity-critical record is automatically merged. The MDR Batch Review shows original-to-cleaned values and review flags.
+- Added the runtime migration and `migrations/add_mdr_data_cleansing.sql` for raw staging provenance and `data_quality_change_log`. `scripts/normalize_live_data_quality.sql` is an audited, transaction-wrapped one-time production normalization script.
+- Created and SHA-256 validated a fresh pre-normalization production dump at `DasiaAIO-Backend/tmp/sentinel-production-pre-data-quality-20261002-061317.dump` (`FB7FEC1FD2140500453881EB37CA595F61A8BBA67BDA900D6B4A09ABAFEC6CF7`). Production cleanup logged 192 changes: 15 guard-name spacing, 126 phones, 15 licenses, 31 firearm makes, and 5 serials. All Armscor values now use `Armscor`; license/serial canonical collision counts remain zero.
+- The cleanup intentionally did not infer surname/given-name order for 48 comma-free guard names or invent 21 blank phone numbers. They remain explicit manual-review records. Backend and frontend production deployments returned HTTP 200; Linux Docker unit tests, TypeScript, focused MDR parser tests, and frontend build passed.
+
+# 165) CALENDAR COMPLETE SHIFT FEED (2026-10-02)
+
+- `CalendarDashboard` previously requested `/api/guard-replacement/shifts` without pagination, so the backend returned only its default first 40 rows. The calendar consequently showed only the most recent October dates while earlier dates in the loaded range appeared empty.
+- The calendar now requests 200-row pages and follows the response `total` through every page before grouping events by date. It retains the existing completed, in-progress, scheduled, and attention status logic; no schedule data or status values were changed.
+- Production source verification found 750 October 2026 shifts: 745 completed, 4 in progress, and 1 absent across October 1-17. There are no September shift rows in the live database, so September correctly remains empty until schedules are created/imported for that month.
+- Added `CalendarDashboard.test.tsx` regression coverage for a second-page prior-month shift. TypeScript check, focused Jest test, local production build, Railway frontend release build, and deployed health check passed.
