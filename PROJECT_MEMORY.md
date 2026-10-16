@@ -3469,3 +3469,18 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Remaining Safety Gate
 - The production Backend has no configured capstone execution variables, including the required `CAPSTONE_BACKUP_VERIFIED_AT` marker. No preflight, reset, seed, or production data change was performed. Do not continue until a verified logical backup is recorded with that explicit RFC 3339 marker.
+
+# 169) PRODUCTION CAPSTONE RESEED COMPLETED (2026-10-16)
+
+## Recovery and Control Gates
+- Created a PostgreSQL 17 custom-format backup at `tmp/sentinel-production-pre-capstone-reseed-20261016-230628.dump`. `pg_restore --list` validated the remote archive; the local recovered archive matches the remote `SHA-256` and 2,242,823-byte length.
+- Set the explicit production backup marker after validation, then configured the gated target, confirmation, protected active Superadmin, reference clock, and Railway Postgres target reference. The Backend redeployed successfully with the Dockerfile and retained the `capstone-dataset` runner.
+
+## Old-to-New Result
+- Selectively removed only the tracked legacy `capstone-live-october-2026` batch. Before reset it contained 750 shifts, 749 attendance rows, 747 punctuality rows, 50 merit scorecards, 22 feedback records, generated requests, tracking, and 51 audit rows. The ledger was empty immediately after reset.
+- Seeded the replacement `capstone_presentation_seed` batch with 11 stable five-guard Tagum site rosters and 561 base coverage slots: 187 Day (07:00-15:00), 187 Evening (15:00-23:00), and 187 Night (23:00-07:00). Three recorded same-site relief replacements produce 564 tracked shifts total.
+- New tracked counts: 528 attendance, 531 punctuality, 55 derived merit scores, 3 smart replacements, and one system-attributed seed audit record. The seed creates no feedback, operational requests, client evaluations, notifications, tracking points, or real-user audit activity.
+
+## Verification
+- `validate` confirmed zero October 17 attendance and 33 scheduled-only October 17 shifts. Database checks confirmed 66 Sunday slots, zero overlaps, zero sub-eight-hour rest violations, and three same-site relief selections.
+- Master records were unchanged before and after reset/seed: 154 users, 2 active Superadmins with an unchanged account fingerprint, 36 client sites, 110 firearms, and 5 armored vehicles. Production backend health and `https://dasiasentinel.xyz` both returned HTTP 200.
