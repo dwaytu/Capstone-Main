@@ -3484,3 +3484,14 @@ SENTINEL orchestration now follows a software-company delegation structure:
 ## Verification
 - `validate` confirmed zero October 17 attendance and 33 scheduled-only October 17 shifts. Database checks confirmed 66 Sunday slots, zero overlaps, zero sub-eight-hour rest violations, and three same-site relief selections.
 - Master records were unchanged before and after reset/seed: 154 users, 2 active Superadmins with an unchanged account fingerprint, 36 client sites, 110 firearms, and 5 armored vehicles. Production backend health and `https://dasiasentinel.xyz` both returned HTTP 200.
+
+# 170) PRODUCTION CAPSTONE WORKFLOW ENRICHMENT COMPLETED (2026-10-16)
+
+## Safety and Scope
+- Added the separately ledger-tracked `capstone-live-october-2026-enrichment-v1` batch. It reuses only completed shifts and attendance from the validated base batch; it does not reset, rebuild, or alter schedules, master users, roles, sites, firearms, vehicles, or non-capstone records.
+- The runner validates the base batch, production schema, completed-attendance source count, protected Superadmin, shift overlap/rest constraints, causal timestamps, and tracking-point proximity. A failed child batch is recoverable through child-ledger deletion only.
+
+## Production Result
+- The batch added 7 incident scenarios and classifications, 9 operational requests with 22 history events, 23 notifications, 96 pre-shift readiness records, 4 source-derived absence predictions, 7 support tickets, 24 client evaluations, 18 completed-shift tracking points, and 22 feedback entries (20 Bisaya guard, one supervisor, one admin).
+- Post-run validation retained 564 base shifts, 528 attendance, 531 punctuality records, 55 merit scores, 3 replacements, 66 Sunday slots, 33 scheduled-only October 17 shifts, zero overlaps, zero sub-eight-hour rest violations, and zero tracking points outside the configured site tolerance.
+- Preserved production master/non-capstone baselines: 154 users, 2 active protected Superadmins with the same fingerprint, 36 client sites, 110 firearms, 5 armored vehicles, one untracked feedback record, 12 untracked incidents, and two untracked operational requests. Public application and API health both returned HTTP 200.
