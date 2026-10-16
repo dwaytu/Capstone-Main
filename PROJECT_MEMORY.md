@@ -3444,3 +3444,18 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - The calendar now requests 200-row pages and follows the response `total` through every page before grouping events by date. It retains the existing completed, in-progress, scheduled, and attention status logic; no schedule data or status values were changed.
 - Production source verification found 750 October 2026 shifts: 745 completed, 4 in progress, and 1 absent across October 1-17. There are no September shift rows in the live database, so September correctly remains empty until schedules are created/imported for that month.
 - Added `CalendarDashboard.test.tsx` regression coverage for a second-page prior-month shift. TypeScript check, focused Jest test, local production build, Railway frontend release build, and deployed health check passed.
+
+# 166) LOCAL JAVA TOOLCHAIN RECOVERY (2026-10-16)
+
+- Recovered a stale VS Code Java configuration that referenced a removed Temurin 21 installation under `C:\Program Files\Eclipse Adoptium`. Installed a self-contained Temurin JDK 21.0.12.1 at `C:\Users\dkgag\.jdks\temurin-21.0.12.1_1` to avoid a blocked machine-wide MSI installation.
+- Updated `.vscode/settings.json` (`java.jdt.ls.java.home`) and the user-level `JAVA_HOME`/`Path` so VS Code and new terminals resolve the same JDK. Verified `java`, `javac`, and the Android Gradle 8.11.1 wrapper; Gradle reports the new JDK as its launcher and daemon JVM.
+
+# 167) CAPSTONE PRESENTATION SEED REBUILD PREPARED (2026-10-16)
+
+## Implementation
+- Reworked `src/bin/capstone_dataset.rs` for a provenance-tracked `capstone_presentation_seed` batch: stable five-guard Tagum site rosters, 24/7 Day/Evening/Night coverage including Sundays, at least eight hours of rest, and same-site relief before a wider Tagum fallback.
+- The generator now creates presentation history only through October 16, leaves October 17 shifts scheduled, derives merit metrics from generated attendance, and emits one system-attributed seed audit marker instead of fabricated user audit activity. It no longer creates presentation feedback, telemetry, operational requests, or named-user audit events.
+- Added `preflight` and `validate` commands, a mandatory RFC 3339 backup-verification marker for seed/reset, selected-site/roster reporting, and pure scheduler tests. The runbook was updated accordingly.
+
+## Current Verification State
+- `cargo fmt --check`, diff checks, and PowerShell parser validation pass. Local Rust compilation remains blocked before project code by a missing Windows OpenSSL/vcpkg toolchain; Docker Desktop is not running. No production environment variables or verified backup marker are configured locally, so no live preflight, reset, or seed has been executed.
