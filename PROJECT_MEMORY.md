@@ -3459,3 +3459,13 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 ## Current Verification State
 - `cargo fmt --check`, diff checks, and PowerShell parser validation pass. Local Rust compilation remains blocked before project code by a missing Windows OpenSSL/vcpkg toolchain; Docker Desktop is not running. No production environment variables or verified backup marker are configured locally, so no live preflight, reset, or seed has been executed.
+
+# 168) PRODUCTION DATASET RUNNER PACKAGING DEPLOYED (2026-10-16)
+
+## Deployment
+- Linked the backend workspace to Railway `SENTINEL / production / Backend` and deployed Docker image `6f2b76ff-d7da-407f-b7a9-c9304658be15` successfully.
+- The Docker builder now installs `libssl-dev` and `pkg-config`, explicitly builds `server` and `capstone-dataset`, and includes both binaries in the Linux runtime image. The normal runtime command remains `/app/server`.
+- Confirmed `/app/capstone-dataset` is executable through Railway SSH. Public backend health returned HTTP 200 with API and database services up.
+
+## Remaining Safety Gate
+- The production Backend has no configured capstone execution variables, including the required `CAPSTONE_BACKUP_VERIFIED_AT` marker. No preflight, reset, seed, or production data change was performed. Do not continue until a verified logical backup is recorded with that explicit RFC 3339 marker.
