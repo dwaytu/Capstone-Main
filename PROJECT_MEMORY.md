@@ -3517,3 +3517,9 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Created and archive-validated PostgreSQL 17 backup `tmp/sentinel-capstone-presentation-pre-audit-20261017-133649.dump` before write (`2,351,685` bytes; SHA-256 `35CC3D6C2D6D447AC49C122C664514ACECFF9A14E481A2E76773D08A38B826C3`; verified `2026-10-17T05:37:10Z`).
 - Seeded and validated 174 historical audit rows for October 2-16 only: 158 guard, 8 supervisor, and 8 admin records. There are zero unregistered, protected-Superadmin, Superadmin, non-capstone-source, or October 17 audit rows.
 - Base presentation constraints remain unchanged: 55 guards, 11 stable site rosters, 564 shifts, 528 completed attendance rows, 33 October 17 scheduled-only shifts, zero overlap violations, and zero insufficient-rest violations. Backend and frontend Railway deployments, API health, and public site availability returned HTTP 200.
+
+# 173) PRINT REPORT READABILITY FIX (2026-10-17)
+
+- Analytics and DTR print styles had relied on `visibility: hidden` for the application shell. Hidden layout still reserved space in Chrome print output, leaving Analytics pages sparse and allowing weak inherited print colors. The shared print rules now provide compact, black-on-white report-specific layout, hide only the Analytics screen header while retaining a dedicated report heading, preserve legible summary cards, and constrain chart height for pagination.
+- DTR now uses a print-only report wrapper and heading, repeats table headers across pages, compacts printed table spacing, and hides only the internal UUID beneath a guard name. The UUID stays visible in the interactive table and CSV behavior is unchanged.
+- Frontend type check, full Jest suite (57 suites / 200 tests), production build, and Chromium print-media regression coverage passed. The new browser coverage verifies the Analytics print header/contrast and DTR’s visible table with its internal guard UUID excluded.
