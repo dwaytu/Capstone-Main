@@ -3533,3 +3533,8 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - The first `v1.2.4` GitHub release attempt was blocked before platform builds by newly disclosed transitive frontend dependency advisories. A non-breaking `npm audit fix` update to the frontend lockfile removed all high and critical findings; the remaining 21 findings are moderate or low development-tool dependencies and do not fail the governed `npm audit --audit-level=high` gate.
 - Verified the remediated dependency graph with the frontend TypeScript check and all 57 Jest suites / 200 tests. The failed `v1.2.4` tag remains unpublished; the corrected release will use the next patch tag.
+
+# 176) SENTINEL V1.2.5 GOVERNED RELEASE PUBLISHED (2026-10-17)
+
+- Published GitHub release `v1.2.5` from root commit `f1f6117`. The release workflow passed metadata preparation, the full quality gate, web packaging, signed Android packaging, desktop MSI/NSIS packaging, and release publication.
+- Official installer assets are `SENTINEL_v1.2.5.apk`, `SENTINEL_v1.2.5.aab`, `sentinel-desktop-windows-v1.2.5.exe`, and `sentinel-desktop-windows-v1.2.5.msi`. They include the current print-report frontend changes and use the production Railway API URL.
