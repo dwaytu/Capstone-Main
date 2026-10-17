@@ -3495,3 +3495,25 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - The batch added 7 incident scenarios and classifications, 9 operational requests with 22 history events, 23 notifications, 96 pre-shift readiness records, 4 source-derived absence predictions, 7 support tickets, 24 client evaluations, 18 completed-shift tracking points, and 22 feedback entries (20 Bisaya guard, one supervisor, one admin).
 - Post-run validation retained 564 base shifts, 528 attendance, 531 punctuality records, 55 merit scores, 3 replacements, 66 Sunday slots, 33 scheduled-only October 17 shifts, zero overlaps, zero sub-eight-hour rest violations, and zero tracking points outside the configured site tolerance.
 - Preserved production master/non-capstone baselines: 154 users, 2 active protected Superadmins with the same fingerprint, 36 client sites, 110 firearms, 5 armored vehicles, one untracked feedback record, 12 untracked incidents, and two untracked operational requests. Public application and API health both returned HTTP 200.
+
+# 171) CHAPTER 3/4 EVIDENCE PACKAGE CREATED (2026-10-17)
+
+## Evidence
+- Added `docs/CHAPTER_3_4_EVIDENCE.md` as a factual evidence package for Chapter 3/4 writing. It records architecture, 33 functional areas, objective mapping, test/build results, live read-only checks, explicitly labeled presentation-data metrics, known limitations, and a test-case matrix.
+- Added read-only public-login captures at `docs/chapter4-screenshots/01-login.png` and `docs/chapter4-screenshots/01-login-mobile.png`. Authenticated role screenshots were intentionally not captured because no credentials were used.
+
+## Verification State
+- Frontend TypeScript check, Jest (56 suites / 199 tests), and Vite production build passed. A selected Chromium Playwright run had 16 passes and one guard profile/settings heading regression. Local backend Rust tests remain blocked before project test execution by missing Windows OpenSSL/Vcpkg dependencies.
+- Railway production health, public frontend availability, and the capstone runner's read-only validation passed. The document retains the mandatory distinction between synthetic presentation records and genuine operational data.
+
+# 172) CAPSTONE PRESENTATION ATTRIBUTED AUDIT HISTORY (2026-10-17)
+
+## Scope and Controls
+- The user clarified that `https://dasiasentinel.xyz` is the dedicated capstone presentation environment, containing only synthetic/test data. Its Railway environment label remains `production`, but attributed audit history requires the separate explicit target designation `CAPSTONE_TARGET_ENVIRONMENT=capstone_presentation` plus `CAPSTONE_PRESENTATION_ENVIRONMENT=true` and `CAPSTONE_ALLOW_SYNTHETIC_AUDIT_HISTORY=true`.
+- `capstone-dataset seed-audit-activity` is an idempotent child batch. It registers only the 55 ledger-backed synthetic guards and the one synthetic supervisor and administrator in `capstone_seed_actors`; it rejects protected Superadmins, non-capstone users, inactive accounts, and actions outside its fixed operational allow-list. It writes only to `audit_logs` and the capstone ledger, never authentication/session tables.
+- Audit rows retain internal provenance (`source=capstone_seed`, `actor_attribution_mode=synthetic_seeded`, batch ID, seed time, scenario time, and ledger record) while normal Audit Logs presents the synthetic actor naturally. The child batch is selectively resettable without changing base shifts or enrichment data.
+
+## Live Result
+- Created and archive-validated PostgreSQL 17 backup `tmp/sentinel-capstone-presentation-pre-audit-20261017-133649.dump` before write (`2,351,685` bytes; SHA-256 `35CC3D6C2D6D447AC49C122C664514ACECFF9A14E481A2E76773D08A38B826C3`; verified `2026-10-17T05:37:10Z`).
+- Seeded and validated 174 historical audit rows for October 2-16 only: 158 guard, 8 supervisor, and 8 admin records. There are zero unregistered, protected-Superadmin, Superadmin, non-capstone-source, or October 17 audit rows.
+- Base presentation constraints remain unchanged: 55 guards, 11 stable site rosters, 564 shifts, 528 completed attendance rows, 33 October 17 scheduled-only shifts, zero overlap violations, and zero insufficient-rest violations. Backend and frontend Railway deployments, API health, and public site availability returned HTTP 200.
