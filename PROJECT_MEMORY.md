@@ -3528,3 +3528,8 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - Rebuilt the Capacitor Android wrapper from the current frontend bundle with production Capacitor security settings and the Railway HTTPS API. Local Android signing credentials were unavailable, so the generated artifact is the debug package `com.sentinel.app.debug` (`1.0.0-debug`), not a distributable signed release APK.
 - Rebuilt the Tauri desktop package from the same frontend bundle. The NSIS executable and MSI include the current Analytics/DTR print readability fix and target the Railway HTTPS API.
+
+# 175) RELEASE AUDIT GATE REMEDIATION (2026-10-17)
+
+- The first `v1.2.4` GitHub release attempt was blocked before platform builds by newly disclosed transitive frontend dependency advisories. A non-breaking `npm audit fix` update to the frontend lockfile removed all high and critical findings; the remaining 21 findings are moderate or low development-tool dependencies and do not fail the governed `npm audit --audit-level=high` gate.
+- Verified the remediated dependency graph with the frontend TypeScript check and all 57 Jest suites / 200 tests. The failed `v1.2.4` tag remains unpublished; the corrected release will use the next patch tag.
