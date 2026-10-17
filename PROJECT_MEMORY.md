@@ -3523,3 +3523,8 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Analytics and DTR print styles had relied on `visibility: hidden` for the application shell. Hidden layout still reserved space in Chrome print output, leaving Analytics pages sparse and allowing weak inherited print colors. The shared print rules now provide compact, black-on-white report-specific layout, hide only the Analytics screen header while retaining a dedicated report heading, preserve legible summary cards, and constrain chart height for pagination.
 - DTR now uses a print-only report wrapper and heading, repeats table headers across pages, compacts printed table spacing, and hides only the internal UUID beneath a guard name. The UUID stays visible in the interactive table and CSV behavior is unchanged.
 - Frontend type check, full Jest suite (57 suites / 200 tests), production build, and Chromium print-media regression coverage passed. The new browser coverage verifies the Analytics print header/contrast and DTR’s visible table with its internal guard UUID excluded.
+
+# 174) UPDATED LOCAL ANDROID AND DESKTOP PACKAGES (2026-10-17)
+
+- Rebuilt the Capacitor Android wrapper from the current frontend bundle with production Capacitor security settings and the Railway HTTPS API. Local Android signing credentials were unavailable, so the generated artifact is the debug package `com.sentinel.app.debug` (`1.0.0-debug`), not a distributable signed release APK.
+- Rebuilt the Tauri desktop package from the same frontend bundle. The NSIS executable and MSI include the current Analytics/DTR print readability fix and target the Railway HTTPS API.
