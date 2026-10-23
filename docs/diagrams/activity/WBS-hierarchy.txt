@@ -1,0 +1,83 @@
+SENTINEL
+Integrated Security Operations Management System
+Davao Security & Investigation Agency, Inc.
+
+PHASE 1 - PROJECT INITIATION
+1.1 Define project scope and objectives
+1.2 Identify stakeholders
+1.3 Conduct initial project planning and scheduling
+
+PHASE 2 - PLANNING AND REQUIREMENTS ANALYSIS
+2.1 Conduct project kickoff and requirements gathering
+2.2 Analyze DASIA operational processes
+2.3 Define functional and non-functional requirements
+2.4 Prepare development plan and backlog
+
+PHASE 3 - CORE SYSTEM DEVELOPMENT
+3.1 Design system architecture and database
+3.2 Develop authentication and account governance
+3.3 Implement role-based access controls
+3.4 Develop frontend shell and navigation
+3.5 Implement core backend services
+3.6 Conduct iteration testing and review
+
+PHASE 4 - PERSONNEL AND OPERATIONAL MODULES
+4.1 Develop personnel and Guard management
+4.2 Develop client-site management
+4.3 Implement scheduling and calendar
+4.4 Implement attendance and DTR
+4.5 Implement no-show detection
+4.6 Implement Guard replacement coordination
+4.7 Implement incidents, requests, notifications, and support
+4.8 Conduct iteration testing and refinement
+
+PHASE 5 - ASSET, MONITORING, AND ANALYTICS MODULES
+5.1 Develop firearm inventory and allocation
+5.2 Develop firearm permit and compliance monitoring
+5.3 Develop armored vehicle and trip management
+5.4 Develop maintenance monitoring
+5.5 Develop Operations Map and location tracking
+5.6 Implement geofence and movement-history functions
+5.7 Develop performance analytics and evaluations
+5.8 Develop audit and forensic review
+5.9 Conduct integration testing and refinement
+
+PHASE 6 - TESTING AND PRODUCTION DEPLOYMENT
+6.1 Conduct frontend and integration testing
+6.2 Conduct role and permission validation
+6.3 Resolve identified defects
+6.4 Configure Railway production environment
+6.5 Configure PostgreSQL production database
+6.6 Deploy SENTINEL Web application
+6.7 Verify frontend, backend, API, and database health
+6.8 Verify production authentication and major workflows
+
+PHASE 7 - DATA MIGRATION AND IMPLEMENTATION PREPARATION
+7.1 Review DASIA Excel/MDR records
+7.2 Develop Excel/MDR import functionality
+7.3 Implement data-cleansing and validation procedures
+7.4 Prepare records for migration
+7.5 Import validated organizational records
+7.6 Verify migrated records
+7.7 Orient Administrator, Supervisor, and Guard users
+
+PHASE 8 - OPERATIONAL IMPLEMENTATION AND EVALUATION
+8.1 Begin DASIA operational use of SENTINEL
+8.2 Monitor 24/7 schedules and attendance
+8.3 Monitor Guard replacement and operational workflows
+8.4 Monitor incidents, notifications, requests, and support
+8.5 Review system performance and identified issues
+8.6 Apply implementation refinements
+8.7 Distribute system evaluation questionnaires
+8.8 Collect respondent ratings and comments
+8.9 Compute and analyze evaluation results
+
+PHASE 9 - REFINEMENT AND PROJECT CLOSURE
+9.1 Apply approved interface and workflow improvements
+9.2 Finalize Chapters 1-4
+9.3 Update technical and user documentation
+9.4 Prepare final system demonstration
+9.5 Prepare capstone defense materials
+9.6 Conduct final project review
+9.7 Prepare project turnover and closure
+

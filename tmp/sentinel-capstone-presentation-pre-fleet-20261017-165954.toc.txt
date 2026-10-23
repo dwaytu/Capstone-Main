@@ -1,0 +1,342 @@
+;
+; Archive created at 2026-10-17 16:59:55 UTC
+;     dbname: railway
+;     TOC Entries: 331
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.11 (Debian 17.11-1.pgdg13+2)
+;     Dumped by pg_dump version: 17.11 (Debian 17.11-1.pgdg13+2)
+;
+;
+; Selected TOC Entries:
+;
+2; 3079 24784 EXTENSION - pgcrypto 
+4228; 0 0 COMMENT - EXTENSION pgcrypto 
+321; 1255 41787 FUNCTION public sentinel_assign_guard_code() postgres
+322; 1255 43362 FUNCTION public sentinel_now() postgres
+251; 1259 25040 TABLE public ai_incident_summaries postgres
+265; 1259 25476 TABLE public armored_car_status_transitions postgres
+224; 1259 16477 TABLE public armored_cars postgres
+223; 1259 16459 TABLE public attendance postgres
+243; 1259 24880 TABLE public audit_logs postgres
+252; 1259 25068 TABLE public auth_login_attempts postgres
+273; 1259 45958 TABLE public capstone_seed_actors postgres
+270; 1259 43368 TABLE public capstone_seed_batches postgres
+271; 1259 43377 TABLE public capstone_seed_records postgres
+225; 1259 16492 TABLE public car_allocations postgres
+226; 1259 16508 TABLE public car_maintenance postgres
+234; 1259 24634 TABLE public client_evaluations postgres
+244; 1259 24897 TABLE public client_sites postgres
+258; 1259 25270 TABLE public clients postgres
+272; 1259 43613 TABLE public data_quality_change_log postgres
+227; 1259 16523 TABLE public driver_assignments postgres
+263; 1259 25378 TABLE public equipment postgres
+264; 1259 25405 TABLE public feedback postgres
+221; 1259 16427 TABLE public firearm_allocations postgres
+237; 1259 24675 TABLE public firearm_maintenance postgres
+220; 1259 16415 TABLE public firearms postgres
+254; 1259 25103 TABLE public geofence_events postgres
+247; 1259 24934 TABLE public guard_absence_predictions postgres
+261; 1259 25316 TABLE public guard_assignments postgres
+232; 1259 24594 TABLE public guard_availability postgres
+269; 1259 41786 SEQUENCE public guard_code_sequence postgres
+229; 1259 16567 TABLE public guard_firearm_permits postgres
+233; 1259 24611 TABLE public guard_merit_scores postgres
+268; 1259 41130 TABLE public guard_shift_readiness postgres
+256; 1259 25212 TABLE public guard_shift_swaps postgres
+262; 1259 25349 TABLE public guard_status_transitions postgres
+249; 1259 24996 TABLE public incident_severity_classifications postgres
+246; 1259 24915 TABLE public incidents postgres
+259; 1259 25281 TABLE public mdr_import_batches postgres
+260; 1259 25300 TABLE public mdr_staging_rows postgres
+231; 1259 24578 TABLE public notifications postgres
+267; 1259 41017 TABLE public operational_request_events postgres
+266; 1259 40978 TABLE public operational_requests postgres
+238; 1259 24691 TABLE public password_reset_tokens postgres
+240; 1259 24831 TABLE public permissions postgres
+250; 1259 25019 TABLE public predictive_vehicle_maintenance postgres
+235; 1259 24647 TABLE public punctuality_records postgres
+257; 1259 25239 TABLE public push_subscriptions postgres
+253; 1259 25077 TABLE public refresh_token_sessions postgres
+241; 1259 24842 TABLE public role_permissions postgres
+239; 1259 24822 TABLE public roles postgres
+222; 1259 16446 TABLE public shifts postgres
+255; 1259 25124 TABLE public site_geofences postgres
+248; 1259 24960 TABLE public smart_guard_replacements postgres
+230; 1259 16585 TABLE public support_tickets postgres
+245; 1259 24907 TABLE public tracking_points postgres
+236; 1259 24660 TABLE public training_records postgres
+228; 1259 16542 TABLE public trips postgres
+242; 1259 24860 TABLE public user_roles postgres
+218; 1259 16389 TABLE public users postgres
+219; 1259 16404 TABLE public verifications postgres
+4199; 0 25040 TABLE DATA public ai_incident_summaries postgres
+4213; 0 25476 TABLE DATA public armored_car_status_transitions postgres
+4172; 0 16477 TABLE DATA public armored_cars postgres
+4171; 0 16459 TABLE DATA public attendance postgres
+4191; 0 24880 TABLE DATA public audit_logs postgres
+4200; 0 25068 TABLE DATA public auth_login_attempts postgres
+4221; 0 45958 TABLE DATA public capstone_seed_actors postgres
+4218; 0 43368 TABLE DATA public capstone_seed_batches postgres
+4219; 0 43377 TABLE DATA public capstone_seed_records postgres
+4173; 0 16492 TABLE DATA public car_allocations postgres
+4174; 0 16508 TABLE DATA public car_maintenance postgres
+4182; 0 24634 TABLE DATA public client_evaluations postgres
+4192; 0 24897 TABLE DATA public client_sites postgres
+4206; 0 25270 TABLE DATA public clients postgres
+4220; 0 43613 TABLE DATA public data_quality_change_log postgres
+4175; 0 16523 TABLE DATA public driver_assignments postgres
+4211; 0 25378 TABLE DATA public equipment postgres
+4212; 0 25405 TABLE DATA public feedback postgres
+4169; 0 16427 TABLE DATA public firearm_allocations postgres
+4185; 0 24675 TABLE DATA public firearm_maintenance postgres
+4168; 0 16415 TABLE DATA public firearms postgres
+4202; 0 25103 TABLE DATA public geofence_events postgres
+4195; 0 24934 TABLE DATA public guard_absence_predictions postgres
+4209; 0 25316 TABLE DATA public guard_assignments postgres
+4180; 0 24594 TABLE DATA public guard_availability postgres
+4177; 0 16567 TABLE DATA public guard_firearm_permits postgres
+4181; 0 24611 TABLE DATA public guard_merit_scores postgres
+4216; 0 41130 TABLE DATA public guard_shift_readiness postgres
+4204; 0 25212 TABLE DATA public guard_shift_swaps postgres
+4210; 0 25349 TABLE DATA public guard_status_transitions postgres
+4197; 0 24996 TABLE DATA public incident_severity_classifications postgres
+4194; 0 24915 TABLE DATA public incidents postgres
+4207; 0 25281 TABLE DATA public mdr_import_batches postgres
+4208; 0 25300 TABLE DATA public mdr_staging_rows postgres
+4179; 0 24578 TABLE DATA public notifications postgres
+4215; 0 41017 TABLE DATA public operational_request_events postgres
+4214; 0 40978 TABLE DATA public operational_requests postgres
+4186; 0 24691 TABLE DATA public password_reset_tokens postgres
+4188; 0 24831 TABLE DATA public permissions postgres
+4198; 0 25019 TABLE DATA public predictive_vehicle_maintenance postgres
+4183; 0 24647 TABLE DATA public punctuality_records postgres
+4205; 0 25239 TABLE DATA public push_subscriptions postgres
+4201; 0 25077 TABLE DATA public refresh_token_sessions postgres
+4189; 0 24842 TABLE DATA public role_permissions postgres
+4187; 0 24822 TABLE DATA public roles postgres
+4170; 0 16446 TABLE DATA public shifts postgres
+4203; 0 25124 TABLE DATA public site_geofences postgres
+4196; 0 24960 TABLE DATA public smart_guard_replacements postgres
+4178; 0 16585 TABLE DATA public support_tickets postgres
+4193; 0 24907 TABLE DATA public tracking_points postgres
+4184; 0 24660 TABLE DATA public training_records postgres
+4176; 0 16542 TABLE DATA public trips postgres
+4190; 0 24860 TABLE DATA public user_roles postgres
+4166; 0 16389 TABLE DATA public users postgres
+4167; 0 16404 TABLE DATA public verifications postgres
+4229; 0 0 SEQUENCE SET public guard_code_sequence postgres
+3860; 2606 25059 CONSTRAINT public ai_incident_summaries ai_incident_summaries_pkey postgres
+3915; 2606 25483 CONSTRAINT public armored_car_status_transitions armored_car_status_transitions_pkey postgres
+3762; 2606 16489 CONSTRAINT public armored_cars armored_cars_license_plate_key postgres
+3764; 2606 16487 CONSTRAINT public armored_cars armored_cars_pkey postgres
+3766; 2606 16491 CONSTRAINT public armored_cars armored_cars_vin_key postgres
+3759; 2606 16466 CONSTRAINT public attendance attendance_pkey postgres
+3827; 2606 24887 CONSTRAINT public audit_logs audit_logs_pkey postgres
+3864; 2606 25076 CONSTRAINT public auth_login_attempts auth_login_attempts_pkey postgres
+3943; 2606 45963 CONSTRAINT public capstone_seed_actors capstone_seed_actors_pkey postgres
+3936; 2606 43376 CONSTRAINT public capstone_seed_batches capstone_seed_batches_pkey postgres
+3938; 2606 43381 CONSTRAINT public capstone_seed_records capstone_seed_records_pkey postgres
+3769; 2606 16502 CONSTRAINT public car_allocations car_allocations_pkey postgres
+3771; 2606 16517 CONSTRAINT public car_maintenance car_maintenance_pkey postgres
+3794; 2606 24641 CONSTRAINT public client_evaluations client_evaluations_pkey postgres
+3835; 2606 24906 CONSTRAINT public client_sites client_sites_pkey postgres
+3890; 2606 25279 CONSTRAINT public clients clients_pkey postgres
+3940; 2606 43621 CONSTRAINT public data_quality_change_log data_quality_change_log_pkey postgres
+3773; 2606 16531 CONSTRAINT public driver_assignments driver_assignments_pkey postgres
+3907; 2606 25388 CONSTRAINT public equipment equipment_pkey postgres
+3909; 2606 25414 CONSTRAINT public feedback feedback_pkey postgres
+3911; 2606 25416 CONSTRAINT public feedback feedback_user_unique postgres
+3754; 2606 16435 CONSTRAINT public firearm_allocations firearm_allocations_pkey postgres
+3802; 2606 24684 CONSTRAINT public firearm_maintenance firearm_maintenance_pkey postgres
+3750; 2606 16424 CONSTRAINT public firearms firearms_pkey postgres
+3752; 2606 16426 CONSTRAINT public firearms firearms_serial_number_key postgres
+3872; 2606 25111 CONSTRAINT public geofence_events geofence_events_pkey postgres
+3844; 2606 24952 CONSTRAINT public guard_absence_predictions guard_absence_predictions_pkey postgres
+3899; 2606 25325 CONSTRAINT public guard_assignments guard_assignments_pkey postgres
+3786; 2606 24605 CONSTRAINT public guard_availability guard_availability_guard_id_key postgres
+3788; 2606 24603 CONSTRAINT public guard_availability guard_availability_pkey postgres
+3777; 2606 16574 CONSTRAINT public guard_firearm_permits guard_firearm_permits_pkey postgres
+3790; 2606 24628 CONSTRAINT public guard_merit_scores guard_merit_scores_guard_id_key postgres
+3792; 2606 24626 CONSTRAINT public guard_merit_scores guard_merit_scores_pkey postgres
+3930; 2606 41139 CONSTRAINT public guard_shift_readiness guard_shift_readiness_pkey postgres
+3932; 2606 41141 CONSTRAINT public guard_shift_readiness guard_shift_readiness_shift_guard_unique postgres
+3880; 2606 25222 CONSTRAINT public guard_shift_swaps guard_shift_swaps_pkey postgres
+3904; 2606 25356 CONSTRAINT public guard_status_transitions guard_status_transitions_pkey postgres
+3854; 2606 25011 CONSTRAINT public incident_severity_classifications incident_severity_classifications_pkey postgres
+3842; 2606 24927 CONSTRAINT public incidents incidents_pkey postgres
+3893; 2606 25289 CONSTRAINT public mdr_import_batches mdr_import_batches_pkey postgres
+3897; 2606 25308 CONSTRAINT public mdr_staging_rows mdr_staging_rows_pkey postgres
+3784; 2606 24588 CONSTRAINT public notifications notifications_pkey postgres
+3928; 2606 41024 CONSTRAINT public operational_request_events operational_request_events_pkey postgres
+3924; 2606 40991 CONSTRAINT public operational_requests operational_requests_pkey postgres
+3807; 2606 24698 CONSTRAINT public password_reset_tokens password_reset_tokens_pkey postgres
+3809; 2606 46293 CONSTRAINT public password_reset_tokens password_reset_tokens_token_key postgres
+3815; 2606 24841 CONSTRAINT public permissions permissions_permission_key_key postgres
+3817; 2606 24839 CONSTRAINT public permissions permissions_pkey postgres
+3858; 2606 25032 CONSTRAINT public predictive_vehicle_maintenance predictive_vehicle_maintenance_pkey postgres
+3798; 2606 24654 CONSTRAINT public punctuality_records punctuality_records_pkey postgres
+3886; 2606 25247 CONSTRAINT public push_subscriptions push_subscriptions_pkey postgres
+3888; 2606 25249 CONSTRAINT public push_subscriptions push_subscriptions_user_endpoint_unique postgres
+3870; 2606 25084 CONSTRAINT public refresh_token_sessions refresh_token_sessions_pkey postgres
+3819; 2606 24847 CONSTRAINT public role_permissions role_permissions_pkey postgres
+3821; 2606 24849 CONSTRAINT public role_permissions role_permissions_role_id_permission_id_key postgres
+3811; 2606 24828 CONSTRAINT public roles roles_pkey postgres
+3813; 2606 24830 CONSTRAINT public roles roles_role_key_key postgres
+3757; 2606 16453 CONSTRAINT public shifts shifts_pkey postgres
+3878; 2606 25134 CONSTRAINT public site_geofences site_geofences_pkey postgres
+3850; 2606 24978 CONSTRAINT public smart_guard_replacements smart_guard_replacements_pkey postgres
+3779; 2606 16594 CONSTRAINT public support_tickets support_tickets_pkey postgres
+3839; 2606 24913 CONSTRAINT public tracking_points tracking_points_pkey postgres
+3800; 2606 24669 CONSTRAINT public training_records training_records_pkey postgres
+3775; 2606 16551 CONSTRAINT public trips trips_pkey postgres
+3823; 2606 24867 CONSTRAINT public user_roles user_roles_pkey postgres
+3825; 2606 24869 CONSTRAINT public user_roles user_roles_user_id_role_id_key postgres
+3744; 2606 16399 CONSTRAINT public users users_pkey postgres
+3746; 2606 16403 CONSTRAINT public users users_username_key postgres
+3748; 2606 16409 CONSTRAINT public verifications verifications_pkey postgres
+3861; 1259 25065 INDEX public idx_ai_incident_summaries_incident postgres
+3916; 1259 25495 INDEX public idx_armored_car_status_transitions_batch_created postgres
+3917; 1259 25494 INDEX public idx_armored_car_status_transitions_car_created postgres
+3767; 1259 41300 INDEX public idx_armored_cars_plate_number_unique postgres
+3760; 1259 41077 INDEX public idx_attendance_shift_guard_times postgres
+3828; 1259 24894 INDEX public idx_audit_logs_actor_created postgres
+3829; 1259 45943 INDEX public idx_audit_logs_capstone_batch postgres
+3830; 1259 24893 INDEX public idx_audit_logs_created_at postgres
+3831; 1259 24895 INDEX public idx_audit_logs_entity postgres
+3832; 1259 25142 INDEX public idx_audit_logs_result_created postgres
+3833; 1259 25090 INDEX public idx_audit_logs_source_ip_created postgres
+3865; 1259 25092 INDEX public idx_auth_login_attempts_last_failed postgres
+3866; 1259 25091 INDEX public idx_auth_login_attempts_locked_until postgres
+3795; 1259 41078 INDEX public idx_client_evaluations_created_guard postgres
+3891; 1259 25280 INDEX public idx_clients_name_branch postgres
+3941; 1259 43627 INDEX public idx_data_quality_change_log_entity postgres
+3912; 1259 25423 INDEX public idx_feedback_created_at postgres
+3913; 1259 25422 INDEX public idx_feedback_user_id postgres
+3873; 1259 25122 INDEX public idx_geofence_events_guard_created postgres
+3874; 1259 25123 INDEX public idx_geofence_events_site_created postgres
+3845; 1259 24958 INDEX public idx_guard_absence_predictions_guard_generated postgres
+3846; 1259 24959 INDEX public idx_guard_absence_predictions_level_valid postgres
+3900; 1259 25348 INDEX public idx_guard_assignments_active postgres
+3901; 1259 25347 INDEX public idx_guard_assignments_client postgres
+3902; 1259 25346 INDEX public idx_guard_assignments_guard postgres
+3933; 1259 41152 INDEX public idx_guard_shift_readiness_guard postgres
+3934; 1259 41153 INDEX public idx_guard_shift_readiness_shift postgres
+3905; 1259 25377 INDEX public idx_guard_transitions_guard postgres
+3851; 1259 25017 INDEX public idx_incident_severity_classifications_incident postgres
+3852; 1259 25018 INDEX public idx_incident_severity_classifications_severity postgres
+3840; 1259 24933 INDEX public idx_incidents_status_priority_created postgres
+3780; 1259 41042 INDEX public idx_notifications_related_request postgres
+3781; 1259 41043 INDEX public idx_notifications_request_event_dedupe postgres
+3782; 1259 41912 INDEX public idx_notifications_unread_compliance_dedupe postgres
+3925; 1259 41041 INDEX public idx_operational_request_events_actor postgres
+3926; 1259 41040 INDEX public idx_operational_request_events_request postgres
+3918; 1259 41039 INDEX public idx_operational_requests_active_resource postgres
+3919; 1259 41036 INDEX public idx_operational_requests_requester_created postgres
+3920; 1259 41038 INDEX public idx_operational_requests_resource_status postgres
+3921; 1259 41035 INDEX public idx_operational_requests_status_created postgres
+3922; 1259 41037 INDEX public idx_operational_requests_type_status postgres
+3803; 1259 24708 INDEX public idx_password_reset_tokens_expires_at postgres
+3804; 1259 46294 INDEX public idx_password_reset_tokens_token postgres
+3805; 1259 24707 INDEX public idx_password_reset_tokens_user_id postgres
+3855; 1259 25038 INDEX public idx_predictive_vehicle_maintenance_car_generated postgres
+3856; 1259 25039 INDEX public idx_predictive_vehicle_maintenance_level postgres
+3796; 1259 41079 INDEX public idx_punctuality_guard_scheduled_status postgres
+3884; 1259 25255 INDEX public idx_push_subscriptions_user_id postgres
+3867; 1259 25094 INDEX public idx_refresh_token_sessions_expires_at postgres
+3868; 1259 25093 INDEX public idx_refresh_token_sessions_user_active postgres
+3881; 1259 25233 INDEX public idx_shift_swaps_requester postgres
+3882; 1259 25235 INDEX public idx_shift_swaps_status postgres
+3883; 1259 25234 INDEX public idx_shift_swaps_target postgres
+3755; 1259 41076 INDEX public idx_shifts_analytics_window postgres
+3875; 1259 25140 INDEX public idx_site_geofences_site_active postgres
+3876; 1259 25141 INDEX public idx_site_geofences_type_active postgres
+3847; 1259 24994 INDEX public idx_smart_guard_replacements_shift_rank postgres
+3848; 1259 24995 INDEX public idx_smart_guard_replacements_status postgres
+3894; 1259 25314 INDEX public idx_staging_batch postgres
+3895; 1259 25315 INDEX public idx_staging_match postgres
+3836; 1259 24914 INDEX public idx_tracking_points_entity_time postgres
+3837; 1259 25102 INDEX public idx_tracking_points_user_time postgres
+3741; 1259 41127 INDEX public idx_users_email_non_blank_unique postgres
+3742; 1259 41789 INDEX public idx_users_guard_code_unique postgres
+3862; 1259 25066 INDEX public uq_ai_incident_summaries_incident_kind_generated postgres
+4020; 2620 46291 TRIGGER public users users_assign_guard_code postgres
+3981; 2606 25060 FK CONSTRAINT public ai_incident_summaries ai_incident_summaries_incident_id_fkey postgres
+4004; 2606 25484 FK CONSTRAINT public armored_car_status_transitions armored_car_status_transitions_car_id_fkey postgres
+4005; 2606 25489 FK CONSTRAINT public armored_car_status_transitions armored_car_status_transitions_recorded_by_fkey postgres
+3948; 2606 16467 FK CONSTRAINT public attendance attendance_guard_id_fkey postgres
+3949; 2606 16472 FK CONSTRAINT public attendance attendance_shift_id_fkey postgres
+3972; 2606 24888 FK CONSTRAINT public audit_logs audit_logs_actor_user_id_fkey postgres
+4018; 2606 45964 FK CONSTRAINT public capstone_seed_actors capstone_seed_actors_batch_id_fkey postgres
+4019; 2606 45969 FK CONSTRAINT public capstone_seed_actors capstone_seed_actors_user_id_fkey postgres
+4016; 2606 43382 FK CONSTRAINT public capstone_seed_records capstone_seed_records_batch_id_fkey postgres
+3950; 2606 16503 FK CONSTRAINT public car_allocations car_allocations_car_id_fkey postgres
+3951; 2606 16518 FK CONSTRAINT public car_maintenance car_maintenance_car_id_fkey postgres
+3963; 2606 24642 FK CONSTRAINT public client_evaluations client_evaluations_guard_id_fkey postgres
+4017; 2606 43622 FK CONSTRAINT public data_quality_change_log data_quality_change_log_applied_by_fkey postgres
+3952; 2606 16532 FK CONSTRAINT public driver_assignments driver_assignments_car_id_fkey postgres
+3953; 2606 16537 FK CONSTRAINT public driver_assignments driver_assignments_guard_id_fkey postgres
+4000; 2606 25389 FK CONSTRAINT public equipment equipment_assigned_to_client_id_fkey postgres
+4001; 2606 25394 FK CONSTRAINT public equipment equipment_assigned_to_guard_id_fkey postgres
+4002; 2606 25399 FK CONSTRAINT public equipment equipment_mdr_batch_id_fkey postgres
+4003; 2606 25417 FK CONSTRAINT public feedback feedback_user_id_fkey postgres
+3945; 2606 16441 FK CONSTRAINT public firearm_allocations firearm_allocations_firearm_id_fkey postgres
+3946; 2606 16436 FK CONSTRAINT public firearm_allocations firearm_allocations_guard_id_fkey postgres
+3966; 2606 24685 FK CONSTRAINT public firearm_maintenance firearm_maintenance_firearm_id_fkey postgres
+3983; 2606 25117 FK CONSTRAINT public geofence_events geofence_events_client_site_id_fkey postgres
+3984; 2606 25112 FK CONSTRAINT public geofence_events geofence_events_guard_id_fkey postgres
+3975; 2606 24953 FK CONSTRAINT public guard_absence_predictions guard_absence_predictions_guard_id_fkey postgres
+3992; 2606 25331 FK CONSTRAINT public guard_assignments guard_assignments_client_id_fkey postgres
+3993; 2606 25336 FK CONSTRAINT public guard_assignments guard_assignments_client_site_id_fkey postgres
+3994; 2606 25326 FK CONSTRAINT public guard_assignments guard_assignments_guard_id_fkey postgres
+3995; 2606 25341 FK CONSTRAINT public guard_assignments guard_assignments_mdr_batch_id_fkey postgres
+3961; 2606 24606 FK CONSTRAINT public guard_availability guard_availability_guard_id_fkey postgres
+3957; 2606 16580 FK CONSTRAINT public guard_firearm_permits guard_firearm_permits_firearm_id_fkey postgres
+3958; 2606 16575 FK CONSTRAINT public guard_firearm_permits guard_firearm_permits_guard_id_fkey postgres
+3962; 2606 24629 FK CONSTRAINT public guard_merit_scores guard_merit_scores_guard_id_fkey postgres
+4014; 2606 41147 FK CONSTRAINT public guard_shift_readiness guard_shift_readiness_guard_id_fkey postgres
+4015; 2606 41142 FK CONSTRAINT public guard_shift_readiness guard_shift_readiness_shift_id_fkey postgres
+3986; 2606 25223 FK CONSTRAINT public guard_shift_swaps guard_shift_swaps_requester_id_fkey postgres
+3987; 2606 25228 FK CONSTRAINT public guard_shift_swaps guard_shift_swaps_target_id_fkey postgres
+3996; 2606 25357 FK CONSTRAINT public guard_status_transitions guard_status_transitions_guard_id_fkey postgres
+3997; 2606 25367 FK CONSTRAINT public guard_status_transitions guard_status_transitions_mdr_batch_id_fkey postgres
+3998; 2606 25362 FK CONSTRAINT public guard_status_transitions guard_status_transitions_previous_client_id_fkey postgres
+3999; 2606 25372 FK CONSTRAINT public guard_status_transitions guard_status_transitions_recorded_by_fkey postgres
+3979; 2606 25012 FK CONSTRAINT public incident_severity_classifications incident_severity_classifications_incident_id_fkey postgres
+3974; 2606 24928 FK CONSTRAINT public incidents incidents_reported_by_fkey postgres
+3989; 2606 25295 FK CONSTRAINT public mdr_import_batches mdr_import_batches_committed_by_fkey postgres
+3990; 2606 25290 FK CONSTRAINT public mdr_import_batches mdr_import_batches_uploaded_by_fkey postgres
+3991; 2606 25309 FK CONSTRAINT public mdr_staging_rows mdr_staging_rows_batch_id_fkey postgres
+3960; 2606 24589 FK CONSTRAINT public notifications notifications_user_id_fkey postgres
+4012; 2606 41030 FK CONSTRAINT public operational_request_events operational_request_events_actor_user_id_fkey postgres
+4013; 2606 41025 FK CONSTRAINT public operational_request_events operational_request_events_request_id_fkey postgres
+4006; 2606 41093 FK CONSTRAINT public operational_requests operational_requests_archived_by_fkey postgres
+4007; 2606 40997 FK CONSTRAINT public operational_requests operational_requests_client_site_id_fkey postgres
+4008; 2606 41012 FK CONSTRAINT public operational_requests operational_requests_fulfilled_by_fkey postgres
+4009; 2606 40992 FK CONSTRAINT public operational_requests operational_requests_requester_id_fkey postgres
+4010; 2606 41007 FK CONSTRAINT public operational_requests operational_requests_reviewer_id_fkey postgres
+4011; 2606 41002 FK CONSTRAINT public operational_requests operational_requests_shift_id_fkey postgres
+3967; 2606 24701 FK CONSTRAINT public password_reset_tokens password_reset_tokens_user_id_fkey postgres
+3980; 2606 25033 FK CONSTRAINT public predictive_vehicle_maintenance predictive_vehicle_maintenance_car_id_fkey postgres
+3964; 2606 24655 FK CONSTRAINT public punctuality_records punctuality_records_guard_id_fkey postgres
+3988; 2606 25250 FK CONSTRAINT public push_subscriptions push_subscriptions_user_id_fkey postgres
+3982; 2606 25085 FK CONSTRAINT public refresh_token_sessions refresh_token_sessions_user_id_fkey postgres
+3968; 2606 24855 FK CONSTRAINT public role_permissions role_permissions_permission_id_fkey postgres
+3969; 2606 24850 FK CONSTRAINT public role_permissions role_permissions_role_id_fkey postgres
+3947; 2606 16454 FK CONSTRAINT public shifts shifts_guard_id_fkey postgres
+3985; 2606 25135 FK CONSTRAINT public site_geofences site_geofences_client_site_id_fkey postgres
+3976; 2606 24984 FK CONSTRAINT public smart_guard_replacements smart_guard_replacements_absent_guard_id_fkey postgres
+3977; 2606 24989 FK CONSTRAINT public smart_guard_replacements smart_guard_replacements_recommended_guard_id_fkey postgres
+3978; 2606 24979 FK CONSTRAINT public smart_guard_replacements smart_guard_replacements_shift_id_fkey postgres
+3959; 2606 16595 FK CONSTRAINT public support_tickets support_tickets_guard_id_fkey postgres
+3973; 2606 25097 FK CONSTRAINT public tracking_points tracking_points_user_id_fkey postgres
+3965; 2606 24670 FK CONSTRAINT public training_records training_records_guard_id_fkey postgres
+3954; 2606 16562 FK CONSTRAINT public trips trips_allocation_id_fkey postgres
+3955; 2606 16552 FK CONSTRAINT public trips trips_car_id_fkey postgres
+3956; 2606 16557 FK CONSTRAINT public trips trips_driver_id_fkey postgres
+3970; 2606 24875 FK CONSTRAINT public user_roles user_roles_role_id_fkey postgres
+3971; 2606 24870 FK CONSTRAINT public user_roles user_roles_user_id_fkey postgres
+3944; 2606 16410 FK CONSTRAINT public verifications verifications_user_id_fkey postgres

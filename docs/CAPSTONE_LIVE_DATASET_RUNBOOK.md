@@ -50,6 +50,9 @@ fall back to `DATABASE_URL` or `DATABASE_PUBLIC_URL`.
 ./DasiaAIO-Backend/scripts/capstone-live-dataset.ps1 validate
 ./DasiaAIO-Backend/scripts/capstone-live-dataset.ps1 audit-preflight
 ./DasiaAIO-Backend/scripts/capstone-live-dataset.ps1 seed-audit-activity
+./DasiaAIO-Backend/scripts/capstone-live-dataset.ps1 fleet-preflight
+./DasiaAIO-Backend/scripts/capstone-live-dataset.ps1 enrich-fleet
+./DasiaAIO-Backend/scripts/capstone-live-dataset.ps1 fleet-validate
 ```
 
 Run `preflight` first. It prints the exact selected Tagum sites and validates
@@ -91,6 +94,23 @@ the normal audit table.
 The dataset has completed presentation history only through October 16, 2026.
 All October 17 shifts are scheduled only: there are no October 17 attendance,
 check-out, feedback, or completed audit records.
+
+## Armored fleet enrichment
+
+`enrich-fleet` is a separate, additive, idempotent child batch. It requires the
+same verified-backup control as the base write commands and the explicit
+presentation-environment controls. Run `fleet-preflight` first; it prints the
+exact `VEHICLE | PLATE | DRIVER | PRIMARY BANK` mapping before it writes.
+
+The runner requires exactly five existing armored vehicles and one existing
+active driver per vehicle. It creates only a stable active allocation where one
+is missing, records one complete daily trip for each vehicle from October 1-17
+on Monday-Saturday, and keeps vehicle status `allocated` rather than leaving a
+historical vehicle in transit. A daily trip represents the known `DASIA Base ->
+assigned bank -> DASIA Base` movement. It does not create a downstream bank
+route, extra stops, coordinates, or a fabricated distance. All generated trip
+and allocation IDs are ledger-tracked; reset restores only the status that this
+child batch originally changed.
 
 For deterministic capstone views, set these presentation Backend variables:
 
