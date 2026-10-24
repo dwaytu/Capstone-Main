@@ -3611,3 +3611,73 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - The review count rising from 35 to 46 is expected derived-state behavior, not a data regression: eleven formerly active MDR allocations were reclassified as imported historical records after the new daily custody batch became authoritative. Their firearms are not among the 55 stable mappings, remain `allocated`, have no current active allocation, and are therefore correctly visible as custody-review records. All eleven belong to MDR batch `ac536804-edf4-4b10-b7e2-6f3e35695ace`.
 - Found and fixed two related query-scoping defects: Analytics counted 89 active/approved guard accounts instead of the 55-guard capstone roster, and the Allocation eligibility explanation used the same unscoped number. `fetch_resource_snapshot` and the allocation summary now scope that guard population to `sentinel-october-2026-firearm-custody-v1` mappings when that roster exists, while preserving all-eligible-guard behavior when it does not. No operational data was written or changed.
 - Backend deployments `58bf5f50-48c6-4a30-9f0d-7a073bec1fcf` and final `f057504d-32f9-49b8-a4c8-06a99f3eba1f` succeeded. The deployed Analytics and Allocation scopes resolve to 55; the current firearm eligibility breakdown is 55 active/approved operational guards, zero permit-valid, zero training-valid, and zero issuance-eligible. Frontend TypeScript, 57 Jest suites / 202 tests, Vite build, Rust formatting, Linux runner tests, and server/dataset binary builds passed. Backend health and public frontend both returned HTTP 200. No authenticated browser session was available for protected-page interaction testing.
+
+# 187) NOTIFICATION LANE USABILITY FIX (2026-10-23)
+
+- Corrected the legacy `NotificationCenter` used by `SuperadminDashboard`: on narrow screens it had occupied the full top viewport and obscured Schedule actions. It now uses a compact bottom-safe lane above mobile navigation, retains a right-side desktop lane, shows the newest three messages first, and removes redundant timestamp clutter while preserving notification type, title, message, dismiss behavior, and existing colors.
+- Added a 180ms entry transition with an explicit reduced-motion override, assertive semantics for error/warning feedback, and component regression coverage for placement, capped ordering, announcement role, and dismissal.
+
+# 188) SHARED UI CLARITY PASS (2026-10-23)
+
+- Aligned global toast feedback with the non-blocking legacy notification lane: three newest notifications appear above mobile navigation and below the desktop header, use the existing short reduced-motion-aware entry transition, retain existing status colors, and keep a 44px accessible dismiss target without inflating the card.
+- Applied the same restrained entry motion to operational page headers, dashboard attention/status/section panels, and empty states. Quick-action labels now use readable title case rather than all-uppercase styling; loading states announce that data is loading. No routes, API contracts, backend behavior, roles, or color tokens changed.
+
+# 189) OPERATIONAL WORKFLOW CLARITY PASS COMPLETED (2026-10-23)
+
+- Completed the planned targeted UX pass without changing SENTINEL's visual identity, routes, permissions, APIs, or operational behavior. Resource Management now uses readable title case for long page and resource headings, keeps its selected tab behavior, and gives each selected resource view the existing restrained entry transition.
+- Schedule now announces the current roster count, explains the next edit action, provides scoped table headers, uses the consistent secondary `Edit schedule` action, and gives an actionable empty state. Operational Requests announces the filtered result count while retaining its automatic first-record selection and existing workflow controls. Inbox announces the current filtered count, keeps a selected item's details clear, and announces empty queues through the shared status pattern.
+- Allocation's header, summary, and register receive the same reduced-motion-aware entry treatment. Added inbox regression coverage for filtered queue counts. `npx tsc --noEmit --incremental false`, `npm test -- --runInBand` (60 suites / 208 tests), `npx playwright test tests/schedule-guard-selector.spec.ts`, and `npm run build` passed. Local frontend (`127.0.0.1:5173`) and backend health (`127.0.0.1:5000/api/health`) returned HTTP 200.
+
+# 190) DESKTOP TOAST OVERLAP CORRECTION (2026-10-23)
+
+- Follow-up screenshot review found the desktop breakpoint still moved both `NotificationCenter` and shared `ToastContainer` to the top-right lane, overlapping Schedule's primary action. Both feedback systems now remain bottom-safe at every breakpoint: above mobile navigation on small screens and bottom-right with a 1.25rem desktop offset on larger screens.
+- Updated focused placement assertions for both notification containers. Their capped ordering, status semantics, dismiss controls, colors, timing, and reduced-motion behavior remain unchanged. Focused Jest tests, TypeScript, and Vite production build passed.
+
+# 191) LOCAL MODULE SCREEN-CAPTURE EVIDENCE (2026-10-23)
+
+- Captured 41 authenticated local module views at `DasiaAIO-Frontend/output/playwright/module-captures-2026-10-23/`: the complete superadmin route set, admin and supervisor dashboards, and the guard workspace/routes. Every capture completed without page errors.
+- The evidence set includes 33 `*-scrolled-lower-section.png` images for screens with an internal scroll region, in addition to a top-level capture for every view. `capture-report.json` records the requested and resolved routes, scroll detection, and completion status; intentional aliases/redirects such as support-to-inbox and shift-swaps-to-calendar are recorded rather than misrepresented as separate content.
+
+# 192) LIGHT-DASHBOARD TOKEN REFINEMENT (2026-10-24)
+
+- Registered runtime semantic colors through Tailwind v4 `@theme inline` in `DasiaAIO-Frontend/src/index.css`, preserving light/dark token switching while generating semantic utility classes. Refined the light canvas, borders, card radius, and bento shadows; shared dashboard cards and surfaces now use subtle borders with the elevation token. `npm run build` passed.
+
+# 193) DASHBOARD TABLE DENSITY REFINEMENT (2026-10-24)
+
+- Standardized Admin, Superadmin, and Armored Fleet table headers, rows, and data-cell alignment to a compact semantic token pattern. Role/status pills now use explicit borders and comfortable padding; fleet driver assignment controls align cleanly and vehicle status classes use valid semantic Tailwind utilities. TypeScript validation and the Vite production build passed.
+
+# 194) SUMMARY KPI AND BENTO CARD REFINEMENT (2026-10-24)
+
+- Replaced the divider-based operational summary band with responsive elevated KPI cards using semantic surfaces, colored icon tiles, and consistent label/value/detail hierarchy. BentoCard now has a subtle rounded elevated default surface and only interactive cards receive restrained lift/shadow hover feedback. TypeScript validation and the Vite production build passed.
+
+# 195) WIDESCREEN CALENDAR AND SHELL GUTTER REFINEMENT (2026-10-24)
+
+- Restructured the monthly calendar into a desktop 3:1 grid so the seven-day view occupies three columns while selected-date agenda details stay in a dedicated side panel. Day cells use flexible semantic surfaces and event pills retain full titles until natural truncation.
+- Removed duplicated Superadmin content padding inside the OperationalShell and widened the dashboard error panel constraint. TypeScript validation and the Vite production build passed.
+
+# 196) USER ACTIVITY AND FORM ACTION VISIBILITY REFINEMENT (2026-10-24)
+
+- Admin and Superadmin user activity now use one bounded, compact activity label in table/detail views, avoiding duplicate timestamps, pluralized minute text, and unbounded hour counts. Future timestamps safely resolve to `Just now`.
+- Support Tickets uses the shared solid primary button treatment for `New Ticket`. Feedback adds bottom card space and a separated padded submit footer so the action stays visible. TypeScript validation, focused FeedbackForm Jest coverage, and the Vite production build passed.
+
+# 197) OPERATIONAL SUMMARY DOM CONTRACT (2026-10-24)
+
+- Preserved the elevated KPI-card layout while grouping each metric label, value, and optional detail in a single flexible left-side container; the icon remains independently aligned at right. This preserves the intended Testing Library parent-element relationship. Full frontend Jest suite passed: 60 suites / 208 tests.
+
+# 198) DARK CARD ELEVATION TOKENS (2026-10-24)
+
+- Replaced the dark-mode empty bento shadow tokens with layered opaque elevation shadows so cards remain visually distinct from the night-shift canvas; hover elevation follows the same depth hierarchy.
+
+# 199) TABLE PAGINATION AND FLEET CONTROL POLISH (2026-10-24)
+
+- Admin pagination actions use readable title-case labels, compact semantic button styling, disabled treatment, and visible keyboard focus outlines. Fleet driver assignment keeps the existing aligned flex row while normalizing the select and secondary action button to matching 36px control height. TypeScript validation passed.
+
+# 200) TACTICAL COMMAND-CENTER INTERACTION PASS (2026-10-24)
+
+- Added a keyboard-operable Cmd/Ctrl+K and slash-triggered command palette to OperationalShell, with grouped navigation and dispatch shortcuts plus a desktop shortcut affordance. Critical/SOS conditions now emit a tactical header beacon and urgent attention items receive visual priority pulses with direct action controls.
+- Metric cards support native SVG seven-point sparklines; Admin and Superadmin user tables offer instant status/role chips and clearable search. The guard duty hero now includes current-shift progress and tactical actions. PanicButton requires a sustained 1.2-second press and presents live resolved GPS accuracy with offline-queue readiness; its focused tests now exercise the safety hold. Full frontend Jest run passed and Vite production build passed.
+
+# 201) REPORT, SOS, MAP, AND DTR PRESENTATION HARDENING (2026-10-24)
+
+- Modernized secondary report-table headers, row density, and bordered status pills; DTR now has a shared empty state plus client-ready official print heading, signature block, and print action. SOS alerts show elapsed response time, make a best-effort Web Audio chime, and expose map/contact shortcuts only when real incident data contains coordinates/contact information.
+- Added map-surface layer count pills, marker-driven asset inspection, and incident map-focus event handling. TypeScript, full frontend Jest run, and Vite production build passed.
