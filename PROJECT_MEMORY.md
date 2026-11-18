@@ -3681,3 +3681,74 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - Modernized secondary report-table headers, row density, and bordered status pills; DTR now has a shared empty state plus client-ready official print heading, signature block, and print action. SOS alerts show elapsed response time, make a best-effort Web Audio chime, and expose map/contact shortcuts only when real incident data contains coordinates/contact information.
 - Added map-surface layer count pills, marker-driven asset inspection, and incident map-focus event handling. TypeScript, full frontend Jest run, and Vite production build passed.
+
+# 202) FINAL OPERATIONAL POLISH HARDENING (2026-10-25)
+
+- Standardized the remaining secondary-report table cells and accessible column headers, and gave DTR a named A4 landscape print layout that removes application controls while preserving the official DSIA heading and sign-off lines.
+- Hardened SOS telemetry with invalid-time handling, lifecycle-safe Web Audio cleanup, and a durable coordinate handoff that navigates from the command center to the operations map before applying the incident focus.
+- Replaced duplicate map layer controls with stable-count, accessible floating toggles and expanded marker inspection into a keyboard-accessible slide-over with truthful schedule and activity details. Full frontend Jest passed at 61 suites / 212 tests, Vite production build passed, and `git diff --check` reported no whitespace errors.
+
+# 203) ISOLATED BROWSER ACCEPTANCE AUDIT (2026-10-25)
+
+- Performed a Chromium acceptance pass against an isolated local Vite surface with all API responses intercepted; no production or local operational records were modified. Captures and the machine-readable report are under `DasiaAIO-Frontend/output/playwright/operational-polish-audit-2026-10-25/`.
+- Reproduced and corrected two SOS usability defects: an old open incident replayed the Web Audio chime after remount, and narrow screens could place emergency controls under the mobile navigation. Chimes now require a valid SOS opened within the recent one-minute arrival window; the dialog has a small-screen bounded scroll body and non-scrolling action footer above mobile navigation.
+- Also corrected the mobile Operations Map degraded-data notice, which had covered the layer filters; the notice now sits below the responsive layer group. Added focused SOS and map regression coverage. Full frontend Jest passed at 61 suites / 214 tests, Vite build passed, and `git diff --check` had no whitespace errors. The known Vite dynamic-import chunking warnings remain non-blocking.
+
+# 204) GUARD INCIDENT, TACTICAL SHORTCUT, AUDIO, AND COVERAGE HARDENING (2026-10-26)
+
+- Guard incident reporting is now a safe-area-aware bottom sheet on narrow screens with focus containment, Escape/focus return, glove-friendly priority controls, and one short vibration only after an online or queued report is accepted.
+- OperationalShell now supports permission-aware `g` navigation sequences plus a focus-trapped `?` keyboard-help dialog; entries resolve only from the role-filtered navigation items and do not hijack input, dialogs, or active overlays.
+- Added a device-local Emergency Audio Beacon preference and shared best-effort synthetic SOS chime utility. The Operations Map now exposes conservative Territorial Coverage from active scheduled guard heartbeats and named site assignments, never claims geofence verification without identifier-level evidence, and provides a named map region landmark.
+- Added focused Jest coverage for incident modal controls/success vibration, shortcut authorization/help, local audio preference, notification settings, SOS mute behavior, and conservative map coverage. Full frontend Jest, TypeScript validation, Vite build, and an isolated Chromium acceptance sweep passed; the persistent non-blocking Vite dynamic-import chunking warning remains.
+
+# 205) PLAIN-LANGUAGE AND COGNITIVE-LOAD PASS (2026-10-27)
+
+- Renamed role navigation and corresponding page titles to plain-language labels while retaining the existing route IDs, URLs, permissions, and persisted sidebar expansion keys. Reports & Insights, Resources, and Administration remain collapsed by default; all routes remain discoverable. Normal navigation and action labels now render in sentence case, while compact group labels retain their scanning treatment.
+- Attendance & Time Records now distinguishes the real reporting period from pagination, supports searchable guard name/ID selection, and uses neutral Prepared by, Reviewed by, and Received by print signatures. Guard Evaluations, performance metrics, and the inbox now use bounded queues/registers with search, result announcements, and valid page state after filtering; inbox detail remains selected across list pages.
+- Renamed compliance reports to Firearm Documents and Guard Documents, clarified MDR save/delete language with an explicit typed danger-zone confirmation, and confined disruptive location-sharing guidance to guard mission and map contexts. Resource management now uses safer, plain-language account/search actions without changing existing authorization or confirmation paths.
+- Added regression coverage for renamed sidebar groups, DTR reporting-period behavior, inbox reviewed state/announcements, and Guard Evaluation search/pagination. Full frontend Jest passed at 64 suites / 225 tests; production Vite build and `git diff --check` passed. An isolated Chromium pass captured desktop, tablet, 390px, 320px, SOS/map, and A4 print evidence under `DasiaAIO-Frontend/output/playwright/operational-polish-audit-2026-10-25/`; no operational data was modified.
+
+# 206) SEMANTIC ACTIONS AND GUIDED USABILITY FOUNDATION (2026-10-27)
+
+- Registered light/dark accent background, border, and text tokens with Tailwind v4. Quick actions now expose purpose-based `primary`, `resource`, `approval`, and `caution` tones rather than color names; Assign Shift, Start Trip, and Create Mission use the visible primary accent, while resource, approval, and ending-state actions retain their respective semantic tokens.
+- Simplified Activity History labels and moved expanded audit metadata under a native Technical details disclosure. Import Agency Records now states its three workflow steps and makes the immediate next action review changes. Login exposes a keyboard-accessible password visibility control, Caps Lock warning, and account-help guidance. Profile technical metadata is collapsed by default with native disclosures.
+- Focused quick-action and profile regression tests plus TypeScript and Vite build passed. The broader requested schedule/calendar workflow unification, accessible roster action menu/detail drawer, and first-time guard guide remain intentionally deferred until their interaction contracts can be implemented and browser-tested as dedicated work.
+
+# 207) GUIDED WORKFLOW AND INTERACTION SAFETY PASS (2026-10-27)
+
+- Resource Management now uses a detail-first guard dialog with permission-aware edit, password reset, and explicitly confirmed removal actions; cancellation and Escape restore focus safely.
+- Calendar provides one-data-source Calendar/List views, grouped list records, actionable assignment/starting-soon/overlap/overnight summaries, local-time overnight formatting, and overlap detection. Guard onboarding is device-local, optional, keyboard-operable, and deliberately non-blocking so SOS, contacts, and logout stay reachable.
+- Full Jest, TypeScript, Vite build, diff whitespace check, and isolated browser audit passed. Browser evidence and JSON are in `DasiaAIO-Frontend/output/playwright/guided-workflow-audit-2026-10-27/`; intercepted fixtures were used exclusively.
+
+# 208) VERIFICATION CORRECTION AND SCHEDULE FOCUS (2026-10-27)
+
+- The earlier guided audit and entry 207 do not establish all requested acceptance scenarios. The final-acceptance report is still incomplete; do not treat a passing subset as full release acceptance.
+- An isolated browser check reproduced focus loss when cancelling Edit Schedule. `EditScheduleModal` now restores the connected invoking element on unmount, with a focused regression test. The calendar handoff was verified to reach the schedule editor and cancel without mutation; it still requires a separate action to choose the relevant row.
+- After this fix, frontend Jest completed with 66 suites and 236 tests passing; TypeScript, Vite build, and frontend `git diff --check` exited successfully. Browser fixtures block external network traffic.
+
+# 209) SHARED MODAL STACKING CORRECTION (2026-10-27)
+
+- Isolated 320px browser evidence showed guard details clipped behind shell header and navigation because the shared modal was trapped in its invoking layout's stacking context. `SentinelModal` now portals its backdrop to the document body; focused tests verify the portal and existing modal focus behavior.
+- Verified 320px and 390px guard details controls using browser hit-testing and lower-scroll captures. After the fix, frontend Jest passed 66 suites / 237 tests; TypeScript, Vite build, and frontend diff check exited successfully. Full requested acceptance evidence is still incomplete.
+
+# 210) NESTED MODAL ESCAPE CORRECTION (2026-10-27)
+
+- Isolated browser testing reproduced Escape closing both guard details and its removal confirmation. Shared modal keyboard handling now applies only to the topmost shared modal; Escape returns focus to the removal trigger and leaves details open. Added focused nested-modal coverage.
+- After the fix frontend Jest passed 66 suites / 238 tests; TypeScript, Vite build and frontend `git diff --check` exited successfully. The full requested acceptance matrix remains incomplete.
+
+# 211) LANDSCAPE GUIDE AND PRINT ACCEPTANCE (2026-11-18)
+
+- In a short landscape viewport, the fixed emergency contacts obscured the guard guide. The guard shell now reserves space for its header and footer in layout. On short landscape screens SOS sits beside the emergency contacts, and the guide remains scrollable and actionable.
+- Chromium had clipped DTR output after the first page. DTR print styles now let the report paginate through the shell's former scroll boundaries. The exported fixture has all 50 current-page rows on four A4 landscape pages with repeating headers and three signature lines.
+- The final local audit artifacts are in `DasiaAIO-Frontend/output/playwright/final-acceptance-2026-10-27/`. The operational report is stored separately in its `operational/` subfolder. Audit contexts used intercepted APIs and blocked external browser requests.
+
+
+# 212) HOSTED PRESENTATION WORKFLOWS (2026-11-18)
+
+- Verified that dasiasentinel.xyz uses SENTINEL?s Railway environment labeled production, with the backend explicitly marked capstone_presentation. Took and fully restored PostgreSQL custom backup sentinel-capstone-pre-workflow-20261118.dump into an isolated PostgreSQL 17 container. SHA-256 is 2a29ac336af2fdacbaa3a3d952ff5b7885d306603d64bcb2bbea8194c6a912ea.
+- Deployed focused source over the previous hosted Git revisions. Frontend Railway deployment 4d3b4519-4eb2-47d1-9c4e-5134ebe625cf and backend 51a007fb-b802-4939-8652-bc23f6b1637f succeeded. Existing unrelated workspace edits were excluded. Public frontend and API health returned HTTP 200.
+- Guard-authored requests retain typed subject/reason/details. Guard form labels are concise Bisaya. Request responses resolve site and shift fields with requester-scoped access and the frontend displays Philippine time with a clear unavailable state. Calendar uses attention-first status filtering and three events per page, including a mobile date picker and a header that wraps at narrow widths. Audit hides the anomaly detail panel and uses ?Presentation record? in ordinary source labels.
+- Live read-only counts were 593 allocation records (529 returned, 64 imported, zero active), 46 inventory records needing custody review, and 56 available firearms. There were 89 active, approved guards with current security guard licenses and zero recorded active firearm permits or valid firearm-handling training records. Issuance safeguards remain in place. No application data records were edited for this release.
+- Checks passed: 66 frontend Jest suites with 239 tests, 55 Rust server tests in Linux, TypeScript, frontend build, and whitespace checks. Ten Chromium scenarios passed against the final hosted UI with intercepted APIs, plus one inert allocation fixture locally. The actual hosted database checks were read-only. Browser screenshots are under DasiaAIO-Frontend/output/playwright/presentation-hosted-final/.
+
+- Follow-up API verification ran the release backend against disposable PostgreSQL 17 with only fictional accounts and inert fixtures. The summary and list agreed, the backend denied license-only and expired records, and the qualified fixture completed issue and return with the expected custody and inventory counts. Isolated fixtures were removed. Evidence is in DasiaAIO-Frontend/output/playwright/presentation-hosted-final/isolated-issuance-api.json. The live services stayed healthy and no hosted records were edited.

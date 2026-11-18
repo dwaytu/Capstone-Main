@@ -31,7 +31,7 @@
 		"workbench.browser.openLocalhostLinks": true,
 		"workbench.browser.enableChatTools": true,
 		"chatgpt.openOnStartup": false,
-		"chatgpt.runCodexInWindowsSubsystemForLinux": true,
+		"chatgpt.runCodexInWindowsSubsystemForLinux": false,
 		"files.exclude": {
 			"**/.agents": true,
 			"**/.cache": true,
