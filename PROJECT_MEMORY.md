@@ -3855,6 +3855,7 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - The on-screen and printed Guard Documents register omits the Issued column. Expiry shows the exact date with whole calendar years and months remaining, with separate labels for less than one month, expiry today, and expired records. CSV export and expiry filters retain their existing fields.
 - Verified month-end, near-expiry, expired, and missing values in Jest. Checked the four-column register with intercepted API responses in Chromium at desktop and mobile widths.
+- Firearm Compliance now shares the same expiry formatter with Guard Documents. Its Permit column shows the date with calendar years and months remaining or an Expired label. The existing missing-permit display is preserved.
 
 
 # 224) CALLOUT DEFAULT IN GUARD DEPLOYMENT OVERVIEW (2026-11-19)
@@ -3884,3 +3885,24 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - A read-only live check found a scheduled Nov. 19 shift without attendance or a missed-check-in alert. The production backend was using the Oct. 17 capstone reference clock for this operational alert. The alert worker now uses actual database time and shift grace periods. The dashboard displays missed check-in separately from confirmed absence.
 - The dashboard loads candidates for the selected overdue shift and its active site. A supervisor can confirm that a guard accepted the remainder of the unarmed shift. The server validates the shift version, attendance, site, guard status, availability, and overlapping schedules, and records the original assignment in replacement history and audit. Workspace implementation only.
 - Verified with 248 Jest tests, TypeScript, the frontend build, Chromium at desktop and mobile widths, 56 regular Rust tests, and three isolated PostgreSQL tests covering the operational clock, shift-scoped candidates, and concurrent confirmation.
+
+- An accepted replacement can return to the coverage queue if the current guard misses the check-in grace period while the shift is open. Confirmation checks the current guard and shift version, and records each handoff in history. Missed-check-in alerts deduplicate within each coverage period.
+
+
+# 229) MISSION ASSIGNMENT WITHOUT A DESTINATION (2026-11-19)
+
+- Assign New Mission omits the Destination field. The assignment API accepts an omitted destination, records the linked shift site as Unassigned and leaves the linked trip destination empty. It preserves a destination supplied by an existing client.
+- TypeScript, an intercepted Chromium form submission, and an isolated PostgreSQL assignment test passed. Deploy the backend before the frontend so the API accepts the omitted field.
+
+
+# 230) COMMAND CENTER EVENT TIMESTAMPS (2026-11-19)
+
+- Live Operations Feed and Incident Alert Feed display a month and day beside each available timestamp in the browser's time zone. Scheduled shifts retain their start time, and incidents use their recorded report time. Cards without an event timestamp omit it.
+- TypeScript and an intercepted Chromium test passed at desktop and mobile widths, including an incident whose local date differs from its UTC date.
+- Incident alert cards omit the Escalate badge. Severity, report time and incident actions remain visible.
+
+
+# 231) OPERATIONAL STATUS GRAPHS (2026-11-19)
+
+- System, Threat and Incidents plot up to seven readings from the dashboard's existing service, operational alert and active incident checks. A line appears after two recorded readings. History starts when the dashboard opens, with no prefilled points. Hover, keyboard and touch reveal the recorded value and time.
+- The Incidents card uses the active incident endpoint's total and the graph counts open and investigating reports. TypeScript, focused Jest coverage and intercepted Chromium checks passed, including two different readings, keyboard dismissal and mobile touch.
