@@ -3948,3 +3948,21 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - Live Operations Feed and Needs Attention Now display dated cards earliest first, followed by undated entries. Guard Attendance Trend plots daily attended shifts with a count scale and shows scheduled and attended counts in the point labels.
 - TypeScript, Analytics Jest coverage, and the intercepted Chromium feed check at desktop and mobile widths passed.
+
+# 238) NATIVE RELEASE V1.2.7 (2026-11-19)
+
+- Published the SENTINEL v1.2.7 Android APK and Windows EXE/MSI on GitHub through release run 44552739004. The native builds use the existing production API. The release was prepared in isolated worktrees using the current frontend and backend commits.
+- The v1.2.6 attempt stopped at two calendar fixtures that assumed Manila time. The v1.2.7 release includes timezone-independent fixtures and Vite 7.3.7, which cleared the high-severity npm audit gate. All 250 frontend tests and the backend CI tests passed.
+- Verified all three public downloads and confirmed that the Android APK uses the same signing certificate and package ID as v1.2.5, with version code 10207.
+
+# 239) NATIVE APP HOTFIX V1.2.8 (2026-11-20)
+
+- Fixed Windows login connectivity by adding the exact Tauri Windows origin to the live Backend CORS_ORIGINS variable while preserving the production web origin. Confirmed the old and new Windows WebViews could reach the login endpoint and receive its schema-validation response. Verified an unrelated origin remains rejected.
+- Capacitor applies Android system insets, the guard dashboard fits inside the WebView, and SOS sits beside Emergency Contacts in the footer group. Verified the guard layout in the Android 14 emulator and the narrow Requests browser regressions at 320px and 393px. Two existing guard browser checks for the incident button and account settings heading reproduced against v1.2.7.
+- Published the signed APK and Windows EXE/MSI for v1.2.8 through release run 44560401826. Verified the public downloads, Android version code 10208, production Capacitor settings, and continuity of the APK signing certificate.
+
+# 240) GUARD ATTENDANCE ACTIONS (2026-11-20)
+
+- Read-only production review found two new check-ins, 34 already-recorded check-in responses, and one accepted checkout in the recent audit. One November 19 ended shift still had an open check-in after midnight.
+- Guard Mission now prioritizes an open shift for checkout even when it starts on an earlier day. The dashboard hides check-in for closed or previously recorded shifts and refreshes attendance from the API after check-in.
+- TypeScript, web build, 250 Jest tests, and two focused Chromium attendance scenarios passed. The fix is in the frontend workspace.
