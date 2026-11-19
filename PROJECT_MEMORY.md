@@ -3928,3 +3928,9 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - The monthly missions card, attendance and evaluation reports, and current guard availability use real Manila calendar dates. The reporting filter covers the selected number of calendar days including today. Attendance uses the stored on-time flag, including for historical records marked present. The resource availability chart is labeled as a current snapshot.
 - The corrected queries ran read-only on the hosted database with the October reference clock set for the session. They returned one of one missions completed in November, three shifts with one on-time check-in and one evaluation at 5/5 for the last 30 days, and 53 of 55 rostered guards available. The isolated PostgreSQL month-boundary regression, TypeScript, and three analytics frontend tests passed.
+
+
+# 235) EVALUATION TREND AND MERIT COVERAGE (2026-11-19)
+
+- Verified the live evaluation means and counts: 4.36 from 11 reviews on October 1, 4.38 from 13 on October 2, and 5.00 from one on November 19. The October reviews are capstone records. Analytics spaces points by elapsed days and shows review counts in evaluation point labels.
+- Merit reads review counts and rating averages from evaluation records for rankings and scorecards. The dashboard counts guards with reviews, labels missing reviews, and identifies the saved capstone attendance and punctuality scores. The read-only audit found 25 evaluated guards among 90 eligible accounts and 55 historical merit scores. TypeScript, seven Jest tests, three Rust tests including isolated PostgreSQL, and the Chromium analytics print check passed.
