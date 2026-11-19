@@ -2,7 +2,7 @@
 
 All notable changes to SENTINEL are documented in this file.
 
-## [1.2.6] - 2026-11-19
+## [1.2.7] - 2026-11-19
 
 ### Changed
 - Orders dated events in the operations and incident feeds from earliest to latest.
