@@ -3841,3 +3841,9 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - The allocation summary reads the eligibility count separately from inventory and register counts. A missing eligibility view yields a null count. The allocation page displays unavailable eligibility and skips the eligible-guard list request in that state.
 - Return confirmation survives a summary refresh error. Inventory and Resource Management retain their existing summary data contract. The startup migration and live issuance handler were left as found. Verified the missing-view case against disposable PostgreSQL and passed 245 Jest tests and TypeScript.
+
+
+# 222) SAVED FIREARM ALLOCATION WORKFLOW (2026-11-19)
+
+- The Firearm Allocation page uses the existing authenticated issue and return endpoints for every write. The allocation register reads saved records from the backend and retains server-provided eligibility, search, and filters.
+- The frontend build, TypeScript, six focused Jest tests, and intercepted Chromium issue and return flow passed with the presentation flag enabled for the browser check. The register retained the fixture statuses after reload. Workspace implementation only.
