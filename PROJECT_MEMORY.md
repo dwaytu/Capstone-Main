@@ -3872,3 +3872,15 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - The shared custody-review dialog now requires an explicit in-stock confirmation and source reference. The server reconciles eligible inventory to Available and records an audited stock confirmation in one transaction under the inventory version lock. Active custody, other inventory states, and stale versions block the reconciliation.
 - Older paperwork approvals can be confirmed in stock through the same dialog with their prior approval history retained. Older API clients that omit the confirmation flag retain the paperwork behavior. Both inventory views refresh their filters and summaries after stock confirmation. Workspace implementation only.
+
+
+# 227) ALLOCATION GUARD TYPE-TO-SEARCH (2026-11-19)
+
+- The Eligible guard field in the allocation modal uses the shared guard picker and searches the existing eligible roster by name or Guard ID in the same field. Editing clears the previous guard selection, and submission requires a selected ID in the eligible list. Inventory selection and backend eligibility checks remain in their existing paths.
+
+
+# 228) MISSED CHECK-IN AND CONFIRMED REPLACEMENT (2026-11-19)
+
+- A read-only live check found a scheduled Nov. 19 shift without attendance or a missed-check-in alert. The production backend was using the Oct. 17 capstone reference clock for this operational alert. The alert worker now uses actual database time and shift grace periods. The dashboard displays missed check-in separately from confirmed absence.
+- The dashboard loads candidates for the selected overdue shift and its active site. A supervisor can confirm that a guard accepted the remainder of the unarmed shift. The server validates the shift version, attendance, site, guard status, availability, and overlapping schedules, and records the original assignment in replacement history and audit. Workspace implementation only.
+- Verified with 248 Jest tests, TypeScript, the frontend build, Chromium at desktop and mobile widths, 56 regular Rust tests, and three isolated PostgreSQL tests covering the operational clock, shift-scoped candidates, and concurrent confirmation.
