@@ -3860,3 +3860,9 @@ SENTINEL orchestration now follows a software-company delegation structure:
 # 224) CALLOUT DEFAULT IN GUARD DEPLOYMENT OVERVIEW (2026-11-19)
 
 - The guard availability endpoint defaults to available when there is no saved preference. The elevated shift feed reports that case as null, and the dashboard shows Available for both null and true. A saved opt-out shows Unavailable, and an omitted feed field shows Not reported. Focused Jest coverage verifies all four input cases.
+
+
+# 225) PENDING CUSTODY REVIEW COUNTS (2026-11-19)
+
+- The firearm summary now reports pending documentation reviews by excluding approvals for the current inventory version from the existing unverified-custody population. Firearm Inventory and Resource Management refresh the pending count after approval and continue to show the broader unverified total.
+- An isolated PostgreSQL test verified pending counts before approval, after approval, and after an inventory-version change. Five intercepted Chromium scenarios verified count refresh and approval focus on both screens at desktop and mobile widths. Workspace implementation only.
