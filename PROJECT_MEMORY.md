@@ -3847,3 +3847,16 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - The Firearm Allocation page uses the existing authenticated issue and return endpoints for every write. The allocation register reads saved records from the backend and retains server-provided eligibility, search, and filters.
 - The frontend build, TypeScript, six focused Jest tests, and intercepted Chromium issue and return flow passed with the presentation flag enabled for the browser check. The register retained the fixture statuses after reload. Workspace implementation only.
+
+- The allocation register hides the Application-recorded sublabel on existing and newly issued rows. Imported rows retain their label, and the record origin remains available in the API. Six focused Jest tests passed.
+
+
+# 223) GUARD LICENSE REGISTER EXPIRY DISPLAY (2026-11-19)
+
+- The on-screen and printed Guard Documents register omits the Issued column. Expiry shows the exact date with whole calendar years and months remaining, with separate labels for less than one month, expiry today, and expired records. CSV export and expiry filters retain their existing fields.
+- Verified month-end, near-expiry, expired, and missing values in Jest. Checked the four-column register with intercepted API responses in Chromium at desktop and mobile widths.
+
+
+# 224) CALLOUT DEFAULT IN GUARD DEPLOYMENT OVERVIEW (2026-11-19)
+
+- The guard availability endpoint defaults to available when there is no saved preference. The elevated shift feed reports that case as null, and the dashboard shows Available for both null and true. A saved opt-out shows Unavailable, and an omitted feed field shows Not reported. Focused Jest coverage verifies all four input cases.
