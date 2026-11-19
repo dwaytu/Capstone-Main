@@ -3866,3 +3866,9 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - The firearm summary now reports pending documentation reviews by excluding approvals for the current inventory version from the existing unverified-custody population. Firearm Inventory and Resource Management refresh the pending count after approval and continue to show the broader unverified total.
 - An isolated PostgreSQL test verified pending counts before approval, after approval, and after an inventory-version change. Five intercepted Chromium scenarios verified count refresh and approval focus on both screens at desktop and mobile widths. Workspace implementation only.
+
+
+# 226) CUSTODY REVIEW STOCK CONFIRMATION (2026-11-19)
+
+- The shared custody-review dialog now requires an explicit in-stock confirmation and source reference. The server reconciles eligible inventory to Available and records an audited stock confirmation in one transaction under the inventory version lock. Active custody, other inventory states, and stale versions block the reconciliation.
+- Older paperwork approvals can be confirmed in stock through the same dialog with their prior approval history retained. Older API clients that omit the confirmation flag retain the paperwork behavior. Both inventory views refresh their filters and summaries after stock confirmation. Workspace implementation only.
