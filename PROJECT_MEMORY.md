@@ -3934,3 +3934,17 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - Verified the live evaluation means and counts: 4.36 from 11 reviews on October 1, 4.38 from 13 on October 2, and 5.00 from one on November 19. The October reviews are capstone records. Analytics spaces points by elapsed days and shows review counts in evaluation point labels.
 - Merit reads review counts and rating averages from evaluation records for rankings and scorecards. The dashboard counts guards with reviews, labels missing reviews, and identifies the saved capstone attendance and punctuality scores. The read-only audit found 25 evaluated guards among 90 eligible accounts and 55 historical merit scores. TypeScript, seven Jest tests, three Rust tests including isolated PostgreSQL, and the Chromium analytics print check passed.
+
+
+# 236) CAPSTONE SLIDE WORKFLOW COUNT CHECK (2026-11-19)
+
+- A read-only live check confirmed all nine capstone operational requests and all seven capstone support tickets remain present. Organization-wide totals were 11 requests, including three cleared, and 10 support tickets. The other two requests and three simulation tickets predated the capstone snapshot. The default Requests view counted eight uncleared records.
+- November 19 audit entries showed one capstone request progressing from approved to in progress to completed and one rejected capstone request being cleared. There were no post-snapshot support ticket status updates. The registered guard directory held 151 accounts, two created after the snapshot, and the capstone roster held 55 profiles.
+- At the user's request, the rejected temporary relief request was restored to the production default Requests list with an audited archive reversal. A read-only verification found nine listed requests out of 11 stored, the relief request rejected, and the rain-gear request completed.
+- At the user's request, three capstone test incidents were restored in production after matching their November 19 Resolve actions and original seed statuses: Gate access congestion and Defective flashlight report to Investigating, and Attempted unauthorized entry to Open. The audited reversal was verified with five active incidents out of 20 stored.
+
+
+# 237) CHRONOLOGICAL FEEDS AND ATTENDANCE COUNTS (2026-11-19)
+
+- Live Operations Feed and Needs Attention Now display dated cards earliest first, followed by undated entries. Guard Attendance Trend plots daily attended shifts with a count scale and shows scheduled and attended counts in the point labels.
+- TypeScript, Analytics Jest coverage, and the intercepted Chromium feed check at desktop and mobile widths passed.
