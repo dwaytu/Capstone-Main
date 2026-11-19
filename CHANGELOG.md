@@ -2,6 +2,13 @@
 
 All notable changes to SENTINEL are documented in this file.
 
+## [1.2.8] - 2026-11-19
+
+### Fixed
+- Keeps the Android layout inside the system bars.
+- Places SOS beside Emergency Contacts, clear of the request controls and navigation.
+- Restores Windows sign-in through the production API origin allow-list.
+
 ## [1.2.7] - 2026-11-19
 
 ### Changed
