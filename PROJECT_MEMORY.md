@@ -3861,6 +3861,7 @@ SENTINEL orchestration now follows a software-company delegation structure:
 # 224) CALLOUT DEFAULT IN GUARD DEPLOYMENT OVERVIEW (2026-11-19)
 
 - The guard availability endpoint defaults to available when there is no saved preference. The elevated shift feed reports that case as null, and the dashboard shows Available for both null and true. A saved opt-out shows Unavailable, and an omitted feed field shows Not reported. Focused Jest coverage verifies all four input cases.
+- The deployment overview shows Guard, Site, Status, and Callout. The Readiness column is hidden in this view.
 
 
 # 225) PENDING CUSTODY REVIEW COUNTS (2026-11-19)
@@ -3906,3 +3907,24 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - System, Threat and Incidents plot up to seven readings from the dashboard's existing service, operational alert and active incident checks. A line appears after two recorded readings. History starts when the dashboard opens, with no prefilled points. Hover, keyboard and touch reveal the recorded value and time.
 - The Incidents card uses the active incident endpoint's total and the graph counts open and investigating reports. TypeScript, focused Jest coverage and intercepted Chromium checks passed, including two different readings, keyboard dismissal and mobile touch.
+
+
+# 232) FIREARM MAINTENANCE INVENTORY COUNTS (2026-11-19)
+
+- Maintenance Controls reads all inventory pages for its available count and compares inventory status with open maintenance jobs by firearm ID. It flags maintenance statuses with no open record and reports unavailable totals on a failed read.
+- TypeScript and two focused Jest tests passed. The paginated fixture reproduced 17 available on the first page, 58 across all 110 rows, and eight maintenance statuses with zero recorded jobs.
+
+
+# 233) GUARD ROSTER AND LICENSE REVIEW COUNTS (2026-11-19)
+
+- A read-only live check reconciled 151 registered guard accounts with 150 approved, verified guards in Guard Documents. One guard account was pending approval. The roster labels its total as guard accounts and the compliance report labels its total as guards reviewed.
+- Merit also requires active account status. A read-only live check found 90 eligible guards, 60 inactive approved guards, and one account pending approval. Of the 90 eligible guards, 55 had a recorded merit rank.
+- A membership check confirmed all 55 ranked eligible guards are in the capstone test roster. The other 35 eligible guard accounts are outside that cohort and have no recorded merit rank.
+- Active is an account status set independently of sign-in activity. The read-only check found 33 of the 35 eligible accounts outside the capstone roster linked to MDR imports. The live audit recorded successful sign-ins for one of the 55 capstone accounts and two of the other 35 eligible accounts.
+- New accounts default to Active. MDR import sets Inactive for expired source license dates and can set separate Resigned or Floating statuses. License edits update expiry independently of status. All 60 inactive guards had a future stored expiry at the time of the read-only check, and 50 were traceable to staging rows with an expiry before import.
+
+
+# 234) OPERATIONAL ANALYTICS CLOCK (2026-11-19)
+
+- The monthly missions card, attendance and evaluation reports, and current guard availability use real Manila calendar dates. The reporting filter covers the selected number of calendar days including today. Attendance uses the stored on-time flag, including for historical records marked present. The resource availability chart is labeled as a current snapshot.
+- The corrected queries ran read-only on the hosted database with the October reference clock set for the session. They returned one of one missions completed in November, three shifts with one on-time check-in and one evaluation at 5/5 for the last 30 days, and 53 of 55 rostered guards available. The isolated PostgreSQL month-boundary regression, TypeScript, and three analytics frontend tests passed.
