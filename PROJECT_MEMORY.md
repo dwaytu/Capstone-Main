@@ -3752,3 +3752,92 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Checks passed: 66 frontend Jest suites with 239 tests, 55 Rust server tests in Linux, TypeScript, frontend build, and whitespace checks. Ten Chromium scenarios passed against the final hosted UI with intercepted APIs, plus one inert allocation fixture locally. The actual hosted database checks were read-only. Browser screenshots are under DasiaAIO-Frontend/output/playwright/presentation-hosted-final/.
 
 - Follow-up API verification ran the release backend against disposable PostgreSQL 17 with only fictional accounts and inert fixtures. The summary and list agreed, the backend denied license-only and expired records, and the qualified fixture completed issue and return with the expected custody and inventory counts. Isolated fixtures were removed. Evidence is in DasiaAIO-Frontend/output/playwright/presentation-hosted-final/isolated-issuance-api.json. The live services stayed healthy and no hosted records were edited.
+
+
+# 213) HOSTED FIREARM REGISTER RECONCILIATION (2026-11-18)
+
+- A read-only audit and restore verified 593 rows: 528 presentation returns, one imported return, and 64 unverified imported entries. Issuance eligibility stayed at zero and 46 separately flagged inventory items had no active register entry.
+- Added an origin/status reporting view and corrected register labels. The 65 imported-origin rows include the returned import, while the legacy imported-status API field still counts 64. Existing custody, qualifications, and issuance rules were preserved. Reporting evidence, backup hash, and deployments are recorded in docs/CAPSTONE_FIREARM_REGISTER_RECONCILIATION_2026-11-18.md.
+
+
+# 214) BROWSER-ONLY ALLOCATION ON PRESENTATION HOST (2026-11-18)
+
+- Admin and superadmin users on the exact HTTPS dasiasentinel.xyz host can open the existing Allocate Firearm button on /allocation without a query parameter. It reads current-license guard profiles and available inventory through existing GET endpoints. An audited read confirmed 149 guard profiles with current licenses and 56 available firearms.
+- Allocation and return are held only in React state on that page. Reload clears the session and leaves the original register untouched. The ordinary issuance and return endpoints retain their checks. No data records or qualification records were added or modified.
+- Frontend deployment c55a386e-4b2c-4504-aa77-c676147b587f succeeded. TypeScript, Vite, diff checks, and 240 Jest tests passed. Desktop and mobile Chromium checks on the hosted page with intercepted fixtures passed allocation, return, and reload with zero write requests. Evidence is in DasiaAIO-Frontend/output/playwright/allocation-session-hosted/.
+- Full restore of local pre-deploy backup sentinel-before-browser-allocation-20261118.dump succeeded. Its SHA-256 is d4356cfa8403c40ba6a665b61adb156d46f45ba969bbaf0c3496567c5cd7ba29.
+
+- Frontend follow-up f07a0613-e72f-48b7-bcec-1bbf1fe5d378 removed the Verified Active Custody card, origin/status breakdown, and summary card descriptions from the allocation page. The allocation register, row-level provenance, custody review notice, and browser-only workflow remain available. Hosted desktop/mobile fixture-backed checks verified seven title/value cards and zero allocation/return write requests. Evidence is under DasiaAIO-Frontend/output/playwright/allocation-cleanup-hosted/.
+
+- Frontend follow-up a58e03ae-384d-48df-b044-34f1914bd16b removed the Issued column from the allocation register. Date filters and row provenance remain available. Hosted desktop and mobile checks confirmed the five remaining headers and the session allocation/return flow. No data changes were made.
+
+- Frontend deployment f1e9f395-af48-4017-9469-a0e2e94742b5 hides the Presentation / test allocation row caption, removes the presentation prefix from the known request note, and presents non-attributed evaluations without the placeholder evaluator. The audit source retains the narrower Scenario activity distinction and raw provenance. No records were rewritten. The pre-deploy backup restored successfully; Jest, build, and local and hosted fixture-backed browser checks passed.
+
+- Frontend follow-up 1664ea9e-59d2-4371-b60a-5ac9c5a60d4f removed the Imported or Unverified Records summary card. The register and status filters remain available. TypeScript, focused browser regression, and hosted desktop/mobile fixture checks passed. The fresh backup restored successfully before deployment.
+
+- Frontend deployment 7d472c60-0d31-4793-ba07-d1167f422216 simplified report, chime, and location-update copy. The map now excludes explicitly tagged presentation checkpoints from markers and path playback by reading the status-bearing guard history feed. The 18 stored checkpoints, audit provenance, and temporary allocation disclosures remain intact. Build, 241 Jest tests, and hosted desktop/mobile browser checks passed. The backup was restored before the frontend deployment.
+
+
+# 215) HOSTED GUARD REQUEST TEXT (2026-11-18)
+
+- Translated the saved subject, reason, and details on nine guard requests on dasiasentinel.xyz into concise Bisaya. A restore-validated backup and guarded transaction verified that both other requests, protected fields, and request events stayed intact. A separate hosted read matched all 27 translated values. No application deployment was needed.
+- Backup sentinel-before-request-bisaya-20261118.dump has SHA-256 8cdf7fa632f080e45d733e320babfd63f189e2c7892d8f81a8d0c9d7684a5d95. A local change journal records the previous and translated text.
+
+
+# 216) DOCUMENTED CUSTODY REVIEW APPROVAL
+
+- Added an admin and superadmin Approve action in Firearm Inventory. The backend records one approval per inventory version with the actor and source reference in the audit log. Approval does not certify active custody, change the inventory status, or affect issuance.
+- Verified the focused flow in Chromium, including a 320px viewport. All 241 Jest tests, frontend build, TypeScript, and 55 Rust tests passed. An isolated PostgreSQL test confirmed rollback, one approval under concurrent requests, unchanged custody, and stale-version rejection. Workspace implementation only.
+
+- Follow-up put the same Approve action next to Edit and Remove in Resource Management > Firearms. The dialog is shared with Firearm Inventory. Railway backend 0f1af3f8-2d58-443d-bac4-0e73c18540f9 and frontend 2ad02d7a-c892-4a9e-bf23-ffcc807c8696 deployed successfully. A read-only check confirmed 110 inventory records, 593 register rows, 46 custody review items, 11 requests, and zero approvals after deployment.
+- The pre-release backup sentinel-before-custody-review-approval-20261118.dump restored successfully. SHA-256 0b0aece3ef02472f0fa256f52bed184627ed317d1e7a14272d54f38d6d46e3c5. Four local and four hosted Chromium scenarios used fixture requests. The staged release excluded unrelated workspace changes.
+
+- Aligned custody documentation approval with the existing firearm-management permission, which includes supervisors. Both the UI and endpoint use this access policy. Verified the supervisor and guard outcomes with signed test tokens against isolated PostgreSQL and verified both hosted screens with intercepted browser fixtures. Railway backend 35e0d791-6db3-432e-aa3d-129cc3df2801 and frontend c849f024-2c43-443e-818a-e17dc381fa4c succeeded. A hosted read returned 110 inventory records, 593 register entries, and zero approvals.
+
+
+# 217) SUPERADMIN PERMISSION PARITY
+
+- Superadmin now has every named admin and supervisor backend permission, including creating and resubmitting operational requests. Existing requester ownership and independent review constraints still apply. Feedback submission accepts every authenticated role, Missions is in the superadmin sidebar, and replacement suggestions follow the API analytics permission.
+- Backend abe7d22b-c30e-42ec-8f75-84fbe9923132 and frontend 6f59821c-b7d0-4112-9c7e-35224c4108fc deployed to dasiasentinel.xyz. The isolated API validated feedback, request submission, self-approval denial, and independent admin approval. Hosted browser scenarios used intercepted fixtures and the live Requests count stayed at 11.
+
+
+# 218) VEHICLE RETURN CONTROL (2026-11-19)
+
+- Armored Cars > Allocations now shows Return Vehicle on each active row. Confirmation identifies the vehicle by plate when available and displays API errors without closing. A successful return refreshes the active list and inventory. The existing authenticated endpoint writes both states atomically, rejects duplicate returns, and keeps maintenance or other active allocations intact.
+- Backend c6389da9-dded-4242-92c1-17688a9a6a66 and frontend 5d497691-9247-498c-9dfd-7425237b9ef1 are live. TypeScript, build, 243 Jest tests, 56 Rust tests, the isolated PostgreSQL return test, and local and hosted Chromium fixture checks passed. Read-only hosted verification showed all five original allocations still active.
+
+- Armored Cars allocation and maintenance dropdowns display the fleet number and recorded plate, omitting blank or placeholder plates. The five hosted vehicles have populated plate fields. Frontend 5835ce6e-b58d-483e-b74d-94ce8cc45bad deployed, with local and hosted Chromium fixtures passing the dropdown and return tests. No fleet records were edited.
+
+
+# 219) GUARD REPLACEMENT WORKFLOW VERIFICATION (2026-11-19)
+
+- Isolated API/PostgreSQL fixtures verified that the background job creates a leadership missed-check-in alert and leaves the replacement state untouched. A separate supervisor-triggered no-show scan creates the attendance record, changes the state to searching, and notifies available verified guards. A repeat scan produced no duplicate. The dashboard recommendations are separate and their Assign Now control is a browser alert. Schedule > Edit schedule provides a manual reassignment path. No hosted records were changed.
+
+- Allocation frontend deployment cbd3fbe0-1c80-46e8-8e0a-dcb8ea8687a1 clarifies in the header, form, and confirmation that session allocations appear only on the allocation page. Guard dashboards continue to read their saved records. Hosted Chromium with inert fixtures and four focused Jest checks passed, with zero write requests.
+
+- Frontend d3ae94d7-afe8-46df-ba2e-ef662226519b puts session allocations inside the allocation register in a labeled row group. Return updates the same row, and reload clears the group. Guard Requests now uses New Request and Close. Hosted desktop and mobile inert fixtures verified allocate, return, reload and zero allocation write requests. Hosted guard Requests fixture and focused Jest/TypeScript checks passed.
+
+- Frontend 308615be-1290-47b0-80fc-4df63b916083 stores demo allocations in SPA document memory so they survive a same-tab sign-out and sign-in. The allocation register now uses Saved records and Demo allocations buttons in place of the inline banner. The selected guard sees demo allocations under Resources, filtered to their own ID. Reload clears the demo. All 243 Jest tests, TypeScript, Vite, and local and hosted Playwright fixtures passed, with zero custody writes.
+
+- Frontend 6112a755-dd71-44d5-ae36-61aa08e2aaa6 renames the demo view tabs to Allocations on the admin register and guard Resources screen. The status cells identify demo entries. The hosted same-tab browser check passed.
+
+- Frontend e370cf23-749c-424c-a9e6-493c70c0b21a uses Preview active and Preview returned in the existing status badges on both allocation views. The hosted handoff test and 24 focused Jest tests passed.
+
+
+# 220) MISSION VEHICLE LABELS (2026-11-19)
+
+- Missions picker and history now share the fleet number and plate formatter with Armored Cars. The existing mission list adds vehicle_fleet_number and vehicle_plate_number and preserves vehicle_model. The hosted read found recorded plates on the latest 50 trips. Neither release rewrote vehicle data.
+- Backend de81f184-c707-4bcf-a5c1-3bf687c0e5f4 and frontend 75dd2a4e-1f0a-4f99-9b7a-d0407e1cd334 deployed. Frontend TypeScript, build, 243 Jest tests, 56 Rust tests, isolated PostgreSQL integration, and three hosted browser fixture checks passed.
+
+- Frontend 74543f2f-f73b-4160-a62c-b888f49d5dca adds Trip Management to the superadmin Field navigation and the mobile More menu. The existing route and status workflow are shared. Fifteen navigation tests passed and the hosted bundle contains the new label. A Playwright locator matched both menus at mobile width, and an execution policy blocked the scoped browser rerun.
+
+- Frontend 26ebd9ff-b32a-40ef-910c-3875f635a09f deployed to dasiasentinel.xyz. The allocation register uses Active, hides the unknown-origin label, and shows Return on active saved rows. Saved returns use the existing authorized endpoint after confirmation, and session returns remain local. All 244 Jest tests and TypeScript passed. A hosted Chromium check intercepted the API and changed no saved records.
+
+- Backend 00427aae-d1b3-47cc-a541-b38a719ea0fc fixes the Trip Management start and complete vehicle transitions in one transaction. Completion returns an unencumbered vehicle to available, preserves maintenance or inactive status, and checks running trips and active site allocations. Verified via 56 server tests and a focused isolated PostgreSQL regression. Vehicle 3003 (MFZ 908) was corrected from operational to available with a recorded status transition after a hosted read confirmed the completed trip and no open commitment. The trip and driver assignment were preserved.
+
+- Backend a4786e8a-0b49-4d67-a312-384c21c8b993 and frontend 287e9bd0-5b17-4cdb-8642-1736bed713f3 deployed the unarmed staffing recommendation change on dasiasentinel.xyz. Smart Guard Replacement omits permit eligibility and retains callout and schedule checks. The card labels unarmed coverage and removes the permit badge and placeholder actions. Verified with an isolated PostgreSQL regression, 56 Rust and 244 Jest tests, TypeScript, and an intercepted hosted Chromium check.
+
+# 221) FIREARM INVENTORY AND RETURN ERROR HANDLING (2026-11-19)
+
+- The allocation summary reads the eligibility count separately from inventory and register counts. A missing eligibility view yields a null count. The allocation page displays unavailable eligibility and skips the eligible-guard list request in that state.
+- Return confirmation survives a summary refresh error. Inventory and Resource Management retain their existing summary data contract. The startup migration and live issuance handler were left as found. Verified the missing-view case against disposable PostgreSQL and passed 245 Jest tests and TypeScript.
