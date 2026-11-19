@@ -3966,3 +3966,9 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Read-only production review found two new check-ins, 34 already-recorded check-in responses, and one accepted checkout in the recent audit. One November 19 ended shift still had an open check-in after midnight.
 - Guard Mission now prioritizes an open shift for checkout even when it starts on an earlier day. The dashboard hides check-in for closed or previously recorded shifts and refreshes attendance from the API after check-in.
 - TypeScript, web build, 250 Jest tests, and two focused Chromium attendance scenarios passed. The fix is in the frontend workspace.
+
+# 241) ATTENDANCE STATUS IN TODAY'S SHIFTS (2026-11-20)
+
+- Verified Guard1 checked out at Globe FOC Tagum at 6:52 AM Manila time. Attendance stored the checkout while the shift assignment still read scheduled.
+- The today-scoped shifts API now derives the displayed status from the assigned guard's attendance. It reports in progress after check-in and completed after checkout. The general schedule continues to return its stored assignment status.
+- The isolated Rust/PostgreSQL regression passed. A read-only production query returned completed for Guard1 with the corrected query. Backend change is in the workspace.
