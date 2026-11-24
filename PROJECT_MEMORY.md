@@ -3972,3 +3972,95 @@ SENTINEL orchestration now follows a software-company delegation structure:
 - Verified Guard1 checked out at Globe FOC Tagum at 6:52 AM Manila time. Attendance stored the checkout while the shift assignment still read scheduled.
 - The today-scoped shifts API now derives the displayed status from the assigned guard's attendance. It reports in progress after check-in and completed after checkout. The general schedule continues to return its stored assignment status.
 - The isolated Rust/PostgreSQL regression passed. A read-only production query returned completed for Guard1 with the corrected query. Backend change is in the workspace.
+
+# 242) MISSION ACCESS AND COMMAND DASHBOARD DATA (2026-11-20)
+
+- The three elevated roles share mission and trip permissions. Admin navigation was missing Missions and Trip Management, Supervisor navigation was missing Trip Management, and Mission History offered no status actions. All three roles now have the menu entries and can start and end a mission from its history through the existing trip status API.
+- A read-only live check found 78 trip records, including 77 completed and one in progress. The previous mission picker selected 12 eligible rows from the first inventory page, while 50 records met its eligibility filters. The picker now loads all pages of available inventory. Mission assignment saves its linked writes in one transaction. The status API checks the expected state for new clients.
+- Dashboard attendance totals now use the same Manila-day shift data as Today's Shifts. Role-scoped guard approvals appear in the attention queue without affecting operational threat and alert counts. The production records were inspected read-only.
+- Chromium verified assignment and start and end flows for Admin, Supervisor, and Superadmin. TypeScript, the web build, all 251 frontend tests, and three isolated PostgreSQL tests passed. Changes are in the workspace.
+
+# 243) GUARD PERFORMANCE HISTORY (2026-11-20)
+
+- Guard Evaluations removes the Capstone snapshot label, uses Saved merit score for the scorecard, and adds inset padding to both card sections. Each scorecard and activity card opens its own read-only history.
+- The elevated-role history endpoint reads paginated shifts, recorded punctuality, and evaluations. Overall score opens recorded lateness, absences, and evaluations below 3 out of 5. Incident reporters are not treated as subjects. Activity counts use the same sources as the history, and merit score calculations are unchanged.
+- Verified all seven filters against the production schema read-only, two isolated PostgreSQL integrations, 252 frontend tests, TypeScript, the web build, and Chromium at 1366px and 390px. The feature is in the workspace.
+
+# 244) ADD GUARD EVALUATIONS FROM HISTORY (2026-11-20)
+
+- Supervisors, admins, and superadmins can open the 1–5 star rating and optional comment form directly from Evaluation history. The scorecard action opens the same form.
+- Submission uses the existing authenticated evaluation API and merit recalculation. Saved entries append to the guard's earlier records. The dialog reloads the first history page and refreshes the scorecard and rankings without closing.
+- TypeScript, the web build, all 253 frontend tests, and local Chromium checks for two consecutive submissions at 1366px and 390px passed. The change is in the frontend workspace.
+
+# 245) COMBINED DOCUMENTS PAGE (2026-11-20)
+
+- Resources now has one Documents destination. Guard Documents is the default report, and Firearm Documents opens in the same workspace. Previous compliance URLs redirect to their corresponding report, preserving inbox links.
+- Both reports reuse their existing APIs, filters, permissions, and export data. The layout shows one report at a time with compact summaries and a horizontally scrollable table on mobile. Printing shows the active report.
+- TypeScript, the web build, and 253 frontend tests passed. Chromium verified both reports and report controls at 1366px, 390px, and 320px using intercepted API responses, including old links and Guard role restrictions. The changes are in the frontend workspace.
+
+# 246) ADMIN AND SUPERVISOR ACCESS AUDIT (2026-11-20)
+
+- Both roles can reach Analytics, Guard Performance, Guard Permits, and Support Tickets from the menus. Supervisors also have direct entries for Firearms and Armored Cars. Staff can submit personal support tickets and read tickets for approved guards through the existing API.
+- Desktop and mobile account controls follow the server role hierarchy. Removed inactive suspension actions and corrected bulk approval success counts. Agency record import routes require Admin or Superadmin, as does the existing guard approval route.
+- Verified assign, start, and complete mission controls for both roles in Chromium. The existing isolated PostgreSQL mission lifecycle test and 56 other server tests passed. TypeScript, the web build, and 259 frontend tests passed. Findings include mission clock inputs interpreted as UTC, trip details associated by calendar date, and read-only guard permits in the frontend. Changes are in the workspace.
+
+# 247) MANILA MISSION TIMES AND RECORDED TRIP ASSIGNMENTS (2026-11-21)
+
+- Mission date and time inputs are interpreted as Philippine time and stored as UTC instants. Mission History and Trip Management display Philippine time. Existing saved timestamps were preserved.
+- Single-vehicle mission creation links its shifts to the trip and the mission allocation records to their shifts inside the same transaction. Trip Details uses these links and includes returned records. A trip without links shows its recorded driver and explains when trip-specific assignments are unavailable. No historical links are inferred.
+- Guard Permits remains a record lookup with search and status filtering. Active records past expiry display as expired. Changes are in the workspace.
+
+# 248) GUARD PERFORMANCE RECONCILIATION AND MISSION STAFFING (2026-11-21)
+
+- Performance report separates accepted Smart Guard Replacement records into shifts covered and shifts replaced. It recognizes recorded on-time present marks and uses started, non-cancelled shifts for attendance and explicit absence records for no-shows. Incident totals count reports submitted by the guard. Charts reveal names and values on hover or focus.
+- Production read-only audit found five accepted Smart Guard Replacement records, three linked to the capstone dataset, and zero shift swaps. The corrected query reconciled 12 fields for each of 91 eligible guards. Across those rows it returned 570 started assignments, 530 attended and completed, 18 late, three no-shows, 20 reports filed, 25 evaluations, five covers, and four original guards replaced. One original guard is outside the eligible report population.
+- Missions accept one to three distinct guards, preserve a separate recorded driver, and require a vehicle with an active driver assignment. The API rejects a driverless vehicle before saving any mission records. The workspace passed TypeScript, the web build, 259 frontend tests, seven Chromium checks, and two isolated PostgreSQL mission tests.
+
+# 249) ROAD-MATCHED GUARD TRAILS (2026-11-21)
+
+- Railway production now runs the private Map-Matcher OSRM service with a Davao Region OpenStreetMap extract. Its Dockerfile lives in `apps/map-matcher`. Backend `ROAD_MATCHER_URL` targets `http://map-matcher.railway.internal:5000`. OSRM access logging is disabled.
+- Operations Map requests optional road geometry from the authorized guard history endpoint. The matcher uses recent reliable GPS samples, splits gaps over 60 seconds, and preserves original readings for playback. The map draws points when matching is unavailable or inconclusive.
+- Verified all three Railway deployments, private OSRM connectivity, two road-matched segments from an isolated Tagum trace, and the deployed map at desktop and mobile widths. TypeScript, the frontend build, map component tests, and the Linux gap-splitting test passed. A read-only check found no qualifying live movement trace in the prior 24 hours. The screenshots use only test readings.
+
+# 250) SHARED MAINTENANCE WORKSPACE (2026-11-21)
+
+- Maintenance has Firearms and Armored Cars tabs with shared record, scheduling, and completion layouts. The fleet shortcut opens the Armored Cars tab directly. Both asset types use their existing APIs and supported form fields.
+- Removed standalone fleet allocations and maintenance tabs from Armored Cars. Vehicle assignment is available through Missions. The Firearms sidebar uses a firearm icon, and the Operations Map expresses elapsed reading time in hours and minutes.
+- TypeScript, the web build, 259 Jest tests, and the Playwright vehicle maintenance flow passed. Browser checks verified the new layout at 1440px and 390px. Changes are in the workspace.
+
+# 251) GUARD PERMIT RECORDING AND HEADQUARTERS RETURNS (2026-11-21)
+
+- A read-only Railway production audit found 151 guard license entries, 96 firearm validity dates, zero guard firearm permit records, and one open firearm service job. The eight inventory maintenance flags without jobs all had MDR-linked headquarters return data.
+- Guard Firearm Permits explains the empty register and links to Guard Documents for security guard licenses. Staff can record an issued permit using the existing audited API and Philippine dates. Maintenance lists imported headquarters returns by firearm alongside the separate service register. Unexplained inventory holds still show the review warning.
+- TypeScript, the web build, eight focused Jest tests, and Linux backend compilation passed. Desktop and mobile browser checks used fixture data to verify permit recording and the headquarters returns list. Changes are in the workspace.
+
+# 252) GUARD NAME ENTRY AND INVENTORY HOLD LABELS (2026-11-21)
+
+- Guard Permits was removed from elevated navigation. The direct route and API continue to serve existing links and reporting.
+- A read-only production audit found eight MDR headquarters returns in Maintenance and zero overlapping custody reviews or approvals. Inventory and People & Resources label the eight records Returned to HQ using read-only metadata.
+- Create Guard Account collects first name, optional middle initial, and last name. It previews and stores the display name as Last Name, First Name M. Desktop and mobile browser checks, 259 frontend tests, TypeScript, the web build, and Linux backend compilation passed. Changes are in the workspace.
+
+# 253) HISTORICAL GUARD NAME SOURCE CHECK (2026-11-21)
+
+- Production roster review counted 102 guard names containing a comma, 46 multiword names without a comma, and three single-word names. The local MDR workbook and staged data store names in one field. Identity-matched source rows had the same ambiguity for 44 of the 46 multiword records and supplied no verified surname boundary for the other two.
+- No production names were changed. Historical name standardization needs a source keyed by Guard ID with confirmed surname and given name fields.
+
+# 254) LIVE GUARD ROSTER DISPLAY NAME CORRECTIONS (2026-11-21)
+
+- After the user authorized case-by-case interpretation of clear names, standardized 44 production guard display names in one transaction. The update matched Guard ID and exact prior name and preserved all original name tokens.
+- Read-only verification confirmed all 44 updated names and their before-and-after audit entries. Two multiword names still need surname confirmation.
+
+# 255) STRUCTURED NAMES IN EDIT USER (2026-11-21)
+
+- Edit User uses the same first-name, optional middle-initial, and surname format as Create Guard Account. Surname-first names prefill the fields. Ambiguous legacy entries show their saved name and allow other details to be edited independently.
+- Four focused Jest tests, TypeScript, the frontend build, and browser edits at 1440px and 390px passed. Changes are in the workspace.
+
+# 256) MERIT SCORE FORMULA LABELS (2026-11-21)
+
+- A read-only production check found 17 eligible guards with a saved score of 100 and zero evaluations. All 17 had perfect attendance and punctuality on the tracked October scorecards. The same ledger also retains a recalculated weighted score, so the API uses ledger provenance and the saved rank together.
+- Rankings now label attendance-and-punctuality scores and weighted merit scores. Scorecards show the matching weights, and guards without a saved score display No score. Focused Jest, isolated PostgreSQL, TypeScript, the web build, and desktop and mobile browser checks passed. Changes are in the workspace.
+
+# 257) OVERALL MERIT REQUIRES AN EVALUATION (2026-11-21)
+
+- Guard Evaluations now calculates Overall Score from recorded attendance (30%), punctuality (35%), and evaluator ratings (35%). Rankings and scorecards use the same current inputs. Guards without an evaluation show Needs evaluation and remain unranked. The register has adjacent Attendance and Punctuality bars and omits the caption beneath scores.
+- A read-only production check found 26 eligible guards with all three inputs and 31 with attendance but no evaluation. The isolated PostgreSQL merit checks, focused frontend tests, TypeScript, the web build, and desktop and mobile browser checks passed. Changes are in the workspace.
