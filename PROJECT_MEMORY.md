@@ -4064,3 +4064,16 @@ SENTINEL orchestration now follows a software-company delegation structure:
 
 - Guard Evaluations now calculates Overall Score from recorded attendance (30%), punctuality (35%), and evaluator ratings (35%). Rankings and scorecards use the same current inputs. Guards without an evaluation show Needs evaluation and remain unranked. The register has adjacent Attendance and Punctuality bars and omits the caption beneath scores.
 - A read-only production check found 26 eligible guards with all three inputs and 31 with attendance but no evaluation. The isolated PostgreSQL merit checks, focused frontend tests, TypeScript, the web build, and desktop and mobile browser checks passed. Changes are in the workspace.
+
+# 258) PILOT POST CHECKS AND SUPERVISOR FOLLOW-UP (2026-11-28)
+
+- Operations Map pilot settings let admins enable an active site, assign its supervisor, and set a 2–30 minute response window. The server randomly schedules one check per eligible shift assignment. Supervisor-recorded break, patrol, and relief windows pause prompting. The worker checks shift end and reassignment and persists notices atomically with check transitions.
+- The guard dashboard records phone acknowledgments using server receipt time. Guards can retry after reconnecting. Missed checks stay in the assigned supervisor's follow-up queue even after a late reply. Outcomes, optional notes, reviewer, and timestamp are retained with an audit entry. The feature leaves attendance independent.
+- Operations Map separates the last accepted in-geofence phone sample from the last confirmed-present follow-up. Chromium verified the guard and supervisor flows against an isolated PostgreSQL backend, including distinct timestamps, offline recovery, duplicate retries, and access denial. The response and SOS targets were separately hit-tested at 320, 390, and landscape 812 pixels. The focused Rust checks, TypeScript, 266 frontend tests, and the production bundle passed.
+- Production rollout needs the backend startup migration and updated frontend before enabling any pilot sites. Mobile Chromium verified the in-app flows. Delivery outside the app depends on configured email or supported Web Push.
+
+# 259) MANUAL POST CHECKS (2026-11-28)
+
+- Admins and superadmins can send an immediate post check from Operations Map, Post checks, Pilot shifts and exceptions. The API reuses the pilot response window and exception rules, binds the request to the current guard and site, and logs the initiating admin. The scheduler and trigger share the same transaction lock. Retrying the same request preserves the original prompt and deadline.
+- A manual prompt occupies the shift's single open-check slot. If it interrupts an unsent random check, the worker replans the random check after the manual response window closes or the guard responds. Missed manual checks follow the same supervisor queue and leave attendance independent.
+- Chromium with isolated PostgreSQL verified both admin roles, the guard reply, duplicate retries, automatic replanning, denied access, exception handling, and supervisor escalation. Frontend TypeScript, the production build, and six focused Jest tests passed. The backend startup migration adds manual trigger attribution.
