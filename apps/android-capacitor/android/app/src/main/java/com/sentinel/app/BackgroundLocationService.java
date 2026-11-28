@@ -14,15 +14,20 @@ import android.content.pm.ServiceInfo;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.JSObject;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -32,10 +37,13 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BackgroundLocationService extends Service implements LocationListener {
     public static final String ACTION_START = "com.sentinel.app.background_location.START";
@@ -52,12 +60,29 @@ public class BackgroundLocationService extends Service implements LocationListen
     private static final String PREFS = "sentinel_background_location";
     private static final String CHANNEL_ID = "sentinel_location_tracking";
     private static final int NOTIFICATION_ID = 4103;
+    private static final long MAX_FIX_AGE_MS = 45000;
 
     private LocationManager locationManager;
     private ExecutorService networkExecutor;
     private SharedPreferences preferences;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final AtomicBoolean sending = new AtomicBoolean();
+    private Location recentFix;
     private long lastSentAt;
+    private volatile String rejectedToken;
     private volatile boolean stopping;
+    private final Runnable fixMonitor = new Runnable() {
+        @Override
+        public void run() {
+            if (stopping) return;
+            if (locationEnabled() && !isFresh(recentFix) && rejectedToken == null) {
+                reportProblem("gps_wait", "Waiting for a fresh GPS fix. Move to an open area and keep Precise Location enabled.");
+            }
+            handler.postDelayed(this, 20000);
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -66,35 +91,56 @@ public class BackgroundLocationService extends Service implements LocationListen
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         networkExecutor = Executors.newSingleThreadExecutor();
         createNotificationChannel();
+        connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (connectivityManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            networkCallback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    handler.post(() -> {
+                        lastSentAt = 0;
+                        if (isFresh(recentFix)) onLocationChanged(recentFix);
+                    });
+                }
+            };
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_START.equals(intent.getAction())) {
             saveConfiguration(intent);
+            if (!preferences.getString("token", "").equals(rejectedToken)) rejectedToken = null;
+            lastSentAt = 0;
         }
 
         if (!hasConfiguration()) {
-            publish("error", "Background location configuration is missing.");
+            reportProblem("configuration_required", "Open SENTINEL and sign in to start location tracking.");
             stopSelf();
             return START_NOT_STICKY;
         }
 
         try {
-            Notification notification = buildNotification("Live location tracking is active");
+            Notification notification = buildNotification("Waiting for a precise location update");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
             } else {
                 startForeground(NOTIFICATION_ID, notification);
             }
             requestLocationUpdates();
-            preferences.edit().putBoolean("running", true).putString("state", "starting").remove("message").apply();
-            publish("state", null);
+            preferences.edit().putBoolean("running", true).apply();
+            if (locationEnabled()) {
+                reportProblem("gps_wait", "Waiting for a fresh GPS fix. Move to an open area and keep Precise Location enabled.");
+            } else {
+                reportProblem("location_disabled", "Turn on device location to resume tracking.");
+            }
+            handler.removeCallbacks(fixMonitor);
+            handler.postDelayed(fixMonitor, 20000);
         } catch (SecurityException error) {
-            publish("error", "Precise location permission is required for background tracking.");
+            reportProblem("permission_required", "Allow Precise Location in Android app settings to resume tracking.");
             stopSelf();
         } catch (Exception error) {
-            publish("error", "Android background location service could not start.");
+            reportProblem("service_unavailable", "Open SENTINEL and retry location to restart Android tracking.");
             stopSelf();
         }
 
@@ -102,10 +148,15 @@ public class BackgroundLocationService extends Service implements LocationListen
     }
 
     private void saveConfiguration(Intent intent) {
+        String userId = intent.getStringExtra(EXTRA_USER_ID);
+        if (!preferences.getString("userId", "").equals(userId)) {
+            preferences.edit().clear().apply();
+            recentFix = null;
+        }
         preferences.edit()
                 .putString("apiBaseUrl", intent.getStringExtra(EXTRA_API_BASE_URL))
                 .putString("token", intent.getStringExtra(EXTRA_TOKEN))
-                .putString("userId", intent.getStringExtra(EXTRA_USER_ID))
+                .putString("userId", userId)
                 .putString("label", intent.getStringExtra(EXTRA_LABEL))
                 .putFloat("requiredAccuracyMeters", (float) intent.getDoubleExtra(EXTRA_REQUIRED_ACCURACY, 35.0))
                 .putLong("intervalMs", Math.max(intent.getIntExtra(EXTRA_INTERVAL_MS, 20000), 15000))
@@ -126,12 +177,13 @@ public class BackgroundLocationService extends Service implements LocationListen
 
         long intervalMs = preferences.getLong("intervalMs", 20000);
         boolean requested = false;
-        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        locationManager.removeUpdates(this);
+        if (locationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
             locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, intervalMs, 0f, this, Looper.getMainLooper());
             requested = true;
         }
-        if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+        if (locationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
             locationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER, intervalMs, 0f, this, Looper.getMainLooper());
             requested = true;
@@ -142,28 +194,65 @@ public class BackgroundLocationService extends Service implements LocationListen
         }
     }
 
+    private boolean locationEnabled() {
+        return locationManager != null && (
+                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+    }
+
+    private static boolean isFresh(Location location) {
+        if (location == null) return false;
+        long ageMs = (SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos()) / 1000000;
+        return ageMs >= 0 && ageMs <= MAX_FIX_AGE_MS;
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        if (!locationEnabled()) {
+            recentFix = null;
+            reportProblem("location_disabled", "Turn on device location to resume tracking.");
+        }
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        lastSentAt = 0;
+        if (!isFresh(recentFix) && rejectedToken == null) {
+            reportProblem("gps_wait", "Waiting for a fresh GPS fix. Move to an open area and keep Precise Location enabled.");
+        }
+    }
+
     @Override
     public void onLocationChanged(Location location) {
-        if (stopping || location == null) return;
+        if (stopping || !isFresh(location)) return;
+        String token = preferences.getString("token", "");
+        if (token.isEmpty() || token.equals(rejectedToken)) return;
 
         float accuracy = location.hasAccuracy() ? location.getAccuracy() : Float.POSITIVE_INFINITY;
-        double requiredAccuracy = preferences.getFloat("requiredAccuracyMeters", 35.0f);
-        long now = System.currentTimeMillis();
-        if (accuracy > requiredAccuracy) {
-            updateLastLocation(location, accuracy);
-            publish("error", String.format(Locale.US,
-                    "Location fix is too broad for precise tracking (%dm; required <= %dm).",
-                    Math.round(accuracy), Math.round(requiredAccuracy)));
+        if (Float.isNaN(accuracy) || Float.isInfinite(accuracy) || accuracy <= 0 || accuracy > 5000) {
+            reportProblem("low_accuracy", "The phone sent an approximate reading. Enable Precise Location and move to an open area.");
             return;
         }
-        if (now - lastSentAt < preferences.getLong("intervalMs", 20000)) return;
+        recentFix = new Location(location);
+        long now = SystemClock.elapsedRealtime();
+        if (lastSentAt != 0 && now - lastSentAt < preferences.getLong("intervalMs", 20000)) return;
+        if (!sending.compareAndSet(false, true)) return;
 
         lastSentAt = now;
         updateLastLocation(location, accuracy);
-        networkExecutor.execute(() -> sendHeartbeat(location, accuracy));
+        Location sample = recentFix;
+        networkExecutor.execute(() -> {
+            try {
+                if (isFresh(sample) && !stopping && token.equals(preferences.getString("token", ""))) {
+                    sendHeartbeat(sample, accuracy, token);
+                }
+            } finally {
+                sending.set(false);
+            }
+        });
     }
 
-    private void sendHeartbeat(Location location, float accuracy) {
+    private void sendHeartbeat(Location location, float accuracy, String token) {
         HttpURLConnection connection = null;
         try {
             String apiBaseUrl = preferences.getString("apiBaseUrl", "").replaceAll("/+$", "");
@@ -178,7 +267,7 @@ public class BackgroundLocationService extends Service implements LocationListen
             payload.put("entityType", "user");
             payload.put("entityId", preferences.getString("userId", ""));
             payload.put("label", preferences.getString("label", "SENTINEL user"));
-            payload.put("status", "active");
+            payload.put("status", "gps");
             payload.put("latitude", location.getLatitude());
             payload.put("longitude", location.getLongitude());
             payload.put("accuracyMeters", accuracy);
@@ -190,7 +279,7 @@ public class BackgroundLocationService extends Service implements LocationListen
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(10000);
             connection.setDoOutput(true);
-            connection.setRequestProperty("Authorization", "Bearer " + preferences.getString("token", ""));
+            connection.setRequestProperty("Authorization", "Bearer " + token);
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Accept", "application/json");
 
@@ -201,34 +290,60 @@ public class BackgroundLocationService extends Service implements LocationListen
 
             int responseCode = connection.getResponseCode();
             String responseBody = readResponse(responseCode >= 400 ? connection.getErrorStream() : connection.getInputStream());
-            JSONObject response = responseBody.isEmpty() ? new JSONObject() : new JSONObject(responseBody);
-
-            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
-                    || responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
-                publish("error", "Background tracking paused because authorization or location consent is no longer valid.");
-                clearStatus(this);
+            if (stopping || !token.equals(preferences.getString("token", ""))) return;
+            JSONObject response = parseResponse(responseBody);
+            String code = response.optString("code", "");
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                rejectedToken = token;
+                reportProblem("authentication_required", "Open SENTINEL to renew your session and resume location updates.");
+                return;
+            }
+            if (responseCode == HttpURLConnection.HTTP_FORBIDDEN
+                    && "tracking_consent_required".equals(code)) {
+                reportProblem(code, "Allow location tracking in SENTINEL to resume location updates.");
+                preferences.edit().remove("token").apply();
                 stopSelf();
                 return;
             }
 
             if (responseCode < 200 || responseCode >= 300) {
-                publish("error", "Background location heartbeat could not be delivered; retrying on the next fix.");
+                reportProblem("delivery_failed", "SENTINEL could not accept your location. Check your connection and retry in the app.");
                 return;
             }
 
-            if (!response.optBoolean("accepted", true)) {
-                publish("error", "Location sample was rejected because its precision is insufficient.");
+            if (!response.has("accepted")) {
+                reportProblem("delivery_failed", "SENTINEL returned an unexpected location response. Retry location in the app.");
+                return;
+            }
+            if (!response.optBoolean("accepted") || response.optBoolean("approximate")) {
+                double required = response.optDouble("requiredAccuracyMeters", Double.NaN);
+                String message = !Double.isNaN(required) && !Double.isInfinite(required)
+                        ? String.format(Locale.US, "Location accuracy is about %.0f m. SENTINEL requires %.0f m or better. Move to an open area.", accuracy, required)
+                        : "SENTINEL requires a precise location. Move to an open area and check Precise Location.";
+                reportProblem("low_accuracy", message);
                 return;
             }
 
-            String timestamp = Instant.now().toString();
-            preferences.edit().putString("lastHeartbeatAt", timestamp).putString("state", "active").remove("message").apply();
-            updateNotification("Last location update " + timestamp.substring(11, 19) + " UTC");
+            SimpleDateFormat utc = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            utc.setTimeZone(TimeZone.getTimeZone("UTC"));
+            String timestamp = response.optString("recordedAt", utc.format(new Date()));
+            preferences.edit().putString("lastHeartbeatAt", timestamp).putString("state", "active").remove("message").remove("code").apply();
+            updateNotification("Precise location sent to SENTINEL");
             publish("heartbeat", null);
         } catch (Exception error) {
-            publish("error", "Background location heartbeat is temporarily unavailable; retrying.");
+            if (!stopping && token.equals(preferences.getString("token", ""))) {
+                reportProblem("network_unavailable", "Could not reach SENTINEL. Check your connection. Tracking will retry when you reconnect.");
+            }
         } finally {
             if (connection != null) connection.disconnect();
+        }
+    }
+
+    private JSONObject parseResponse(String body) {
+        try {
+            return new JSONObject(body);
+        } catch (JSONException ignored) {
+            return new JSONObject();
         }
     }
 
@@ -267,6 +382,14 @@ public class BackgroundLocationService extends Service implements LocationListen
         if (manager != null) manager.notify(NOTIFICATION_ID, buildNotification(message));
     }
 
+    private void reportProblem(String code, String message) {
+        if (stopping) return;
+        if ("error".equals(preferences.getString("state", ""))
+                && code.equals(preferences.getString("code", "")) && message.equals(preferences.getString("message", ""))) return;
+        preferences.edit().putString("code", code).apply();
+        publish("error", message);
+    }
+
     private Notification buildNotification(String message) {
         Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
         PendingIntent pendingIntent = launchIntent == null ? null : PendingIntent.getActivity(
@@ -297,7 +420,9 @@ public class BackgroundLocationService extends Service implements LocationListen
         JSObject result = new JSObject();
         result.put("running", prefs.getBoolean("running", false));
         result.put("state", prefs.getString("state", "stopped"));
+        result.put("userId", prefs.getString("userId", null));
         result.put("message", prefs.getString("message", null));
+        result.put("code", prefs.getString("code", null));
         result.put("lastHeartbeatAt", prefs.getString("lastHeartbeatAt", null));
         result.put("lastLatitude", prefs.contains("lastLatitude") ? prefs.getFloat("lastLatitude", 0f) : null);
         result.put("lastLongitude", prefs.contains("lastLongitude") ? prefs.getFloat("lastLongitude", 0f) : null);
@@ -312,9 +437,14 @@ public class BackgroundLocationService extends Service implements LocationListen
     @Override
     public void onDestroy() {
         stopping = true;
+        handler.removeCallbacksAndMessages(null);
+        if (connectivityManager != null && networkCallback != null) connectivityManager.unregisterNetworkCallback(networkCallback);
         if (locationManager != null) locationManager.removeUpdates(this);
         if (networkExecutor != null) networkExecutor.shutdownNow();
-        if (preferences != null) preferences.edit().putBoolean("running", false).putString("state", "stopped").apply();
+        if (preferences != null) {
+            boolean errored = "error".equals(preferences.getString("state", ""));
+            preferences.edit().putBoolean("running", false).putString("state", errored ? "error" : "stopped").apply();
+        }
         stopForeground(true);
         publish("state", null);
         super.onDestroy();
